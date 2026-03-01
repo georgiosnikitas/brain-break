@@ -32,3 +32,18 @@ _bmad/
 # .github folder (except copilot-instructions.md)
 .github/
 !.github/copilot-instructions.md
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+coverage/
+.nyc_output/
+.env
+.env.local
+.env.*.local
+dist/
+build/
