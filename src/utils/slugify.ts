@@ -1,5 +1,6 @@
-// utils/slugify.ts — stub
-// Domain name → file slug. Implemented in Story 1.4.
-export function placeholder(): void {
-  // TODO: implement in later stories
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
