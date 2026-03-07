@@ -24,6 +24,9 @@ describe('buildHomeChoices', () => {
 
     expect(domainItems).toHaveLength(0)
 
+    // No archive action when list is empty
+    expect(actions.every((c) => c.value.action !== 'archive')).toBe(true)
+
     // "Create new domain" must be the first non-separator item
     expect(actions[0].value.action).toBe('create')
 
@@ -81,6 +84,22 @@ describe('buildHomeChoices', () => {
       expect(actions).toContain('archived')
       expect(actions).toContain('exit')
     }
+  })
+
+  it('includes an archive action for each domain entry', () => {
+    const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
+    const actions = actionChoices(entries)
+    const archiveActions = actions.filter((c) => c.value.action === 'archive')
+    expect(archiveActions).toHaveLength(1)
+    expect((archiveActions[0].value as { action: 'archive'; slug: string }).slug).toBe('typescript')
+  })
+
+  it('archive action comes immediately after select for the same domain', () => {
+    const entries: HomeEntry[] = [{ slug: 'react', score: 0, totalQuestions: 0 }]
+    const actions = actionChoices(entries)
+    const selectIdx = actions.findIndex((c) => c.value.action === 'select')
+    const archiveIdx = actions.findIndex((c) => c.value.action === 'archive')
+    expect(archiveIdx).toBe(selectIdx + 1)
   })
 })
 

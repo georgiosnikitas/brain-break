@@ -8,6 +8,7 @@ export type HomeEntry = { slug: string; score: number; totalQuestions: number }
 
 export type HomeAction =
   | { action: 'select'; slug: string }
+  | { action: 'archive'; slug: string }
   | { action: 'create' }
   | { action: 'archived' }
   | { action: 'exit' }
@@ -29,6 +30,10 @@ export function buildHomeChoices(
     choices.push({
       name: `${bold(entry.slug)}  ${dim(`score: ${entry.score} · ${entry.totalQuestions} questions`)}`,
       value: { action: 'select', slug: entry.slug },
+    })
+    choices.push({
+      name: `  Archive ${entry.slug}`,
+      value: { action: 'archive', slug: entry.slug },
     })
   }
 
@@ -81,6 +86,7 @@ export async function showHomeScreen(): Promise<void> {
 
     if (answer.action === 'exit') process.exit(0)
     if (answer.action === 'select') await router.showQuiz(answer.slug)
+    if (answer.action === 'archive') await router.archiveDomain(answer.slug)
     if (answer.action === 'create') await router.showCreateDomain()
     if (answer.action === 'archived') await router.showArchived()
   }
