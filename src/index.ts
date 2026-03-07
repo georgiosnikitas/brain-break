@@ -1,3 +1,6 @@
 #!/usr/bin/env node
-console.log('brain-break — scaffold ready')
-process.exit(0)
+import { showHome } from './router.js'
+
+;(async () => {
+  await showHome()
+})()
