@@ -1,4 +1,5 @@
 import { showHomeScreen } from './screens/home.js'
+import { showCreateDomainScreen } from './screens/create-domain.js'
 
 export async function showHome(): Promise<void> {
   await showHomeScreen()
@@ -9,7 +10,7 @@ export async function showQuiz(_slug: string): Promise<void> {
 }
 
 export async function showCreateDomain(): Promise<void> {
-  // stub — implemented in Story 2.2
+  await showCreateDomainScreen()
 }
 
 export async function showArchived(): Promise<void> {
