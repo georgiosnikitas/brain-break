@@ -29,9 +29,9 @@ _bmad/
 # .gemini folder
 .gemini/
 
-# .github folder (except copilot-instructions.md)
-.github/
-!.github/copilot-instructions.md
+# .github BMAD-generated files (agents, prompts — not workflows or copilot config)
+.github/agents/
+.github/prompts/
 
 # Node.js
 node_modules/
