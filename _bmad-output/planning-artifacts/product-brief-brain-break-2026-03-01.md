@@ -37,7 +37,8 @@ No existing CLI-first tool combines AI question generation, configurable technic
 ### Proposed Solution
 
 `brain-break` is a terminal CLI tool that:
-- Reads a configuration file containing the user's list of preferred domains (e.g., `java`, `react`, `.net`) and prompts the user to select one at startup
+- On every launch, displays a home screen listing all configured domains with their current score and progress; if no domains exist, the only available action is to create a new one
+- Allows the user to resume an existing domain or add a new one from the home screen at any time
 - Uses the GitHub Copilot SDK to generate fresh, non-repeating multiple-choice questions on demand
 - Presents questions interactively in the terminal with a response timer
 - Scores answers based on correctness and response speed — producing an honest, evolving skill signal
@@ -52,7 +53,7 @@ No existing CLI-first tool combines AI question generation, configurable technic
 | Terminal-native | ✅ | ❌ | ❌ |
 | AI-generated questions | ✅ (Copilot SDK) | ❌ | ❌ |
 | Never repeats questions | ✅ | N/A | ❌ |
-| Multi-domain config + startup selection | ✅ | ❌ | ❌ |
+| In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill signal scoring | ✅ | ❌ (completion %) | ❌ |
 | Zero setup friction | ✅ | ❌ | ❌ |
 | Open source / team-shareable | ✅ | ❌ | Partial |
@@ -61,68 +62,11 @@ No existing CLI-first tool combines AI question generation, configurable technic
 
 ## Target Users
 
-### Primary Users
+Three developer personas share this tool: junior developers building foundational confidence, mid-level developers filling knowledge gaps across their stack, and senior developers staying sharp on evolving APIs and adjacent domains. All have daily terminal use and prefer self-directed, low-friction learning over structured platforms.
 
-#### Persona 1 — "Alex, the Mid-Level Developer"
-**Role:** Mid-level fullstack developer, 3–5 years experience  
-**Stack:** Java / Spring Boot backend, React frontend  
-**Context:** Works in a team environment, uses the terminal daily, has GitHub Copilot access
+`brain-break` is a purely self-serve individual tool — no admin, team management, or oversight roles required.
 
-**Motivation:** Wants to feel confident across the full stack. Suspects there are gaps in knowledge they haven't consciously identified yet. Values honest self-assessment over completion badges.
-
-**Problem Experience:** Udemy courses sit half-finished. Stack Overflow answers questions reactively — it doesn't build systematic knowledge. During a 5-minute build wait, there's nothing that turns that time into learning.
-
-**Success Vision:** A session that challenges them, reveals a surprising gap, or confirms their expertise — all within the time a build takes. A rising score that genuinely reflects skill, not just effort.
-
----
-
-#### Persona 2 — "Sam, the Junior Developer"
-**Role:** Junior developer, 0–2 years experience, recently onboarded  
-**Stack:** React (primary), learning Java  
-**Context:** Learning fast, eager to prove themselves, lives in the terminal
-
-**Motivation:** Build confidence. The game format removes the anxiety of formal assessment — wrong answers just affect score, not performance reviews. Microlearning fits their short attention span and high curiosity.
-
-**Problem Experience:** Doesn't know what they don't know. Structured courses feel overwhelming. Wants bite-sized, targeted challenges they can come back to repeatedly.
-
-**Success Vision:** A fun, low-stakes way to discover knowledge gaps and fill them incrementally. Watching the score grow is tangible proof of progress.
-
----
-
-#### Persona 3 — "Jordan, the Senior Developer"
-**Role:** Senior engineer, 8+ years experience  
-**Stack:** .NET, Java, React — across the board  
-**Context:** Busy, deep in architecture and code reviews; rarely gets time for structured learning
-
-**Motivation:** Stay sharp on evolving APIs, new framework features, and domains adjacent to their core. Not interested in beginner content — wants sharp, specific questions.
-
-**Problem Experience:** Senior devs are the last to refresh foundational knowledge. brain-break's AI-generated questions can probe deep, specific topics that no static quiz covers.
-
-**Success Vision:** A quick mental warm-up or cool-down. Questions that are actually hard enough to be satisfying. A score that doesn't flatter.
-
----
-
-### Secondary Users
-
-None. `brain-break` is a purely self-serve individual tool. No admin, team management, or oversight roles required.
-
----
-
-### User Journey
-
-**Discovery:** Developer sees the repo shared in the team's GitHub organisation. One-line README install hook. Cloned and running in under 2 minutes.
-
-**Onboarding:** Edits the config file to add their domains of interest (e.g., `["java", "react", ".net"]`). Runs `node index.js`. A startup prompt lists available domains — they select one and the first question appears immediately. No account, no signup, no friction.
-
-**Core Usage:**
-- Triggered by natural break moments: post-standup, build waiting, between PRs, lunch
-- Sessions are 2–10 minutes; 3–10 questions per session
-- Answers a question → sees if correct → sees score delta → next question
-- History persists between sessions automatically
-
-**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They look it up. They come back and get it right next time. The score rises. *That feedback loop is the product.*
-
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of domain depth. Devs start comparing domain scores informally — "what's your React score?" becomes a team conversation.
+→ Full persona profiles and user journey: [prd-brain-break-2026-03-06.md](prd-brain-break-2026-03-06.md)
 
 ---
 
@@ -130,7 +74,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 ### User Success Metrics
 
-The primary signal that `brain-break` is working is **behavioural and self-reported improvement** — users who return daily and whose score progression correlates with real-world confidence and competence.
+The primary signal that `brain-break` is working is **behavioral and self-reported improvement** — users who return daily and whose score progression correlates with real-world confidence and competence.
 
 | Metric | Target | Signal |
 |---|---|---|
@@ -155,91 +99,23 @@ Since `brain-break` is an open-source, team-shared tool (not a commercial produc
 
 ---
 
-### Key Performance Indicators
+## MVP Feature Summary
 
-#### Engagement KPIs
-- **Daily sessions per active user:** ≥ 1 session/day
-- **Average session length:** 3–10 minutes (short enough to be frictionless, long enough to be meaningful)
-- **Questions answered per session:** ≥ 5 questions
+The MVP delivers seven core capabilities:
 
-#### Learning KPIs
-- **Score growth rate:** Score increases progressively over the first 30 days of use (not flat or random)
-- **Correct answer rate over time:** Improves measurably in a configured domain after 20+ questions answered
-- **History depth:** Users who have answered 50+ questions have a meaningful personal knowledge log they can review
+- **In-app domain management** — create, resume, and archive domains from a home screen; all state is domain-scoped and persists across sessions
+- **AI-powered question generation** — on-demand, never-repeating multiple-choice questions via the GitHub Copilot SDK, with adaptive difficulty based on the previous answer
+- **Interactive terminal quiz** — one question at a time, per-question response timer, and immediate correctness feedback with score delta
+- **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets
+- **Persistent question history** — every answered question stored locally with full detail (answer, timing, score delta, difficulty) per domain
+- **View history command** — paginated review of all past questions for the active domain
+- **View stats command** — summary dashboard showing score, accuracy, total time played, and current difficulty level
 
-#### Adoption KPIs
-- **Time to first question:** < 5 minutes from clone to first answered question
-- **7-day retention:** ≥ 60% of users who run it once return within 7 days
-- **Team penetration:** ≥ 50% of eligible team members actively using within 30 days of release
+→ Full feature specifications and acceptance criteria: [prd-brain-break-2026-03-06.md](prd-brain-break-2026-03-06.md)
 
 ---
 
-## MVP Scope
-
-### Core Features
-
-#### 1. Configuration File
-- A config file (e.g., `config.json` or `config.yaml`) contains a list of domains the user wants to practice (e.g., `["java", "react", ".net"]`)
-- On app startup, the user is presented with an interactive selection menu showing all configured domains
-- The user selects one domain per session — that selection determines the active quiz context
-- All state (history, score, time played) is domain-scoped and isolated
-- Switching to a previously used domain resumes exactly where the user left off
-- Adding or removing domains from the config file adds or removes them from the startup selection menu — existing domain data is never deleted
-
-#### 2. AI-Powered Question Generation (GitHub Copilot SDK)
-- Questions are generated on demand via the GitHub Copilot SDK
-- All questions are multiple choice (e.g., 4 options: A, B, C, D)
-- Questions are never repeated within the same domain — a persistent record of asked questions is maintained per domain
-- **Adaptive difficulty:** Each question's difficulty adapts based on the previous answer:
-  - Correct answer → next question is slightly harder
-  - Wrong answer → next question is slightly easier
-  - Difficulty progresses progressively over the session and across sessions
-
-#### 3. Interactive Terminal Quiz
-- Questions are displayed one at a time in the terminal
-- A timer starts when the question is displayed and stops when the user submits their answer
-- The response time is recorded for every question
-- After answering, the user sees: correct/incorrect, the right answer if wrong, time taken, and score delta
-
-#### 4. Scoring System
-- Score is per-domain and persists across sessions
-- Score increases for correct answers and decreases for incorrect ones
-- Speed modifier: faster correct answers yield higher score gains; slower correct answers yield smaller gains
-- Speed modifier: incorrect answers lose more points if answered slowly (penalty for slow + wrong)
-- Score never resets — it is a cumulative, honest long-term skill signal per domain
-
-#### 5. Persistent History (Per Domain)
-- Every answered question is recorded locally with:
-  - Question text and all answer options
-  - The user's chosen answer
-  - Whether it was correct or incorrect
-  - Timestamp of when it was answered
-  - Time taken to answer (ms/s)
-  - Score delta for that question
-  - Difficulty level assigned to the question
-- History is isolated per domain — switching domains does not affect other domains' histories
-
-#### 6. View History Command
-- User can view their full question history for the active domain
-- Display is paginated (e.g., 10 questions per page)
-- A total summary is shown (either at top or bottom):
-  - Total questions answered
-  - Total correct / total wrong
-  - Accuracy percentage
-  - Current score
-  - Total time played
-
-#### 7. View Stats Command
-- User can view a summary dashboard for the active domain:
-  - Current score
-  - Total questions answered
-  - Correct vs. incorrect count and accuracy %
-  - Total time played across all sessions
-  - Current difficulty level
-
----
-
-### Out of Scope for MVP
+## Out of Scope for MVP
 
 - Multiple simultaneous domains in a single session
 - Score or history reset
@@ -248,15 +124,3 @@ Since `brain-break` is an open-source, team-shared tool (not a commercial produc
 - Web UI or any non-terminal interface
 - User accounts or cloud sync
 - Any feature not listed above
-
----
-
-### MVP Success Criteria
-
-The MVP is considered successful when:
-1. A developer can clone the repo, add their domains to the config file, select one at startup, and answer their first question in under 5 minutes
-2. Questions never repeat within a domain across sessions
-3. Difficulty visibly adapts — users notice questions getting harder as they improve
-4. Score and history persist correctly between sessions and across domain switches
-5. Viewing history and stats works reliably with accurate data
-6. At least 50% of the team installs and uses it within 30 days
