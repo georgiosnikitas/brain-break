@@ -1,0 +1,235 @@
+import { describe, it, expect } from 'vitest'
+import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema } from './schema.js'
+
+const validMeta = {
+  score: 100,
+  difficultyLevel: 3,
+  streakCount: 2,
+  streakType: 'correct' as const,
+  totalTimePlayedMs: 45000,
+  createdAt: '2026-03-07T10:00:00.000Z',
+  lastSessionAt: '2026-03-07T12:00:00.000Z',
+  archived: false,
+}
+
+const validHistory = [
+  {
+    question: 'What is 2+2?',
+    options: { A: '3', B: '4', C: '5', D: '6' },
+    correctAnswer: 'B' as const,
+    userAnswer: 'B' as const,
+    isCorrect: true,
+    answeredAt: '2026-03-07T12:01:00.000Z',
+    timeTakenMs: 3200,
+    speedTier: 'fast' as const,
+    scoreDelta: 60,
+    difficultyLevel: 3,
+  },
+]
+
+describe('DomainFileSchema', () => {
+  it('accepts a valid complete domain object', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: ['abc123'],
+      history: validHistory,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts empty hashes and history arrays', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts null lastSessionAt', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, lastSessionAt: null },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects missing meta.score', () => {
+    const { score: _score, ...metaWithoutScore } = validMeta
+    const result = DomainFileSchema.safeParse({
+      meta: metaWithoutScore,
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects invalid streakType value', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, streakType: 'winning' },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects invalid correctAnswer value (not A–D)', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], correctAnswer: 'E' }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects invalid speedTier value', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], speedTier: 'turbo' }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects difficultyLevel below 1 in meta', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, difficultyLevel: 0 },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects difficultyLevel above 5 in meta', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, difficultyLevel: 6 },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects difficultyLevel below 1 in history entry', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], difficultyLevel: 0 }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects difficultyLevel above 5 in history entry', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], difficultyLevel: 6 }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty question string', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], question: '' }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects non-datetime createdAt string', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, createdAt: 'not-a-date' },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects NaN score', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, score: NaN },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects Infinity score', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, score: Infinity },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('AnswerOptionSchema', () => {
+  it('accepts A, B, C, D', () => {
+    for (const v of ['A', 'B', 'C', 'D']) {
+      expect(AnswerOptionSchema.safeParse(v).success).toBe(true)
+    }
+  })
+
+  it('rejects E and lowercase a', () => {
+    expect(AnswerOptionSchema.safeParse('E').success).toBe(false)
+    expect(AnswerOptionSchema.safeParse('a').success).toBe(false)
+  })
+})
+
+describe('SpeedTierSchema', () => {
+  it('accepts fast, normal, slow', () => {
+    for (const v of ['fast', 'normal', 'slow']) {
+      expect(SpeedTierSchema.safeParse(v).success).toBe(true)
+    }
+  })
+
+  it('rejects unknown tiers', () => {
+    expect(SpeedTierSchema.safeParse('turbo').success).toBe(false)
+    expect(SpeedTierSchema.safeParse('').success).toBe(false)
+  })
+})
+
+describe('defaultDomainFile', () => {
+  it('returns a valid DomainFile passing schema validation', () => {
+    const d = defaultDomainFile()
+    expect(() => DomainFileSchema.parse(d)).not.toThrow()
+  })
+
+  it('has score: 0', () => {
+    expect(defaultDomainFile().meta.score).toBe(0)
+  })
+
+  it('has difficultyLevel: 2', () => {
+    expect(defaultDomainFile().meta.difficultyLevel).toBe(2)
+  })
+
+  it('has streakCount: 0', () => {
+    expect(defaultDomainFile().meta.streakCount).toBe(0)
+  })
+
+  it('has streakType: "none"', () => {
+    expect(defaultDomainFile().meta.streakType).toBe('none')
+  })
+
+  it('has totalTimePlayedMs: 0', () => {
+    expect(defaultDomainFile().meta.totalTimePlayedMs).toBe(0)
+  })
+
+  it('has lastSessionAt: null', () => {
+    expect(defaultDomainFile().meta.lastSessionAt).toBeNull()
+  })
+
+  it('has archived: false', () => {
+    expect(defaultDomainFile().meta.archived).toBe(false)
+  })
+
+  it('has empty hashes array', () => {
+    expect(defaultDomainFile().hashes).toEqual([])
+  })
+
+  it('has empty history array', () => {
+    expect(defaultDomainFile().history).toEqual([])
+  })
+})
