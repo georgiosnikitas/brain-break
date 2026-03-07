@@ -330,9 +330,6 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 ### NFR 4 — Startup Time
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
-### NFR 5 — Local File Security
-All files written to `~/.brain-break/` must be created with **owner read/write only** permissions (`0o600`). No world-readable history or score files.
-
 ---
 
 ## Open Questions
