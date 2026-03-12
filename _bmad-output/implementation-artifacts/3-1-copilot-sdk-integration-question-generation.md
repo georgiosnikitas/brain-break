@@ -71,7 +71,7 @@ Task 1 (prompts.ts) and Task 2 (client.ts) were already implemented. Task 3 (tes
 
 ### Completion Notes
 - All 13 tests in `ai/client.test.ts` pass (success, parse error ×2, network error ×2, auth error ×3, dedup retry, no-retry, disconnect ×2)
-- Full suite: 140/140 tests passing across 12 files
+- Full suite: 248/248 tests passing across 16 files
 
 ## File List
 
@@ -84,3 +84,7 @@ Task 1 (prompts.ts) and Task 2 (client.ts) were already implemented. Task 3 (tes
 
 - 2026-03-07: Story created — George
 - 2026-03-08: Story completed — fixed SDK mock (added `approveAll` export), removed debug tests, all 13 tests green, 140/140 full suite
+- 2026-03-12: Code review 2 fixes — Amelia
+  - ✅ Fixed [Medium]: `getClient()` now assigns `_client` only after `start()` succeeds — prevents poisoned singleton on start failure
+  - ✅ Fixed [Low]: Added `"unauthenticated"` auth-error test — covers the 4th keyword in `isAuthError`
+  - ✅ Updated suite count: 249/249

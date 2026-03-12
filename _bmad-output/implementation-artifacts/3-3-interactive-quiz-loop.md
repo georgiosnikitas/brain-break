@@ -73,7 +73,7 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 Implement quiz.ts (Task 1) then quiz.test.ts (Task 2), run full test suite, verify all pass.
 
 ### Completion Notes
-- All 14 tests in `src/screens/quiz.test.ts` pass; full suite: 188/188 tests across 14 files
+- All 14 tests in `src/screens/quiz.test.ts` pass; full suite: 248/248 tests across 16 files
 - `showQuiz` reads domain at entry, accumulates state in-memory across iterations, writes atomically after each answer
 - `QuestionRecord.difficultyLevel` captures the level at question-ask time (before `applyAnswer` may promote/demote)
 - `meta.lastSessionAt` set to `new Date().toISOString()` after each answer, merged into `updatedMeta` spread

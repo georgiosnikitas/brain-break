@@ -34,7 +34,7 @@ So that I can review past questions, see where I went wrong, and track my learni
   - [x] 2.1 Import `select` from `@inquirer/prompts`, `ExitPromptError` from `@inquirer/core`, `readDomain` from `domain/store.js`, `defaultDomainFile`, `QuestionRecord` from `domain/schema.js`, format helpers, and `router`
   - [x] 2.2 Export `PAGE_SIZE = 10` constant
   - [x] 2.3 Export `formatTimestamp(iso: string): string` — formats ISO string as locale date/time string
-  - [x] 2.4 Export `buildPageChoices(page: number, totalPages: number, hasEntries: boolean)` — returns nav choices array (Next/Previous/Back as appropriate)
+  - [x] 2.4 Export `buildPageChoices(page: number, totalPages: number)` — returns nav choices array (Next/Previous/Back as appropriate; `hasEntries` param dropped — not needed since empty history is handled before reaching pagination)
   - [x] 2.5 Export `showHistory(domainSlug: string): Promise<void>`; read domain with `readDomain()`; warn and use `defaultDomainFile()` if read fails
   - [x] 2.6 Handle empty history: display "No questions answered yet" message, show "Back" select prompt, call `router.showHome()` and return
   - [x] 2.7 Reverse history array for most-recent-first display; compute `totalPages = Math.ceil(history.length / PAGE_SIZE)`; loop with `page = 0`

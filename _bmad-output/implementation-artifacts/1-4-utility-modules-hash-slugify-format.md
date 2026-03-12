@@ -16,14 +16,14 @@ So that SHA-256 hashing, domain name slugification, and shared terminal formatti
 
 ## Acceptance Criteria
 
-- [ ] `hashQuestion(text)` returns the SHA-256 hex digest of the lowercased, whitespace-stripped input
-- [ ] Calling `hashQuestion` twice with the same normalized input returns the same hash
-- [ ] `slugify("Spring Boot microservices")` returns `"spring-boot-microservices"`
-- [ ] Special characters and consecutive spaces/hyphens are collapsed to single hyphens
-- [ ] Leading/trailing hyphens are removed from slugify output
-- [ ] `utils/format.ts` exports chalk-based helpers usable in all screen modules
-- [ ] All three utils have co-located `*.test.ts` files
-- [ ] `npm test` passes all utility tests
+- [x] `hashQuestion(text)` returns the SHA-256 hex digest of the lowercased, whitespace-stripped input
+- [x] Calling `hashQuestion` twice with the same normalized input returns the same hash
+- [x] `slugify("Spring Boot microservices")` returns `"spring-boot-microservices"`
+- [x] Special characters and consecutive spaces/hyphens are collapsed to single hyphens
+- [x] Leading/trailing hyphens are removed from slugify output
+- [x] `utils/format.ts` exports chalk-based helpers usable in all screen modules
+- [x] All three utils have co-located `*.test.ts` files
+- [x] `npm test` passes all utility tests
 
 ## Tasks
 

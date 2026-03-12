@@ -64,7 +64,7 @@ Implement scoring.ts (Task 1) then scoring.test.ts (Task 2), run tests, verify a
 
 ### Completion Notes
 - All 34 tests in `domain/scoring.test.ts` pass (30 original + 4 added during code review)
-- Full suite: 174/174 tests passing across 13 files
+- Full suite: 248/248 tests passing across 16 files
 - `applyAnswer` is pure/immutable — spreads input meta, never mutates
 - `getSpeedTier` exported as a standalone helper for use in quiz loop (Story 3.3)
 - `speedTier` included in `ApplyAnswerResult` (needed by quiz loop for feedback panel and QuestionRecord)

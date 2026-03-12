@@ -1,6 +1,12 @@
-# Story 1.1: Project Scaffold & TypeScript Configuration
-
+---
+Story: 1.1
+Title: Project Scaffold & TypeScript Configuration
 Status: done
+Epic: 1 — Foundation & Infrastructure
+Created: 2026-03-07
+---
+
+# Story 1.1: Project Scaffold & TypeScript Configuration
 
 ## Story
 

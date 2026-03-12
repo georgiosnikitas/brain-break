@@ -193,4 +193,14 @@ describe('generateQuestion', () => {
 
     expect(mockDisconnect).toHaveBeenCalled()
   })
+
+  it('returns AUTH error when error message contains "unauthenticated"', async () => {
+    mockCreateSession.mockRejectedValueOnce(new Error('unauthenticated request'))
+
+    const result = await generateQuestion('typescript', 2, new Set())
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH)
+  })
 })

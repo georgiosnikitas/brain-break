@@ -22,8 +22,9 @@ let _client: CopilotClient | null = null
 
 async function getClient(): Promise<CopilotClient> {
   if (_client) return _client
-  _client = new CopilotClient()
-  await _client.start()
+  const client = new CopilotClient()
+  await client.start()
+  _client = client
   return _client
 }
 
