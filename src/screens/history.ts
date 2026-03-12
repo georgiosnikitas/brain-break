@@ -45,29 +45,7 @@ function displayEntry(record: QuestionRecord, globalIndex: number): void {
   console.log(dim(`  Answered: ${formatTimestamp(record.answeredAt)}`))
 }
 
-export async function showHistory(domainSlug: string): Promise<void> {
-  const readResult = await readDomain(domainSlug)
-  if (!readResult.ok) {
-    console.warn(warn(readResult.error))
-  }
-  const domain = readResult.ok ? readResult.data : defaultDomainFile()
-  const history = [...domain.history].reverse()
-
-  if (history.length === 0) {
-    console.log(header('Question History'))
-    console.log(dim('No questions answered yet'))
-    try {
-      await select<NavAction>({
-        message: 'Navigation',
-        choices: [{ name: 'Back', value: 'back' }],
-      })
-    } catch (err) {
-      if (!(err instanceof ExitPromptError)) throw err
-    }
-    await router.showHome()
-    return
-  }
-
+async function navigateHistory(history: QuestionRecord[]): Promise<void> {
   const totalPages = Math.ceil(history.length / PAGE_SIZE)
   let page = 0
 
@@ -103,4 +81,30 @@ export async function showHistory(domainSlug: string): Promise<void> {
       return
     }
   }
+}
+
+export async function showHistory(domainSlug: string): Promise<void> {
+  const readResult = await readDomain(domainSlug)
+  if (!readResult.ok) {
+    console.warn(warn(readResult.error))
+  }
+  const domain = readResult.ok ? readResult.data : defaultDomainFile()
+  const history = [...domain.history].reverse()
+
+  if (history.length === 0) {
+    console.log(header('Question History'))
+    console.log(dim('No questions answered yet'))
+    try {
+      await select<NavAction>({
+        message: 'Navigation',
+        choices: [{ name: 'Back', value: 'back' }],
+      })
+    } catch (err) {
+      if (!(err instanceof ExitPromptError)) throw err
+    }
+    await router.showHome()
+    return
+  }
+
+  await navigateHistory(history)
 }

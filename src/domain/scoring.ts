@@ -34,6 +34,17 @@ export function getSpeedTier(timeTakenMs: number, speedThresholds: SpeedThreshol
   return 'normal'
 }
 
+function updateStreak(
+  meta: DomainMeta,
+  isCorrect: boolean,
+): { streakCount: number; streakType: DomainMeta['streakType'] } {
+  const expectedStreakType = isCorrect ? 'correct' : 'incorrect'
+  if (meta.streakType === expectedStreakType) {
+    return { streakCount: meta.streakCount + 1, streakType: meta.streakType }
+  }
+  return { streakCount: 1, streakType: expectedStreakType }
+}
+
 // ---------------------------------------------------------------------------
 // applyAnswer — pure, side-effect-free
 // ---------------------------------------------------------------------------
@@ -47,26 +58,13 @@ export function applyAnswer(
 
   // Score delta
   const basePts = BASE_POINTS[meta.difficultyLevel] ?? 30
-  let multiplier: number
-  if (isCorrect) {
-    multiplier = speedTier === 'fast' ? 2 : speedTier === 'normal' ? 1 : 0.5
-  } else {
-    multiplier = speedTier === 'fast' ? -1 : speedTier === 'normal' ? -1.5 : -2
-  }
+  const correctMultipliers: Record<SpeedTier, number> = { fast: 2, normal: 1, slow: 0.5 }
+  const incorrectMultipliers: Record<SpeedTier, number> = { fast: -1, normal: -1.5, slow: -2 }
+  const multiplier = isCorrect ? correctMultipliers[speedTier] : incorrectMultipliers[speedTier]
   const scoreDelta = Math.round(basePts * multiplier)
 
   // Streak update
-  const expectedStreakType = isCorrect ? 'correct' : 'incorrect'
-  let streakCount: number
-  let streakType: DomainMeta['streakType']
-
-  if (meta.streakType === expectedStreakType) {
-    streakCount = meta.streakCount + 1
-    streakType = meta.streakType
-  } else {
-    streakCount = 1
-    streakType = expectedStreakType
-  }
+  let { streakCount, streakType } = updateStreak(meta, isCorrect)
 
   // Difficulty update on streak of 3
   let difficultyLevel = meta.difficultyLevel

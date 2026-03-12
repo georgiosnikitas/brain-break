@@ -269,21 +269,20 @@ describe('showStats — empty history', () => {
 // ---------------------------------------------------------------------------
 // showStats — with history
 // ---------------------------------------------------------------------------
-describe('showStats — with history', () => {
-  function makeDomainWithHistory(records: QuestionRecord[]) {
-    return {
-      ...defaultDomainFile(),
-      meta: {
-        ...defaultDomainFile().meta,
-        score: 200,
-        difficultyLevel: 3,
-        totalTimePlayedMs: 3_723_000,
-      },
-      history: records,
-    }
+function makeDomainWithHistory(records: QuestionRecord[]) {
+  return {
+    ...defaultDomainFile(),
+    meta: {
+      ...defaultDomainFile().meta,
+      score: 200,
+      difficultyLevel: 3,
+      totalTimePlayedMs: 3_723_000,
+    },
+    history: records,
   }
+}
 
-  it('displays correct, incorrect counts and accuracy', async () => {
+describe('showStats — with history', () => {  it('displays correct, incorrect counts and accuracy', async () => {
     const records = [
       makeRecord({ isCorrect: true }),
       makeRecord({ isCorrect: true }),

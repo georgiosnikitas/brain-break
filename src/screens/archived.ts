@@ -3,6 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, writeDomain, type DomainListEntry } from '../domain/store.js'
 import { dim, bold, warn, error as errorFmt } from '../utils/format.js'
 import type { HomeEntry } from './home.js'
+import type { Result } from '../domain/schema.js'
 
 export type ArchivedAction = { action: 'unarchive'; slug: string } | { action: 'back' }
 
@@ -20,8 +21,9 @@ export function buildArchivedChoices(
   const choices: Array<{ name: string; value: ArchivedAction } | Separator> = []
 
   for (const entry of entries) {
+    const details = dim(`score: ${entry.score} · ${entry.totalQuestions} questions`)
     choices.push({
-      name: `${bold(entry.slug)}  ${dim(`score: ${entry.score} · ${entry.totalQuestions} questions`)}  → Unarchive`,
+      name: `${bold(entry.slug)}  ${details}  → Unarchive`,
       value: { action: 'unarchive', slug: entry.slug },
     })
   }
@@ -35,27 +37,43 @@ export function buildArchivedChoices(
   return choices
 }
 
+async function loadArchivedEntries(
+  listResult: Awaited<Result<DomainListEntry[]>>,
+): Promise<HomeEntry[]> {
+  if (!listResult.ok) {
+    console.error(errorFmt(`Failed to load archived domains: ${listResult.error}`))
+    return []
+  }
+  const archived = filterArchivedDomains(listResult.data)
+  return Promise.all(
+    archived.map(async (entry) => {
+      const r = await readDomain(entry.slug)
+      return {
+        slug: entry.slug,
+        score: r.ok ? r.data.meta.score : entry.meta.score,
+        totalQuestions: r.ok ? r.data.history.length : 0,
+      }
+    }),
+  )
+}
+
+async function handleUnarchiveAction(slug: string): Promise<void> {
+  const result = await readDomain(slug)
+  if (!result.ok) {
+    console.warn(warn(result.error))
+    return
+  }
+  const updated = { ...result.data, meta: { ...result.data.meta, archived: false } }
+  const writeResult = await writeDomain(slug, updated)
+  if (!writeResult.ok) {
+    console.error(errorFmt(`Failed to unarchive domain: ${writeResult.error}`))
+  }
+}
+
 export async function showArchivedScreen(): Promise<void> {
   while (true) {
     const listResult = await listDomains()
-
-    let archivedEntries: HomeEntry[] = []
-
-    if (listResult.ok) {
-      const archived = filterArchivedDomains(listResult.data)
-      archivedEntries = await Promise.all(
-        archived.map(async (entry) => {
-          const r = await readDomain(entry.slug)
-          return {
-            slug: entry.slug,
-            score: r.ok ? r.data.meta.score : entry.meta.score,
-            totalQuestions: r.ok ? r.data.history.length : 0,
-          }
-        }),
-      )
-    } else {
-      console.error(errorFmt(`Failed to load archived domains: ${listResult.error}`))
-    }
+    const archivedEntries = await loadArchivedEntries(listResult)
 
     let answer: ArchivedAction
     try {
@@ -70,19 +88,7 @@ export async function showArchivedScreen(): Promise<void> {
     }
 
     if (answer.action === 'back') return
-
-    if (answer.action === 'unarchive') {
-      const result = await readDomain(answer.slug)
-      if (!result.ok) {
-        console.warn(warn(result.error))
-        continue
-      }
-      const updated = { ...result.data, meta: { ...result.data.meta, archived: false } }
-      const writeResult = await writeDomain(answer.slug, updated)
-      if (!writeResult.ok) {
-        console.error(errorFmt(`Failed to unarchive domain: ${writeResult.error}`))
-      }
-      // loop re-renders with refreshed list
-    }
+    if (answer.action === 'unarchive') await handleUnarchiveAction(answer.slug)
+    // loop re-renders with refreshed list
   }
 }

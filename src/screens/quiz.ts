@@ -1,13 +1,58 @@
 import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
-import { generateQuestion, AI_ERRORS } from '../ai/client.js'
+import { generateQuestion, AI_ERRORS, type Question } from '../ai/client.js'
 import { readDomain, writeDomain } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
-import { defaultDomainFile, type QuestionRecord, type DomainFile, type AnswerOption } from '../domain/schema.js'
+import { defaultDomainFile, type QuestionRecord, type DomainFile, type AnswerOption, type SpeedTier } from '../domain/schema.js'
 import { formatSpeedTier, formatScoreDelta, formatDuration, success, error as errorFmt, warn, bold } from '../utils/format.js'
 import * as router from '../router.js'
+
+async function askQuestion(
+  question: Question,
+): Promise<{ userAnswer: AnswerOption; timeTakenMs: number }> {
+  const startTime = Date.now()
+  const userAnswer = await select<AnswerOption>({
+    message: question.question,
+    choices: [
+      { name: `A) ${question.options.A}`, value: 'A' as const },
+      { name: `B) ${question.options.B}`, value: 'B' as const },
+      { name: `C) ${question.options.C}`, value: 'C' as const },
+      { name: `D) ${question.options.D}`, value: 'D' as const },
+    ],
+  })
+  const timeTakenMs = Date.now() - startTime
+  return { userAnswer, timeTakenMs }
+}
+
+function showFeedback(
+  isCorrect: boolean,
+  question: Question,
+  timeTakenMs: number,
+  speedTier: SpeedTier,
+  scoreDelta: number,
+): void {
+  if (isCorrect) {
+    console.log(success('✓ Correct!'))
+  } else {
+    console.log(errorFmt('✗ Incorrect'))
+    const correctText = `${question.correctAnswer}) ${question.options[question.correctAnswer]}`
+    console.log(`Correct answer: ${bold(correctText)}`)
+  }
+  console.log(`Time: ${formatDuration(timeTakenMs)} | Speed: ${formatSpeedTier(speedTier)}`)
+  console.log(`Score: ${formatScoreDelta(scoreDelta)}`)
+}
+
+async function askNextAction(): Promise<'next' | 'exit'> {
+  return select<'next' | 'exit'>({
+    message: 'Next action:',
+    choices: [
+      { name: 'Next question', value: 'next' as const },
+      { name: 'Exit quiz', value: 'exit' as const },
+    ],
+  })
+}
 
 export async function showQuiz(domainSlug: string): Promise<void> {
   const readResult = await readDomain(domainSlug)
@@ -33,19 +78,10 @@ export async function showQuiz(domainSlug: string): Promise<void> {
 
     const question = questionResult.data
 
-    // Silent timer starts immediately before the answer prompt is displayed
-    const startTime = Date.now()
     let userAnswer: AnswerOption
+    let timeTakenMs: number
     try {
-      userAnswer = await select<AnswerOption>({
-        message: question.question,
-        choices: [
-          { name: `A) ${question.options.A}`, value: 'A' as const },
-          { name: `B) ${question.options.B}`, value: 'B' as const },
-          { name: `C) ${question.options.C}`, value: 'C' as const },
-          { name: `D) ${question.options.D}`, value: 'D' as const },
-        ],
-      })
+      ;({ userAnswer, timeTakenMs } = await askQuestion(question))
     } catch (err) {
       if (err instanceof ExitPromptError) {
         await router.showHome()
@@ -53,7 +89,6 @@ export async function showQuiz(domainSlug: string): Promise<void> {
       }
       throw err
     }
-    const timeTakenMs = Date.now() - startTime
 
     const isCorrect = userAnswer === question.correctAnswer
     const { updatedMeta, scoreDelta, speedTier } = applyAnswer(
@@ -91,26 +126,12 @@ export async function showQuiz(domainSlug: string): Promise<void> {
       console.error(errorFmt(`Failed to save progress: ${writeResult.error}`))
     }
 
-    // Feedback panel
-    if (isCorrect) {
-      console.log(success('✓ Correct!'))
-    } else {
-      console.log(errorFmt('✗ Incorrect'))
-      console.log(`Correct answer: ${bold(`${question.correctAnswer}) ${question.options[question.correctAnswer]}`)}`)
-    }
-    console.log(`Time: ${formatDuration(timeTakenMs)} | Speed: ${formatSpeedTier(speedTier)}`)
-    console.log(`Score: ${formatScoreDelta(scoreDelta)}`)
+    showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta)
 
     // Exit option available after every answer
     let nextAction: 'next' | 'exit'
     try {
-      nextAction = await select<'next' | 'exit'>({
-        message: 'Next action:',
-        choices: [
-          { name: 'Next question', value: 'next' as const },
-          { name: 'Exit quiz', value: 'exit' as const },
-        ],
-      })
+      nextAction = await askNextAction()
     } catch (err) {
       if (err instanceof ExitPromptError) {
         await router.showHome()

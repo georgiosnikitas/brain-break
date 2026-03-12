@@ -4,7 +4,7 @@ import { generateQuestion, AI_ERRORS, _setClient } from './client.js'
 import { hashQuestion } from '../utils/hash.js'
 
 // Prevent the real SDK (which has a transitive CJS/ESM issue) from loading
-vi.mock('@github/copilot-sdk', () => ({ CopilotClient: class {}, approveAll: vi.fn() }))
+vi.mock('@github/copilot-sdk', () => ({ CopilotClient: class { constructor() {} }, approveAll: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Mock session fns

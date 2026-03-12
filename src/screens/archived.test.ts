@@ -20,7 +20,7 @@ import type { DomainMeta } from '../domain/schema.js'
 const mockSelect = vi.fn()
 vi.mock('@inquirer/prompts', () => ({
   select: (...args: unknown[]) => mockSelect(...args),
-  Separator: class Separator {},
+  Separator: class Separator { constructor() {} },
 }))
 
 // ---------------------------------------------------------------------------
@@ -93,7 +93,7 @@ describe('buildArchivedChoices', () => {
     const slugs = unarchives.map((c) => (c.value as { action: 'unarchive'; slug: string }).slug)
     expect(slugs).toContain('typescript')
     expect(slugs).toContain('rust')
-    expect(actions[actions.length - 1].value.action).toBe('back')
+    expect(actions.at(-1)!.value.action).toBe('back')
   })
 
   it('shows score and question count in unarchive choice name', () => {

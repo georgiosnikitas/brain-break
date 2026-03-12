@@ -101,8 +101,8 @@ export async function showStats(domainSlug: string): Promise<void> {
     console.log(bold('Return streak:') + ' No data yet')
   } else {
     const trend = computeScoreTrend(history)
-    const trendLabel =
-      trend === 'growing' ? 'Growing 📈' : trend === 'declining' ? 'Declining 📉' : 'Flat ➡️'
+    const trendLabels = { growing: 'Growing 📈', declining: 'Declining 📉', flat: 'Flat ➡️' }
+    const trendLabel = trendLabels[trend]
     const daySinceFirst = daysSinceFirstSession(history)
     const streak = computeReturnStreak(history)
 
@@ -125,7 +125,11 @@ export async function showStats(domainSlug: string): Promise<void> {
       choices: [{ name: 'Back', value: 'back' as const }],
     })
   } catch (err) {
-    if (!(err instanceof ExitPromptError)) throw err
+    if (err instanceof ExitPromptError) {
+      await router.showHome()
+      return
+    }
+    throw err
   }
   await router.showHome()
 }

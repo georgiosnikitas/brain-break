@@ -3,6 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, type DomainListEntry } from '../domain/store.js'
 import { dim, bold, error as errorFmt } from '../utils/format.js'
 import * as router from '../router.js'
+import type { Result } from '../domain/schema.js'
 
 export type HomeEntry = { slug: string; score: number; totalQuestions: number }
 
@@ -29,58 +30,75 @@ export function buildHomeChoices(
   const choices: Array<{ name: string; value: HomeAction } | Separator> = []
 
   for (const entry of entries) {
-    choices.push({
-      name: `${bold(entry.slug)}  ${dim(`score: ${entry.score} · ${entry.totalQuestions} questions`)}`,
-      value: { action: 'select', slug: entry.slug },
-    })
-    choices.push({
-      name: `  Archive ${entry.slug}`,
-      value: { action: 'archive', slug: entry.slug },
-    })
-    choices.push({
-      name: `  View History ${entry.slug}`,
-      value: { action: 'history', slug: entry.slug },
-    })
-    choices.push({
-      name: `  View Stats ${entry.slug}`,
-      value: { action: 'stats', slug: entry.slug },
-    })
+    const details = dim(`score: ${entry.score} · ${entry.totalQuestions} questions`)
+    choices.push(
+      {
+        name: `${bold(entry.slug)}  ${details}`,
+        value: { action: 'select', slug: entry.slug },
+      },
+      {
+        name: `  Archive ${entry.slug}`,
+        value: { action: 'archive', slug: entry.slug },
+      },
+      {
+        name: `  View History ${entry.slug}`,
+        value: { action: 'history', slug: entry.slug },
+      },
+      {
+        name: `  View Stats ${entry.slug}`,
+        value: { action: 'stats', slug: entry.slug },
+      },
+    )
   }
 
   if (entries.length > 0) {
     choices.push(new Separator())
   }
 
-  choices.push({ name: 'Create new domain', value: { action: 'create' } })
-  choices.push({ name: 'View archived domains', value: { action: 'archived' } })
-  choices.push(new Separator())
-  choices.push({ name: 'Exit', value: { action: 'exit' } })
+  choices.push(
+    { name: 'Create new domain', value: { action: 'create' } },
+    { name: 'View archived domains', value: { action: 'archived' } },
+    new Separator(),
+    { name: 'Exit', value: { action: 'exit' } },
+  )
 
   return choices
+}
+
+async function loadHomeEntries(
+  listResult: Awaited<Result<DomainListEntry[]>>,
+): Promise<HomeEntry[]> {
+  if (listResult.ok) {
+    const activeEntries = filterActiveDomains(listResult.data)
+    return Promise.all(
+      activeEntries.map(async (entry) => {
+        const r = await readDomain(entry.slug)
+        return {
+          slug: entry.slug,
+          score: r.ok ? r.data.meta.score : entry.meta.score,
+          totalQuestions: r.ok ? r.data.history.length : 0,
+        }
+      }),
+    )
+  }
+  console.error(errorFmt(`Failed to load domains: ${listResult.error}`))
+  return []
+}
+
+async function handleHomeAction(answer: HomeAction): Promise<void> {
+  if (answer.action === 'exit') process.exit(0)
+  if (answer.action === 'select') await router.showQuiz(answer.slug)
+  if (answer.action === 'archive') await router.archiveDomain(answer.slug)
+  if (answer.action === 'history') await router.showHistory(answer.slug)
+  if (answer.action === 'stats') await router.showStats(answer.slug)
+  if (answer.action === 'create') await router.showCreateDomain()
+  if (answer.action === 'archived') await router.showArchived()
 }
 
 export async function showHomeScreen(): Promise<void> {
   while (true) {
     const listResult = await listDomains()
-
-    let homeEntries: HomeEntry[] = []
-
-    if (!listResult.ok) {
-      console.error(errorFmt(`Failed to load domains: ${listResult.error}`))
-    } else {
-      const activeEntries = filterActiveDomains(listResult.data)
-
-      homeEntries = await Promise.all(
-        activeEntries.map(async (entry) => {
-          const r = await readDomain(entry.slug)
-          return {
-            slug: entry.slug,
-            score: r.ok ? r.data.meta.score : entry.meta.score,
-            totalQuestions: r.ok ? r.data.history.length : 0,
-          }
-        }),
-      )
-    }
+    const homeEntries = await loadHomeEntries(listResult)
 
     let answer: HomeAction
     try {
@@ -94,12 +112,6 @@ export async function showHomeScreen(): Promise<void> {
       throw err
     }
 
-    if (answer.action === 'exit') process.exit(0)
-    if (answer.action === 'select') await router.showQuiz(answer.slug)
-    if (answer.action === 'archive') await router.archiveDomain(answer.slug)
-    if (answer.action === 'history') await router.showHistory(answer.slug)
-    if (answer.action === 'stats') await router.showStats(answer.slug)
-    if (answer.action === 'create') await router.showCreateDomain()
-    if (answer.action === 'archived') await router.showArchived()
+    await handleHomeAction(answer)
   }
 }
