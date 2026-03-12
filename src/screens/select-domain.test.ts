@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { isReturningUser, isScoreTrendingUp, showSelectDomainScreen } from './select-domain.js'
@@ -13,10 +13,7 @@ vi.mock('./quiz.js', () => ({
   showQuiz: vi.fn().mockResolvedValue(undefined),
 }))
 
-async function getShowQuizMock() {
-  const { showQuiz } = await import('./quiz.js')
-  return showQuiz as ReturnType<typeof vi.fn>
-}
+let showQuizMock: ReturnType<typeof vi.fn>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,8 +106,9 @@ let testDir: string
 beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'brain-break-select-'))
   _setDataDir(testDir)
-  const mock = await getShowQuizMock()
-  mock.mockClear()
+  const { showQuiz } = await import('./quiz.js')
+  showQuizMock = showQuiz as ReturnType<typeof vi.fn>
+  showQuizMock.mockClear()
 })
 
 afterEach(async () => {
@@ -121,19 +119,16 @@ afterEach(async () => {
 describe('showSelectDomainScreen', () => {
   it('calls the quiz stub after loading a valid domain', async () => {
     await writeDomain('typescript', defaultDomainFile())
-    const showQuiz = await getShowQuizMock()
 
     await showSelectDomainScreen('typescript')
 
-    expect(showQuiz).toHaveBeenCalledTimes(1)
-    expect(showQuiz).toHaveBeenCalledWith('typescript')
+    expect(showQuizMock).toHaveBeenCalledTimes(1)
+    expect(showQuizMock).toHaveBeenCalledWith('typescript')
   })
 
   it('prints warning, resets file, and proceeds to quiz when domain is corrupted', async () => {
     // Write deliberately corrupted JSON
-    const { writeFile } = await import('node:fs/promises')
     await writeFile(join(testDir, 'broken.json'), 'NOT JSON {{{{')
-    const showQuiz = await getShowQuizMock()
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showSelectDomainScreen('broken')
@@ -147,7 +142,7 @@ describe('showSelectDomainScreen', () => {
     expect(after.data.meta.score).toBe(0)
 
     // Must still proceed to quiz (AC4)
-    expect(showQuiz).toHaveBeenCalledWith('broken')
+    expect(showQuizMock).toHaveBeenCalledWith('broken')
   })
 
   it('prints a returning-user message when lastSessionAt is within 7 days', async () => {
@@ -188,5 +183,7 @@ describe('showSelectDomainScreen', () => {
     expect(warnSpy).not.toHaveBeenCalled()
     logSpy.mockRestore()
     warnSpy.mockRestore()
+
+    expect(showQuizMock).toHaveBeenCalledWith('fresh')
   })
 })

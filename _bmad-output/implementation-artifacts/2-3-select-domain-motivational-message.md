@@ -1,7 +1,7 @@
 ---
 Story: 2.3
 Title: Select Domain & Motivational Message
-Status: review
+Status: done
 Epic: 2 — Domain Management
 Created: 2026-03-07
 ---
@@ -66,13 +66,19 @@ So that I feel acknowledged and encouraged to keep going.
 _No issues encountered_
 
 ### Completion Notes
-All tasks/subtasks complete. 16 tests total. Full suite 112/112 passes. `tsc --noEmit` clean.
+All tasks/subtasks complete. 16 tests total. Full suite 247/247 passes. `tsc --noEmit` clean.
 
 Code review findings addressed:
 - ✅ Fixed [Medium]: Corrupted-domain test now asserts `showQuiz` was called (AC4 fully covered)
 - ✅ Fixed [Medium]: `showQuiz` mock cleared in `beforeEach`; first test uses `toHaveBeenCalledTimes(1)` for isolation
 - ✅ Fixed [Low]: Motivational message tests assert message content (`'welcome back'`, `'trending'`)
 - ✅ Fixed [Low]: Added boundary test — exactly 7 days returns false (`<` not `<=`)
+
+Code review 2 findings addressed:
+- ✅ Fixed [Medium]: Updated suite count from 112 → 247
+- ✅ Fixed [Low]: Moved dynamic `import('node:fs/promises')` to top-level import
+- ✅ Fixed [Low]: Fresh-domain test now asserts `showQuiz` was called (guards against silent failures)
+- ✅ Fixed [Low]: Replaced `getShowQuizMock()` helper with module-level `showQuizMock` variable — single import, no repeated dynamic imports
 
 ## File List
 
