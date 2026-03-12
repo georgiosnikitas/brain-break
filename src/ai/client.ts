@@ -43,7 +43,15 @@ function isAuthError(err: unknown): boolean {
 }
 
 function stripJsonFences(text: string): string {
-  return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+  let result = text.trim()
+  if (result.startsWith('```')) {
+    const newlineIdx = result.indexOf('\n')
+    result = newlineIdx !== -1 ? result.slice(newlineIdx + 1) : result.slice(3)
+  }
+  if (result.endsWith('```')) {
+    result = result.slice(0, -3)
+  }
+  return result.trim()
 }
 
 function parseAndValidate(raw: string): Result<Question> {
