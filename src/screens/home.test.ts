@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { buildHomeChoices, filterActiveDomains, type HomeEntry, type HomeAction } from './home.js'
+
+// Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
+vi.mock('@github/copilot-sdk', () => ({ CopilotClient: class {}, approveAll: vi.fn() }))
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
 
