@@ -1,5 +1,7 @@
 # Brain Break
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_brain-break&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=georgiosnikitas_brain-break)
+
 Brain Break is an AI-powered terminal quiz app built with TypeScript and the GitHub Copilot SDK. It lets you create quiz domains, generate questions on demand, track score and difficulty over time, and review both question history and per-domain stats from a CLI interface.
 
 ## Features
