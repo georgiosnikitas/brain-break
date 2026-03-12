@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { ExitPromptError } from '@inquirer/core'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -208,5 +209,11 @@ describe('showArchivedScreen', () => {
     if (!after.ok) return
     expect(after.data.meta.archived).toBe(true)
     errorSpy.mockRestore()
+  })
+
+  it('returns cleanly on ExitPromptError', async () => {
+    mockSelect.mockRejectedValue(new ExitPromptError())
+    // Should not throw
+    await expect(showArchivedScreen()).resolves.toBeUndefined()
   })
 })
