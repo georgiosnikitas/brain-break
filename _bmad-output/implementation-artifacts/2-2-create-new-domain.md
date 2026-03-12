@@ -1,7 +1,7 @@
 ---
 Story: 2.2
 Title: Create New Domain
-Status: review
+Status: done
 Epic: 2 — Domain Management
 Created: 2026-03-07
 ---
@@ -62,7 +62,7 @@ Implemented `validateDomainName` as a pure exported function for testability. `s
 _No issues encountered_
 
 ### Completion Notes
-All 8 tasks/subtasks complete. 9 tests total (5 unit + 4 integration). Full test suite (96 tests) passes. `tsc --noEmit` clean.
+All 8 tasks/subtasks complete. 9 tests total (5 unit + 4 integration). Full test suite (247 tests) passes. `tsc --noEmit` clean.
 
 Code review findings addressed:
 - ✅ Fixed [High]: `listDomains()` failure now causes early return with error — prevents silent data loss / overwrite
@@ -70,6 +70,11 @@ Code review findings addressed:
 - ✅ Fixed [Medium]: Added `package-lock.json` to File List
 - ✅ Fixed [Low]: Warning output changed from `console.log` to `console.warn` for correct output channel
 - ✅ Fixed [Low]: Added test for `listDomains()` failure path (ENOTDIR → early return)
+
+Code review 2 findings addressed:
+- ✅ Fixed [Medium]: Tightened `validateDomainName` error assertions — now assert non-empty string (prevents empty-string false-positive)
+- ✅ Fixed [Low]: Replaced dynamic `import('../domain/store.js')` inside test bodies with top-level import
+- ✅ Fixed [Low]: Updated suite test count from 96 → 247
 
 ## File List
 

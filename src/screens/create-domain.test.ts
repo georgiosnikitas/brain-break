@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { validateDomainName, showCreateDomainScreen } from './create-domain.js'
-import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
+import { writeDomain, readDomain, listDomains, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
@@ -22,16 +22,19 @@ describe('validateDomainName', () => {
   it('returns error string for empty input', () => {
     const result = validateDomainName('')
     expect(typeof result).toBe('string')
+    expect(result as string).toBeTruthy()
   })
 
   it('returns error string for whitespace-only input', () => {
     const result = validateDomainName('   ')
     expect(typeof result).toBe('string')
+    expect(result as string).toBeTruthy()
   })
 
   it('returns error string when slug resolves to empty (e.g. "---")', () => {
     const result = validateDomainName('---')
     expect(typeof result).toBe('string')
+    expect(result as string).toBeTruthy()
   })
 
   it('returns true for a valid domain name', () => {
@@ -107,7 +110,6 @@ describe('showCreateDomainScreen', () => {
     warnSpy.mockRestore()
 
     // listDomains should still show exactly one entry (no duplicate written)
-    const { listDomains } = await import('../domain/store.js')
     const list = await listDomains()
     expect(list.ok).toBe(true)
     if (!list.ok) return
@@ -130,7 +132,6 @@ describe('showCreateDomainScreen', () => {
 
     // Restore real testDir and confirm no domain file was created
     _setDataDir(testDir)
-    const { listDomains } = await import('../domain/store.js')
     const list = await listDomains()
     expect(list.ok).toBe(true)
     if (!list.ok) return
