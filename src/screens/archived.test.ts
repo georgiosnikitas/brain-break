@@ -20,7 +20,7 @@ import type { DomainMeta } from '../domain/schema.js'
 const mockSelect = vi.fn()
 vi.mock('@inquirer/prompts', () => ({
   select: (...args: unknown[]) => mockSelect(...args),
-  Separator: class Separator { constructor() {} },
+  Separator: class Separator {},
 }))
 
 // ---------------------------------------------------------------------------

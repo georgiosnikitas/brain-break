@@ -46,7 +46,7 @@ function stripJsonFences(text: string): string {
   let result = text.trim()
   if (result.startsWith('```')) {
     const newlineIdx = result.indexOf('\n')
-    result = newlineIdx !== -1 ? result.slice(newlineIdx + 1) : result.slice(3)
+    result = newlineIdx === -1 ? result.slice(3) : result.slice(newlineIdx + 1)
   }
   if (result.endsWith('```')) {
     result = result.slice(0, -3)

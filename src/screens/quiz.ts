@@ -11,19 +11,24 @@ import * as router from '../router.js'
 
 async function askQuestion(
   question: Question,
-): Promise<{ userAnswer: AnswerOption; timeTakenMs: number }> {
+): Promise<{ userAnswer: AnswerOption; timeTakenMs: number } | null> {
   const startTime = Date.now()
-  const userAnswer = await select<AnswerOption>({
-    message: question.question,
-    choices: [
-      { name: `A) ${question.options.A}`, value: 'A' as const },
-      { name: `B) ${question.options.B}`, value: 'B' as const },
-      { name: `C) ${question.options.C}`, value: 'C' as const },
-      { name: `D) ${question.options.D}`, value: 'D' as const },
-    ],
-  })
-  const timeTakenMs = Date.now() - startTime
-  return { userAnswer, timeTakenMs }
+  try {
+    const userAnswer = await select<AnswerOption>({
+      message: question.question,
+      choices: [
+        { name: `A) ${question.options.A}`, value: 'A' as const },
+        { name: `B) ${question.options.B}`, value: 'B' as const },
+        { name: `C) ${question.options.C}`, value: 'C' as const },
+        { name: `D) ${question.options.D}`, value: 'D' as const },
+      ],
+    })
+    const timeTakenMs = Date.now() - startTime
+    return { userAnswer, timeTakenMs }
+  } catch (err) {
+    if (err instanceof ExitPromptError) return null
+    throw err
+  }
 }
 
 function showFeedback(
@@ -44,14 +49,19 @@ function showFeedback(
   console.log(`Score: ${formatScoreDelta(scoreDelta)}`)
 }
 
-async function askNextAction(): Promise<'next' | 'exit'> {
-  return select<'next' | 'exit'>({
-    message: 'Next action:',
-    choices: [
-      { name: 'Next question', value: 'next' as const },
-      { name: 'Exit quiz', value: 'exit' as const },
-    ],
-  })
+async function askNextAction(): Promise<'next' | 'exit' | null> {
+  try {
+    return await select<'next' | 'exit'>({
+      message: 'Next action:',
+      choices: [
+        { name: 'Next question', value: 'next' as const },
+        { name: 'Exit quiz', value: 'exit' as const },
+      ],
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) return null
+    throw err
+  }
 }
 
 export async function showQuiz(domainSlug: string): Promise<void> {
@@ -78,17 +88,12 @@ export async function showQuiz(domainSlug: string): Promise<void> {
 
     const question = questionResult.data
 
-    let userAnswer: AnswerOption
-    let timeTakenMs: number
-    try {
-      ;({ userAnswer, timeTakenMs } = await askQuestion(question))
-    } catch (err) {
-      if (err instanceof ExitPromptError) {
-        await router.showHome()
-        return
-      }
-      throw err
+    const answered = await askQuestion(question)
+    if (answered === null) {
+      await router.showHome()
+      return
     }
+    const { userAnswer, timeTakenMs } = answered
 
     const isCorrect = userAnswer === question.correctAnswer
     const { updatedMeta, scoreDelta, speedTier } = applyAnswer(
@@ -129,18 +134,8 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta)
 
     // Exit option available after every answer
-    let nextAction: 'next' | 'exit'
-    try {
-      nextAction = await askNextAction()
-    } catch (err) {
-      if (err instanceof ExitPromptError) {
-        await router.showHome()
-        return
-      }
-      throw err
-    }
-
-    if (nextAction === 'exit') {
+    const nextAction = await askNextAction()
+    if (nextAction === null || nextAction === 'exit') {
       await router.showHome()
       return
     }

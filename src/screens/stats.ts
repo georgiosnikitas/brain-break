@@ -115,7 +115,7 @@ export async function showStats(domainSlug: string): Promise<void> {
     console.log(bold('Score trend (30 days):') + ` ${trendLabel}`)
     console.log(bold('Days since first session:') + ` ${daySinceFirst!}`)
     console.log(
-      bold('Return streak:') + ` ${streak} day${streak !== 1 ? 's' : ''}`,
+      bold('Return streak:') + ` ${streak} day${streak === 1 ? '' : 's'}`,
     )
   }
 

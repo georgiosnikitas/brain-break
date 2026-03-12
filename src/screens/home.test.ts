@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { buildHomeChoices, filterActiveDomains, showHomeScreen, type HomeEntry, type HomeAction } from './home.js'
 
 // Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
-vi.mock('@github/copilot-sdk', () => ({ CopilotClient: class { constructor() {} }, approveAll: vi.fn() }))
+vi.mock('@github/copilot-sdk', () => ({ CopilotClient: class {}, approveAll: vi.fn() }))
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
-  Separator: class Separator { constructor() {} },
+  Separator: class Separator {},
 }))
 vi.mock('../domain/store.js', () => ({
   listDomains: vi.fn(),
@@ -247,8 +247,8 @@ describe('filterActiveDomains', () => {
 // ---------------------------------------------------------------------------
 describe('showHomeScreen — routing', () => {
   it.each([
-    ['history', mockShowHistory as ReturnType<typeof vi.fn>],
-    ['stats', mockShowStats as ReturnType<typeof vi.fn>],
+    ['history', mockShowHistory],
+    ['stats', mockShowStats],
   ])('calls router.show%s with the correct slug when %s action is selected', async (action, getMock) => {
     const domain = defaultDomainFile()
     mockListDomains.mockResolvedValue({
