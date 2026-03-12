@@ -111,7 +111,7 @@ describe('showQuiz', () => {
 
   it('calls process.exit(1) on AUTH error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementationOnce((_code?: number) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementationOnce((_code?: string | number | null) => {
       throw new Error('process.exit called')
     })
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.AUTH })
