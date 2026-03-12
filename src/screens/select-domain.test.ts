@@ -92,7 +92,7 @@ describe('isScoreTrendingUp', () => {
 
   it('uses only last 6 entries from a longer history', () => {
     // First 10 entries have terrible deltas; last 6 are clearly trending up
-    const oldBad = Array(10).fill(-50).map(makeRecord)
+    const oldBad = new Array(10).fill(-50).map(makeRecord)
     const recentGood = [5, 5, 5, 20, 20, 20].map(makeRecord)
     expect(isScoreTrendingUp([...oldBad, ...recentGood])).toBe(true)
   })

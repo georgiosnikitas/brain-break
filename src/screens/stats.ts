@@ -56,7 +56,7 @@ export function daysSinceFirstSession(
 export function computeReturnStreak(history: QuestionRecord[], nowMs: number = Date.now()): number {
   if (history.length === 0) return 0
   const dateSet = new Set(history.map((r) => r.answeredAt.slice(0, 10)))
-  const dates = [...dateSet].sort().reverse()
+  const dates = [...dateSet].sort((a, b) => a.localeCompare(b)).reverse()
   const mostRecentDayMs = new Date(dates[0] + 'T00:00:00.000Z').getTime()
   const daysSinceMostRecent = Math.floor((nowMs - mostRecentDayMs) / (24 * 60 * 60 * 1000))
   if (daysSinceMostRecent > 1) return 0

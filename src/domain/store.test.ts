@@ -110,7 +110,7 @@ describe('listDomains', () => {
     const result = await listDomains()
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    const slugs = result.data.map((d) => d.slug).sort()
+    const slugs = result.data.map((d) => d.slug).sort((a, b) => a.localeCompare(b))
     expect(slugs).toEqual(['topic-a', 'topic-b', 'topic-c'])
   })
 

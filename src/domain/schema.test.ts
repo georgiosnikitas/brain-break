@@ -148,7 +148,7 @@ describe('DomainFileSchema', () => {
 
   it('rejects NaN score', () => {
     const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, score: NaN },
+      meta: { ...validMeta, score: Number.NaN },
       hashes: [],
       history: [],
     })
