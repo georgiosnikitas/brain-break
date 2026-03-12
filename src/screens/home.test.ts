@@ -1,10 +1,46 @@
-import { describe, it, expect, vi } from 'vitest'
-import { buildHomeChoices, filterActiveDomains, type HomeEntry, type HomeAction } from './home.js'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { buildHomeChoices, filterActiveDomains, showHomeScreen, type HomeEntry, type HomeAction } from './home.js'
 
 // Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
 vi.mock('@github/copilot-sdk', () => ({ CopilotClient: class {}, approveAll: vi.fn() }))
+vi.mock('@inquirer/prompts', () => ({
+  select: vi.fn(),
+  Separator: class Separator {},
+}))
+vi.mock('../domain/store.js', () => ({
+  listDomains: vi.fn(),
+  readDomain: vi.fn(),
+}))
+vi.mock('../router.js', () => ({
+  showHistory: vi.fn(),
+  showQuiz: vi.fn(),
+  archiveDomain: vi.fn(),
+  showCreateDomain: vi.fn(),
+  showArchived: vi.fn(),
+}))
+
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
+import { select } from '@inquirer/prompts'
+import { listDomains, readDomain } from '../domain/store.js'
+import * as router from '../router.js'
+import { defaultDomainFile } from '../domain/schema.js'
+
+const mockSelect = vi.mocked(select)
+const mockListDomains = vi.mocked(listDomains)
+const mockReadDomain = vi.mocked(readDomain)
+const mockShowHistory = vi.mocked(router.showHistory)
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mockListDomains.mockResolvedValue({ ok: true, data: [] })
+  mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+  vi.mocked(router.showHistory).mockResolvedValue(undefined)
+  vi.mocked(router.showQuiz).mockResolvedValue(undefined)
+  vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
+  vi.mocked(router.showCreateDomain).mockResolvedValue(undefined)
+  vi.mocked(router.showArchived).mockResolvedValue(undefined)
+})
 
 // Separator instances have no `value` property — use this guard throughout
 function isActionChoice(c: unknown): c is { name: string; value: HomeAction } {
@@ -104,6 +140,22 @@ describe('buildHomeChoices', () => {
     const archiveIdx = actions.findIndex((c) => c.value.action === 'archive')
     expect(archiveIdx).toBe(selectIdx + 1)
   })
+
+  it('includes a history action for each domain entry', () => {
+    const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
+    const actions = actionChoices(entries)
+    const historyActions = actions.filter((c) => c.value.action === 'history')
+    expect(historyActions).toHaveLength(1)
+    expect((historyActions[0].value as { action: 'history'; slug: string }).slug).toBe('typescript')
+  })
+
+  it('history action comes after archive for the same domain', () => {
+    const entries: HomeEntry[] = [{ slug: 'react', score: 0, totalQuestions: 0 }]
+    const actions = actionChoices(entries)
+    const archiveIdx = actions.findIndex((c) => c.value.action === 'archive')
+    const historyIdx = actions.findIndex((c) => c.value.action === 'history')
+    expect(historyIdx).toBe(archiveIdx + 1)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -169,5 +221,30 @@ describe('filterActiveDomains', () => {
     const result = filterActiveDomains(entries)
     expect(result).toHaveLength(2)
     expect(result.map((e) => e.slug)).toEqual(['active-1', 'active-2'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showHomeScreen — routing
+// ---------------------------------------------------------------------------
+describe('showHomeScreen — routing', () => {
+  it('calls router.showHistory with the correct slug when history action is selected', async () => {
+    const domain = defaultDomainFile()
+    mockListDomains.mockResolvedValue({
+      ok: true,
+      data: [{ slug: 'typescript', meta: domain.meta, corrupted: false as const }],
+    })
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'history', slug: 'typescript' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(mockShowHistory).toHaveBeenCalledOnce()
+    expect(mockShowHistory).toHaveBeenCalledWith('typescript')
+    exitSpy.mockRestore()
   })
 })

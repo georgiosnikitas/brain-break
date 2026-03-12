@@ -2,6 +2,7 @@ import { showHomeScreen } from './screens/home.js'
 import { showCreateDomainScreen } from './screens/create-domain.js'
 import { showSelectDomainScreen } from './screens/select-domain.js'
 import { showArchivedScreen } from './screens/archived.js'
+import { showHistory as showHistoryScreen } from './screens/history.js'
 import { readDomain, writeDomain } from './domain/store.js'
 import { warn, error as errorFmt } from './utils/format.js'
 
@@ -34,8 +35,8 @@ export async function archiveDomain(slug: string): Promise<void> {
   }
 }
 
-export async function showHistory(_slug: string): Promise<void> {
-  // stub — implemented in Story 4.1
+export async function showHistory(slug: string): Promise<void> {
+  await showHistoryScreen(slug)
 }
 
 export async function showStats(_slug: string): Promise<void> {

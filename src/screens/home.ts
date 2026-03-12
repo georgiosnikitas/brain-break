@@ -9,6 +9,7 @@ export type HomeEntry = { slug: string; score: number; totalQuestions: number }
 export type HomeAction =
   | { action: 'select'; slug: string }
   | { action: 'archive'; slug: string }
+  | { action: 'history'; slug: string }
   | { action: 'create' }
   | { action: 'archived' }
   | { action: 'exit' }
@@ -34,6 +35,10 @@ export function buildHomeChoices(
     choices.push({
       name: `  Archive ${entry.slug}`,
       value: { action: 'archive', slug: entry.slug },
+    })
+    choices.push({
+      name: `  View History ${entry.slug}`,
+      value: { action: 'history', slug: entry.slug },
     })
   }
 
@@ -77,7 +82,7 @@ export async function showHomeScreen(): Promise<void> {
       answer = await select<HomeAction>({
         message: '🧠 brain-break',
         choices: buildHomeChoices(homeEntries),
-        pageSize: 15,
+        pageSize: 20,
       })
     } catch (err) {
       if (err instanceof ExitPromptError) process.exit(0)
@@ -87,6 +92,7 @@ export async function showHomeScreen(): Promise<void> {
     if (answer.action === 'exit') process.exit(0)
     if (answer.action === 'select') await router.showQuiz(answer.slug)
     if (answer.action === 'archive') await router.archiveDomain(answer.slug)
+    if (answer.action === 'history') await router.showHistory(answer.slug)
     if (answer.action === 'create') await router.showCreateDomain()
     if (answer.action === 'archived') await router.showArchived()
   }
