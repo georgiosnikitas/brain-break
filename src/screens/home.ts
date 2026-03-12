@@ -10,6 +10,7 @@ export type HomeAction =
   | { action: 'select'; slug: string }
   | { action: 'archive'; slug: string }
   | { action: 'history'; slug: string }
+  | { action: 'stats'; slug: string }
   | { action: 'create' }
   | { action: 'archived' }
   | { action: 'exit' }
@@ -39,6 +40,10 @@ export function buildHomeChoices(
     choices.push({
       name: `  View History ${entry.slug}`,
       value: { action: 'history', slug: entry.slug },
+    })
+    choices.push({
+      name: `  View Stats ${entry.slug}`,
+      value: { action: 'stats', slug: entry.slug },
     })
   }
 
@@ -93,6 +98,7 @@ export async function showHomeScreen(): Promise<void> {
     if (answer.action === 'select') await router.showQuiz(answer.slug)
     if (answer.action === 'archive') await router.archiveDomain(answer.slug)
     if (answer.action === 'history') await router.showHistory(answer.slug)
+    if (answer.action === 'stats') await router.showStats(answer.slug)
     if (answer.action === 'create') await router.showCreateDomain()
     if (answer.action === 'archived') await router.showArchived()
   }

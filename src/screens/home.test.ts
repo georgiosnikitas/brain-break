@@ -13,6 +13,7 @@ vi.mock('../domain/store.js', () => ({
 }))
 vi.mock('../router.js', () => ({
   showHistory: vi.fn(),
+  showStats: vi.fn(),
   showQuiz: vi.fn(),
   archiveDomain: vi.fn(),
   showCreateDomain: vi.fn(),
@@ -30,12 +31,14 @@ const mockSelect = vi.mocked(select)
 const mockListDomains = vi.mocked(listDomains)
 const mockReadDomain = vi.mocked(readDomain)
 const mockShowHistory = vi.mocked(router.showHistory)
+const mockShowStats = vi.mocked(router.showStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockListDomains.mockResolvedValue({ ok: true, data: [] })
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   vi.mocked(router.showHistory).mockResolvedValue(undefined)
+  vi.mocked(router.showStats).mockResolvedValue(undefined)
   vi.mocked(router.showQuiz).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.showCreateDomain).mockResolvedValue(undefined)
@@ -156,6 +159,22 @@ describe('buildHomeChoices', () => {
     const historyIdx = actions.findIndex((c) => c.value.action === 'history')
     expect(historyIdx).toBe(archiveIdx + 1)
   })
+
+  it('includes a stats action for each domain entry', () => {
+    const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
+    const actions = actionChoices(entries)
+    const statsActions = actions.filter((c) => c.value.action === 'stats')
+    expect(statsActions).toHaveLength(1)
+    expect((statsActions[0].value as { action: 'stats'; slug: string }).slug).toBe('typescript')
+  })
+
+  it('stats action comes after history for the same domain', () => {
+    const entries: HomeEntry[] = [{ slug: 'react', score: 0, totalQuestions: 0 }]
+    const actions = actionChoices(entries)
+    const historyIdx = actions.findIndex((c) => c.value.action === 'history')
+    const statsIdx = actions.findIndex((c) => c.value.action === 'stats')
+    expect(statsIdx).toBe(historyIdx + 1)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -245,6 +264,26 @@ describe('showHomeScreen — routing', () => {
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
     expect(mockShowHistory).toHaveBeenCalledOnce()
     expect(mockShowHistory).toHaveBeenCalledWith('typescript')
+    exitSpy.mockRestore()
+  })
+
+  it('calls router.showStats with the correct slug when stats action is selected', async () => {
+    const domain = defaultDomainFile()
+    mockListDomains.mockResolvedValue({
+      ok: true,
+      data: [{ slug: 'typescript', meta: domain.meta, corrupted: false as const }],
+    })
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'stats', slug: 'typescript' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(mockShowStats).toHaveBeenCalledOnce()
+    expect(mockShowStats).toHaveBeenCalledWith('typescript')
     exitSpy.mockRestore()
   })
 })
