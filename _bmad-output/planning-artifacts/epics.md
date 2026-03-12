@@ -374,71 +374,6 @@ So that my active domain list stays focused without losing any history or progre
 
 ---
 
-## Epic 4: Learning Insights
-
-Users can review their complete question history for any domain (paginated) and view a stats dashboard with score, accuracy, trend, and return streak — giving them a genuine signal of knowledge growth over time.
-
-### Story 4.1: Paginated Question History View
-
-As a user,
-I want to view my full question history for the active domain — paginated at 10 entries per page — with all recorded fields visible,
-So that I can review past questions, see where I went wrong, and track my learning in detail.
-
-**Acceptance Criteria:**
-
-**Given** I am on the home screen and select a domain, then choose "View History"
-**When** `screens/history.ts` loads
-**Then** the history is read from the domain file and displayed 10 entries per page, most recent first
-**And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level
-
-**Given** the domain has more than 10 history entries
-**When** viewing history
-**Then** pagination controls are shown (Next / Previous / Back) and navigate correctly between pages
-
-**Given** the domain has 10 or fewer history entries
-**When** viewing history
-**Then** all entries are shown on a single page with no pagination controls, only a "Back" option
-
-**Given** the domain has no history entries
-**When** I navigate to View History
-**Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the home screen
-
-**Given** I am on the history screen
-**When** I select "Back"
-**Then** I return to the home screen
-
----
-
-### Story 4.2: Stats Dashboard
-
-As a user,
-I want to view a stats dashboard for the active domain showing my score, accuracy, time played, difficulty level, score trend, and return streak,
-So that I have a clear, motivating picture of my progress and know whether my skills are genuinely growing.
-
-**Acceptance Criteria:**
-
-**Given** I am on the home screen and select a domain, then choose "View Stats"
-**When** `screens/stats.ts` loads
-**Then** the stats dashboard displays all of the following, derived from the domain file:
-- Current score
-- Total questions answered
-- Correct answer count, incorrect answer count, and accuracy % (rounded to 1 decimal)
-- Total time played across all sessions (formatted as h/m/s)
-- Current difficulty level (number + label, e.g. "3 — Intermediate")
-- Score trend over the last 30 days: "Growing 📈", "Flat ➡️", or "Declining 📉" (derived from `answeredAt` timestamps and `scoreDelta` values in history)
-- Days since first session (derived from earliest `answeredAt`)
-- Current return streak in days (consecutive days with at least one answered question, derived from `answeredAt` history)
-
-**Given** the domain has no history entries
-**When** I navigate to View Stats
-**Then** the dashboard shows current score (0), totals (0), and placeholders for derived fields (e.g. "No data yet")
-
-**Given** I am on the stats screen
-**When** I select "Back"
-**Then** I return to the home screen
-
----
-
 ## Epic 3: AI-Powered Adaptive Quiz
 
 Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, and graceful error handling if the Copilot API is unavailable.
@@ -557,3 +492,68 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 **Given** I am in an active quiz session
 **When** I choose "Exit quiz" (available after each answer)
 **Then** all persisted data is preserved and I am returned to the home screen
+
+---
+
+## Epic 4: Learning Insights
+
+Users can review their complete question history for any domain (paginated) and view a stats dashboard with score, accuracy, trend, and return streak — giving them a genuine signal of knowledge growth over time.
+
+### Story 4.1: Paginated Question History View
+
+As a user,
+I want to view my full question history for the active domain — paginated at 10 entries per page — with all recorded fields visible,
+So that I can review past questions, see where I went wrong, and track my learning in detail.
+
+**Acceptance Criteria:**
+
+**Given** I am on the home screen and select a domain, then choose "View History"
+**When** `screens/history.ts` loads
+**Then** the history is read from the domain file and displayed 10 entries per page, most recent first
+**And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level
+
+**Given** the domain has more than 10 history entries
+**When** viewing history
+**Then** pagination controls are shown (Next / Previous / Back) and navigate correctly between pages
+
+**Given** the domain has 10 or fewer history entries
+**When** viewing history
+**Then** all entries are shown on a single page with no pagination controls, only a "Back" option
+
+**Given** the domain has no history entries
+**When** I navigate to View History
+**Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the home screen
+
+**Given** I am on the history screen
+**When** I select "Back"
+**Then** I return to the home screen
+
+---
+
+### Story 4.2: Stats Dashboard
+
+As a user,
+I want to view a stats dashboard for the active domain showing my score, accuracy, time played, difficulty level, score trend, and return streak,
+So that I have a clear, motivating picture of my progress and know whether my skills are genuinely growing.
+
+**Acceptance Criteria:**
+
+**Given** I am on the home screen and select a domain, then choose "View Stats"
+**When** `screens/stats.ts` loads
+**Then** the stats dashboard displays all of the following, derived from the domain file:
+- Current score
+- Total questions answered
+- Correct answer count, incorrect answer count, and accuracy % (rounded to 1 decimal)
+- Total time played across all sessions (formatted as h/m/s)
+- Current difficulty level (number + label, e.g. "3 — Intermediate")
+- Score trend over the last 30 days: "Growing 📈", "Flat ➡️", or "Declining 📉" (derived from `answeredAt` timestamps and `scoreDelta` values in history)
+- Days since first session (derived from earliest `answeredAt`)
+- Current return streak in days (consecutive days with at least one answered question, derived from `answeredAt` history)
+
+**Given** the domain has no history entries
+**When** I navigate to View Stats
+**Then** the dashboard shows current score (0), totals (0), and placeholders for derived fields (e.g. "No data yet")
+
+**Given** I am on the stats screen
+**When** I select "Back"
+**Then** I return to the home screen
