@@ -192,37 +192,26 @@ describe('computeReturnStreak', () => {
     expect(computeReturnStreak([])).toBe(0)
   })
 
-  it('returns 1 for a single day', () => {
-    const records = [makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' })]
-    expect(computeReturnStreak(records, nowMs)).toBe(1)
-  })
-
-  it('returns correct streak for consecutive days', () => {
-    const records = [
-      makeRecord({ answeredAt: '2026-03-10T10:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-11T10:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' }),
-    ]
-    expect(computeReturnStreak(records, nowMs)).toBe(3)
-  })
-
-  it('breaks streak on gap', () => {
-    const records = [
-      makeRecord({ answeredAt: '2026-03-08T10:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-10T10:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-11T10:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' }),
-    ]
-    expect(computeReturnStreak(records, nowMs)).toBe(3)
-  })
-
-  it('counts multiple records on the same day as one day', () => {
-    const records = [
-      makeRecord({ answeredAt: '2026-03-11T08:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-11T20:00:00.000Z' }),
-      makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' }),
-    ]
-    expect(computeReturnStreak(records, nowMs)).toBe(2)
+  it.each([
+    ['returns 1 for a single day', ['2026-03-12T10:00:00.000Z'], 1],
+    [
+      'returns correct streak for consecutive days',
+      ['2026-03-10T10:00:00.000Z', '2026-03-11T10:00:00.000Z', '2026-03-12T10:00:00.000Z'],
+      3,
+    ],
+    [
+      'breaks streak on gap',
+      ['2026-03-08T10:00:00.000Z', '2026-03-10T10:00:00.000Z', '2026-03-11T10:00:00.000Z', '2026-03-12T10:00:00.000Z'],
+      3,
+    ],
+    [
+      'counts multiple records on the same day as one day',
+      ['2026-03-11T08:00:00.000Z', '2026-03-11T20:00:00.000Z', '2026-03-12T10:00:00.000Z'],
+      2,
+    ],
+  ] as const)('%s', (_, dates, expected) => {
+    const records = (dates as readonly string[]).map((answeredAt) => makeRecord({ answeredAt }))
+    expect(computeReturnStreak(records, nowMs)).toBe(expected)
   })
 
   it('returns 0 when most recent play was more than 1 day ago', () => {
@@ -282,87 +271,50 @@ function makeDomainWithHistory(records: QuestionRecord[]) {
   }
 }
 
-describe('showStats — with history', () => {  it('displays correct, incorrect counts and accuracy', async () => {
-    const records = [
+async function runStatsAndCapture(records: QuestionRecord[]): Promise<string> {
+  mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
+  mockSelect.mockResolvedValue('back')
+  const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+  await showStats('some-topic')
+  const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+  consoleSpy.mockRestore()
+  return logged
+}
+
+describe('showStats — with history', () => {
+  it('displays correct, incorrect counts and accuracy', async () => {
+    const logged = await runStatsAndCapture([
       makeRecord({ isCorrect: true }),
       makeRecord({ isCorrect: true }),
       makeRecord({ isCorrect: false }),
-    ]
-    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
-    mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-
-    await showStats('some-topic')
-
-    const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+    ])
     expect(logged).toContain('2 / 1')
     expect(logged).toContain('66.7%')
-    consoleSpy.mockRestore()
   })
 
   it('displays formatted total time played', async () => {
-    const records = [makeRecord()]
-    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
-    mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-
-    await showStats('some-topic')
-
-    const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+    const logged = await runStatsAndCapture([makeRecord()])
     expect(logged).toContain('1h 2m 3s')
-    consoleSpy.mockRestore()
   })
 
   it('displays difficulty label', async () => {
-    const records = [makeRecord()]
-    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
-    mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-
-    await showStats('some-topic')
-
-    const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+    const logged = await runStatsAndCapture([makeRecord()])
     expect(logged).toContain('3 — Intermediate')
-    consoleSpy.mockRestore()
   })
 
   it('displays score trend label', async () => {
-    const records = [makeRecord({ answeredAt: '2026-03-10T10:00:00.000Z', scoreDelta: 50 })]
-    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
-    mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-
-    await showStats('some-topic')
-
-    const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-10T10:00:00.000Z', scoreDelta: 50 })])
     expect(logged).toContain('Growing 📈')
-    consoleSpy.mockRestore()
   })
 
   it('displays days since first session field', async () => {
-    const records = [makeRecord({ answeredAt: '2026-03-09T00:00:00.000Z' })]
-    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
-    mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-
-    await showStats('some-topic')
-
-    const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-09T00:00:00.000Z' })])
     expect(logged).toContain('Days since first session:')
-    consoleSpy.mockRestore()
   })
 
   it('displays return streak with day/days suffix', async () => {
-    const records = [makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' })]
-    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
-    mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-
-    await showStats('some-topic')
-
-    const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
+    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' })])
     expect(logged).toContain('1 day')
-    consoleSpy.mockRestore()
   })
 })
 

@@ -123,28 +123,12 @@ describe('generateQuestion', () => {
     expect(result.error).toBe(AI_ERRORS.NETWORK)
   })
 
-  it('returns AUTH error when error message contains "401"', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('HTTP 401 Unauthorized'))
-
-    const result = await generateQuestion('typescript', 2, new Set())
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.AUTH)
-  })
-
-  it('returns AUTH error when error message contains "unauthorized"', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('unauthorized access'))
-
-    const result = await generateQuestion('typescript', 2, new Set())
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.AUTH)
-  })
-
-  it('returns AUTH error when error message contains "authentication"', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('authentication failed'))
+  it.each([
+    ['401', 'HTTP 401 Unauthorized'],
+    ['unauthorized', 'unauthorized access'],
+    ['authentication', 'authentication failed'],
+  ])('returns AUTH error when error message contains "%s"', async (_, errorMsg) => {
+    mockCreateSession.mockRejectedValueOnce(new Error(errorMsg))
 
     const result = await generateQuestion('typescript', 2, new Set())
 

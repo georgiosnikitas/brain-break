@@ -246,7 +246,10 @@ describe('filterActiveDomains', () => {
 // showHomeScreen — routing
 // ---------------------------------------------------------------------------
 describe('showHomeScreen — routing', () => {
-  it('calls router.showHistory with the correct slug when history action is selected', async () => {
+  it.each([
+    ['history', mockShowHistory as ReturnType<typeof vi.fn>],
+    ['stats', mockShowStats as ReturnType<typeof vi.fn>],
+  ])('calls router.show%s with the correct slug when %s action is selected', async (action, getMock) => {
     const domain = defaultDomainFile()
     mockListDomains.mockResolvedValue({
       ok: true,
@@ -257,32 +260,12 @@ describe('showHomeScreen — routing', () => {
       throw new Error('process.exit')
     })
     mockSelect
-      .mockResolvedValueOnce({ action: 'history', slug: 'typescript' })
+      .mockResolvedValueOnce({ action, slug: 'typescript' })
       .mockResolvedValueOnce({ action: 'exit' })
 
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
-    expect(mockShowHistory).toHaveBeenCalledOnce()
-    expect(mockShowHistory).toHaveBeenCalledWith('typescript')
-    exitSpy.mockRestore()
-  })
-
-  it('calls router.showStats with the correct slug when stats action is selected', async () => {
-    const domain = defaultDomainFile()
-    mockListDomains.mockResolvedValue({
-      ok: true,
-      data: [{ slug: 'typescript', meta: domain.meta, corrupted: false as const }],
-    })
-    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
-      throw new Error('process.exit')
-    })
-    mockSelect
-      .mockResolvedValueOnce({ action: 'stats', slug: 'typescript' })
-      .mockResolvedValueOnce({ action: 'exit' })
-
-    await expect(showHomeScreen()).rejects.toThrow('process.exit')
-    expect(mockShowStats).toHaveBeenCalledOnce()
-    expect(mockShowStats).toHaveBeenCalledWith('typescript')
+    expect(getMock).toHaveBeenCalledOnce()
+    expect(getMock).toHaveBeenCalledWith('typescript')
     exitSpy.mockRestore()
   })
 })
