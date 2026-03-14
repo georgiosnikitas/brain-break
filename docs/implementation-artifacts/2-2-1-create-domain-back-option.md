@@ -1,7 +1,7 @@
 ---
 Story: 2.2.1
 Title: Create Domain — Back Option
-Status: review
+Status: done
 Epic: 2 — Domain Management
 Parent: 2.2 Create New Domain
 Created: 2026-03-14
@@ -53,12 +53,18 @@ Added a `select` prompt as the entry point of `showCreateDomainScreen`. When use
 _No issues encountered_
 
 ### Completion Notes
-All 6 tasks/subtasks complete. 2 new tests added (back path + enter-then-create path); 4 existing integration tests updated to prime `mockSelect` with `'enter'`. Full test suite: 259 tests pass (was 257). `tsc --noEmit` clean.
+All 6 tasks/subtasks complete. 2 new tests added (back path + enter-then-create path); 4 existing integration tests updated to prime `mockSelect` with `'enter'`. Full test suite: 260 tests pass (was 257). `tsc --noEmit` clean.
+
+Code review findings addressed:
+- ✅ Fixed [Medium]: Added `docs/planning-artifacts/epics.md` and `docs/planning-artifacts/prd.md` to File List
+- ✅ Fixed [Low]: Added ExitPromptError test for select prompt — `showCreateDomainScreen` resolves undefined and skips input when select throws ExitPromptError
 
 ## File List
 
 - src/screens/create-domain.ts (modified)
 - src/screens/create-domain.test.ts (modified)
+- docs/planning-artifacts/epics.md (modified)
+- docs/planning-artifacts/prd.md (modified)
 
 ## Change Log
 

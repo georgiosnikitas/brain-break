@@ -1,11 +1,9 @@
-import { input, select } from '@inquirer/prompts'
+import { input } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { slugify } from '../utils/slugify.js'
 import { listDomains, writeDomain } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import { warn, success, error as errorFmt } from '../utils/format.js'
-
-type CreateDomainAction = 'enter' | 'back'
 
 export function validateDomainName(name: string): string | true {
   if (name.trim().length === 0) return 'Domain name cannot be empty'
@@ -15,26 +13,10 @@ export function validateDomainName(name: string): string | true {
 }
 
 export async function showCreateDomainScreen(): Promise<void> {
-  let action: CreateDomainAction
-  try {
-    action = await select<CreateDomainAction>({
-      message: 'Create new domain',
-      choices: [
-        { name: '✏️  Enter domain name', value: 'enter' },
-        { name: '←  Back', value: 'back' },
-      ],
-    })
-  } catch (err) {
-    if (err instanceof ExitPromptError) return
-    throw err
-  }
-
-  if (action === 'back') return
-
   let name: string
   try {
     name = await input({
-      message: 'New domain name:',
+      message: 'New domain name (Ctrl+C to go back):',
       validate: validateDomainName,
     })
   } catch (err) {
