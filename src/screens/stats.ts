@@ -75,7 +75,7 @@ export function computeReturnStreak(history: QuestionRecord[], nowMs: number = D
   return streak
 }
 
-export async function showStats(domainSlug: string): Promise<void> {
+export async function showStats(domainSlug: string, nowMs: number = Date.now()): Promise<void> {
   const readResult = await readDomain(domainSlug)
   if (!readResult.ok) {
     console.warn(warn(readResult.error))
@@ -104,7 +104,7 @@ export async function showStats(domainSlug: string): Promise<void> {
     const trendLabels = { growing: 'Growing 📈', declining: 'Declining 📉', flat: 'Flat ➡️' }
     const trendLabel = trendLabels[trend]
     const daySinceFirst = daysSinceFirstSession(history)
-    const streak = computeReturnStreak(history)
+    const streak = computeReturnStreak(history, nowMs)
 
     console.log(bold('Score:') + ` ${meta.score}`)
     console.log(bold('Questions answered:') + ` ${total}`)

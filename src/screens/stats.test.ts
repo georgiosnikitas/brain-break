@@ -271,11 +271,11 @@ function makeDomainWithHistory(records: QuestionRecord[]) {
   }
 }
 
-async function runStatsAndCapture(records: QuestionRecord[]): Promise<string> {
+async function runStatsAndCapture(records: QuestionRecord[], nowMs?: number): Promise<string> {
   mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
   mockSelect.mockResolvedValue('back')
   const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-  await showStats('some-topic')
+  await showStats('some-topic', nowMs)
   const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
   consoleSpy.mockRestore()
   return logged
@@ -313,7 +313,8 @@ describe('showStats — with history', () => {
   })
 
   it('displays return streak with day/days suffix', async () => {
-    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' })])
+    const fixedNow = new Date('2026-03-13T12:00:00.000Z').getTime()
+    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' })], fixedNow)
     expect(logged).toContain('1 day')
   })
 })
