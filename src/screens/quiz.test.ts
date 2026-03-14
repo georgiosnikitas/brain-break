@@ -37,7 +37,7 @@ vi.mock('../domain/store.js', () => ({
 }))
 
 vi.mock('../router.js', () => ({
-  showHome: vi.fn(),
+  showDomainMenu: vi.fn(),
 }))
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ import { showQuiz } from './quiz.js'
 const mockGenerateQuestion = vi.mocked(generateQuestion)
 const mockReadDomain = vi.mocked(readDomain)
 const mockWriteDomain = vi.mocked(writeDomain)
-const mockShowHome = vi.mocked(router.showHome)
+const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 
 // ---------------------------------------------------------------------------
@@ -81,7 +81,7 @@ beforeEach(() => {
   mockStart.mockReturnThis()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
-  mockShowHome.mockResolvedValue(undefined)
+  mockShowDomainMenu.mockResolvedValue(undefined)
 })
 
 // ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Copilot API'))
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     expect(mockSelect).not.toHaveBeenCalled()
     consoleSpy.mockRestore()
   })
@@ -131,7 +131,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('unexpected response'))
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     expect(mockSelect).not.toHaveBeenCalled()
     consoleSpy.mockRestore()
   })
@@ -149,7 +149,7 @@ describe('showQuiz', () => {
     expect(domain.history[0].isCorrect).toBe(true)
     expect(domain.history[0].userAnswer).toBe('A')
     expect(domain.hashes).toHaveLength(1)
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('includes all FR11 fields in the QuestionRecord', async () => {
@@ -219,7 +219,7 @@ describe('showQuiz', () => {
 
     expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
     expect(mockWriteDomain).toHaveBeenCalledTimes(2)
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('accumulates history across loop iterations', async () => {
@@ -246,7 +246,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('disk full'))
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     consoleSpy.mockRestore()
   })
 
@@ -256,7 +256,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('navigates home when ExitPromptError is thrown during next-action selection', async () => {
@@ -267,7 +267,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('updates meta.lastSessionAt when persisting after each answer', async () => {

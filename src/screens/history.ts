@@ -43,7 +43,7 @@ function displayEntry(record: QuestionRecord, globalIndex: number): void {
   console.log(dim(`  Answered: ${formatTimestamp(record.answeredAt)}`))
 }
 
-async function navigateHistory(history: QuestionRecord[]): Promise<void> {
+async function navigateHistory(history: QuestionRecord[], domainSlug: string): Promise<void> {
   const totalItems = history.length
   let index = 0
 
@@ -60,7 +60,7 @@ async function navigateHistory(history: QuestionRecord[]): Promise<void> {
       })
     } catch (err) {
       if (err instanceof ExitPromptError) {
-        await router.showHome()
+        await router.showDomainMenu(domainSlug)
         return
       }
       throw err
@@ -71,7 +71,7 @@ async function navigateHistory(history: QuestionRecord[]): Promise<void> {
     } else if (nav === 'prev') {
       index--
     } else {
-      await router.showHome()
+      await router.showDomainMenu(domainSlug)
       return
     }
   }
@@ -96,9 +96,9 @@ export async function showHistory(domainSlug: string): Promise<void> {
     } catch (err) {
       if (!(err instanceof ExitPromptError)) throw err
     }
-    await router.showHome()
+    await router.showDomainMenu(domainSlug)
     return
   }
 
-  await navigateHistory(history)
+  await navigateHistory(history, domainSlug)
 }

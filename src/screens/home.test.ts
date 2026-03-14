@@ -12,8 +12,7 @@ vi.mock('../domain/store.js', () => ({
   readDomain: vi.fn(),
 }))
 vi.mock('../router.js', () => ({
-  showHistory: vi.fn(),
-  showStats: vi.fn(),
+  showDomainMenu: vi.fn(),
   showQuiz: vi.fn(),
   archiveDomain: vi.fn(),
   showCreateDomain: vi.fn(),
@@ -30,15 +29,12 @@ import { defaultDomainFile } from '../domain/schema.js'
 const mockSelect = vi.mocked(select)
 const mockListDomains = vi.mocked(listDomains)
 const mockReadDomain = vi.mocked(readDomain)
-const mockShowHistory = vi.mocked(router.showHistory)
-const mockShowStats = vi.mocked(router.showStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockListDomains.mockResolvedValue({ ok: true, data: [] })
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
-  vi.mocked(router.showHistory).mockResolvedValue(undefined)
-  vi.mocked(router.showStats).mockResolvedValue(undefined)
+  vi.mocked(router.showDomainMenu).mockResolvedValue(undefined)
   vi.mocked(router.showQuiz).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.showCreateDomain).mockResolvedValue(undefined)
@@ -127,52 +123,15 @@ describe('buildHomeChoices', () => {
     }
   })
 
-  it('includes an archive action for each domain entry', () => {
+  it('each domain entry produces exactly ONE select action and no archive/history/stats actions', () => {
     const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
     const actions = actionChoices(entries)
-    const archiveActions = actions.filter((c) => c.value.action === 'archive')
-    expect(archiveActions).toHaveLength(1)
-    expect((archiveActions[0].value as { action: 'archive'; slug: string }).slug).toBe('typescript')
-  })
-
-  it('archive action comes immediately after select for the same domain', () => {
-    const entries: HomeEntry[] = [{ slug: 'react', score: 0, totalQuestions: 0 }]
-    const actions = actionChoices(entries)
-    const selectIdx = actions.findIndex((c) => c.value.action === 'select')
-    const archiveIdx = actions.findIndex((c) => c.value.action === 'archive')
-    expect(archiveIdx).toBe(selectIdx + 1)
-  })
-
-  it('includes a history action for each domain entry', () => {
-    const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
-    const actions = actionChoices(entries)
-    const historyActions = actions.filter((c) => c.value.action === 'history')
-    expect(historyActions).toHaveLength(1)
-    expect((historyActions[0].value as { action: 'history'; slug: string }).slug).toBe('typescript')
-  })
-
-  it('history action comes after archive for the same domain', () => {
-    const entries: HomeEntry[] = [{ slug: 'react', score: 0, totalQuestions: 0 }]
-    const actions = actionChoices(entries)
-    const archiveIdx = actions.findIndex((c) => c.value.action === 'archive')
-    const historyIdx = actions.findIndex((c) => c.value.action === 'history')
-    expect(historyIdx).toBe(archiveIdx + 1)
-  })
-
-  it('includes a stats action for each domain entry', () => {
-    const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
-    const actions = actionChoices(entries)
-    const statsActions = actions.filter((c) => c.value.action === 'stats')
-    expect(statsActions).toHaveLength(1)
-    expect((statsActions[0].value as { action: 'stats'; slug: string }).slug).toBe('typescript')
-  })
-
-  it('stats action comes after history for the same domain', () => {
-    const entries: HomeEntry[] = [{ slug: 'react', score: 0, totalQuestions: 0 }]
-    const actions = actionChoices(entries)
-    const historyIdx = actions.findIndex((c) => c.value.action === 'history')
-    const statsIdx = actions.findIndex((c) => c.value.action === 'stats')
-    expect(statsIdx).toBe(historyIdx + 1)
+    const selectActions = actions.filter((c) => c.value.action === 'select')
+    expect(selectActions).toHaveLength(1)
+    expect((selectActions[0].value as { action: 'select'; slug: string }).slug).toBe('typescript')
+    expect(actions.every((c) => c.value.action !== 'archive')).toBe(true)
+    expect(actions.every((c) => c.value.action !== 'history')).toBe(true)
+    expect(actions.every((c) => c.value.action !== 'stats')).toBe(true)
   })
 })
 
@@ -246,10 +205,7 @@ describe('filterActiveDomains', () => {
 // showHomeScreen — routing
 // ---------------------------------------------------------------------------
 describe('showHomeScreen — routing', () => {
-  it.each([
-    ['history', mockShowHistory],
-    ['stats', mockShowStats],
-  ])('calls router.show%s with the correct slug when %s action is selected', async (action, getMock) => {
+  it('calls router.showDomainMenu with the correct slug when a domain is selected', async () => {
     const domain = defaultDomainFile()
     mockListDomains.mockResolvedValue({
       ok: true,
@@ -260,12 +216,12 @@ describe('showHomeScreen — routing', () => {
       throw new Error('process.exit')
     })
     mockSelect
-      .mockResolvedValueOnce({ action, slug: 'typescript' })
+      .mockResolvedValueOnce({ action: 'select', slug: 'typescript' })
       .mockResolvedValueOnce({ action: 'exit' })
 
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
-    expect(getMock).toHaveBeenCalledOnce()
-    expect(getMock).toHaveBeenCalledWith('typescript')
+    expect(vi.mocked(router.showDomainMenu)).toHaveBeenCalledOnce()
+    expect(vi.mocked(router.showDomainMenu)).toHaveBeenCalledWith('typescript')
     exitSpy.mockRestore()
   })
 })

@@ -15,6 +15,8 @@ lastEdited: '2026-03-14'
 editHistory:
   - date: '2026-03-14'
     changes: 'Feature 6: replaced 10-per-page pagination with single-question navigation and progress indicator'
+  - date: '2026-03-14'
+    changes: 'Feature 1: introduced two-level navigation — home screen lists domains only (with score/count) + create/archived/exit; selecting a domain opens a domain sub-menu with Play, View History, View Stats, Archive, and Back'
 ---
 
 # Product Requirements Document: brain-break
@@ -217,16 +219,28 @@ The following 7 features define the complete MVP capability set. Each feature is
 
 ### Feature 1 — In-App Domain Management
 
-- On every launch the app displays the home screen listing all configured domains, each showing current score and number of questions answered
+**Home screen (Level 1)**
+
+- On every launch the app displays the home screen listing all configured active domains, each showing current score and number of questions answered
 - If no domains exist, the list is empty and the only available action is to create a new one
-- The user selects a domain to resume, or chooses to add a new one at any time from the home screen
-- When the user selects an existing domain, a contextual motivational message is displayed before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate appropriately focused questions for it
-- The user selects one domain per session — that selection determines the active quiz context
 - All state (history, score, time played) is domain-scoped and isolated
-- Switching to a previously used domain resumes exactly where the user left off
-- Domains can be archived from the home screen — archived domains disappear from the active list but all their history, score, and progress are fully preserved
+- The home screen actions are: select a domain, create a new domain, view archived domains, and exit — archive/history/stats actions for a domain are **not** shown on the home screen
+
+**Domain sub-menu (Level 2)**
+
+- Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
+- The domain sub-menu provides the following actions: **Play**, **View History**, **View Stats**, **Archive**, and **Back**
+- Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — then begins the quiz
+- After a quiz session ends, the user is returned to the domain sub-menu (not the home screen)
+- Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
+- Selecting **Back** returns the user to the home screen
+- Selecting **View History** or **View Stats** opens the respective screen; selecting Back from either returns the user to the domain sub-menu
+
+**Archived domains**
+
 - The home screen includes a *"View archived domains"* action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off
+- Switching to a previously used domain resumes exactly where the user left off
 
 ### Feature 2 — AI-Powered Question Generation (GitHub Copilot SDK)
 

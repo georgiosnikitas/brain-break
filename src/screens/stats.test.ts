@@ -14,7 +14,7 @@ vi.mock('../domain/store.js', () => ({
 }))
 
 vi.mock('../router.js', () => ({
-  showHome: vi.fn(),
+  showDomainMenu: vi.fn(),
 }))
 
 // ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ import {
 } from './stats.js'
 
 const mockReadDomain = vi.mocked(readDomain)
-const mockShowHome = vi.mocked(router.showHome)
+const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 
 // ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   vi.clearAllMocks()
-  mockShowHome.mockResolvedValue(undefined)
+  mockShowDomainMenu.mockResolvedValue(undefined)
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockSelect.mockResolvedValue('back')
 })
@@ -237,7 +237,7 @@ describe('showStats — empty history', () => {
 
     const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
     expect(logged).toContain('No data yet')
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     consoleSpy.mockRestore()
   })
 
@@ -329,7 +329,7 @@ describe('showStats — navigation', () => {
 
     await showStats('some-topic')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('calls router.showHome on ExitPromptError', async () => {
@@ -338,7 +338,7 @@ describe('showStats — navigation', () => {
 
     await showStats('some-topic')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 })
 

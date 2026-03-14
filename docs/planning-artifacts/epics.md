@@ -15,13 +15,13 @@ This document provides the complete epic and story breakdown for brain-break, de
 
 ### Functional Requirements
 
-FR1: On every launch, the app displays a home screen listing all configured domains, each showing current score and total questions answered. If no domains exist, the only available action is to create a new one.
+FR1: On every launch, the app displays a home screen listing all configured active domains, each showing current score and total questions answered. If no domains exist, the only available action is to create a new one. Selecting a domain opens a domain sub-menu (not the quiz directly).
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file.
 
-FR3: Users can select an active domain from the home screen to start or resume a quiz session. A contextual motivational message is displayed if the user has returned within 7 days of their last session or their score is trending upward.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu.
 
-FR4: Domains can be archived from the home screen — archived domains are removed from the active list but all their history, score, and progress are fully preserved.
+FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
 FR5: The home screen includes a "View archived domains" action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off.
 
@@ -79,10 +79,10 @@ NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a sta
 
 | FR | Epic | Brief Description |
 |---|---|---|
-| FR1 | Epic 2 | Home screen — domain list with score + count |
+| FR1 | Epic 2 | Home screen — domain list with score + count; select opens domain sub-menu |
 | FR2 | Epic 2 | Create new domain via free-text input |
-| FR3 | Epic 2 | Select domain → resume session + motivational message |
-| FR4 | Epic 2 | Archive domain (preserves all data) |
+| FR3 | Epic 2 | Domain sub-menu — Play/History/Stats/Archive/Back + motivational message on Play |
+| FR4 | Epic 2 | Archive domain from domain sub-menu (preserves all data) |
 | FR5 | Epic 2 | View archived domains + unarchive |
 | FR6 | Epic 3 | Copilot SDK question generation + SHA-256 deduplication |
 | FR7 | Epic 3 | Adaptive difficulty (5 levels, streak-driven, persists) |
@@ -109,7 +109,7 @@ Users can clone the repo, install dependencies, and run `tsx src/index.ts` to re
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
 
 ### Epic 2: Domain Management
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to start a session, archive domains they're not actively using, and unarchive them to resume exactly where they left off.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Stats, Archive, Back), archive domains they're not actively using, and unarchive them to resume exactly where they left off.
 **FRs covered:** FR1, FR2, FR3, FR4, FR5
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
@@ -270,7 +270,7 @@ So that regressions are caught automatically before they reach the main branch.
 
 ## Epic 2: Domain Management
 
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to start a session, archive domains they're not actively using, and unarchive them to resume exactly where they left off.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Stats, Archive, Back), archive domains they're not actively using, and unarchive them to resume exactly where they left off.
 
 ### Story 2.1: Home Screen — Display Domain List
 
@@ -284,7 +284,8 @@ So that I can see my current progress at a glance and choose what to do next.
 **When** I run `tsx src/index.ts`
 **Then** the home screen renders within ≤ 2 seconds showing a list of all active (non-archived) domains
 **And** each domain entry shows: domain name, current score, and total questions answered
-**And** the available actions include: select a domain, create a new domain, view archived domains, and exit
+**And** the available actions include: select a domain (opens domain sub-menu), create a new domain, view archived domains, and exit
+**And** archive / view history / view stats actions are NOT shown on the home screen — they are accessed from the domain sub-menu
 
 **Given** no domain files exist in `~/.brain-break/`
 **When** the home screen loads
@@ -320,29 +321,36 @@ So that I can immediately start getting quiz questions on any topic I choose.
 
 ---
 
-### Story 2.3: Select Domain & Motivational Message
+### Story 2.5: Domain Sub-Menu
 
 As a user,
-I want to select an active domain from the home screen and receive a motivational message when I'm on a return visit or upward score trend,
-So that I feel acknowledged and encouraged to keep going.
+I want selecting a domain to open a sub-menu showing the domain's current stats and actions I can take,
+So that I can choose to play, review history, check stats, or archive — all from a focused, per-domain context.
 
 **Acceptance Criteria:**
 
 **Given** I am on the home screen and at least one active domain exists
 **When** I select a domain
-**Then** the app reads the domain file via `readDomain()` and proceeds to the quiz screen
+**Then** the domain sub-menu opens with the prompt header showing: domain name, current score, and total questions answered (read fresh from disk)
+**And** the available options are: Play, View History, View Stats, Archive, and Back
 
-**Given** I select a domain and my last session for that domain was within 7 days
-**When** the domain loads
-**Then** a contextual motivational message is displayed (e.g. "Welcome back! Keep the streak going.")
+**Given** I am on the domain sub-menu
+**When** I select "Play"
+**Then** if my last session for that domain was within 7 days, a motivational message is displayed (e.g. "Welcome back! Keep the streak going.")
+**And** if my score has been trending upward over the last 3+ sessions, a motivational message referencing the upward trend is displayed
+**And** the quiz starts immediately after any messages
 
-**Given** I select a domain and my score has been increasing over the last 3+ sessions
-**When** the domain loads
-**Then** a motivational message referencing an upward score trend is displayed
+**Given** I am on the domain sub-menu
+**When** I select "Back"
+**Then** I return to the home screen
 
 **Given** I select a domain and the domain file is corrupted (Zod validation fails on read)
-**When** the domain loads
-**Then** the app displays the corrupted-file warning message and resets the domain to `defaultDomainFile()` before proceeding
+**When** the sub-menu loads
+**Then** the app displays the corrupted-file warning message and resets the domain to `defaultDomainFile()` before showing the sub-menu
+
+**Given** I complete or exit a quiz session
+**When** the session ends
+**Then** I am returned to the domain sub-menu (not the home screen)
 
 ---
 
@@ -354,10 +362,10 @@ So that my active domain list stays focused without losing any history or progre
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen and at least one active domain exists
-**When** I choose to archive a domain
+**Given** I am on the domain sub-menu
+**When** I choose "Archive"
 **Then** the domain file is updated with `meta.archived: true` and saved atomically
-**And** the domain disappears from the active domain list immediately
+**And** the domain disappears from the active domain list and I am returned to the home screen
 
 **Given** I archived one or more domains
 **When** I select "View archived domains" from the home screen
@@ -491,7 +499,7 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 
 **Given** I am in an active quiz session
 **When** I choose "Exit quiz" (available after each answer)
-**Then** all persisted data is preserved and I am returned to the home screen
+**Then** all persisted data is preserved and I am returned to the domain sub-menu
 
 ---
 
@@ -507,7 +515,7 @@ So that I can review past questions, see where I went wrong, and track my learni
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen and select a domain, then choose "View History"
+**Given** I am on the domain sub-menu and choose "View History"
 **When** `screens/history.ts` loads
 **Then** the history is read from the domain file and displayed 10 entries per page, most recent first
 **And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level
@@ -522,11 +530,11 @@ So that I can review past questions, see where I went wrong, and track my learni
 
 **Given** the domain has no history entries
 **When** I navigate to View History
-**Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the home screen
+**Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the domain sub-menu
 
 **Given** I am on the history screen
 **When** I select "Back"
-**Then** I return to the home screen
+**Then** I return to the domain sub-menu
 
 ---
 
@@ -538,7 +546,7 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen and select a domain, then choose "View Stats"
+**Given** I am on the domain sub-menu and choose "View Stats"
 **When** `screens/stats.ts` loads
 **Then** the stats dashboard displays all of the following, derived from the domain file:
 - Current score
@@ -556,4 +564,4 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 
 **Given** I am on the stats screen
 **When** I select "Back"
-**Then** I return to the home screen
+**Then** I return to the domain sub-menu

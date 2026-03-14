@@ -4,6 +4,7 @@ import { showSelectDomainScreen } from './screens/select-domain.js'
 import { showArchivedScreen } from './screens/archived.js'
 import { showHistory as showHistoryScreen } from './screens/history.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
+import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { readDomain, writeDomain } from './domain/store.js'
 import { warn, error as errorFmt } from './utils/format.js'
 
@@ -42,4 +43,8 @@ export async function showHistory(slug: string): Promise<void> {
 
 export async function showStats(slug: string): Promise<void> {
   await showStatsScreen(slug)
+}
+
+export async function showDomainMenu(slug: string): Promise<void> {
+  await showDomainMenuScreen(slug)
 }

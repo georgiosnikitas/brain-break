@@ -14,7 +14,7 @@ vi.mock('../domain/store.js', () => ({
 }))
 
 vi.mock('../router.js', () => ({
-  showHome: vi.fn(),
+  showDomainMenu: vi.fn(),
 }))
 
 // ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@ import { select } from '@inquirer/prompts'
 import { showHistory, buildPageChoices, formatTimestamp } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
-const mockShowHome = vi.mocked(router.showHome)
+const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ function makeHistory(count: number): QuestionRecord[] {
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   vi.clearAllMocks()
-  mockShowHome.mockResolvedValue(undefined)
+  mockShowDomainMenu.mockResolvedValue(undefined)
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
 })
 
@@ -122,7 +122,7 @@ describe('showHistory — empty history', () => {
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('No questions answered yet')
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     consoleSpy.mockRestore()
   })
 
@@ -194,7 +194,7 @@ describe('showHistory — single question', () => {
 
     await showHistory('typescript')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('displays most-recent entry first (reversed history)', async () => {
@@ -318,7 +318,7 @@ describe('showHistory — navigation', () => {
     const values = thirdChoices.map((c) => c.value)
     expect(values).not.toContain('prev')
     expect(values).toContain('next')
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     consoleSpy.mockRestore()
   })
 
@@ -354,7 +354,7 @@ describe('showHistory — corrupted domain', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('corrupted'))
     const allLogs = logSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('No questions answered yet')
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     warnSpy.mockRestore()
     logSpy.mockRestore()
   })
@@ -372,7 +372,7 @@ describe('showHistory — ExitPromptError', () => {
 
     await showHistory('typescript')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('calls showHome on ExitPromptError during empty-history Back select', async () => {
@@ -382,6 +382,6 @@ describe('showHistory — ExitPromptError', () => {
 
     await showHistory('typescript')
 
-    expect(mockShowHome).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 })

@@ -9,9 +9,6 @@ export type HomeEntry = { slug: string; score: number; totalQuestions: number }
 
 export type HomeAction =
   | { action: 'select'; slug: string }
-  | { action: 'archive'; slug: string }
-  | { action: 'history'; slug: string }
-  | { action: 'stats'; slug: string }
   | { action: 'create' }
   | { action: 'archived' }
   | { action: 'exit' }
@@ -31,24 +28,10 @@ export function buildHomeChoices(
 
   for (const entry of entries) {
     const details = dim(`score: ${entry.score} · ${entry.totalQuestions} questions`)
-    choices.push(
-      {
-        name: `${bold(entry.slug)}  ${details}`,
-        value: { action: 'select', slug: entry.slug },
-      },
-      {
-        name: `  Archive ${entry.slug}`,
-        value: { action: 'archive', slug: entry.slug },
-      },
-      {
-        name: `  View History ${entry.slug}`,
-        value: { action: 'history', slug: entry.slug },
-      },
-      {
-        name: `  View Stats ${entry.slug}`,
-        value: { action: 'stats', slug: entry.slug },
-      },
-    )
+    choices.push({
+      name: `${bold(entry.slug)}  ${details}`,
+      value: { action: 'select', slug: entry.slug },
+    })
   }
 
   if (entries.length > 0) {
@@ -87,10 +70,7 @@ async function loadHomeEntries(
 
 async function handleHomeAction(answer: HomeAction): Promise<void> {
   if (answer.action === 'exit') process.exit(0)
-  if (answer.action === 'select') await router.showQuiz(answer.slug)
-  if (answer.action === 'archive') await router.archiveDomain(answer.slug)
-  if (answer.action === 'history') await router.showHistory(answer.slug)
-  if (answer.action === 'stats') await router.showStats(answer.slug)
+  if (answer.action === 'select') await router.showDomainMenu(answer.slug)
   if (answer.action === 'create') await router.showCreateDomain()
   if (answer.action === 'archived') await router.showArchived()
 }

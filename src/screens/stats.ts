@@ -126,10 +126,10 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     })
   } catch (err) {
     if (err instanceof ExitPromptError) {
-      await router.showHome()
+      await router.showDomainMenu(domainSlug)
       return
     }
     throw err
   }
-  await router.showHome()
+  await router.showDomainMenu(domainSlug)
 }

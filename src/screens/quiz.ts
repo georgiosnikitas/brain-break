@@ -82,7 +82,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
         process.exit(1)
       }
       console.error(errorFmt(questionResult.error))
-      await router.showHome()
+      await router.showDomainMenu(domainSlug)
       return
     }
 
@@ -90,7 +90,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
 
     const answered = await askQuestion(question)
     if (answered === null) {
-      await router.showHome()
+      await router.showDomainMenu(domainSlug)
       return
     }
     const { userAnswer, timeTakenMs } = answered
@@ -136,7 +136,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     // Exit option available after every answer
     const nextAction = await askNextAction()
     if (nextAction === null || nextAction === 'exit') {
-      await router.showHome()
+      await router.showDomainMenu(domainSlug)
       return
     }
   }
