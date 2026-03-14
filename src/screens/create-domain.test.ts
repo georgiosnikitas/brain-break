@@ -10,9 +10,11 @@ import { defaultDomainFile } from '../domain/schema.js'
 // Mock @inquirer/prompts so interactive prompts can be controlled in tests
 // ---------------------------------------------------------------------------
 const mockInput = vi.fn()
+const mockSelect = vi.fn()
 
 vi.mock('@inquirer/prompts', () => ({
   input: (...args: unknown[]) => mockInput(...args),
+  select: (...args: unknown[]) => mockSelect(...args),
 }))
 
 // ---------------------------------------------------------------------------
@@ -56,6 +58,7 @@ beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'brain-break-create-'))
   _setDataDir(testDir)
   mockInput.mockReset()
+  mockSelect.mockReset()
 })
 
 afterEach(async () => {
@@ -65,6 +68,7 @@ afterEach(async () => {
 
 describe('showCreateDomainScreen', () => {
   it('creates domain file when slug is new', async () => {
+    mockSelect.mockResolvedValueOnce('enter')
     mockInput.mockResolvedValueOnce('Spring Boot microservices')
 
     await showCreateDomainScreen()
@@ -82,6 +86,7 @@ describe('showCreateDomainScreen', () => {
     const existing = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, score: 999 } }
     await writeDomain('my-topic', existing)
 
+    mockSelect.mockResolvedValueOnce('enter')
     mockInput.mockResolvedValueOnce('my-topic')
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -101,6 +106,7 @@ describe('showCreateDomainScreen', () => {
     const archived = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, archived: true } }
     await writeDomain('archived-topic', archived)
 
+    mockSelect.mockResolvedValueOnce('enter')
     mockInput.mockResolvedValueOnce('archived-topic')
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -122,6 +128,7 @@ describe('showCreateDomainScreen', () => {
     await writeFile(fakePath, 'data')
     _setDataDir(fakePath)
 
+    mockSelect.mockResolvedValueOnce('enter')
     mockInput.mockResolvedValueOnce('new-topic')
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -136,5 +143,36 @@ describe('showCreateDomainScreen', () => {
     expect(list.ok).toBe(true)
     if (!list.ok) return
     expect(list.data.filter((e) => e.slug === 'new-topic')).toHaveLength(0)
+  })
+
+  it('returns without creating a file when user selects Back', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await showCreateDomainScreen()
+
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(warnSpy).not.toHaveBeenCalled()
+    expect(errorSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+    errorSpy.mockRestore()
+
+    const list = await listDomains()
+    expect(list.ok).toBe(true)
+    if (!list.ok) return
+    expect(list.data).toHaveLength(0)
+  })
+
+  it('creates domain file when user selects Enter domain name then provides a valid name', async () => {
+    mockSelect.mockResolvedValueOnce('enter')
+    mockInput.mockResolvedValueOnce('TypeScript advanced')
+
+    await showCreateDomainScreen()
+
+    const result = await readDomain('typescript-advanced')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.meta.score).toBe(0)
   })
 })
