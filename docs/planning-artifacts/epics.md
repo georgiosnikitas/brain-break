@@ -476,6 +476,46 @@ So that my active domain list stays focused without losing any history or progre
 
 ---
 
+### Story 2.6: Delete Domain
+
+As a user,
+I want to permanently delete a domain from the domain sub-menu,
+So that I can remove domains I no longer need and keep my list clean.
+
+**Acceptance Criteria:**
+
+**Given** I am on the domain sub-menu
+**When** I inspect the available options
+**Then** a "🗑  Delete" action is present immediately after the "Archive" option
+
+**Given** I am on the domain sub-menu
+**When** I select "Delete"
+**Then** a confirmation prompt is shown: `Delete "<slug>" permanently? This cannot be undone.` with default answer "No"
+
+**Given** the delete confirmation prompt is shown
+**When** I confirm (answer "Yes")
+**Then** the domain file at `~/.brain-break/<slug>.json` is permanently removed
+**And** I am returned to the home screen
+**And** the domain no longer appears in the active domain list
+
+**Given** the delete confirmation prompt is shown
+**When** I cancel (answer "No")
+**Then** no file is deleted and I remain on the domain sub-menu
+
+**Given** `domain/store.ts` exports `deleteDomain(slug)`
+**When** I call `deleteDomain(slug)` and the file exists
+**Then** it removes the file and returns `{ ok: true }`
+
+**Given** `domain/store.ts` exports `deleteDomain(slug)`
+**When** I call `deleteDomain(slug)` and the file does not exist (ENOENT)
+**Then** it returns `{ ok: true }` — idempotent, no error
+
+**Given** `domain/store.test.ts` and `screens/domain-menu.test.ts` cover the new story
+**When** I run `npm test`
+**Then** all tests pass, covering: file removal, ENOENT idempotency, domain removed from list, confirmed delete navigates home, cancelled delete stays in menu
+
+---
+
 ## Epic 3: AI-Powered Adaptive Quiz
 
 Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, and graceful error handling if the Copilot API is unavailable.

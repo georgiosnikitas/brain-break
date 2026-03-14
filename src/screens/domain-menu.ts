@@ -1,4 +1,4 @@
-import { select, Separator } from '@inquirer/prompts'
+import { select, confirm, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
@@ -11,6 +11,7 @@ export type DomainMenuAction =
   | { action: 'history' }
   | { action: 'stats' }
   | { action: 'archive' }
+  | { action: 'delete' }
   | { action: 'back' }
 
 export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMenuAction } | Separator> {
@@ -19,6 +20,7 @@ export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMen
     { name: '📜  View History', value: { action: 'history' } },
     { name: '📊  View Stats', value: { action: 'stats' } },
     { name: '🗄  Archive', value: { action: 'archive' } },
+    { name: '🗑  Delete', value: { action: 'delete' } },
     new Separator(),
     { name: '←  Back', value: { action: 'back' } },
   ]
@@ -36,12 +38,13 @@ export async function showDomainMenuScreen(slug: string): Promise<void> {
     const totalQuestions = domain.history.length
 
     const scoreLabel = dim(`score: ${score} · ${totalQuestions} questions`)
-    let answer: DomainMenuAction
     try {
-      answer = await select<DomainMenuAction>({
+      const answer = await select<DomainMenuAction>({
         message: `🧠 ${bold(slug)}  ${scoreLabel}`,
         choices: buildDomainMenuChoices(),
       })
+      const shouldContinue = await handleDomainAction(slug, answer)
+      if (!shouldContinue) return
     } catch (err) {
       if (err instanceof ExitPromptError) {
         await router.showHome()
@@ -49,9 +52,6 @@ export async function showDomainMenuScreen(slug: string): Promise<void> {
       }
       throw err
     }
-
-    const shouldContinue = await handleDomainAction(slug, answer)
-    if (!shouldContinue) return
   }
 }
 
@@ -66,6 +66,16 @@ async function handleDomainAction(slug: string, answer: DomainMenuAction): Promi
     await router.archiveDomain(slug)
     await router.showHome()
     return false
+  } else if (answer.action === 'delete') {
+    const confirmed = await confirm({
+      message: `Delete "${slug}" permanently? This cannot be undone.`,
+      default: false,
+    })
+    if (confirmed) {
+      await router.deleteDomain(slug)
+      await router.showHome()
+      return false
+    }
   } else {
     await router.showHome()
     return false

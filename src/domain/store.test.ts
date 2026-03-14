@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { writeDomain, readDomain, listDomains, _setDataDir } from './store.js'
+import { writeDomain, readDomain, listDomains, deleteDomain, _setDataDir } from './store.js'
 import { defaultDomainFile, DomainFile } from './schema.js'
 
 let testDir: string
@@ -154,5 +154,40 @@ describe('listDomains', () => {
     expect(badEntry?.corrupted).toBe(true)
     const goodEntry = result.data.find((d) => d.slug === 'good-domain')
     expect(goodEntry?.corrupted).toBe(false)
+  })
+})
+
+describe('deleteDomain', () => {
+  it('removes the domain file and returns ok', async () => {
+    await writeDomain('to-delete', defaultDomainFile())
+
+    const deleteResult = await deleteDomain('to-delete')
+    expect(deleteResult.ok).toBe(true)
+
+    const readResult = await readDomain('to-delete')
+    expect(readResult.ok).toBe(true)
+    if (!readResult.ok) return
+    // File gone → defaultDomainFile() returned (ENOENT path)
+    expect(readResult.data.meta.score).toBe(0)
+    expect(readResult.data.history).toEqual([])
+  })
+
+  it('returns ok when file does not exist (idempotent)', async () => {
+    const result = await deleteDomain('nonexistent-slug')
+    expect(result.ok).toBe(true)
+  })
+
+  it('domain is no longer listed after deletion', async () => {
+    await writeDomain('topic-a', defaultDomainFile())
+    await writeDomain('topic-b', defaultDomainFile())
+
+    await deleteDomain('topic-a')
+
+    const listResult = await listDomains()
+    expect(listResult.ok).toBe(true)
+    if (!listResult.ok) return
+    const slugs = listResult.data.map((d) => d.slug)
+    expect(slugs).not.toContain('topic-a')
+    expect(slugs).toContain('topic-b')
   })
 })

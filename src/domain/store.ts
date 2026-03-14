@@ -72,6 +72,22 @@ export async function readDomain(slug: string): Promise<Result<DomainFile>> {
 }
 
 // ---------------------------------------------------------------------------
+// deleteDomain — permanently remove a domain file
+// ---------------------------------------------------------------------------
+export async function deleteDomain(slug: string): Promise<Result<void>> {
+  try {
+    await unlink(domainPath(slug))
+    return { ok: true, data: undefined }
+  } catch (err) {
+    if (err instanceof Error && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { ok: true, data: undefined }
+    }
+    const message = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: `Failed to delete domain "${slug}": ${message}` }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // listDomains — all *.json files excluding .tmp-* prefixes; dir missing → []
 // ---------------------------------------------------------------------------
 export async function listDomains(): Promise<Result<DomainListEntry[]>> {

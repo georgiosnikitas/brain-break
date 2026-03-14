@@ -9,6 +9,7 @@ vi.mock('@github/copilot-sdk', () => ({ CopilotClient: vi.fn(), approveAll: vi.f
 
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
+  confirm: vi.fn(),
   Separator: vi.fn(),
 }))
 
@@ -21,6 +22,7 @@ vi.mock('../router.js', () => ({
   showHistory: vi.fn(),
   showStats: vi.fn(),
   archiveDomain: vi.fn(),
+  deleteDomain: vi.fn(),
   showHome: vi.fn(),
 }))
 
@@ -29,13 +31,14 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
-import { select } from '@inquirer/prompts'
+import { select, confirm } from '@inquirer/prompts'
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { clearScreen } from '../utils/screen.js'
 import { buildDomainMenuChoices, showDomainMenuScreen, type DomainMenuAction } from './domain-menu.js'
 
 const mockSelect = vi.mocked(select)
+const mockConfirm = vi.mocked(confirm)
 const mockReadDomain = vi.mocked(readDomain)
 
 // ---------------------------------------------------------------------------
@@ -48,6 +51,7 @@ beforeEach(() => {
   vi.mocked(router.showHistory).mockResolvedValue(undefined)
   vi.mocked(router.showStats).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
+  vi.mocked(router.deleteDomain).mockResolvedValue(undefined)
   vi.mocked(router.showHome).mockResolvedValue(undefined)
 })
 
@@ -55,27 +59,29 @@ beforeEach(() => {
 // buildDomainMenuChoices
 // ---------------------------------------------------------------------------
 describe('buildDomainMenuChoices', () => {
-  it('returns 6 items with a Separator before Back', () => {
+  it('returns 7 items with a Separator before Back', () => {
     const choices = buildDomainMenuChoices()
-    expect(choices).toHaveLength(6)
+    expect(choices).toHaveLength(7)
   })
 
-  it('names contain Play, History, Stats, Archive, Back in order', () => {
+  it('names contain Play, History, Stats, Archive, Delete, Back in order', () => {
     const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].name).toContain('Play')
     expect(choices[1].name).toContain('History')
     expect(choices[2].name).toContain('Stats')
     expect(choices[3].name).toContain('Archive')
-    expect(choices[5].name).toContain('Back')
+    expect(choices[4].name).toContain('Delete')
+    expect(choices[6].name).toContain('Back')
   })
 
-  it('action values are play, history, stats, archive, back in order', () => {
+  it('action values are play, history, stats, archive, delete, back in order', () => {
     const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].value).toEqual({ action: 'play' })
     expect(choices[1].value).toEqual({ action: 'history' })
     expect(choices[2].value).toEqual({ action: 'stats' })
     expect(choices[3].value).toEqual({ action: 'archive' })
-    expect(choices[5].value).toEqual({ action: 'back' })
+    expect(choices[4].value).toEqual({ action: 'delete' })
+    expect(choices[6].value).toEqual({ action: 'back' })
   })
 })
 
@@ -200,5 +206,44 @@ describe('showDomainMenuScreen — clearScreen', () => {
     await showDomainMenuScreen('typescript')
 
     expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+  })
+})
+
+describe('showDomainMenuScreen — Delete (confirmed)', () => {
+  it('calls router.deleteDomain then router.showHome when user confirms deletion', async () => {
+    mockSelect.mockResolvedValueOnce({ action: 'delete' })
+    mockConfirm.mockResolvedValueOnce(true)
+
+    await showDomainMenuScreen('typescript')
+
+    expect(mockConfirm).toHaveBeenCalledOnce()
+    expect(vi.mocked(router.deleteDomain)).toHaveBeenCalledWith('typescript')
+    expect(vi.mocked(router.showHome)).toHaveBeenCalledOnce()
+  })
+})
+
+describe('showDomainMenuScreen — Delete (cancelled)', () => {
+  it('stays in the menu when user cancels deletion', async () => {
+    mockSelect
+      .mockResolvedValueOnce({ action: 'delete' })
+      .mockResolvedValueOnce({ action: 'back' })
+    mockConfirm.mockResolvedValueOnce(false)
+
+    await showDomainMenuScreen('typescript')
+
+    expect(vi.mocked(router.deleteDomain)).not.toHaveBeenCalled()
+    expect(vi.mocked(router.showHome)).toHaveBeenCalledOnce()
+  })
+})
+
+describe('showDomainMenuScreen — Delete (Ctrl+C during confirm)', () => {
+  it('calls router.showHome when ExitPromptError is thrown during confirm', async () => {
+    mockSelect.mockResolvedValueOnce({ action: 'delete' })
+    mockConfirm.mockRejectedValueOnce(new ExitPromptError())
+
+    await showDomainMenuScreen('typescript')
+
+    expect(vi.mocked(router.deleteDomain)).not.toHaveBeenCalled()
+    expect(vi.mocked(router.showHome)).toHaveBeenCalledOnce()
   })
 })

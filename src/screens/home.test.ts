@@ -219,7 +219,7 @@ describe('showHomeScreen — routing', () => {
       data: [{ slug: 'typescript', meta: domain.meta, corrupted: false as const }],
     })
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit')
     })
     mockSelect
@@ -233,7 +233,7 @@ describe('showHomeScreen — routing', () => {
   })
 
   it('calls showCoffeeScreen when coffee action is selected', async () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit')
     })
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -249,7 +249,7 @@ describe('showHomeScreen — routing', () => {
   })
 
   it('calls clearScreen before rendering', async () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit')
     })
     mockSelect.mockResolvedValueOnce({ action: 'exit' })
