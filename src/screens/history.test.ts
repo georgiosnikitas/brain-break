@@ -69,13 +69,13 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 describe('buildPageChoices', () => {
   it('returns only Back when there is exactly one question', () => {
-    const choices = buildPageChoices(0, 1)
+    const choices = buildPageChoices(0, 1) as Array<{ name: string; value: string }>
     expect(choices).toHaveLength(1)
     expect(choices[0].value).toBe('back')
   })
 
   it('returns Next + Back on first question of multi-question history', () => {
-    const choices = buildPageChoices(0, 3)
+    const choices = buildPageChoices(0, 3) as Array<{ name: string; value: string }>
     const values = choices.map((c) => c.value)
     expect(values).toContain('next')
     expect(values).toContain('back')
@@ -83,7 +83,7 @@ describe('buildPageChoices', () => {
   })
 
   it('returns Previous + Back on last question', () => {
-    const choices = buildPageChoices(2, 3)
+    const choices = buildPageChoices(2, 3) as Array<{ name: string; value: string }>
     const values = choices.map((c) => c.value)
     expect(values).toContain('prev')
     expect(values).toContain('back')
@@ -91,7 +91,7 @@ describe('buildPageChoices', () => {
   })
 
   it('returns Previous + Next + Back on a middle question', () => {
-    const choices = buildPageChoices(1, 3)
+    const choices = buildPageChoices(1, 3) as Array<{ name: string; value: string }>
     const values = choices.map((c) => c.value)
     expect(values).toContain('prev')
     expect(values).toContain('next')

@@ -30,7 +30,7 @@ vi.mock('../router.js', () => ({
 import { select } from '@inquirer/prompts'
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
-import { buildDomainMenuChoices, showDomainMenuScreen } from './domain-menu.js'
+import { buildDomainMenuChoices, showDomainMenuScreen, type DomainMenuAction } from './domain-menu.js'
 
 const mockSelect = vi.mocked(select)
 const mockReadDomain = vi.mocked(readDomain)
@@ -58,7 +58,7 @@ describe('buildDomainMenuChoices', () => {
   })
 
   it('names contain Play, History, Stats, Archive, Back in order', () => {
-    const choices = buildDomainMenuChoices()
+    const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].name).toContain('Play')
     expect(choices[1].name).toContain('History')
     expect(choices[2].name).toContain('Stats')
@@ -67,7 +67,7 @@ describe('buildDomainMenuChoices', () => {
   })
 
   it('action values are play, history, stats, archive, back in order', () => {
-    const choices = buildDomainMenuChoices()
+    const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].value).toEqual({ action: 'play' })
     expect(choices[1].value).toEqual({ action: 'history' })
     expect(choices[2].value).toEqual({ action: 'stats' })
