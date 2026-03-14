@@ -33,10 +33,11 @@ export async function showDomainMenuScreen(slug: string): Promise<void> {
     const score = domain.meta.score
     const totalQuestions = domain.history.length
 
+    const scoreLabel = dim(`score: ${score} · ${totalQuestions} questions`)
     let answer: DomainMenuAction
     try {
       answer = await select<DomainMenuAction>({
-        message: `\n  🧠 ${bold(slug)}  ${dim(`score: ${score} · ${totalQuestions} questions`)}`,
+        message: `\n  🧠 ${bold(slug)}  ${scoreLabel}`,
         choices: buildDomainMenuChoices(),
       })
     } catch (err) {
@@ -47,19 +48,25 @@ export async function showDomainMenuScreen(slug: string): Promise<void> {
       throw err
     }
 
-    if (answer.action === 'play') {
-      await router.showQuiz(slug)
-    } else if (answer.action === 'history') {
-      await router.showHistory(slug)
-    } else if (answer.action === 'stats') {
-      await router.showStats(slug)
-    } else if (answer.action === 'archive') {
-      await router.archiveDomain(slug)
-      await router.showHome()
-      return
-    } else {
-      await router.showHome()
-      return
-    }
+    const shouldContinue = await handleDomainAction(slug, answer)
+    if (!shouldContinue) return
   }
+}
+
+async function handleDomainAction(slug: string, answer: DomainMenuAction): Promise<boolean> {
+  if (answer.action === 'play') {
+    await router.showQuiz(slug)
+  } else if (answer.action === 'history') {
+    await router.showHistory(slug)
+  } else if (answer.action === 'stats') {
+    await router.showStats(slug)
+  } else if (answer.action === 'archive') {
+    await router.archiveDomain(slug)
+    await router.showHome()
+    return false
+  } else {
+    await router.showHome()
+    return false
+  }
+  return true
 }
