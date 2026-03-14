@@ -13,6 +13,7 @@ import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
+import { clearScreen } from '../utils/screen.js'
 
 // ---------------------------------------------------------------------------
 // Mock @inquirer/prompts
@@ -22,6 +23,8 @@ vi.mock('@inquirer/prompts', () => ({
   select: (...args: unknown[]) => mockSelect(...args),
   Separator: vi.fn(),
 }))
+
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -215,5 +218,13 @@ describe('showArchivedScreen', () => {
     mockSelect.mockRejectedValue(new ExitPromptError())
     // Should not throw
     await expect(showArchivedScreen()).resolves.toBeUndefined()
+  })
+
+  it('calls clearScreen before rendering', async () => {
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showArchivedScreen()
+
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
 })

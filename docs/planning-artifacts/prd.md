@@ -19,6 +19,8 @@ editHistory:
     changes: 'Feature 1: introduced two-level navigation — home screen lists domains only (with score/count) + create/archived/exit; selecting a domain opens a domain sub-menu with Play, View History, View Stats, Archive, and Back'
   - date: '2026-03-14'
     changes: 'Feature 1: create-domain screen input prompt updated with Ctrl+C back hint — pressing Ctrl+C returns to home without creating a domain (2-step flow: home → input)'
+  - date: '2026-03-14'
+    changes: 'Cross-cutting terminal rendering statement added to Functional Requirements preamble; NFR 5 (Terminal Screen Management) added'
 ---
 
 # Product Requirements Document: brain-break
@@ -219,6 +221,8 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 The following 7 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
+**Terminal rendering (cross-cutting):** All screens clear the terminal viewport and render content from the top on every navigation action — no prior output persists in the visible area between transitions.
+
 ### Feature 1 — In-App Domain Management
 
 **Home screen (Level 1)**
@@ -354,6 +358,9 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 
 ### NFR 4 — Startup Time
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
+
+### NFR 5 — Terminal Screen Management
+All screen transitions — including home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, and stats dashboard — clear the terminal viewport before rendering new content. No prior output persists in the visible area after any navigation action. Measurable: every state-changing user input produces a fully redrawn terminal screen with zero residual output from the previous state.
 
 ---
 

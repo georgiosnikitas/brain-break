@@ -13,6 +13,7 @@ import {
   formatScoreDelta,
   formatDuration,
 } from '../utils/format.js'
+import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
 type NavAction = 'next' | 'prev' | 'back'
@@ -49,6 +50,7 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
   let index = 0
 
   while (true) {
+    clearScreen()
     console.log(header(`\nQuestion History — Question ${index + 1} of ${totalItems}`))
     displayEntry(history[index], index)
 
@@ -87,6 +89,7 @@ export async function showHistory(domainSlug: string): Promise<void> {
   const history = [...domain.history].reverse()
 
   if (history.length === 0) {
+    clearScreen()
     console.log(header('Question History'))
     console.log(dim('No questions answered yet'))
     try {

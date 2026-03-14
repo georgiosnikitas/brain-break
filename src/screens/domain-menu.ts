@@ -3,6 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import { bold, dim, warn } from '../utils/format.js'
+import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
 export type DomainMenuAction =
@@ -25,6 +26,7 @@ export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMen
 
 export async function showDomainMenuScreen(slug: string): Promise<void> {
   while (true) {
+    clearScreen()
     const readResult = await readDomain(slug)
     if (!readResult.ok) {
       console.warn(warn(readResult.error))

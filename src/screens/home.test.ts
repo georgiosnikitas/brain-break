@@ -19,11 +19,14 @@ vi.mock('../router.js', () => ({
   showArchived: vi.fn(),
 }))
 
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
 import { select } from '@inquirer/prompts'
 import { listDomains, readDomain } from '../domain/store.js'
 import * as router from '../router.js'
+import { clearScreen } from '../utils/screen.js'
 import { defaultDomainFile } from '../domain/schema.js'
 
 const mockSelect = vi.mocked(select)
@@ -222,6 +225,17 @@ describe('showHomeScreen — routing', () => {
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
     expect(vi.mocked(router.showDomainMenu)).toHaveBeenCalledOnce()
     expect(vi.mocked(router.showDomainMenu)).toHaveBeenCalledWith('typescript')
+    exitSpy.mockRestore()
+  })
+
+  it('calls clearScreen before rendering', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
     exitSpy.mockRestore()
   })
 })

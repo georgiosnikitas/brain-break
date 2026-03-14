@@ -2,6 +2,7 @@ import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, type DomainListEntry } from '../domain/store.js'
 import { dim, bold, error as errorFmt } from '../utils/format.js'
+import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 import type { Result } from '../domain/schema.js'
 
@@ -77,6 +78,7 @@ async function handleHomeAction(answer: HomeAction): Promise<void> {
 
 export async function showHomeScreen(): Promise<void> {
   while (true) {
+    clearScreen()
     const listResult = await listDomains()
     const homeEntries = await loadHomeEntries(listResult)
 

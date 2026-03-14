@@ -7,6 +7,7 @@ import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
 import { defaultDomainFile, type QuestionRecord, type DomainFile, type AnswerOption, type SpeedTier } from '../domain/schema.js'
 import { formatSpeedTier, formatScoreDelta, formatDuration, success, error as errorFmt, warn, bold } from '../utils/format.js'
+import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
 async function askQuestion(
@@ -89,6 +90,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
 
     const question = questionResult.data
 
+    clearScreen()
     const answered = await askQuestion(question)
     if (answered === null) {
       await router.showDomainMenu(domainSlug)
@@ -132,6 +134,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
       console.error(errorFmt(`Failed to save progress: ${writeResult.error}`))
     }
 
+    clearScreen()
     showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta)
 
     // Exit option available after every answer

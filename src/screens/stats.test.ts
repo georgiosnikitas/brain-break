@@ -17,12 +17,15 @@ vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
 }))
 
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
+import { clearScreen } from '../utils/screen.js'
 import {
   showStats,
   formatTotalTimePlayed,
@@ -359,5 +362,17 @@ describe('showStats — corrupted domain', () => {
     expect(logged).toContain('No data yet')
     consoleSpy.mockRestore()
     warnSpy.mockRestore()
+  })
+})
+
+describe('showStats — clearScreen', () => {
+  it('calls clearScreen before rendering the stats dashboard', async () => {
+    mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+    mockSelect.mockResolvedValue('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showStats('typescript')
+
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
 })

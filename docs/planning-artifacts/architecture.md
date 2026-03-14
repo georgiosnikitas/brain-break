@@ -7,6 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
+lastEdited: '2026-03-14'
+editHistory:
+  - date: '2026-03-14'
+    changes: 'Added Story 1.6 — Terminal Screen Management: utils/screen.ts, clearScreen() pattern, NFR 5 coverage'
 project_name: 'brain-break'
 user_name: 'George'
 date: '2026-03-07'
@@ -27,6 +31,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
 - Reliability: Graceful degradation on API unavailability or auth failure; corrupted domain file recovery without crash
 - Data integrity: SHA-256 deduplication persisted across sessions; missing file treated as clean new domain
+- Terminal screen management: every state-changing navigation action clears the viewport before rendering new content — no residual output from the previous screen persists
 
 **Scale & Complexity:**
 
@@ -49,7 +54,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - **AI integration & error resilience:** Every question cycle touches the Copilot API; network/auth failure paths must be handled uniformly across the quiz engine
 - **File I/O with integrity guarantees:** Read/write/permission enforcement is needed everywhere domain state is touched — must be centralized, not scattered
 - **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer and must be atomically persisted
-- **Terminal rendering:** All user-facing output (home screen, quiz, feedback, history, stats, spinner) requires a consistent rendering approach
+- **Terminal rendering:** All user-facing output (home screen, quiz, feedback, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output
 - **Deduplication:** SHA-256 lookup on every question generation — must be fast and correctly scoped per domain
 
 ## Starter Template Evaluation
@@ -230,6 +235,35 @@ Each screen is a standalone `async` function that resolves when the user exits i
 
 *Rationale:* 4 screens, linear flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
+**Screen Clearing Pattern — `clearScreen()` before every render**
+
+Every screen entry point and every re-render cycle (e.g., post-answer feedback, history page navigation) calls `clearScreen()` as its **first** operation before any output:
+
+```typescript
+// ✅ Correct pattern — every screen, every render cycle
+import { clearScreen } from '../utils/screen.js';
+
+export async function showHome(): Promise<void> {
+  clearScreen();
+  // ... render domain list
+}
+```
+
+`clearScreen()` is a thin wrapper over the ANSI reset escape sequence:
+
+```typescript
+// utils/screen.ts
+export function clearScreen(): void {
+  process.stdout.write('\x1Bc');
+}
+```
+
+Using `\x1Bc` (full terminal reset) over `\x1B[2J\x1B[H` (erase + cursor-home) ensures residual scroll-back content does not bleed into the visible viewport on all target platforms (macOS Terminal, iTerm2, Linux terminals, WSL).
+
+**Enforcement rule:** No screen may output content to the terminal without first calling `clearScreen()`. This is verifiable: every `screens/*.ts` file must have `clearScreen()` as its first side-effectful call in every code path that renders a new screen state.
+
+*Rationale:* Centralising the clear primitive in `utils/screen.ts` makes the contract testable (spy on `process.stdout.write` in unit tests), swap-able (one place to change if a different clear strategy is needed), and makes the enforcement rule auditable by grep.
+
 ---
 
 ### Module Architecture
@@ -255,6 +289,7 @@ src/
 └── utils/
     ├── hash.ts           # SHA-256 hashing helpers
     ├── slugify.ts        # Domain name → file slug
+    ├── screen.ts         # clearScreen() — viewport reset before every render
     └── format.ts         # Shared terminal formatting helpers
 ```
 
@@ -270,7 +305,7 @@ src/
 1. Scaffold: `package.json`, `tsconfig.json`, directory structure
 2. `domain/schema.ts` — define types and Zod schema first (everything else depends on this)
 3. `domain/store.ts` — atomic reads/writes
-4. `utils/` — hash, slugify, format
+4. `utils/` — hash, slugify, screen, format
 5. `ai/prompts.ts` + `ai/client.ts` — Copilot integration with Zod validation
 6. `domain/scoring.ts` — scoring formula and difficulty logic
 7. `screens/` — home, quiz, history, stats
@@ -469,6 +504,8 @@ brain-break/
 │       ├── hash.test.ts
 │       ├── slugify.ts              # Domain name → kebab-case file slug
 │       ├── slugify.test.ts
+│       ├── screen.ts               # Story 1.6: clearScreen() — ANSI viewport reset
+│       ├── screen.test.ts
 │       ├── format.ts               # Shared chalk/terminal formatting helpers
 │       └── format.test.ts
 └── dist/                           # Compiled output — gitignored
@@ -482,7 +519,7 @@ brain-break/
 |---|---|---|
 | GitHub Copilot SDK | `ai/client.ts` | Only module that instantiates SDK client |
 | File system (`~/.brain-break/`) | `domain/store.ts` | Only module that calls `fs.*` write operations |
-| Terminal I/O (stdout/stdin) | `screens/*` + `router.ts` | `inquirer`, `ora`, `chalk` used only here |
+| Terminal I/O (stdout/stdin) | `screens/*` + `router.ts` | `inquirer`, `ora`, `chalk` used only here; `utils/screen.ts` owns the viewport-clear primitive |
 
 **Internal Boundaries:**
 - `screens/` → may import from `domain/`, `ai/`, `utils/` — never the reverse
@@ -501,6 +538,7 @@ brain-break/
 | F5 — Persistent History | `domain/store.ts`, `domain/schema.ts` |
 | F6 — View History | `screens/history.ts`, `domain/store.ts` |
 | F7 — View Stats | `screens/stats.ts`, `domain/store.ts` |
+| NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 
 **Cross-Cutting Concern Mapping:**
 
@@ -511,6 +549,7 @@ brain-break/
 | Atomic file write | `domain/store.ts` → `writeDomain()` |
 | AI error messages | `ai/client.ts` → `AI_ERRORS` constants |
 | Domain slug derivation | `utils/slugify.ts` exclusively |
+| Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path |
 
 ### Integration Points
 
@@ -574,10 +613,13 @@ All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNex
 | NFR 2 — API error handling | ✅ | `AI_ERRORS` constants + `Result<T>` in `ai/client.ts` |
 | NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT |
 | NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
+| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path |
 
 ### Implementation Readiness Validation ✅
 
 All critical decisions are documented with explicit versions. Patterns are comprehensive with concrete examples and anti-patterns. Project structure is fully specified with feature-to-file mapping. All potential AI agent conflict points have been addressed with clear enforcement guidelines.
+
+**2026-03-14 update:** NFR 5 (Terminal Screen Management) added — `utils/screen.ts` is a new module; all `screens/*.ts` files must call `clearScreen()` as their first render operation. The screen-clearing pattern and enforcement rule are documented in the Terminal UI Architecture section above.
 
 ### Gap Analysis Results
 

@@ -3,6 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 import { warn, bold, header, formatAccuracy } from '../utils/format.js'
+import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
 export function formatTotalTimePlayed(ms: number): string {
@@ -87,6 +88,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   const correct = history.filter((r) => r.isCorrect).length
   const incorrect = total - correct
 
+  clearScreen()
   console.log(header('\nStats Dashboard'))
 
   if (total === 0) {

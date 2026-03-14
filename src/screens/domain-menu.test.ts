@@ -24,12 +24,15 @@ vi.mock('../router.js', () => ({
   showHome: vi.fn(),
 }))
 
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
 import { select } from '@inquirer/prompts'
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
+import { clearScreen } from '../utils/screen.js'
 import { buildDomainMenuChoices, showDomainMenuScreen, type DomainMenuAction } from './domain-menu.js'
 
 const mockSelect = vi.mocked(select)
@@ -187,5 +190,15 @@ describe('showDomainMenuScreen — message', () => {
     expect(callArgs.message).toContain('typescript')
     expect(callArgs.message).toContain('250')
     expect(callArgs.message).toContain('15')
+  })
+})
+
+describe('showDomainMenuScreen — clearScreen', () => {
+  it('calls clearScreen before rendering', async () => {
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
 })

@@ -1,5 +1,9 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
+lastEdited: '2026-03-14'
+editHistory:
+  - date: '2026-03-14'
+    changes: 'NFR5 (Terminal Screen Management) added to Requirements Inventory and NFR Coverage Map; Story 1.6 (Terminal Screen Management) added to Epic 1'
 inputDocuments:
   - docs/planning-artifacts/prd.md
   - docs/planning-artifacts/architecture.md
@@ -51,6 +55,8 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard) clear the terminal viewport before rendering new content. No prior output persists in the visible area after any navigation action.
+
 ### Additional Requirements
 
 - **Project Scaffold (Epic 1, Story 1):** Minimal TypeScript scaffold (ESM) — not oclif. Initialize with `npm init -y`, install `typescript`, `tsx`, `@types/node` as dev deps. Run `npx tsc --init --module nodenext --moduleResolution nodenext --target es2022`. Create full `src/` directory structure as defined in Architecture.
@@ -99,6 +105,7 @@ NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a sta
 | NFR2 | Epic 3 | Graceful API/auth error → home screen |
 | NFR3 | Epic 2 | ENOENT → defaultDomainFile(); corrupted → warn + reset |
 | NFR4 | Epic 2 | ≤ 2s startup to home screen |
+| NFR5 | Story 1.6 | Terminal viewport cleared before every screen render (cross-cutting) |
 
 ## Epic List
 
@@ -265,6 +272,48 @@ So that regressions are caught automatically before they reach the main branch.
 **Given** the CI workflow runs
 **When** all checks pass
 **Then** the workflow completes successfully with a green status
+
+---
+
+### Story 1.6: Terminal Screen Management
+
+As a user,
+I want every screen in the app to render at the top of a cleared terminal viewport,
+So that the app always feels like a persistent full-screen application and previous output never clutters the current view.
+
+**Acceptance Criteria:**
+
+**Given** `utils/screen.ts` is implemented
+**When** I call `clearScreen()`
+**Then** the terminal viewport is fully cleared, leaving no prior output visible
+
+**Given** the home screen renders (on launch or navigation)
+**When** the screen is drawn
+**Then** `clearScreen()` is called before rendering — no prior output persists in the visible area
+
+**Given** the create domain screen renders
+**When** the input prompt is displayed
+**Then** `clearScreen()` is called before the prompt appears
+
+**Given** the domain sub-menu renders (on domain select, post-quiz return, or Back navigation)
+**When** the sub-menu is drawn
+**Then** `clearScreen()` is called before the sub-menu is displayed
+
+**Given** the archived domains list renders
+**When** the screen is drawn
+**Then** `clearScreen()` is called before rendering
+
+**Given** a quiz question or post-answer feedback panel renders
+**When** either screen is drawn
+**Then** `clearScreen()` is called before the new content is displayed — no prior question or feedback output persists
+
+**Given** the history screen renders (on load or page navigation)
+**When** any entry or page is displayed
+**Then** `clearScreen()` is called before rendering
+
+**Given** the stats dashboard renders
+**When** the screen is drawn
+**Then** `clearScreen()` is called before displaying content
 
 ---
 

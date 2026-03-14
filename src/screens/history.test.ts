@@ -18,12 +18,15 @@ vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
 }))
 
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
+import { clearScreen } from '../utils/screen.js'
 import { showHistory, buildPageChoices, formatTimestamp } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
@@ -384,5 +387,26 @@ describe('showHistory — ExitPromptError', () => {
     await showHistory('typescript')
 
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+  })
+
+  it('calls clearScreen before rendering each history entry', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+  })
+
+  it('calls clearScreen before rendering the empty history screen', async () => {
+    mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+    mockSelect.mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
 })
