@@ -54,8 +54,8 @@ async function askNextAction(): Promise<'next' | 'exit' | null> {
     return await select<'next' | 'exit'>({
       message: 'Next action:',
       choices: [
-        { name: 'Next question', value: 'next' as const },
-        { name: 'Exit quiz', value: 'exit' as const },
+        { name: '▶️  Next question', value: 'next' as const },
+        { name: '🚪 Exit quiz', value: 'exit' as const },
       ],
     })
   } catch (err) {
@@ -73,8 +73,9 @@ export async function showQuiz(domainSlug: string): Promise<void> {
 
   while (true) {
     const hashes = new Set(domain.hashes)
+    const recentQuestions = domain.history.slice(-5).map((r) => r.question)
     const spinner = ora('Generating question...').start()
-    const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes).finally(() => spinner.stop())
+    const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes, recentQuestions).finally(() => spinner.stop())
 
     if (!questionResult.ok) {
       if (questionResult.error === AI_ERRORS.AUTH) {

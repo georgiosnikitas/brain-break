@@ -75,6 +75,7 @@ export async function generateQuestion(
   domain: string,
   difficultyLevel: number,
   existingHashes: Set<string>,
+  previousQuestions: string[] = [],
 ): Promise<Result<Question>> {
   try {
     const client = await getClient()
@@ -100,7 +101,7 @@ export async function generateQuestion(
       const retryPrompt = buildDeduplicationPrompt(
         domain,
         difficultyLevel,
-        firstResult.data.question,
+        [...previousQuestions, firstResult.data.question],
       )
       const retryEvent = await session.sendAndWait({ prompt: retryPrompt })
       const retryRaw = retryEvent?.data.content ?? ''

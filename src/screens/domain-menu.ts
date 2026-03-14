@@ -37,7 +37,7 @@ export async function showDomainMenuScreen(slug: string): Promise<void> {
     let answer: DomainMenuAction
     try {
       answer = await select<DomainMenuAction>({
-        message: `\n  🧠 ${bold(slug)}  ${scoreLabel}`,
+        message: `🧠 ${bold(slug)}  ${scoreLabel}`,
         choices: buildDomainMenuChoices(),
       })
     } catch (err) {
