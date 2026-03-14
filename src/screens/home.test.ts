@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildHomeChoices, filterActiveDomains, showHomeScreen, type HomeEntry, type HomeAction } from './home.js'
+import { buildHomeChoices, filterActiveDomains, showHomeScreen, showCoffeeScreen, type HomeEntry, type HomeAction } from './home.js'
 
 // Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
 vi.mock('@github/copilot-sdk', () => ({ CopilotClient: vi.fn(), approveAll: vi.fn() }))
@@ -20,6 +20,9 @@ vi.mock('../router.js', () => ({
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('qrcode-terminal', () => ({
+  default: { generate: vi.fn((_url: string, _opts: unknown, cb: (code: string) => void) => cb('QR')) },
+}))
 
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
@@ -117,11 +120,12 @@ describe('buildHomeChoices', () => {
     expect(slugs).toContain('rust')
   })
 
-  it('always includes create, archived, and exit actions regardless of domain count', () => {
+  it('always includes create, archived, coffee, and exit actions regardless of domain count', () => {
     for (const entries of [[], [{ slug: 'go', score: 10, totalQuestions: 1 }]] as HomeEntry[][]) {
       const actions = actionChoices(entries).map((c) => c.value.action)
       expect(actions).toContain('create')
       expect(actions).toContain('archived')
+      expect(actions).toContain('coffee')
       expect(actions).toContain('exit')
     }
   })
@@ -228,6 +232,22 @@ describe('showHomeScreen — routing', () => {
     exitSpy.mockRestore()
   })
 
+  it('calls showCoffeeScreen when coffee action is selected', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
+      throw new Error('process.exit')
+    })
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    mockSelect
+      .mockResolvedValueOnce({ action: 'coffee' })
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('buymeacoffee.com/georgiosnikitas'))
+    exitSpy.mockRestore()
+    logSpy.mockRestore()
+  })
+
   it('calls clearScreen before rendering', async () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: string | number | null) => {
       throw new Error('process.exit')
@@ -237,5 +257,29 @@ describe('showHomeScreen — routing', () => {
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
     expect(vi.mocked(clearScreen)).toHaveBeenCalled()
     exitSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showCoffeeScreen
+// ---------------------------------------------------------------------------
+describe('showCoffeeScreen', () => {
+  it('shows QR code and URL then resolves when Back is selected', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await showCoffeeScreen()
+
+    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('buymeacoffee.com/georgiosnikitas'))
+    logSpy.mockRestore()
+  })
+
+  it('resolves silently when prompt is force-exited', async () => {
+    mockSelect.mockRejectedValueOnce(new (await import('@inquirer/core')).ExitPromptError())
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await expect(showCoffeeScreen()).resolves.toBeUndefined()
+    logSpy.mockRestore()
   })
 })

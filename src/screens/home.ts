@@ -5,6 +5,9 @@ import { dim, bold, error as errorFmt } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 import type { Result } from '../domain/schema.js'
+import qrcode from 'qrcode-terminal'
+
+const COFFEE_URL = 'https://www.buymeacoffee.com/georgiosnikitas'
 
 export type HomeEntry = { slug: string; score: number; totalQuestions: number }
 
@@ -12,6 +15,7 @@ export type HomeAction =
   | { action: 'select'; slug: string }
   | { action: 'create' }
   | { action: 'archived' }
+  | { action: 'coffee' }
   | { action: 'exit' }
 
 export function filterActiveDomains(
@@ -43,6 +47,7 @@ export function buildHomeChoices(
     { name: '➕  Create new domain', value: { action: 'create' } },
     { name: '🗄  View archived domains', value: { action: 'archived' } },
     new Separator(),
+    { name: '☕  Buy me a coffee', value: { action: 'coffee' } },
     { name: '🚪  Exit', value: { action: 'exit' } },
   )
 
@@ -74,6 +79,29 @@ async function handleHomeAction(answer: HomeAction): Promise<void> {
   if (answer.action === 'select') await router.showDomainMenu(answer.slug)
   if (answer.action === 'create') await router.showCreateDomain()
   if (answer.action === 'archived') await router.showArchived()
+  if (answer.action === 'coffee') await showCoffeeScreen()
+}
+
+export async function showCoffeeScreen(): Promise<void> {
+  clearScreen()
+  console.log('\n  ☕  Enjoying brain-break? Buy me a coffee!\n')
+  console.log('  Scan the QR code with your phone:\n')
+  await new Promise<void>((resolve) => {
+    qrcode.generate(COFFEE_URL, { small: true }, (code) => {
+      const indented = code.split('\n').map((line) => `  ${line}`).join('\n')
+      console.log(indented)
+      resolve()
+    })
+  })
+  console.log(`\n  ${COFFEE_URL}\n`)
+  try {
+    await select({
+      message: 'Navigation',
+      choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+    })
+  } catch (err) {
+    if (!(err instanceof ExitPromptError)) throw err
+  }
 }
 
 export async function showHomeScreen(): Promise<void> {

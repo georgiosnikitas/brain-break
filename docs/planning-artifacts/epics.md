@@ -1,9 +1,11 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-14'
+lastEdited: '2026-03-15'
 editHistory:
   - date: '2026-03-14'
     changes: 'NFR5 (Terminal Screen Management) added to Requirements Inventory and NFR Coverage Map; Story 1.6 (Terminal Screen Management) added to Epic 1'
+  - date: '2026-03-15'
+    changes: 'Story 1.7 (Buy Me a Coffee screen) added to Epic 1'
 inputDocuments:
   - docs/planning-artifacts/prd.md
   - docs/planning-artifacts/architecture.md
@@ -314,6 +316,41 @@ So that the app always feels like a persistent full-screen application and previ
 **Given** the stats dashboard renders
 **When** the screen is drawn
 **Then** `clearScreen()` is called before displaying content
+
+---
+
+### Story 1.7: Buy Me a Coffee Screen
+
+As a user,
+I want a "Buy me a coffee" option in the home screen menu that displays a scannable QR code and a direct URL,
+So that I can easily support the developer without leaving the terminal.
+
+**Acceptance Criteria:**
+
+**Given** I am on the home screen
+**When** I inspect the menu options
+**Then** a "☕  Buy me a coffee" action is present between the archived-domains action and the Exit action, separated from Exit by a visual separator
+
+**Given** I select "☕  Buy me a coffee" from the home screen
+**When** the coffee screen loads
+**Then** the terminal is cleared and the following are displayed in order:
+- A heading: "☕  Enjoying brain-break? Buy me a coffee!"
+- An instruction: "Scan the QR code with your phone:"
+- An ASCII QR code (small, indented) encoding `https://www.buymeacoffee.com/georgiosnikitas`
+- The URL `https://www.buymeacoffee.com/georgiosnikitas` in plain text
+- A `Navigation` prompt with a separator and a `←  Back` option
+
+**Given** I am on the coffee screen
+**When** I select "←  Back"
+**Then** I return to the home screen
+
+**Given** I am on the coffee screen
+**When** I force-exit the prompt (Ctrl+C)
+**Then** the app handles the exit gracefully and returns to the home screen without crashing
+
+**Given** `src/screens/home.test.ts` covers the new screen
+**When** I run `npm test`
+**Then** all tests pass, covering: coffee action present in menu, routing from home to coffee screen, QR code and URL rendered, `clearScreen()` called, Back resolves cleanly, force-exit handled silently
 
 ---
 
