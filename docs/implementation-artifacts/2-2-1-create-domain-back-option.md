@@ -12,52 +12,49 @@ Created: 2026-03-14
 ## Story
 
 As a user,
-I want the create-domain screen to present a select-style prompt with "Enter domain name" and "Back" options,
+I want the create-domain screen to let me type a domain name or press Ctrl+C to go back,
 So that I can return to the home screen without being forced to create a domain.
 
 ## Acceptance Criteria
 
-- [ ] AC1: Selecting "Create new domain" from the home screen shows a `select` prompt with two options: "✏️  Enter domain name" and "←  Back"
-- [ ] AC2: Selecting "←  Back" returns to the home screen without creating any domain file
-- [ ] AC3: Selecting "✏️  Enter domain name" proceeds to the existing free-text name input flow unchanged (all existing AC from 2.2 still hold)
+- [x] AC1: Selecting "Create new domain" from the home screen shows an `input` prompt with message `'New domain name (Ctrl+C to go back):'`
+- [x] AC2: Pressing Ctrl+C (ExitPromptError) returns to the home screen without creating any domain file
+- [x] AC3: Entering a valid name proceeds to the existing slugify, duplicate-check, and writeDomain flow unchanged (all existing AC from 2.2 still hold)
 
 ## Tasks / Subtasks
 
 - [x] Task 1: Update `src/screens/create-domain.ts` (AC: 1, 2, 3)
-  - [x] 1.1 Add `select` to the `@inquirer/prompts` import
-  - [x] 1.2 Define `type CreateDomainAction = 'enter' | 'back'`
-  - [x] 1.3 At the start of `showCreateDomainScreen`, show a `select` prompt (message: `'Create new domain'`) with choices `{ name: '✏️  Enter domain name', value: 'enter' }` and `{ name: '←  Back', value: 'back' }`; wrap in try/catch for `ExitPromptError`
-  - [x] 1.4 If resolved action is `'back'`, return immediately without running the input prompt or any domain logic
+  - [x] 1.1 Update `input` prompt message to `'New domain name (Ctrl+C to go back):'`
+  - [x] 1.2 Wrap the `input` call in a `try/catch` for `ExitPromptError`; return silently on catch
+  - [x] 1.3 Remove `select` import and all `select`-related logic (no intermediate menu)
 
 - [x] Task 2: Update `src/screens/create-domain.test.ts` (AC: 1, 2, 3)
-  - [x] 2.1 Replace `vi.mock('@inquirer/prompts')` stub to also export a `mockSelect` spy alongside the existing `mockInput` spy
-  - [x] 2.2 Reset `mockSelect` in `beforeEach` alongside `mockInput`
-  - [x] 2.3 Add test: when user selects `'back'`, no domain file is written and no `console.warn`/`console.error` is called
-  - [x] 2.4 Add test: when user selects `'enter'` followed by a valid name, the domain file is created (ensures "Enter domain name" path still works end-to-end)
-  - [x] 2.5 Update all existing `showCreateDomainScreen` tests to first resolve `mockSelect` with `'enter'` before resolving `mockInput` with the domain name
+  - [x] 2.1 Remove `mockSelect` — `vi.mock('@inquirer/prompts')` only exports `input`
+  - [x] 2.2 Remove `mockSelect.mockReset()` from `beforeEach`
+  - [x] 2.3 Add test: when `mockInput` rejects with `ExitPromptError`, `showCreateDomainScreen` resolves undefined and no domain file is written
+  - [x] 2.4 Existing tests require no priming change (no more `mockSelect.mockResolvedValueOnce('enter')` calls needed)
 
 ## Dev Notes
 
-- Follow the `select` usage pattern from `src/screens/home.ts`: `import { select, Separator } from '@inquirer/prompts'` — no `Separator` needed here but the import pattern is the same
-- The `ExitPromptError` catch block already wrapping the `input` call should be expanded to also wrap the new `select` call (or a single outer try/catch covers both)
-- `vi.mock('@inquirer/prompts', ...)` must be updated to return both `input` and `select` spy references; vitest hoists the mock so both mocks are available from the top of the test file
-- No new dependencies are required — `select` is already in `@inquirer/prompts`
-- The inner `input` prompt logic (validation, slugify, duplicate check, writeDomain) must remain identical; only the entry point changes
+- No new prompts added — only the `input` prompt message was updated to hint at Ctrl+C for back
+- `ExitPromptError` (from `@inquirer/core`) is caught on the `input` call and returns silently; the home screen `while(true)` loop naturally re-displays after `showCreateDomainScreen()` returns
+- `vi.mock('@inquirer/prompts', ...)` only needs to export `input` — no `select` mock required
+- No new dependencies required; the entire back behavior is handled by the existing `ExitPromptError` pattern already used in `home.ts`
 
 ## Dev Agent Record
 
 ### Implementation Plan
-Added a `select` prompt as the entry point of `showCreateDomainScreen`. When user picks "back", the function returns immediately. When user picks "enter", the existing `input` prompt and domain creation logic runs unchanged. Both prompts are wrapped in their own `try/catch` for `ExitPromptError`.
+Updated the `input` prompt message in `showCreateDomainScreen` to hint at Ctrl+C for back. The `ExitPromptError` catch block returns silently; the home screen `while(true)` loop handles the navigation back naturally. No intermediate `select` prompt — 2-step flow: home → input.
 
 ### Debug Log
-_No issues encountered_
+_Initial implementation used a 3-step `select` flow (home → select menu → input). Pivoted to 2-step input-only flow after user review._
 
 ### Completion Notes
-All 6 tasks/subtasks complete. 2 new tests added (back path + enter-then-create path); 4 existing integration tests updated to prime `mockSelect` with `'enter'`. Full test suite: 260 tests pass (was 257). `tsc --noEmit` clean.
+All tasks complete. 1 new test added (ExitPromptError on input → returns undefined, no domain written). Full test suite: 258 tests pass. `tsc --noEmit` clean.
 
 Code review findings addressed:
 - ✅ Fixed [Medium]: Added `docs/planning-artifacts/epics.md` and `docs/planning-artifacts/prd.md` to File List
-- ✅ Fixed [Low]: Added ExitPromptError test for select prompt — `showCreateDomainScreen` resolves undefined and skips input when select throws ExitPromptError
+- ✅ Fixed [High]: Updated story ACs, Tasks, Dev Notes, and prd.md to reflect the 2-step input-only implementation (pivot from original 3-step select flow)
 
 ## File List
 
@@ -69,3 +66,4 @@ Code review findings addressed:
 ## Change Log
 
 - 2026-03-14: Story created and implemented — George
+- 2026-03-14: Post-pivot: updated ACs, Tasks, Dev Notes, and planning artifacts to reflect 2-step input-only flow (removed `select` prompt approach) — George

@@ -17,7 +17,7 @@ This document provides the complete epic and story breakdown for brain-break, de
 
 FR1: On every launch, the app displays a home screen listing all configured active domains, each showing current score and total questions answered. If no domains exist, the only available action is to create a new one. Selecting a domain opens a domain sub-menu (not the quiz directly).
 
-FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. The create-domain screen presents two options — **Enter domain name** and **Back** — so the user can return to the home screen without creating a domain.
+FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. The create-domain screen shows an input prompt; pressing Ctrl+C returns the user to the home screen without creating a domain.
 
 FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu.
 
@@ -307,14 +307,14 @@ So that I can immediately start getting quiz questions on any topic I choose.
 
 **Given** I am on the home screen
 **When** I select "Create new domain"
-**Then** a select-style prompt is shown with two options: "✏️  Enter domain name" and "←  Back"
+**Then** an input prompt is shown: `New domain name (Ctrl+C to go back):`
 
 **Given** I am on the create domain screen
-**When** I select "← Back"
+**When** I press Ctrl+C
 **Then** I return to the home screen without creating a domain
 
 **Given** I am on the create domain screen
-**When** I select "Enter domain name" and type a domain name (e.g. "Spring Boot microservices")
+**When** I type a domain name (e.g. "Spring Boot microservices") and press Enter
 **Then** the app calls `slugify()` to derive a file slug (e.g. `spring-boot-microservices`)
 **And** a new domain file is created at `~/.brain-break/spring-boot-microservices.json` with `defaultDomainFile()` values
 **And** the home screen refreshes showing the new domain in the active list

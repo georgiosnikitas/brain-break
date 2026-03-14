@@ -18,7 +18,7 @@ editHistory:
   - date: '2026-03-14'
     changes: 'Feature 1: introduced two-level navigation — home screen lists domains only (with score/count) + create/archived/exit; selecting a domain opens a domain sub-menu with Play, View History, View Stats, Archive, and Back'
   - date: '2026-03-14'
-    changes: 'Feature 1: create-domain screen now presents a select-style prompt with Enter domain name and Back options — Back returns to home without creating a domain'
+    changes: 'Feature 1: create-domain screen input prompt updated with Ctrl+C back hint — pressing Ctrl+C returns to home without creating a domain (2-step flow: home → input)'
 ---
 
 # Product Requirements Document: brain-break
@@ -228,7 +228,7 @@ The following 7 features define the complete MVP capability set. Each feature is
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate appropriately focused questions for it
 - All state (history, score, time played) is domain-scoped and isolated
 - The home screen actions are: select a domain, create a new domain, view archived domains, and exit — archive/history/stats actions for a domain are **not** shown on the home screen
-- Selecting "Create new domain" opens a sub-prompt with two options: **Enter domain name** and **Back** — selecting **Back** returns the user to the home screen without creating a domain
+- Selecting "Create new domain" shows an input prompt (`New domain name (Ctrl+C to go back):`); pressing Ctrl+C returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
 
