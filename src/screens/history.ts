@@ -15,8 +15,6 @@ import {
 } from '../utils/format.js'
 import * as router from '../router.js'
 
-export const PAGE_SIZE = 10
-
 type NavAction = 'next' | 'prev' | 'back'
 
 export function formatTimestamp(iso: string): string {
@@ -24,12 +22,12 @@ export function formatTimestamp(iso: string): string {
 }
 
 export function buildPageChoices(
-  page: number,
-  totalPages: number,
+  currentIndex: number,
+  totalItems: number,
 ): Array<{ name: string; value: NavAction }> {
   const choices: Array<{ name: string; value: NavAction }> = []
-  if (page > 0) choices.push({ name: 'Previous', value: 'prev' })
-  if (page < totalPages - 1) choices.push({ name: 'Next', value: 'next' })
+  if (currentIndex > 0) choices.push({ name: 'Previous', value: 'prev' })
+  if (currentIndex < totalItems - 1) choices.push({ name: 'Next', value: 'next' })
   choices.push({ name: 'Back', value: 'back' })
   return choices
 }
@@ -46,22 +44,18 @@ function displayEntry(record: QuestionRecord, globalIndex: number): void {
 }
 
 async function navigateHistory(history: QuestionRecord[]): Promise<void> {
-  const totalPages = Math.ceil(history.length / PAGE_SIZE)
-  let page = 0
+  const totalItems = history.length
+  let index = 0
 
   while (true) {
-    console.log(header(`\nQuestion History — Page ${page + 1} of ${totalPages}`))
-    const start = page * PAGE_SIZE
-    const pageEntries = history.slice(start, start + PAGE_SIZE)
-    for (let i = 0; i < pageEntries.length; i++) {
-      displayEntry(pageEntries[i], start + i)
-    }
+    console.log(header(`\nQuestion History — Question ${index + 1} of ${totalItems}`))
+    displayEntry(history[index], index)
 
-    const choices = buildPageChoices(page, totalPages)
+    const choices = buildPageChoices(index, totalItems)
     let nav: NavAction
     try {
       nav = await select<NavAction>({
-        message: `Page ${page + 1} of ${totalPages}`,
+        message: `Question ${index + 1} of ${totalItems}`,
         choices,
       })
     } catch (err) {
@@ -73,9 +67,9 @@ async function navigateHistory(history: QuestionRecord[]): Promise<void> {
     }
 
     if (nav === 'next') {
-      page++
+      index++
     } else if (nav === 'prev') {
-      page--
+      index--
     } else {
       await router.showHome()
       return

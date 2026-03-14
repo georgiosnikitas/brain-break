@@ -23,7 +23,7 @@ vi.mock('../router.js', () => ({
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
-import { showHistory, buildPageChoices, formatTimestamp, PAGE_SIZE } from './history.js'
+import { showHistory, buildPageChoices, formatTimestamp } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
 const mockShowHome = vi.mocked(router.showHome)
@@ -67,13 +67,13 @@ beforeEach(() => {
 // buildPageChoices
 // ---------------------------------------------------------------------------
 describe('buildPageChoices', () => {
-  it('returns only Back on the only page', () => {
+  it('returns only Back when there is exactly one question', () => {
     const choices = buildPageChoices(0, 1)
     expect(choices).toHaveLength(1)
     expect(choices[0].value).toBe('back')
   })
 
-  it('returns Next + Back on first page of multi-page', () => {
+  it('returns Next + Back on first question of multi-question history', () => {
     const choices = buildPageChoices(0, 3)
     const values = choices.map((c) => c.value)
     expect(values).toContain('next')
@@ -81,7 +81,7 @@ describe('buildPageChoices', () => {
     expect(values).not.toContain('prev')
   })
 
-  it('returns Previous + Back on last page', () => {
+  it('returns Previous + Back on last question', () => {
     const choices = buildPageChoices(2, 3)
     const values = choices.map((c) => c.value)
     expect(values).toContain('prev')
@@ -89,7 +89,7 @@ describe('buildPageChoices', () => {
     expect(values).not.toContain('next')
   })
 
-  it('returns Previous + Next + Back on middle page', () => {
+  it('returns Previous + Next + Back on a middle question', () => {
     const choices = buildPageChoices(1, 3)
     const values = choices.map((c) => c.value)
     expect(values).toContain('prev')
@@ -140,26 +140,26 @@ describe('showHistory — empty history', () => {
 })
 
 // ---------------------------------------------------------------------------
-// showHistory — single page (≤ PAGE_SIZE)
+// showHistory — single question view
 // ---------------------------------------------------------------------------
-describe('showHistory — single page', () => {
-  it('displays all entries when history ≤ PAGE_SIZE', async () => {
-    const domain = { ...defaultDomainFile(), history: makeHistory(PAGE_SIZE) }
+describe('showHistory — single question', () => {
+  it('displays only the first (most recent) question on initial view', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(5) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
-    // Each entry should have been logged (header + entry lines)
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('Question 1')
-    expect(allLogs).toContain(`Question ${PAGE_SIZE}`)
+    // Most recent is Question 5; Question 1 is oldest and must NOT appear on first view
+    expect(allLogs).toContain('Question 5')
+    expect(allLogs).not.toContain('#2 —')
     consoleSpy.mockRestore()
   })
 
-  it('shows only Back navigation on single page', async () => {
-    const domain = { ...defaultDomainFile(), history: makeHistory(5) }
+  it('shows only Back when there is exactly one question', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
     vi.spyOn(console, 'log').mockReturnValue(undefined)
@@ -171,6 +171,19 @@ describe('showHistory — single page', () => {
     expect(values).not.toContain('next')
     expect(values).not.toContain('prev')
     expect(values).toContain('back')
+  })
+
+  it('shows "Question 1 of 1" header when there is exactly one question (AC6)', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValue('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('Question 1 of 1')
+    consoleSpy.mockRestore()
   })
 
   it('selecting Back calls router.showHome', async () => {
@@ -221,19 +234,32 @@ describe('showHistory — single page', () => {
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('What is Zod?')
-    expect(allLogs).toContain('Your answer:')  // answer row is rendered
-    expect(allLogs).toContain('Correct:')      // correct answer label present
-    expect(allLogs).toContain('4')             // difficulty level
+    expect(allLogs).toContain('Your answer:')
+    expect(allLogs).toContain('Correct:')
+    expect(allLogs).toContain('4')
+    consoleSpy.mockRestore()
+  })
+
+  it('shows progress header "Question 1 of N"', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(5) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValue('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('Question 1 of 5')
     consoleSpy.mockRestore()
   })
 })
 
 // ---------------------------------------------------------------------------
-// showHistory — multi-page
+// showHistory — navigation
 // ---------------------------------------------------------------------------
-describe('showHistory — multi-page', () => {
-  it('first page shows Next + Back, no Previous', async () => {
-    const domain = { ...defaultDomainFile(), history: makeHistory(PAGE_SIZE + 5) }
+describe('showHistory — navigation', () => {
+  it('first question shows Next + Back, no Previous', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(15) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
     vi.spyOn(console, 'log').mockReturnValue(undefined)
@@ -247,54 +273,68 @@ describe('showHistory — multi-page', () => {
     expect(values).not.toContain('prev')
   })
 
-  it('navigating Next increments page and shows Previous on second page', async () => {
-    const domain = { ...defaultDomainFile(), history: makeHistory(PAGE_SIZE + 5) }
+  it('selecting Next shows second question with updated progress header', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(15) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const secondCallLogs = consoleSpy.mock.calls.map((c) => String(c[0]))
+    const secondHeader = secondCallLogs.filter((l) => l.includes('Question 2 of'))
+    expect(secondHeader.length).toBeGreaterThan(0)
+    consoleSpy.mockRestore()
+  })
+
+  it('second question shows Previous + Back, no Next (when total is 2)', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(2) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
     vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
-    const secondPageChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
-    const secondPageValues = secondPageChoices.map((c) => c.value)
-    expect(secondPageValues).toContain('prev')
-    expect(secondPageValues).toContain('back')
-    expect(secondPageValues).not.toContain('next')
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const secondValues = secondChoices.map((c) => c.value)
+    expect(secondValues).toContain('prev')
+    expect(secondValues).toContain('back')
+    expect(secondValues).not.toContain('next')
   })
 
-  it('navigating Previous after Next returns to first page (no Previous)', async () => {
-    const domain = { ...defaultDomainFile(), history: makeHistory(PAGE_SIZE + 5) }
+  it('selecting Previous after Next returns to first question', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(15) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect
       .mockResolvedValueOnce('next')
       .mockResolvedValueOnce('prev')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
-    const thirdPageChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
-    const values = thirdPageChoices.map((c) => c.value)
+    // After next → prev, back at index 0: no Previous, has Next
+    const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
+    const values = thirdChoices.map((c) => c.value)
     expect(values).not.toContain('prev')
     expect(values).toContain('next')
     expect(mockShowHome).toHaveBeenCalledOnce()
+    consoleSpy.mockRestore()
   })
 
-  it('only PAGE_SIZE entries are logged per page', async () => {
-    const domain = { ...defaultDomainFile(), history: makeHistory(PAGE_SIZE + 3) }
+  it('only one entry is logged per navigation step', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
-    // First page (most-recent-first): entries for Question 13..4
-    // Question 3, 2, 1 are on page 2 and must NOT appear
-    // Note: 'Question 3' is NOT a substring of any page-1 entry name (Q4–Q13)
+    // Only Question 3 (most recent, index 0) should appear; Question 2 and 1 must not
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain(`Question ${PAGE_SIZE + 3}`)
-    expect(allLogs).not.toContain('#11 —')
-    expect(allLogs).not.toContain('Question 3\n')
+    expect(allLogs).toContain('#1 — Question 3')
+    expect(allLogs).not.toContain('#2 —')
+    expect(allLogs).not.toContain('#3 —')
     consoleSpy.mockRestore()
   })
 })

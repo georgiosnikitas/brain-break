@@ -5,6 +5,16 @@ date: 2026-03-07
 author: George
 inputDocuments:
   - docs/planning-artifacts/product-brief.md
+workflowType: prd
+workflow: edit
+stepsCompleted:
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+lastEdited: '2026-03-14'
+editHistory:
+  - date: '2026-03-14'
+    changes: 'Feature 6: replaced 10-per-page pagination with single-question navigation and progress indicator'
 ---
 
 # Product Requirements Document: brain-break
@@ -296,7 +306,7 @@ Every answered question is recorded with:
 ### Feature 6 — View History Command
 
 - User can view their full question history for the active domain
-- Display is paginated (e.g., 10 questions per page)
+- Questions are displayed one at a time; the user navigates with Previous and Next controls; a progress indicator shows the user's current position (e.g., "Question 3 of 47")
 - Each entry displays all fields recorded per question (see Feature 5 — Persistent History)
 
 ### Feature 7 — View Stats Command
