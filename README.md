@@ -22,6 +22,25 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript and the Git
 
 ## Installation
 
+### From GitHub Packages
+
+```bash
+npm install -g @georgiosnikitas/brain-break --registry=https://npm.pkg.github.com
+```
+
+Then run it from anywhere:
+
+```bash
+brain-break
+```
+
+> **Note:** GitHub Packages requires authentication even for public packages. Make sure you have a [personal access token](https://github.com/settings/tokens) with `read:packages` scope configured in your `~/.npmrc`:
+> ```
+> //npm.pkg.github.com/:_authToken=YOUR_TOKEN
+> ```
+
+### From Source
+
 ```bash
 npm install
 ```
