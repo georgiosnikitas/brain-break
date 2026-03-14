@@ -1,0 +1,17 @@
+diff --git a/node_modules/vscode-jsonrpc/package.json b/node_modules/vscode-jsonrpc/package.json
+index d0080b2..ebd23c0 100644
+--- a/node_modules/vscode-jsonrpc/package.json
++++ b/node_modules/vscode-jsonrpc/package.json
+@@ -41,5 +41,12 @@
+ 		"all": "npm run clean && npm run compile && npm run lint && npm run test",
+ 		"compile:publish": "node ../build/bin/tsc -b ./tsconfig.publish.json",
+ 		"all:publish": "git clean -xfd . && npm install && npm run compile:publish && npm run lint && npm run test"
++	},
++	"exports": {
++		"./node": "./node.js",
++		"./node.js": "./node.js",
++		"./browser": "./browser.js",
++		"./browser.js": "./browser.js",
++		".": "./lib/node/main.js"
+ 	}
+ }

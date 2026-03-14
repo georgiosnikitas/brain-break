@@ -16,6 +16,7 @@
     "node": ">=25.8.0"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
@@ -36,6 +37,7 @@
     "@types/node": "^25.3.5",
     "@types/qrcode-terminal": "^0.12.2",
     "@vitest/coverage-v8": "^4.1.0",
+    "patch-package": "^8.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
