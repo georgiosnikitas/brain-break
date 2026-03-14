@@ -32,7 +32,7 @@ export function buildArchivedChoices(
     choices.push(new Separator())
   }
 
-  choices.push({ name: 'Back', value: { action: 'back' } })
+  choices.push({ name: '←  Back', value: { action: 'back' } })
 
   return choices
 }

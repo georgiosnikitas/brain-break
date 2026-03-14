@@ -7,6 +7,7 @@ import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 // ---------------------------------------------------------------------------
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
+  Separator: vi.fn(),
 }))
 
 vi.mock('../domain/store.js', () => ({

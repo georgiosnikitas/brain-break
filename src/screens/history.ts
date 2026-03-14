@@ -1,4 +1,4 @@
-import { select } from '@inquirer/prompts'
+import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
@@ -24,11 +24,12 @@ export function formatTimestamp(iso: string): string {
 export function buildPageChoices(
   currentIndex: number,
   totalItems: number,
-): Array<{ name: string; value: NavAction }> {
-  const choices: Array<{ name: string; value: NavAction }> = []
+): Array<{ name: string; value: NavAction } | Separator> {
+  const choices: Array<{ name: string; value: NavAction } | Separator> = []
   if (currentIndex > 0) choices.push({ name: 'Previous', value: 'prev' })
   if (currentIndex < totalItems - 1) choices.push({ name: 'Next', value: 'next' })
-  choices.push({ name: 'Back', value: 'back' })
+  if (choices.length > 0) choices.push(new Separator())
+  choices.push({ name: '←  Back', value: 'back' })
   return choices
 }
 
@@ -91,7 +92,7 @@ export async function showHistory(domainSlug: string): Promise<void> {
     try {
       await select<NavAction>({
         message: 'Navigation',
-        choices: [{ name: 'Back', value: 'back' }],
+        choices: [{ name: '←  Back', value: 'back' }],
       })
     } catch (err) {
       if (!(err instanceof ExitPromptError)) throw err

@@ -122,7 +122,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   try {
     await select({
       message: 'Navigation',
-      choices: [{ name: 'Back', value: 'back' as const }],
+      choices: [{ name: '←  Back', value: 'back' as const }],
     })
   } catch (err) {
     if (err instanceof ExitPromptError) {

@@ -52,9 +52,9 @@ beforeEach(() => {
 // buildDomainMenuChoices
 // ---------------------------------------------------------------------------
 describe('buildDomainMenuChoices', () => {
-  it('returns exactly 5 items with no Separators', () => {
+  it('returns 6 items with a Separator before Back', () => {
     const choices = buildDomainMenuChoices()
-    expect(choices).toHaveLength(5)
+    expect(choices).toHaveLength(6)
   })
 
   it('names contain Play, History, Stats, Archive, Back in order', () => {
@@ -63,7 +63,7 @@ describe('buildDomainMenuChoices', () => {
     expect(choices[1].name).toContain('History')
     expect(choices[2].name).toContain('Stats')
     expect(choices[3].name).toContain('Archive')
-    expect(choices[4].name).toContain('Back')
+    expect(choices[5].name).toContain('Back')
   })
 
   it('action values are play, history, stats, archive, back in order', () => {
@@ -72,7 +72,7 @@ describe('buildDomainMenuChoices', () => {
     expect(choices[1].value).toEqual({ action: 'history' })
     expect(choices[2].value).toEqual({ action: 'stats' })
     expect(choices[3].value).toEqual({ action: 'archive' })
-    expect(choices[4].value).toEqual({ action: 'back' })
+    expect(choices[5].value).toEqual({ action: 'back' })
   })
 })
 

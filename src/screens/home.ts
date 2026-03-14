@@ -39,10 +39,10 @@ export function buildHomeChoices(
   }
 
   choices.push(
-    { name: 'Create new domain', value: { action: 'create' } },
-    { name: 'View archived domains', value: { action: 'archived' } },
+    { name: '➕  Create new domain', value: { action: 'create' } },
+    { name: '🗄  View archived domains', value: { action: 'archived' } },
     new Separator(),
-    { name: 'Exit', value: { action: 'exit' } },
+    { name: '🚪  Exit', value: { action: 'exit' } },
   )
 
   return choices

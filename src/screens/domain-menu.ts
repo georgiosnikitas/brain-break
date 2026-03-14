@@ -1,4 +1,4 @@
-import { select } from '@inquirer/prompts'
+import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
@@ -12,12 +12,13 @@ export type DomainMenuAction =
   | { action: 'archive' }
   | { action: 'back' }
 
-export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMenuAction }> {
+export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMenuAction } | Separator> {
   return [
     { name: '▶  Play', value: { action: 'play' } },
     { name: '📜  View History', value: { action: 'history' } },
     { name: '📊  View Stats', value: { action: 'stats' } },
     { name: '🗄  Archive', value: { action: 'archive' } },
+    new Separator(),
     { name: '←  Back', value: { action: 'back' } },
   ]
 }
