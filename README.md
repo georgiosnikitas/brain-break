@@ -1,20 +1,22 @@
 # Brain Break
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_brain-break&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=georgiosnikitas_brain-break)
 [![CI](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml)
 [![Release](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_brain-break&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=georgiosnikitas_brain-break)
+[![License](https://img.shields.io/github/license/georgiosnikitas/brain-break)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 
-Brain Break is an AI-powered terminal quiz app built with TypeScript and the GitHub Copilot SDK. It lets you create quiz domains, generate questions on demand, track score and difficulty over time, and review both question history and per-domain stats from a CLI interface.
+Brain Break is an AI-powered terminal quiz app built with TypeScript and the GitHub Copilot SDK. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface.
 
 ## Features
 
 - Interactive terminal UI powered by Inquirer prompts
-- Domain-based quiz sessions such as `javascript`, `history`, or `system-design`
+- Domain-based quiz sessions such as `java-programming`, `algebra-second-degree-polynomial-equations`, `english-grammar`, `greek-mythology`, `music-90s-hits`, or `thai-cuisine`
 - AI-generated multiple-choice questions via the GitHub Copilot SDK
 - Duplicate-question avoidance using stored question hashes
 - Adaptive scoring based on correctness and response speed
 - Automatic difficulty progression and regression after answer streaks
-- Persistent local history, stats, archived domains, and session metadata
+- Persistent local history
 - Per-domain stats dashboard with score trend, accuracy, and return streak
 
 ## Requirements
@@ -50,6 +52,56 @@ git clone https://github.com/georgiosnikitas/brain-break.git
 cd brain-break
 npm install
 npm run dev
+```
+
+## Data Storage
+
+Brain Break stores all quiz data locally under:
+
+```text
+~/.brain-break/
+```
+
+Each domain gets its own JSON file, for example:
+
+```text
+~/.brain-break/greek-mythology.json
+~/.brain-break/java-programming.json
+```
+
+Each file contains:
+
+- **meta** — score, difficulty level, streak state, total time played, timestamps, archived flag
+- **history** — list of every answered question with result, timing, and score delta
+- **hashes** — SHA-256 hashes of question text used for deduplication
+
+Writes are atomic: the app writes to a `.tmp-{slug}.json` file and renames it into place, preventing data corruption on crash or interrupt.
+
+## Available Scripts
+
+```bash
+npm run dev         # run from source with tsx
+npm run build       # compile TypeScript to dist/
+npm start           # run the compiled CLI
+npm run typecheck   # run TypeScript type checking without emitting
+npm test            # run the Vitest test suite once
+npm run test:watch  # run Vitest in watch mode
+```
+
+## Project Structure
+
+```text
+brain-break/
+  src/
+    ai/         Copilot client, prompt construction, and question generation
+    domain/     Zod schemas, file persistence, scoring logic, and slug helpers
+    screens/    Terminal screens: home, quiz, history, stats, archive, and create
+    utils/      Formatting helpers for time, accuracy, and display
+    index.ts    CLI entrypoint
+    router.ts   Screen orchestration and navigation loop
+  package.json      Project manifest and scripts
+  tsconfig.json     TypeScript compiler configuration
+  vitest.config.ts  Test runner configuration
 ```
 
 ## How It Works
@@ -99,52 +151,6 @@ Speed multipliers applied to base points:
 - **3 consecutive incorrect answers** → difficulty decreases by one level (min 1)
 
 The app starts new domains at **level 2 (Easy)**.
-
-## Data Storage
-
-Brain Break stores all quiz data locally under:
-
-```text
-~/.brain-break/
-```
-
-Each domain gets its own JSON file, for example:
-
-```text
-~/.brain-break/javascript.json
-~/.brain-break/system-design.json
-```
-
-Each file contains:
-
-- **meta** — score, difficulty level, streak state, total time played, timestamps, archived flag
-- **history** — list of every answered question with result, timing, and score delta
-- **hashes** — SHA-256 hashes of question text used for deduplication
-
-Writes are atomic: the app writes to a `.tmp-{slug}.json` file and renames it into place, preventing data corruption on crash or interrupt.
-
-## Available Scripts
-
-```bash
-npm run dev         # run from source with tsx
-npm run build       # compile TypeScript to dist/
-npm start           # run the compiled CLI
-npm run typecheck   # run TypeScript type checking without emitting
-npm test            # run the Vitest test suite once
-npm run test:watch  # run Vitest in watch mode
-```
-
-## Project Structure
-
-```text
-src/
-  ai/         Copilot client, prompt construction, and question generation
-  domain/     Zod schemas, file persistence, scoring logic, and slug helpers
-  screens/    Terminal screens: home, quiz, history, stats, archive, and create
-  utils/      Formatting helpers for time, accuracy, and display
-  index.ts    CLI entrypoint
-  router.ts   Screen orchestration and navigation loop
-```
 
 ## Notes
 
