@@ -83,7 +83,7 @@ export async function showHomeScreen(): Promise<void> {
     let answer: HomeAction
     try {
       answer = await select<HomeAction>({
-        message: '🧠 brain-break',
+        message: '🧠🔨 brain-break',
         choices: buildHomeChoices(homeEntries),
         pageSize: 20,
       })

@@ -1,4 +1,4 @@
-# 🧠 Brain Break
+# 🧠🔨 Brain Break
 
 [![CI](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml)
 [![Release](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml)
