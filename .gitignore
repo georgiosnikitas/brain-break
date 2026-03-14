@@ -32,6 +32,7 @@ _bmad/
 # .github BMAD-generated files (agents, prompts — not workflows or copilot config)
 .github/agents/
 .github/prompts/
+.github/skills
 
 # Node.js
 node_modules/
