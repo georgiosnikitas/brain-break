@@ -1,8 +1,8 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
-  - _bmad-output/planning-artifacts/prd-brain-break-2026-03-06.md
-  - _bmad-output/planning-artifacts/product-brief-brain-break-2026-03-01.md
+  - docs/planning-artifacts/prd.md
+  - docs/planning-artifacts/product-brief.md
 workflowType: 'architecture'
 lastStep: 8
 status: 'complete'

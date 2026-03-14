@@ -1,8 +1,8 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
-  - _bmad-output/planning-artifacts/prd-brain-break-2026-03-06.md
-  - _bmad-output/planning-artifacts/architecture.md
+  - docs/planning-artifacts/prd.md
+  - docs/planning-artifacts/architecture.md
 ---
 
 # brain-break - Epic Breakdown
@@ -103,7 +103,7 @@ NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a sta
 ## Epic List
 
 ### Epic 1: Project Foundation & Developer Infrastructure
-Users (developers) can clone the repo, install dependencies, and run `tsx src/index.ts` to reach a working (if minimal) entry point — with the full typed domain schema, atomic file store, and CI in place as the verified foundation every other epic builds on.
+Users can clone the repo, install dependencies, and run `tsx src/index.ts` to reach a working (if minimal) entry point — with the full typed domain schema, atomic file store, and CI in place as the verified foundation every other epic builds on.
 **FRs covered:** N/A (technical foundation)
 **NFRs covered:** partial NFR4 (startup path wired)
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
@@ -300,7 +300,7 @@ So that I can see my current progress at a glance and choose what to do next.
 
 As a user,
 I want to create a new domain by typing any free-text topic name from the home screen,
-So that I can immediately start getting quiz questions on any technical subject I choose.
+So that I can immediately start getting quiz questions on any topic I choose.
 
 **Acceptance Criteria:**
 

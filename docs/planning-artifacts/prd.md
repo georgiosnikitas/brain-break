@@ -1,10 +1,10 @@
 ---
 status: reviewed
-sourceDocument: product-brief-brain-break-2026-03-01.md
+sourceDocument: product-brief.md
 date: 2026-03-07
 author: George
 inputDocuments:
-  - _bmad-output/planning-artifacts/product-brief-brain-break-2026-03-01.md
+  - docs/planning-artifacts/product-brief.md
 ---
 
 # Product Requirements Document: brain-break
@@ -15,11 +15,11 @@ inputDocuments:
 
 ## Executive Summary
 
-`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes in the developer's workflow. Powered by the GitHub Copilot SDK, it generates contextually relevant, never-repeating questions on any configurable technical domain — turning idle break time into a measurable skill check. It lives where developers already work: the terminal. No accounts. No setup friction. Clone and run.
+`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. Powered by the GitHub Copilot SDK, it generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone and run.
 
-Developers want to stay sharp across rapidly evolving technical domains, but existing learning tools demand 30–60 minute structured sessions that don't fit the short, unplanned breaks that naturally occur during a workday. The result: knowledge gaps compound silently, and developers either over-commit to platforms they never finish, or do nothing during natural break windows. No existing CLI-first tool combines AI question generation, configurable technical domains, duplicate prevention, and skill tracking in a single, zero-friction package — making it easy for an entire team to adopt without coordination overhead.
+Curious people want to stay sharp across a wide variety of topics, but existing learning tools demand 30–60 minute structured sessions that don't fit the short, unplanned breaks that naturally occur during a day. The result: knowledge gaps compound silently, and people either over-commit to platforms they never finish, or do nothing during natural break windows. No existing CLI-first tool combines AI question generation, user-defined open-ended domains, duplicate prevention, and honest skill tracking in a single, zero-friction package.
 
-`brain-break` targets developers of all experience levels with daily terminal use and an active GitHub Copilot subscription — from juniors building foundational confidence to seniors staying sharp on evolving APIs.
+`brain-break` targets anyone with daily terminal use and an active GitHub Copilot subscription who wants short, purposeful learning sessions on topics they care about.
 
 ---
 
@@ -85,40 +85,38 @@ The following are explicitly out of scope for the MVP:
 
 ## Business Objectives
 
-`brain-break` is an open-source, team-shared tool — success is measured in adoption depth and genuine utility, not revenue.
+`brain-break` is an open-source tool — success is measured in adoption depth and genuine utility, not revenue.
 
-1. **Team adoption:** The majority of developers on the team have installed and actively use `brain-break` within 30 days of publish
-2. **Habit formation:** Active users engage daily rather than sporadically — the tool earns a permanent place in the development workflow
-3. **Perceived value:** Team members voluntarily recommend the tool to others — organic spread beyond the initial team
-4. **Skill reinforcement:** Users report that their knowledge in configured domains feels sharper and more confident over time
+1. **Adoption:** Users install and actively use `brain-break` within 30 days of discovering it
+2. **Habit formation:** Active users engage daily rather than sporadically — the tool earns a permanent place in their routine
+3. **Perceived value:** Users voluntarily recommend the tool to others — organic spread
+4. **Knowledge reinforcement:** Users report that their knowledge in configured domains feels sharper and more confident over time
 
 ---
 
 ## Target Users
 
-`brain-break` targets individual developers of all experience levels who use the terminal daily and have GitHub Copilot access. Three personas cover the typical range of motivations and use patterns.
+`brain-break` targets anyone with daily terminal use and an active GitHub Copilot subscription. Three personas cover the typical range of motivations and use patterns.
 
 ### Primary Users
 
-#### Persona 1 — "Alex, the Mid-Level Developer"
+#### Persona 1 — "Alex, the Developer"
 **Role:** Mid-level fullstack developer, 3–5 years experience  
-**Stack:** Java / Spring Boot backend, React frontend  
-**Context:** Works in a team environment, uses the terminal daily, has GitHub Copilot access
+**Context:** Uses the terminal daily, has GitHub Copilot access
 
 **Motivation:** Wants to feel confident across the full stack. Suspects there are gaps in knowledge they haven't consciously identified yet. Values honest self-assessment over completion badges.
 
-**Problem Experience:** Udemy courses sit half-finished. Stack Overflow answers questions reactively — it doesn't build systematic knowledge. During a 5-minute build wait, there's nothing that turns that time into learning.
+**Problem Experience:** Udemy courses sit half-finished. During a 5-minute build wait, there's nothing that turns that time into learning.
 
 **Success Vision:** A session that challenges them, reveals a surprising gap, or confirms their expertise — all within the time a build takes. A rising score that genuinely reflects skill, not just effort.
 
 ---
 
-#### Persona 2 — "Sam, the Junior Developer"
-**Role:** Junior developer, 0–2 years experience, recently onboarded  
-**Stack:** React (primary), learning Java  
-**Context:** Learning fast, eager to prove themselves, lives in the terminal
+#### Persona 2 — "Sam, the Student"
+**Role:** University student or self-taught learner  
+**Context:** Studies across multiple subjects, lives in the terminal, eager to reinforce knowledge between sessions
 
-**Motivation:** Build confidence. The game format removes the anxiety of formal assessment — wrong answers just affect score, not performance reviews. Microlearning fits their short attention span and high curiosity.
+**Motivation:** Build confidence across coursework topics. The game format removes the anxiety of formal assessment — wrong answers just affect score, not grades. Microlearning fits a short attention span and high curiosity.
 
 **Problem Experience:** Doesn't know what they don't know. Structured courses feel overwhelming. Wants bite-sized, targeted challenges they can come back to repeatedly.
 
@@ -126,16 +124,15 @@ The following are explicitly out of scope for the MVP:
 
 ---
 
-#### Persona 3 — "Jordan, the Senior Developer"
-**Role:** Senior engineer, 8+ years experience  
-**Stack:** .NET, Java, React — across the board  
-**Context:** Busy, deep in architecture and code reviews; rarely gets time for structured learning
+#### Persona 3 — "Jordan, the Curious Generalist"
+**Role:** Anyone with broad interests — history, languages, science, culture, or niche hobbies  
+**Context:** Comfortable in the terminal, curious by nature, doesn't want a heavyweight app just to test their knowledge
 
-**Motivation:** Stay sharp on evolving APIs, new framework features, and domains adjacent to their core. Not interested in beginner content — wants sharp, specific questions.
+**Motivation:** Stay sharp or explore new topics at their own pace. Not interested in structured curricula — wants sharp, specific questions on exactly the domain they care about.
 
-**Problem Experience:** Senior devs are the last to refresh foundational knowledge. brain-break's AI-generated questions can probe deep, specific topics that no static quiz covers.
+**Problem Experience:** No existing tool lets them type any topic and immediately get intelligent quiz questions. Everything is either too rigid (fixed question banks) or too heavy (video courses).
 
-**Success Vision:** A quick mental warm-up or cool-down. Questions that are actually hard enough to be satisfying. A score that doesn't flatter.
+**Success Vision:** A quick mental challenge on any topic at will. A score that reflects genuine knowledge, not just luck.
 
 ---
 
@@ -147,19 +144,19 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 ## User Journeys
 
-**Discovery:** Developer sees the repo shared in the team's GitHub organization. One-line README install hook. Cloned and running in under 2 minutes.
+**Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. The home screen appears immediately. With no domains configured yet, the only available action is to create a new one — the user types a domain name, hits enter, selects it, and the first question appears. No config file, no account, no signup, no friction.
+**Onboarding:** Runs `node index.js`. The home screen appears immediately. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup, no friction.
 
 **Core Usage:**
-- Triggered by natural break moments: post-standup, build waiting, between PRs, lunch
+- Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
 - Sessions are 2–10 minutes; 3–10 questions per session
 - Answers a question → sees if correct → sees score delta → next question
 - History persists between sessions automatically
 
 **"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They look it up. They come back and get it right next time. The score rises. *That feedback loop is the product.*
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of domain depth. Devs start comparing domain scores informally — "what's your React score?" becomes a team conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -171,18 +168,19 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Innovation Analysis
 
-`brain-break` occupies a gap in the developer tooling landscape. No existing tool combines all of the following in a single, zero-friction package:
+`brain-break` occupies a gap in the knowledge quiz tooling landscape. No existing tool combines all of the following in a single, zero-friction package:
 
 | Factor | brain-break | Udemy / Video Platforms | Flashcard Apps |
 |---|---|---|---|
 | Session length | 2–10 minutes | 30–60+ minutes | Variable |
 | Terminal-native | ✅ | ❌ | ❌ |
+| Any user-defined domain | ✅ | ❌ (fixed catalogue) | ✅ (manual) |
 | AI-generated questions | ✅ (Copilot SDK) | ❌ | ❌ |
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
-| Skill-signal scoring | ✅ | ❌ (completion %) | ❌ |
+| Honest skill-signal scoring | ✅ | ❌ (completion %) | ❌ |
 | Zero setup friction | ✅ | ❌ | ❌ |
-| Open source / team-shareable | ✅ | ❌ | Partial |
+| Open source / shareable | ✅ | ❌ | Partial |
 
 ---
 

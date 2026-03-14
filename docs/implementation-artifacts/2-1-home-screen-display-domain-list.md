@@ -224,15 +224,15 @@ The screen's `showHomeScreen()` does the async domain loading, maps to `HomeEntr
 
 ### References
 
-- Epic 2 Story 2.1 ACs: [_bmad-output/planning-artifacts/epics.md](/_bmad-output/planning-artifacts/epics.md) — lines ~275–303
-- Architecture — Module Architecture / src/ structure: [_bmad-output/planning-artifacts/architecture.md](/_bmad-output/planning-artifacts/architecture.md)
+- Epic 2 Story 2.1 ACs: [docs/planning-artifacts/epics.md](../planning-artifacts/epics.md)
+- Architecture — Module Architecture / src/ structure: [docs/planning-artifacts/architecture.md](../planning-artifacts/architecture.md)
 - Architecture — Navigation pattern (router dispatch): architecture.md § "Terminal UI Architecture"
 - Architecture — Error Handling Pattern (`Result<T>`): architecture.md § "Error Handling Patterns"
 - Architecture — ESM import `.js` extension rule: architecture.md § "Format Patterns"
 - `domain/store.ts` — `listDomains()`, `readDomain()`, `DomainListEntry`: [src/domain/store.ts](/src/domain/store.ts)
 - `domain/schema.ts` — `DomainMeta`, `DomainFile`: [src/domain/schema.ts](/src/domain/schema.ts)
 - `utils/format.ts` — `dim()`, `bold()`, `error()`, `header()`: [src/utils/format.ts](/src/utils/format.ts)
-- Previous story (1.4) learnings — format.ts helpers, all imports `.js`, no barrel files: [_bmad-output/implementation-artifacts/1-4-utility-modules-hash-slugify-format.md](/_bmad-output/implementation-artifacts/1-4-utility-modules-hash-slugify-format.md)
+- Previous story (1.4) learnings — format.ts helpers, all imports `.js`, no barrel files: [docs/implementation-artifacts/1-4-utility-modules-hash-slugify-format.md](1-4-utility-modules-hash-slugify-format.md)
 - inquirer v12 package: `inquirer` (declared in package.json dependencies)
 
 ## Dev Agent Record

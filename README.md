@@ -1,4 +1,4 @@
-# Brain Break
+# 🧠 Brain Break
 
 [![CI](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml)
 [![Release](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml)
@@ -8,7 +8,7 @@
 
 Brain Break is an AI-powered terminal quiz app built with TypeScript and the GitHub Copilot SDK. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface.
 
-## Features
+## ✨ Features
 
 - Interactive terminal UI powered by Inquirer prompts
 - Domain-based quiz sessions such as `java-programming`, `algebra-second-degree-polynomial-equations`, `english-grammar`, `greek-mythology`, `music-90s-hits`, or `thai-cuisine`
@@ -19,15 +19,15 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript and the Git
 - Persistent local history
 - Per-domain stats dashboard with score trend, accuracy, and return streak
 
-## Requirements
+## 📋 Requirements
 
 - Node.js `>= 25.8.0`
 - A GitHub account with an active GitHub Copilot subscription
 - GitHub Copilot authentication available in the environment where the CLI runs
 
-## Installation
+## 🚀 Installation
 
-### From GitHub Packages
+### 📦 From GitHub Packages
 
 ```bash
 npm install -g @georgiosnikitas/brain-break --registry=https://npm.pkg.github.com
@@ -45,7 +45,7 @@ brain-break
 > //npm.pkg.github.com/:_authToken=YOUR_TOKEN
 > ```
 
-### From Source
+### 🛠️ From Source
 
 ```bash
 git clone https://github.com/georgiosnikitas/brain-break.git
@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-## Data Storage
+## 💾 Data Storage
 
 Brain Break stores all quiz data locally under:
 
@@ -77,7 +77,7 @@ Each file contains:
 
 Writes are atomic: the app writes to a `.tmp-{slug}.json` file and renames it into place, preventing data corruption on crash or interrupt.
 
-## Available Scripts
+## 📜 Available Scripts
 
 ```bash
 npm run dev         # run from source with tsx
@@ -88,7 +88,7 @@ npm test            # run the Vitest test suite once
 npm run test:watch  # run Vitest in watch mode
 ```
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```text
 brain-break/
@@ -104,7 +104,7 @@ brain-break/
   vitest.config.ts  Test runner configuration
 ```
 
-## How It Works
+## ⚙️ How It Works
 
 When the app starts, the home screen shows all active quiz domains and lets you:
 
@@ -123,7 +123,7 @@ During a quiz session, Brain Break:
 4. updates score, streak, total time played, and difficulty
 5. saves the result to disk before moving to the next question
 
-## Scoring
+## 🏆 Scoring
 
 Points are based on your **difficulty level** and **response speed**:
 
@@ -145,17 +145,27 @@ Speed multipliers applied to base points:
 
 **Example:** A correct fast answer at level 3 earns `30 × 2 = +60` points. A wrong slow answer at level 3 costs `30 × 2 = −60` points.
 
-### Difficulty Progression
+### 📈 Difficulty Progression
 
 - **3 consecutive correct answers** → difficulty increases by one level (max 5)
 - **3 consecutive incorrect answers** → difficulty decreases by one level (min 1)
 
 The app starts new domains at **level 2 (Easy)**.
 
-## Notes
+## 📝 Notes
 
 - If Copilot authentication fails, quiz generation cannot proceed and the app exits.
 - Domain names are slugified before being stored on disk (`"System Design"` → `system-design`).
 - If a domain file is missing or unreadable, the app starts from a clean default state for that domain.
 - A question that duplicates an existing hash triggers one automatic retry with a deduplication prompt before falling back.
+
+## 🤝 Contributing
+
+Contributions are welcome. The project uses TypeScript with Vitest for testing — run `npm test` before submitting a pull request.
+
+For context on the product goals and feature decisions, see the planning artifacts in [`docs/planning-artifacts/`](docs/planning-artifacts/):
+
+- [Product Brief](docs/planning-artifacts/product-brief.md) — vision, problem statement, and success metrics
+- [PRD](docs/planning-artifacts/prd.md) — detailed feature specifications and acceptance criteria
+- [Architecture](docs/planning-artifacts/architecture.md) — technical design decisions
 

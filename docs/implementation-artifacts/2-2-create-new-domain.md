@@ -12,7 +12,7 @@ Created: 2026-03-07
 
 As a user,
 I want to create a new domain by typing any free-text topic name from the home screen,
-So that I can immediately start getting quiz questions on any technical subject I choose.
+So that I can immediately start getting quiz questions on any topic I choose.
 
 ## Acceptance Criteria
 
