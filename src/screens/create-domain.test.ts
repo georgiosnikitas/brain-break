@@ -11,13 +11,17 @@ import { clearScreen } from '../utils/screen.js'
 // ---------------------------------------------------------------------------
 // Mock @inquirer/prompts so interactive prompts can be controlled in tests
 // ---------------------------------------------------------------------------
-const mockInput = vi.fn()
-
 vi.mock('@inquirer/prompts', () => ({
-  input: (...args: unknown[]) => mockInput(...args),
+  select: vi.fn(),
+  input: vi.fn(),
+  Separator: vi.fn(),
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+
+import { select, input } from '@inquirer/prompts'
+const mockSelect = vi.mocked(select)
+const mockInput = vi.mocked(input)
 
 // ---------------------------------------------------------------------------
 // validateDomainName — pure unit tests
@@ -60,6 +64,7 @@ beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'brain-break-create-'))
   _setDataDir(testDir)
   mockInput.mockReset()
+  mockSelect.mockReset()
 })
 
 afterEach(async () => {
@@ -70,6 +75,7 @@ afterEach(async () => {
 describe('showCreateDomainScreen', () => {
   it('creates domain file when slug is new', async () => {
     mockInput.mockResolvedValueOnce('Spring Boot microservices')
+    mockSelect.mockResolvedValueOnce('save')
 
     await showCreateDomainScreen()
 
@@ -87,6 +93,7 @@ describe('showCreateDomainScreen', () => {
     await writeDomain('my-topic', existing)
 
     mockInput.mockResolvedValueOnce('my-topic')
+    mockSelect.mockResolvedValueOnce('save')
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showCreateDomainScreen()
@@ -106,6 +113,7 @@ describe('showCreateDomainScreen', () => {
     await writeDomain('archived-topic', archived)
 
     mockInput.mockResolvedValueOnce('archived-topic')
+    mockSelect.mockResolvedValueOnce('save')
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showCreateDomainScreen()
@@ -127,6 +135,7 @@ describe('showCreateDomainScreen', () => {
     _setDataDir(fakePath)
 
     mockInput.mockResolvedValueOnce('new-topic')
+    mockSelect.mockResolvedValueOnce('save')
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await showCreateDomainScreen()
@@ -142,7 +151,19 @@ describe('showCreateDomainScreen', () => {
     expect(list.data.filter((e) => e.slug === 'new-topic')).toHaveLength(0)
   })
 
-  it('returns silently when ExitPromptError is thrown (back to home screen)', async () => {
+  it('Back: does not create domain and returns without error', async () => {
+    mockInput.mockResolvedValueOnce('some-topic')
+    mockSelect.mockResolvedValueOnce('back')
+
+    await expect(showCreateDomainScreen()).resolves.toBeUndefined()
+
+    const list = await listDomains()
+    expect(list.ok).toBe(true)
+    if (!list.ok) return
+    expect(list.data.filter((e) => e.slug === 'some-topic')).toHaveLength(0)
+  })
+
+  it('returns silently when ExitPromptError is thrown from input', async () => {
     mockInput.mockRejectedValueOnce(new ExitPromptError())
 
     await expect(showCreateDomainScreen()).resolves.toBeUndefined()
@@ -153,8 +174,38 @@ describe('showCreateDomainScreen', () => {
     expect(list.data).toHaveLength(0)
   })
 
+  it('returns silently when ExitPromptError is thrown from nav select', async () => {
+    mockInput.mockResolvedValueOnce('some-topic')
+    mockSelect.mockRejectedValueOnce(new ExitPromptError())
+
+    await expect(showCreateDomainScreen()).resolves.toBeUndefined()
+
+    const list = await listDomains()
+    expect(list.ok).toBe(true)
+    if (!list.ok) return
+    expect(list.data).toHaveLength(0)
+  })
+
+  it('logs an error when writeDomain fails', async () => {
+    mockInput.mockResolvedValueOnce('new-topic')
+    mockSelect.mockResolvedValueOnce('save')
+    const { chmod } = await import('node:fs/promises')
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Make the data directory read-only so the atomic tmp write fails
+    await chmod(testDir, 0o555)
+    try {
+      await showCreateDomainScreen()
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to create domain'))
+    } finally {
+      await chmod(testDir, 0o755)
+      errorSpy.mockRestore()
+    }
+  })
+
   it('calls clearScreen before the input prompt', async () => {
     mockInput.mockResolvedValueOnce('new domain name')
+    mockSelect.mockResolvedValueOnce('save')
 
     await showCreateDomainScreen()
 
