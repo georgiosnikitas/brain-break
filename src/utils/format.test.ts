@@ -14,6 +14,7 @@ import {
   colorSpeedTier,
   colorDifficultyLevel,
   colorScoreDelta,
+  menuTheme,
 } from './format.js'
 
 // chalk can produce empty strings in test environments when colors are disabled.
@@ -190,5 +191,12 @@ describe('colorScoreDelta', () => {
 
   it('includes + sign for zero', () => {
     expect(colorScoreDelta(0)).toContain('+0')
+  })
+})
+
+describe('menuTheme', () => {
+  it('highlight returns a string containing the input text', () => {
+    const result = menuTheme.style.highlight('selected item')
+    expect(result).toContain('selected item')
   })
 })

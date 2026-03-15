@@ -376,3 +376,21 @@ describe('showStats — clearScreen', () => {
     expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
 })
+
+describe('showStats — non-ExitPromptError re-throw', () => {
+  it('re-throws unexpected errors from navigation select', async () => {
+    mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+    const boom = new Error('unexpected stats select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await expect(showStats('typescript')).rejects.toThrow('unexpected stats select failure')
+  })
+})
+
+describe('difficultyLabel', () => {
+  it('returns fallback string for out-of-range difficulty level', () => {
+    expect(difficultyLabel(0)).toBe('0')
+    expect(difficultyLabel(6)).toBe('6')
+  })
+})

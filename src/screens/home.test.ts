@@ -310,4 +310,104 @@ describe('showCoffeeScreen', () => {
     await expect(showCoffeeScreen()).resolves.toBeUndefined()
     logSpy.mockRestore()
   })
+
+  it('re-throws non-ExitPromptError from coffee screen select', async () => {
+    const boom = new Error('unexpected coffee select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await expect(showCoffeeScreen()).rejects.toThrow('unexpected coffee select failure')
+    logSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showHomeScreen — error paths
+// ---------------------------------------------------------------------------
+describe('showHomeScreen — error paths', () => {
+  it('logs error and shows empty list when listDomains fails', async () => {
+    mockListDomains.mockResolvedValue({ ok: false, error: 'disk error' })
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('disk error'))
+    errorSpy.mockRestore()
+    exitSpy.mockRestore()
+  })
+
+  it('re-throws non-ExitPromptError from select', async () => {
+    const boom = new Error('unexpected prompt failure')
+    mockSelect.mockRejectedValueOnce(boom)
+
+    await expect(showHomeScreen()).rejects.toThrow('unexpected prompt failure')
+  })
+
+  it('calls process.exit(0) when select throws ExitPromptError (Ctrl+C)', async () => {
+    const ExitPromptError = (await import('@inquirer/core')).ExitPromptError
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called')
+    })
+    mockSelect.mockRejectedValueOnce(new ExitPromptError())
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit called')
+    expect(exitSpy).toHaveBeenCalledWith(0)
+    exitSpy.mockRestore()
+  })
+})
+
+describe('showHomeScreen — readDomain fallback per entry', () => {
+  it('falls back to listDomains meta score when readDomain fails for an entry', async () => {
+    const meta = { ...defaultDomainFile().meta, score: 77 }
+    mockListDomains.mockResolvedValue({
+      ok: true,
+      data: [{ slug: 'typescript', meta, corrupted: false as const }],
+    })
+    mockReadDomain.mockResolvedValue({ ok: false, error: 'corrupted' })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    const callArg = mockSelect.mock.calls[0][0] as { choices: Array<{ name: string; value: HomeAction }> }
+    const domainChoice = callArg.choices.find(
+      (c) => c.value && (c.value as { action: string }).action === 'select',
+    )
+    expect(domainChoice?.name).toContain('77')
+    exitSpy.mockRestore()
+  })
+})
+
+describe('showHomeScreen — create and archived routing', () => {
+  it('calls router.showCreateDomain when create action is selected', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'create' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showCreateDomain)).toHaveBeenCalledOnce()
+    exitSpy.mockRestore()
+  })
+
+  it('calls router.showArchived when archived action is selected', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'archived' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showArchived)).toHaveBeenCalledOnce()
+    exitSpy.mockRestore()
+  })
 })

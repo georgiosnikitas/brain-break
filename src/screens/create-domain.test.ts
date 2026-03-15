@@ -211,4 +211,11 @@ describe('showCreateDomainScreen', () => {
 
     expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
+
+  it('re-throws non-ExitPromptError from input prompt', async () => {
+    const boom = new Error('unexpected input failure')
+    mockInput.mockRejectedValueOnce(boom)
+
+    await expect(showCreateDomainScreen()).rejects.toThrow('unexpected input failure')
+  })
 })

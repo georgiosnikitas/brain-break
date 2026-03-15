@@ -189,6 +189,33 @@ describe('generateQuestion', () => {
   })
 })
 
+describe('getClient initialization', () => {
+  it('calls client.start() when no client has been previously injected', async () => {
+    _setClient(null)
+
+    const { CopilotClient } = await import('@github/copilot-sdk')
+    const mockStartFn = vi.fn().mockResolvedValue(undefined)
+    // Use a regular function (not arrow) so it works properly as a constructor mock
+    vi.mocked(CopilotClient).mockImplementationOnce(function (this: unknown) {
+      return {
+        start: mockStartFn,
+        stop: vi.fn().mockResolvedValue([]),
+        createSession: mockCreateSession,
+      } as unknown as InstanceType<typeof CopilotClient>
+    } as unknown as new () => InstanceType<typeof CopilotClient>)
+
+    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
+
+    const result = await generateQuestion('typescript', 2, new Set())
+
+    expect(result.ok).toBe(true)
+    expect(mockStartFn).toHaveBeenCalledOnce()
+
+    // Re-inject a mock so subsequent tests are not affected
+    _setClient(makeFakeClient())
+  })
+})
+
 describe('settings injection', () => {
   it('accepts settings parameter and returns ok:true', async () => {
     mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
@@ -304,5 +331,72 @@ describe('generateMotivationalMessage', () => {
 
     const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
     expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+})
+
+describe('edge cases', () => {
+  it('returns NETWORK error when a non-Error value is thrown', async () => {
+    // Throws a plain string — isAuthError returns false (err not instanceof Error)
+    mockCreateSession.mockRejectedValueOnce('plain string error')
+
+    const result = await generateQuestion('typescript', 2, new Set())
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK)
+  })
+
+  it('handles ``` fence with no newline after language tag (slice(3) branch)', async () => {
+    // '```' immediately followed by JSON (no newline) — exercises newlineIdx === -1 branch
+    const noNewlineFence = '```' + makeValidResponse() + '```'
+    mockSendAndWait.mockResolvedValueOnce(makeEvent(noNewlineFence))
+
+    const result = await generateQuestion('typescript', 2, new Set())
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('returns PARSE error when sendAndWait returns a null event (content ?? fallback)', async () => {
+    mockSendAndWait.mockResolvedValueOnce(null)
+
+    const result = await generateQuestion('typescript', 2, new Set())
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.PARSE)
+  })
+
+  it('returns PARSE error when retry sendAndWait returns a null event', async () => {
+    const firstQ = 'What is 2+2?'
+    const existingHash = hashQuestion(firstQ)
+    mockSendAndWait
+      .mockResolvedValueOnce(makeEvent(makeValidResponse(firstQ)))
+      .mockResolvedValueOnce(null)
+
+    const result = await generateQuestion('typescript', 2, new Set([existingHash]))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.PARSE)
+  })
+
+  it('returns NETWORK error when generateMotivationalMessage receives non-Error throw', async () => {
+    mockCreateSession.mockRejectedValueOnce('string error')
+
+    const result = await generateMotivationalMessage('returning')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK)
+  })
+
+  it('returns empty string data when motivational event content is null', async () => {
+    mockSendAndWait.mockResolvedValueOnce(null)
+
+    const result = await generateMotivationalMessage('returning')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('')
   })
 })

@@ -423,4 +423,22 @@ describe('showQuiz', () => {
     expect(logged).toContain('Easy')
     consoleSpy.mockRestore()
   })
+
+  it('re-throws non-ExitPromptError from answer select (askQuestion)', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const boom = new Error('unexpected answer select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+
+    await expect(showQuiz('typescript')).rejects.toThrow('unexpected answer select failure')
+  })
+
+  it('re-throws non-ExitPromptError from next-action select (askNextAction)', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const boom = new Error('unexpected next-action select failure')
+    mockSelect
+      .mockResolvedValueOnce('A')    // answer select succeeds
+      .mockRejectedValueOnce(boom)   // next-action select throws
+
+    await expect(showQuiz('typescript')).rejects.toThrow('unexpected next-action select failure')
+  })
 })

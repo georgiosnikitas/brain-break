@@ -247,3 +247,12 @@ describe('showDomainMenuScreen — Delete (Ctrl+C during confirm)', () => {
     expect(vi.mocked(router.showHome)).toHaveBeenCalledOnce()
   })
 })
+
+describe('showDomainMenuScreen — non-ExitPromptError re-throw', () => {
+  it('re-throws unexpected errors from select', async () => {
+    const boom = new Error('unexpected select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+
+    await expect(showDomainMenuScreen('typescript')).rejects.toThrow('unexpected select failure')
+  })
+})

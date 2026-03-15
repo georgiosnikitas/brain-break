@@ -409,4 +409,23 @@ describe('showHistory — ExitPromptError', () => {
 
     expect(vi.mocked(clearScreen)).toHaveBeenCalled()
   })
+
+  it('re-throws non-ExitPromptError from navigation select', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    const boom = new Error('unexpected select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await expect(showHistory('typescript')).rejects.toThrow('unexpected select failure')
+  })
+
+  it('re-throws non-ExitPromptError from empty-history navigation select', async () => {
+    mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+    const boom = new Error('empty history select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await expect(showHistory('typescript')).rejects.toThrow('empty history select failure')
+  })
 })

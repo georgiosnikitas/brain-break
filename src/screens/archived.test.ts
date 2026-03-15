@@ -220,6 +220,61 @@ describe('showArchivedScreen', () => {
     await expect(showArchivedScreen()).resolves.toBeUndefined()
   })
 
+  it('warns and returns when readDomain fails during unarchive (EISDIR)', async () => {
+    const archived = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, archived: true },
+    }
+    await writeDomain('fail-unarchive', archived)
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    // Corrupt the domain file (replace with directory) inside the select mock,
+    // AFTER listDomains + loadArchivedEntries succeed, but BEFORE handleUnarchiveAction.
+    mockSelect
+      .mockImplementationOnce(async () => {
+        await rm(join(testDir, 'fail-unarchive.json'))
+        await mkdir(join(testDir, 'fail-unarchive.json'))
+        return { action: 'unarchive' as const, slug: 'fail-unarchive' }
+      })
+      .mockResolvedValueOnce({ action: 'back' as const })
+
+    await showArchivedScreen()
+
+    expect(warnSpy).toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('re-throws non-ExitPromptError from select', async () => {
+    const boom = new Error('unexpected select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+
+    await expect(showArchivedScreen()).rejects.toThrow('unexpected select failure')
+  })
+
+  it('falls back to listDomains meta score and 0 questions when readDomain fails for an archived entry', async () => {
+    const archivedMeta = { ...defaultDomainFile().meta, score: 55, archived: true }
+    const archived = { ...defaultDomainFile(), meta: archivedMeta }
+    await writeDomain('score-fallback', archived)
+
+    // Spy on the module's readDomain export to intercept the call from loadArchivedEntries
+    // (which uses the named import). listDomains calls readDomain internally within store.ts
+    // so it is NOT intercepted and still finds the file.
+    const storeModule = await import('../domain/store.js')
+    const spy = vi.spyOn(storeModule, 'readDomain').mockResolvedValueOnce({
+      ok: false,
+      error: 'simulated load failure',
+    })
+
+    mockSelect.mockResolvedValueOnce({ action: 'back' as const })
+
+    await showArchivedScreen()
+
+    // Screen rendered without throwing; the fallback branches on score and totalQuestions were exercised
+    expect(mockSelect).toHaveBeenCalledOnce()
+    spy.mockRestore()
+  })
+
   it('calls clearScreen before rendering', async () => {
     mockSelect.mockResolvedValueOnce({ action: 'back' })
 

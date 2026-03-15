@@ -139,4 +139,11 @@ describe('showSettingsScreen', () => {
 
     expect(mockWriteSettings).toHaveBeenCalledWith({ language: 'English', tone: 'normal' })
   })
+
+  it('re-throws non-ExitPromptError from settings select', async () => {
+    const boom = new Error('unexpected settings select failure')
+    mockSelect.mockRejectedValueOnce(boom)
+
+    await expect(showSettingsScreen()).rejects.toThrow('unexpected settings select failure')
+  })
 })

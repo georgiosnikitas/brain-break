@@ -213,6 +213,19 @@ describe('applyAnswer — difficulty progression', () => {
 })
 
 // ---------------------------------------------------------------------------
+// applyAnswer — fallback base points
+// ---------------------------------------------------------------------------
+describe('applyAnswer — fallback base points', () => {
+  it('uses 30 base points when difficultyLevel is out of range (e.g. 0)', () => {
+    // difficultyLevel: 0 is not in BASE_POINTS (keys 1-5), so basePts ?? 30 = 30
+    const meta = makeMeta({ difficultyLevel: 0 as unknown as 1 })
+    const { scoreDelta } = applyAnswer(meta, true, 5_000, thresholds)
+    // correct + fast → 30 * 2 = 60
+    expect(scoreDelta).toBe(60)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // applyAnswer — non-zero starting score (L3)
 // ---------------------------------------------------------------------------
 describe('applyAnswer — non-zero starting score', () => {

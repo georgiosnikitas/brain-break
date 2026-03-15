@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -235,6 +235,20 @@ describe('writeSettings + readSettings', () => {
     expect(result.data).toEqual(defaultSettings())
   })
 
+  it('uses DATA_DIR-based default settings path when _settingsPath is null', async () => {
+    // Explicitly clear the override so settingsPath() falls back to join(DATA_DIR, 'settings.json')
+    _setSettingsPath(null)
+
+    const result = await readSettings()
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toEqual(defaultSettings())
+
+    // Restore for other tests in this block
+    _setSettingsPath(settingsFile)
+  })
+
   it('corrupted JSON returns defaultSettings()', async () => {
     await writeFile(settingsFile, 'not-json', 'utf8')
     const result = await readSettings()
@@ -249,5 +263,17 @@ describe('writeSettings + readSettings', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data).toEqual(defaultSettings())
+  })
+
+  it('returns { ok: false } and cleans up when writeSettings fails (tmp path is a directory)', async () => {
+    // Create a directory at the .tmp path so writeFile fails with EISDIR
+    const { join: pathJoin, dirname } = await import('node:path')
+    await mkdir(pathJoin(dirname(settingsFile), '.tmp-settings.json'))
+
+    const result = await writeSettings(defaultSettings())
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toContain('Failed to write settings')
   })
 })
