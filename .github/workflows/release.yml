@@ -41,6 +41,12 @@ jobs:
           generate_release_notes: true
 
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @georgiosnikitas/brain-break@${VERSION} --registry=https://npm.pkg.github.com 2>/dev/null; then
+            echo "Version ${VERSION} already published, skipping"
+          else
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
