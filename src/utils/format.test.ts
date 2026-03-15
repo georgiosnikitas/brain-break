@@ -154,28 +154,28 @@ describe('colorSpeedTier', () => {
 })
 
 describe('colorDifficultyLevel', () => {
-  it('returns string containing "L1" for level 1', () => {
-    expect(colorDifficultyLevel(1)).toContain('L1')
+  it('returns string containing "Beginner" for level 1', () => {
+    expect(colorDifficultyLevel(1)).toContain('Beginner')
   })
 
-  it('returns string containing "L2" for level 2', () => {
-    expect(colorDifficultyLevel(2)).toContain('L2')
+  it('returns string containing "Easy" for level 2', () => {
+    expect(colorDifficultyLevel(2)).toContain('Easy')
   })
 
-  it('returns string containing "L3" for level 3', () => {
-    expect(colorDifficultyLevel(3)).toContain('L3')
+  it('returns string containing "Intermediate" for level 3', () => {
+    expect(colorDifficultyLevel(3)).toContain('Intermediate')
   })
 
-  it('returns string containing "L4" for level 4', () => {
-    expect(colorDifficultyLevel(4)).toContain('L4')
+  it('returns string containing "Advanced" for level 4', () => {
+    expect(colorDifficultyLevel(4)).toContain('Advanced')
   })
 
-  it('returns string containing "L5" for level 5', () => {
-    expect(colorDifficultyLevel(5)).toContain('L5')
+  it('returns string containing "Expert" for level 5', () => {
+    expect(colorDifficultyLevel(5)).toContain('Expert')
   })
 
   it('returns uncolored label for out-of-range level', () => {
-    expect(colorDifficultyLevel(6)).toBe('L6')
+    expect(colorDifficultyLevel(6)).toBe('6')
   })
 })
 

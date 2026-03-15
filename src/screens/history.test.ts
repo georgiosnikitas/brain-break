@@ -240,7 +240,7 @@ describe('showHistory — single question', () => {
     expect(allLogs).toContain('What is Zod?')
     expect(allLogs).toContain('Your answer:')
     expect(allLogs).toContain('Correct:')
-    expect(allLogs).toContain('L4')
+    expect(allLogs).toContain('Advanced')
     consoleSpy.mockRestore()
   })
 
