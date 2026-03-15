@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`stats screen — full output snapshot > renders the empty-history placeholder lines deterministically 1`] = `
+[
+  "
+Stats Dashboard",
+  "Score: 0",
+  "Questions answered: 0",
+  "Correct / Incorrect: 0 / 0",
+  "Accuracy: No data yet",
+  "Total time played: No data yet",
+  "Difficulty: 2 — Easy",
+  "Score trend (30 days): No data yet",
+  "Days since first session: No data yet",
+  "Return streak: No data yet",
+]
+`;
+
+exports[`stats screen — full output snapshot > renders the populated stats dashboard deterministically 1`] = `
+[
+  "
+Stats Dashboard",
+  "Score: 10",
+  "Questions answered: 2",
+  "Correct / Incorrect: 1 / 1",
+  "Accuracy: 50.0%",
+  "Total time played: 30s",
+  "Difficulty: 2 — Easy",
+  "Score trend (30 days): Growing 📈",
+  "Days since first session: 1",
+  "Return streak: 2 days",
+]
+`;
