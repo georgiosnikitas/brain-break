@@ -2,10 +2,14 @@
 stepsCompleted: [1, 2, 3, 4]
 lastEdited: '2026-03-15'
 editHistory:
-  - date: '2026-03-14'
-    changes: 'NFR5 (Terminal Screen Management) added to Requirements Inventory and NFR Coverage Map; Story 1.6 (Terminal Screen Management) added to Epic 1'
+  - date: '2026-03-15'
+    changes: 'Brownfield sync: FR24 (Delete Domain) and FR25 (Coffee Supporter Screen) added to Requirements Inventory and Coverage Maps; FR3 updated to include Delete in sub-menu actions; NFR5 updated to full terminal reset (scroll-back buffer); Epic 1 + Epic 2 headers updated; Story 2.5 ACs updated with Delete option'
+  - date: '2026-03-15'
+    changes: 'Epic 5 (Global Settings) and Epic 6 (Terminal UI Highlighting & Color System) added with 7 new stories (5.1–5.4, 6.1–6.3); FR14–FR23 and NFR6 added to Requirements Inventory and Coverage Map; final validation passed — 23/23 FRs + 6/6 NFRs covered'
   - date: '2026-03-15'
     changes: 'Story 1.7 (Buy Me a Coffee screen) added to Epic 1'
+  - date: '2026-03-14'
+    changes: 'NFR5 (Terminal Screen Management) added to Requirements Inventory and NFR Coverage Map; Story 1.6 (Terminal Screen Management) added to Epic 1'
 inputDocuments:
   - docs/planning-artifacts/prd.md
   - docs/planning-artifacts/architecture.md
@@ -25,7 +29,7 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. The create-domain screen shows an input prompt; pressing Ctrl+C returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu.
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
@@ -47,6 +51,30 @@ FR12: Users can view their full paginated question history for the active domain
 
 FR13: Users can view a stats dashboard for the active domain showing: current score, total questions answered, correct/incorrect count and accuracy %, total time played, current difficulty level, score trend over the last 30 days (growing/flat/declining), days since first session, and current return streak.
 
+FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
+
+FR15: The Settings screen allows configuring: Question Language (free-text entry) and Tone of Voice (selectable from 4 presets: Normal, Enthusiastic, Robot, Pirate).
+
+FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
+
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ language: "English", tone: "normal" }`.
+
+FR18: Every AI call (questions, motivational messages) injects the active language and tone from global settings — generated content renders in the configured language and voice.
+
+FR19: Settings screen provides Save (persist + return home) and Back (discard changes + return home) navigation.
+
+FR20: All interactive menus render the focused item with inverted foreground/background colors (white text on colored background); unfocused items render in default terminal colors. Applies to: home screen, domain sub-menu, settings screen, archived domains list, history navigation controls, and post-quiz navigation.
+
+FR21: Post-answer feedback colors: correct answer = green; user's wrong answer = red; correct answer reveal = green; score delta positive = green; score delta negative = red.
+
+FR22: Speed tier badge colors: Fast = green, Normal = yellow, Slow = red.
+
+FR23: Difficulty level badge colors: L1 = cyan, L2 = green, L3 = yellow, L4 = magenta, L5 = red.
+
+FR24: Users can permanently delete a domain from the domain sub-menu. Selecting Delete presents a blocking confirmation dialog ("Delete '[domain]' permanently? This cannot be undone.") — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu.
+
+FR25: The home screen includes a "☕ Buy me a coffee" action positioned between the archived domains separator and the Exit action. Selecting it opens a dedicated screen displaying an ASCII QR code (small, indented) encoding the creator's support URL and the URL in plain text, with a single Back action that returns the user to the home screen.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -57,7 +85,9 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard) clear the terminal viewport before rendering new content. No prior output persists in the visible area after any navigation action.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action.
+
+NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
 ### Additional Requirements
 
@@ -89,7 +119,7 @@ NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post
 |---|---|---|
 | FR1 | Epic 2 | Home screen — domain list with score + count; select opens domain sub-menu |
 | FR2 | Epic 2 | Create new domain via free-text input |
-| FR3 | Epic 2 | Domain sub-menu — Play/History/Stats/Archive/Back + motivational message on Play |
+| FR3 | Epic 2 | Domain sub-menu — Play/History/Stats/Archive/Delete/Back + motivational message on Play |
 | FR4 | Epic 2 | Archive domain from domain sub-menu (preserves all data) |
 | FR5 | Epic 2 | View archived domains + unarchive |
 | FR6 | Epic 3 | Copilot SDK question generation + SHA-256 deduplication |
@@ -100,6 +130,18 @@ NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post
 | FR11 | Epic 3 | Per-question record written after every answer |
 | FR12 | Epic 4 | Paginated question history view |
 | FR13 | Epic 4 | Stats dashboard (score, accuracy, trend, streak, time) |
+| FR14 | Epic 5 | Settings action on home screen menu |
+| FR15 | Epic 5 | Settings screen — language (free-text) + tone (4 presets) |
+| FR16 | Epic 5 | Global scope — all domains and all AI-generated content |
+| FR17 | Epic 5 | Settings persistence at `~/.brain-break/settings.json` |
+| FR18 | Epic 5 | Language + tone injected into every AI call |
+| FR19 | Epic 5 | Settings screen Save/Back navigation |
+| FR20 | Epic 6 | Full-row inverted highlight on focused menu item — all menus |
+| FR21 | Epic 6 | Post-answer feedback colors (correct/incorrect/delta) |
+| FR22 | Epic 6 | Speed tier badge colors |
+| FR23 | Epic 6 | Difficulty level badge colors |
+| FR24 | Epic 2 | Delete domain from sub-menu — confirmation dialog, permanent removal, navigate home |
+| FR25 | Epic 1 | Coffee Supporter Screen — QR code + URL + Back navigation |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -107,19 +149,20 @@ NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post
 | NFR2 | Epic 3 | Graceful API/auth error → home screen |
 | NFR3 | Epic 2 | ENOENT → defaultDomainFile(); corrupted → warn + reset |
 | NFR4 | Epic 2 | ≤ 2s startup to home screen |
-| NFR5 | Story 1.6 | Terminal viewport cleared before every screen render (cross-cutting) |
+| NFR5 | Story 1.6 | Full terminal reset (viewport + scroll-back buffer) before every screen render (cross-cutting) |
+| NFR6 | Epic 6 | ANSI 8/16-color baseline; interactive-only |
 
 ## Epic List
 
 ### Epic 1: Project Foundation & Developer Infrastructure
 Users can clone the repo, install dependencies, and run `tsx src/index.ts` to reach a working (if minimal) entry point — with the full typed domain schema, atomic file store, and CI in place as the verified foundation every other epic builds on.
-**FRs covered:** N/A (technical foundation)
+**FRs covered:** FR25 (Coffee Supporter Screen)
 **NFRs covered:** partial NFR4 (startup path wired)
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
 
 ### Epic 2: Domain Management
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Stats, Archive, Back), archive domains they're not actively using, and unarchive them to resume exactly where they left off.
-**FRs covered:** FR1, FR2, FR3, FR4, FR5
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Stats, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
 ### Epic 3: AI-Powered Adaptive Quiz
@@ -130,7 +173,18 @@ Users can take an AI-generated, never-repeating, multiple-choice quiz session in
 ### Epic 4: Learning Insights
 Users can review their complete question history for any domain (paginated, all recorded fields) and view a stats dashboard showing score, accuracy, difficulty level, time played, score trend, and return streak — giving them a genuine signal of their knowledge growth over time.
 **FRs covered:** FR12, FR13
+### Epic 5: Global Settings
+Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
+**FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19
+**FRs updated:** FR3 (motivational message → AI-generated with language/tone), FR6/FR18 (language + tone injected into all AI calls)
+**NFRs covered:** none directly
+**Additional requirements covered:** SettingsFile schema + Zod validation, settings store (read/write `~/.brain-break/settings.json`), prompt builder updated to accept `{ language, tone }` context
 
+### Epic 6: Terminal UI Highlighting & Color System
+Every menu in the application renders the focused item with a full-row inverted highlight navigable by arrow keys; post-answer feedback, score deltas, speed-tier badges, and difficulty badges are color-coded with semantic ANSI colors — making the app feel polished and the feedback loop immediately readable.
+**FRs covered:** FR20, FR21, FR22, FR23
+**NFRs covered:** NFR6 (ANSI baseline color compatibility)
+**Additional requirements covered:** `utils/format.ts` semantic color helpers, `inquirer` select theme configuration across all screens
 ---
 
 ## Epic 1: Project Foundation & Developer Infrastructure
@@ -426,7 +480,7 @@ So that I can choose to play, review history, check stats, or archive — all fr
 **Given** I am on the home screen and at least one active domain exists
 **When** I select a domain
 **Then** the domain sub-menu opens with the prompt header showing: domain name, current score, and total questions answered (read fresh from disk)
-**And** the available options are: Play, View History, View Stats, Archive, and Back
+**And** the available options are: Play, View History, View Stats, Archive, Delete, and Back
 
 **Given** I am on the domain sub-menu
 **When** I select "Play"
@@ -699,3 +753,260 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 **Given** I am on the stats screen
 **When** I select "Back"
 **Then** I return to the domain sub-menu
+
+---
+
+## Epic 5: Global Settings
+
+Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content.
+
+### Story 5.1: Settings Schema & Store
+
+As a developer,
+I want a `SettingsFile` Zod schema and read/write store functions for `~/.brain-break/settings.json`,
+So that all modules have a single, type-safe, tested source of truth for user settings.
+
+**Acceptance Criteria:**
+
+**Given** `domain/schema.ts` (or a new `settings/schema.ts`) is updated
+**When** I import `SettingsFileSchema`
+**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["normal", "enthusiastic", "robot", "pirate"]) }`
+**And** `defaultSettings()` returns `{ language: "English", tone: "normal" }`
+
+**Given** `domain/store.ts` (or a new `settings/store.ts`) exports `readSettings()` and `writeSettings(settings)`
+**When** I call `readSettings()` and `~/.brain-break/settings.json` exists and is valid
+**Then** it returns `{ ok: true, data: SettingsFile }` with the parsed, Zod-validated settings
+
+**Given** I call `readSettings()` and the file does not exist (ENOENT)
+**When** the function runs
+**Then** it returns `{ ok: true, data: defaultSettings() }` — no error propagated
+
+**Given** I call `readSettings()` and the file is corrupted (Zod validation fails)
+**When** the function runs
+**Then** it returns `{ ok: true, data: defaultSettings() }` — silently falls back to defaults (settings corruption is non-critical)
+
+**Given** I call `writeSettings(settings)`
+**When** the function runs
+**Then** it writes atomically (write-then-rename pattern) to `~/.brain-break/settings.json`
+**And** returns `{ ok: true }` on success
+
+**Given** co-located tests exist for the schema and store
+**When** I run `npm test`
+**Then** all tests pass, covering: valid input, `defaultSettings()` output, ENOENT fallback, Zod rejection fallback, and write/read roundtrip
+
+---
+
+### Story 5.2: Settings Screen
+
+As a user,
+I want a Settings option in the home screen menu that opens a screen where I can configure my question language and tone of voice,
+So that I can personalise how questions and AI responses are delivered to me.
+
+**Acceptance Criteria:**
+
+**Given** I am on the home screen
+**When** I inspect the menu options
+**Then** a "⚙️  Settings" action is present between "View archived domains" and "☕  Buy me a coffee"
+
+**Given** I select "⚙️  Settings" from the home screen
+**When** the settings screen loads
+**Then** the terminal is cleared and current settings are read from disk via `readSettings()`
+**And** the screen displays the current values for Question Language and Tone of Voice
+
+**Given** the settings screen is open
+**When** I edit the Question Language field
+**Then** I can type any free-text value (e.g. `Greek`, `Japanese`, `Pirate English`)
+
+**Given** the settings screen is open
+**When** I navigate the Tone of Voice selector
+**Then** I can choose from: Normal, Enthusiastic, Robot, Pirate — navigated with arrow keys
+
+**Given** I have made changes on the settings screen
+**When** I select "Save"
+**Then** `writeSettings()` is called with the new values and persists to `~/.brain-break/settings.json`
+**And** I am returned to the home screen
+
+**Given** I have made changes on the settings screen
+**When** I select "Back" (or press Ctrl+C)
+**Then** no changes are written to disk and I am returned to the home screen
+
+**Given** `screens/settings.ts` has co-located tests
+**When** I run `npm test`
+**Then** all tests pass, covering: Settings action present in home menu, routing home → settings screen, current values loaded on open, Save persists + navigates home, Back discards + navigates home, Ctrl+C handled gracefully
+
+---
+
+### Story 5.3: Language & Tone Injection into AI Prompts
+
+As a user,
+I want every AI-generated question and answer option to be rendered in my configured language and tone of voice,
+So that the quiz experience matches my personal preference from start to finish.
+
+**Acceptance Criteria:**
+
+**Given** `ai/prompts.ts` is updated
+**When** I call `buildQuestionPrompt(domain, difficultyLevel, settings)`
+**Then** the prompt includes a voice instruction prepended to the generation request — e.g. `"Respond in Greek using a pirate tone of voice."`
+**And** when `settings.language` is `"English"` and `settings.tone` is `"normal"`, no voice instruction prefix is added (or a neutral one)
+
+**Given** `ai/client.ts` is updated
+**When** `generateQuestion(domain, difficultyLevel, existingHashes, settings)` is called
+**Then** it passes `settings` to `buildQuestionPrompt()` so language + tone are injected into every API call
+
+**Given** `screens/quiz.ts` is updated
+**When** a quiz session starts
+**Then** `readSettings()` is called once at session start and the result is passed to every `generateQuestion()` call in that session
+
+**Given** the active language is `"Spanish"` and tone is `"enthusiastic"`
+**When** a question is generated
+**Then** the question text, all four answer options (A–D), and the correct answer reveal are rendered in Spanish with enthusiastic phrasing
+
+**Given** `ai/client.test.ts` and `ai/prompts.test.ts` are updated
+**When** I run `npm test`
+**Then** all tests pass, covering: settings injected into prompt, language + tone appear in system message, neutral case (English/normal) produces valid output
+
+---
+
+### Story 5.4: AI-Generated Motivational Messages
+
+As a user,
+I want the motivational message shown before a quiz session to be generated by AI in my configured language and tone,
+So that the encouragement feels contextual and consistent with the rest of the quiz experience.
+
+**Acceptance Criteria:**
+
+**Given** `screens/select-domain.ts` is updated
+**When** the motivational message condition is met (returning user within 7 days OR score trending upward)
+**Then** `generateMotivationalMessage(trigger, settings)` is called — a new function in `ai/client.ts` — before the quiz starts
+**And** the message is displayed using `success()` formatting
+
+**Given** `ai/prompts.ts` exports `buildMotivationalPrompt(trigger, settings)`
+**When** called with `trigger = "returning"` and `settings = { language: "Greek", tone: "pirate" }`
+**Then** the prompt instructs the model to generate a short (1–2 sentence) motivational message in Greek using pirate tone, acknowledging the user's return
+
+**Given** `trigger = "trending"` (score trending upward)
+**When** the prompt is built
+**Then** it instructs the model to congratulate the user on their upward score trend in the configured language and tone
+
+**Given** the Copilot API is unreachable when generating the motivational message
+**When** `generateMotivationalMessage()` fails
+**Then** the error is silently swallowed — no message is displayed and the quiz starts normally (motivational message is non-critical)
+
+**Given** `screens/select-domain.test.ts` is updated
+**When** I run `npm test`
+**Then** all tests pass, covering: AI call made when trigger met, settings passed to prompt builder, graceful degradation on API failure, no message shown on fresh domain
+
+---
+
+## Epic 6: Terminal UI Highlighting & Color System
+
+Every menu in the application renders the focused item with a full-row inverted highlight navigable by arrow keys; post-answer feedback, score deltas, speed-tier badges, and difficulty badges are color-coded — making the app feel polished and the feedback loop immediately readable.
+
+### Story 6.1: Semantic Color Helpers
+
+As a developer,
+I want `utils/format.ts` extended with semantic color helper functions for all UI feedback states,
+So that every screen can apply consistent, tested color semantics without duplicating chalk logic.
+
+**Acceptance Criteria:**
+
+**Given** `utils/format.ts` is updated
+**When** I call `colorCorrect(text)`
+**Then** it returns the text styled in ANSI green
+
+**Given** `utils/format.ts` is updated
+**When** I call `colorIncorrect(text)`
+**Then** it returns the text styled in ANSI red
+
+**Given** `utils/format.ts` exports `colorSpeedTier(tier)`
+**When** called with `"fast"`, `"normal"`, or `"slow"`
+**Then** it returns the text in green, yellow, or red respectively
+
+**Given** `utils/format.ts` exports `colorDifficultyLevel(level)`
+**When** called with levels 1–5
+**Then** it returns the label styled in: cyan (1), green (2), yellow (3), magenta (4), red (5)
+
+**Given** `utils/format.ts` exports `colorScoreDelta(delta)`
+**When** called with a positive number
+**Then** it returns the formatted delta string in green
+**When** called with a negative number
+**Then** it returns the formatted delta string in red
+
+**Given** co-located tests exist in `utils/format.test.ts`
+**When** I run `npm test`
+**Then** all new color helper tests pass for all branches
+
+---
+
+### Story 6.2: Menu Highlight Theme
+
+As a user,
+I want every menu in the app to highlight the focused option with a full-row inverted background as I navigate with arrow keys,
+So that I always know exactly which option I am about to select.
+
+**Acceptance Criteria:**
+
+**Given** a shared `menuTheme` object (or helper) is defined — e.g. in `utils/format.ts` or a new `utils/theme.ts`
+**When** any `inquirer` `select` prompt is rendered
+**Then** the focused item renders with inverted foreground/background colors (white text on colored background)
+**And** unfocused items render in the terminal's default colors
+
+**Given** the home screen renders its menu
+**When** I navigate with ↑↓ arrow keys
+**Then** the focused item is visually highlighted as described above
+
+**Given** the domain sub-menu renders
+**When** I navigate with ↑↓ arrow keys
+**Then** the focused item is visually highlighted
+
+**Given** the settings screen renders its Tone of Voice selector
+**When** I navigate with ↑↓ arrow keys
+**Then** the focused item is visually highlighted
+
+**Given** the archived domains list renders
+**When** I navigate with ↑↓ arrow keys
+**Then** the focused item is visually highlighted
+
+**Given** post-quiz navigation (Next question / Exit quiz) renders
+**When** I navigate with ↑↓ arrow keys
+**Then** the focused item is visually highlighted
+
+**Given** the history navigation controls render (Previous / Next / Back)
+**When** I navigate with ↑↓ arrow keys
+**Then** the focused item is visually highlighted
+
+**Given** `menuTheme` is applied via the `theme` option on all `inquirer` `select` calls
+**When** I run `npm test`
+**Then** all existing menu-related tests continue to pass (theme is a visual-only change, not a behavioral one)
+
+---
+
+### Story 6.3: Quiz Feedback Colors
+
+As a user,
+I want the post-answer feedback panel to use semantic colors — green for correct, red for incorrect, colored speed-tier and difficulty badges — so that I can read my result and score at a glance without parsing text.
+
+**Acceptance Criteria:**
+
+**Given** `screens/quiz.ts` is updated to use the semantic color helpers from Story 6.1
+**When** I answer a question correctly
+**Then** the correct confirmation line is rendered using `colorCorrect()`
+**And** the score delta is rendered using `colorScoreDelta()` (green for positive)
+
+**Given** I answer a question incorrectly
+**When** the feedback panel renders
+**Then** the incorrect line (my wrong answer) is rendered using `colorIncorrect()`
+**And** the correct answer reveal is rendered using `colorCorrect()`
+**And** the score delta is rendered using `colorScoreDelta()` (red for negative)
+
+**Given** the speed tier is determined after an answer
+**When** the feedback panel renders
+**Then** the speed tier badge is rendered using `colorSpeedTier(tier)` — green/yellow/red
+
+**Given** the current difficulty level is shown in the feedback panel
+**When** the panel renders
+**Then** the difficulty label is rendered using `colorDifficultyLevel(level)` — cyan/green/yellow/magenta/red
+
+**Given** `screens/quiz.ts` tests are updated
+**When** I run `npm test`
+**Then** all tests pass, covering: correct answer path uses colorCorrect, incorrect path uses colorIncorrect + colorCorrect reveal, score delta uses colorScoreDelta, speed tier uses colorSpeedTier, difficulty uses colorDifficultyLevel

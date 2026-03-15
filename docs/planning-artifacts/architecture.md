@@ -104,6 +104,12 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 
 **Testing Framework:**
 - `vitest` — TypeScript-native, ESM-compatible, minimal config
+- Unit tests per module — co-located in `src/` as `*.test.ts`
+- Regression tests — cross-boundary integration tests using real file I/O (`_setDataDir` injected temp dir); cover the store → router chain and stats screen output snapshots
+
+**CI/CD:**
+- CI pipeline (`.github/workflows/ci.yml`) — runs on every branch push and pull request: typecheck → test
+- Release pipeline (`.github/workflows/release.yml`) — triggered on `v*.*.*` tags: typecheck → test → build → GitHub Release (auto-generated notes) → publish to GitHub Packages
 
 **Code Organization:**
 - `src/` — all TypeScript source

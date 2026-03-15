@@ -5,14 +5,31 @@ date: 2026-03-07
 author: George
 inputDocuments:
   - docs/planning-artifacts/product-brief.md
+classification:
+  domain: general
+  projectType: cli_tool
 workflowType: prd
 workflow: edit
 stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-14'
+lastEdited: '2026-03-15'
 editHistory:
+  - date: '2026-03-15'
+    changes: 'Brownfield additions: Feature 1 Delete action (permanent deletion with confirmation); Feature 10 (Coffee Supporter Screen) added; Feature 1 home screen actions updated with buy-me-a-coffee; NFR 5 updated to full terminal reset spec (clears scroll-back buffer); Project-Type Requirements updated with License (MIT)'
+  - date: '2026-03-15'
+    changes: 'Validation fixes: classification frontmatter added (domain: general, projectType: cli_tool); session completion rate KPI added; User Journeys updated with Core Usage visual nav + Settings journey; Feature 1 "appropriately focused" → "domain-specific"; Feature 9 "clearly distinguishable" → concrete inverted-color spec + explicit menu list; NFR 6 self-contradiction resolved; frontmatter classification added'
+  - date: '2026-03-15'
+    changes: 'Feature 8 added: Global Settings — language (free-text) and tone of voice (Normal/Enthusiastic/Robot/Pirate), stored at ~/.brain-break/settings.json; injected into all AI calls'
+  - date: '2026-03-15'
+    changes: 'Feature 9 added: Terminal UI Highlighting & Color System — full-row menu highlight, semantic post-answer colors (green/red), speed tier badge colors, difficulty level badge colors'
+  - date: '2026-03-15'
+    changes: 'Feature 2 updated: language and tone injected into every AI call covering questions, answer options, and motivational messages'
+  - date: '2026-03-15'
+    changes: 'Feature 1 updated: motivational message is now AI-generated using active language and tone settings'
+  - date: '2026-03-15'
+    changes: 'NFR 6 added: Terminal Color Rendering — ANSI baseline compatibility spec'
   - date: '2026-03-14'
     changes: 'Feature 6: replaced 10-per-page pagination with single-question navigation and progress indicator'
   - date: '2026-03-14'
@@ -54,6 +71,7 @@ Curious people want to stay sharp across a wide variety of topics, but existing 
 ### Adoption KPIs
 - **Time to first question:** < 5 minutes from clone to first answered question — measured manually at first launch
 - **7-day return:** User returns to the app within 7 days of first use — measured via session timestamps in local domain file; app surfaces a streak/return message to the user
+- **Session completion rate:** ≥ 80% of started sessions result in ≥ 1 answered question — measured via session records in local domain file
 - **Domain diversity:** User configures ≥ 2 different domains within 7 days of first use — measured by domain file count in `~/.brain-break/`
 - **Team penetration:** Shared with ≥ 3 colleagues within 30 days of publish — tracked via GitHub repo star/fork count and self-reported confirmation in team channel
 
@@ -73,7 +91,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 7 capabilities define the complete MVP:
+The following 10 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (GitHub Copilot SDK)
@@ -82,6 +100,9 @@ The following 7 capabilities define the complete MVP:
 5. Persistent History (Per Domain)
 6. View History Command
 7. View Stats Command
+8. Global Settings (Language & Tone)
+9. Terminal UI Highlighting & Color System
+10. Coffee Supporter Screen
 
 ### Out of Scope
 
@@ -167,10 +188,13 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
 - Sessions are 2–10 minutes; 3–10 questions per session
-- Answers a question → sees if correct → sees score delta → next question
+- Navigates menus with arrow keys (↑↓); the focused option is highlighted with a full-row background; confirms selection with Enter
+- Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
 - History persists between sessions automatically
 
 **"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They look it up. They come back and get it right next time. The score rises. *That feedback loop is the product.*
+
+**Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
 
 **Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
@@ -208,10 +232,13 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Storage:** Local file system only — one JSON file per domain at `~/.brain-break/<domain-slug>.json`; no database server, no cloud sync
 - **Distribution:** Published to npm — installable via `npx` with no global install required
 - **Platform:** Unix-like terminals only (macOS, Linux, WSL) — native Windows CMD/PowerShell is out of scope for MVP
+- **License:** MIT
 
 ### Implementation Decisions
 
 - **Question generation:** The Copilot SDK is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
+- **Language and tone injection:** Every AI prompt (questions, motivational messages) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the question generation instruction
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `language` (string) and `tone` (string enum: `normal` | `enthusiastic` | `robot` | `pirate`); defaults applied on missing file: `{ "language": "English", "tone": "normal" }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`)
 
@@ -219,9 +246,9 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 7 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 10 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
-**Terminal rendering (cross-cutting):** All screens clear the terminal viewport and render content from the top on every navigation action — no prior output persists in the visible area between transitions.
+**Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
 ### Feature 1 — In-App Domain Management
 
@@ -229,18 +256,19 @@ The following 7 features define the complete MVP capability set. Each feature is
 
 - On every launch the app displays the home screen listing all configured active domains, each showing current score and number of questions answered
 - If no domains exist, the list is empty and the only available action is to create a new one
-- Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate appropriately focused questions for it
+- Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate domain-specific questions for it
 - All state (history, score, time played) is domain-scoped and isolated
-- The home screen actions are: select a domain, create a new domain, view archived domains, and exit — archive/history/stats actions for a domain are **not** shown on the home screen
+- The home screen actions are: select a domain, create a new domain, view archived domains, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen
 - Selecting "Create new domain" shows an input prompt (`New domain name (Ctrl+C to go back):`); pressing Ctrl+C returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
 
 - Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
-- The domain sub-menu provides the following actions: **Play**, **View History**, **View Stats**, **Archive**, and **Back**
-- Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — then begins the quiz
+- The domain sub-menu provides the following actions: **Play**, **View History**, **View Stats**, **Archive**, **Delete**, and **Back**
+- Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — the message is AI-generated using the active language and tone of voice settings, then the quiz begins
 - After a quiz session ends, the user is returned to the domain sub-menu (not the home screen)
 - Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
+- Selecting **Delete** prompts the user with a blocking confirmation dialog (*"Delete '[domain]' permanently? This cannot be undone."*) — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu
 - Selecting **Back** returns the user to the home screen
 - Selecting **View History** or **View Stats** opens the respective screen; selecting Back from either returns the user to the domain sub-menu
 
@@ -253,6 +281,7 @@ The following 7 features define the complete MVP capability set. Each feature is
 
 - Questions are generated on demand via the GitHub Copilot SDK
 - All questions are multiple choice (4 options: A, B, C, D)
+- Every AI call injects the active language and tone of voice from global settings — questions, answer options, and AI-generated motivational messages are rendered in the configured language and voice
 - Users never receive a repeated question within the same domain — deduplication persists across all sessions (see Project-Type Requirements — Implementation Decisions)
 - **Adaptive difficulty:** Difficulty is measured on a 5-level scale. The level adjusts based on consecutive answer streaks:
   - 3 consecutive correct answers → difficulty increases by 1 (max level 5)
@@ -341,6 +370,61 @@ User can view a summary dashboard for the active domain:
 - Score trend over the last 30 days (growing / flat / declining) — derived from local question history
 - Days since first session and current return streak — derived from local session timestamps
 
+### Feature 8 — Global Settings
+
+- The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
+- Selecting Settings opens a settings screen where the user can configure two global preferences: **Question Language** and **Tone of Voice**
+- Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
+- Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
+- On first launch with no settings file, defaults are: language = `English`, tone = `Normal`
+
+**Question Language**
+- Free-text entry — any language name the user types becomes the active language (e.g., `Greek`, `Spanish`, `Japanese`, `Pirate English`)
+- The configured language is injected into every AI prompt; the LLM renders all generated content in that language
+- No validation — the language string is passed directly to the AI; unsupported or misspelled entries produce AI-best-effort output
+
+**Tone of Voice**
+- User selects from 4 preset options via arrow key navigation:
+  - **Normal** — neutral, factual, professional quiz tone
+  - **Enthusiastic** — energetic, encouraging, high-energy delivery
+  - **Robot** — terse, mechanical, emotionless phrasing
+  - **Pirate** — pirate vernacular throughout, nautical metaphors, "Arr" as appropriate
+- The selected tone is injected into every AI prompt as a voice instruction
+- Selecting Back from Settings returns the user to the home screen without saving unsaved changes
+- Selecting Save persists the changes and returns the user to the home screen
+
+### Feature 9 — Terminal UI Highlighting & Color System
+
+All interactive menus throughout the application use full-row background highlight to indicate the currently focused option — navigated with arrow keys (↑↓), confirmed with Enter. No existing input mechanism (e.g., typing A/B/C/D for quiz answers) is removed; arrow key navigation is additive.
+
+**Menu highlighting (all menus)**
+- The focused menu item renders with inverted foreground/background colors — white text on a colored background (e.g., white-on-cyan) for the selected row; unfocused items render in default terminal colors
+- Applies to: home screen, domain sub-menu, settings screen, archived domains list, history navigation controls, and post-quiz navigation
+
+**Post-answer feedback colors**
+- Correct answer: displayed in **green**
+- User's wrong answer: displayed in **red**
+- Correct answer reveal (when user answers wrongly): displayed in **green**
+- Score delta positive: displayed in **green**; score delta negative: displayed in **red**
+
+**Speed tier badge colors**
+- Fast: **green**
+- Normal: **yellow**
+- Slow: **red**
+
+**Difficulty level badge colors**
+- Level 1 (Beginner): **cyan**
+- Level 2 (Elementary): **green**
+- Level 3 (Intermediate): **yellow**
+- Level 4 (Advanced): **magenta**
+- Level 5 (Expert): **red**
+
+### Feature 10 — Coffee Supporter Screen
+
+- The home screen includes a **☕ Buy me a coffee** action, positioned between the "View archived domains" separator and the Exit action
+- Selecting it opens a dedicated screen that clears the terminal and displays an ASCII QR code linking to the creator's Buy Me a Coffee page, followed by the URL (`https://www.buymeacoffee.com/georgiosnikitas`) in plain text
+- The screen provides a single **Back** action that returns the user to the home screen
+
 ---
 
 ## Non-Functional Requirements
@@ -360,7 +444,10 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, and stats dashboard — clear the terminal viewport before rendering new content. No prior output persists in the visible area after any navigation action. Measurable: every state-changing user input produces a fully redrawn terminal screen with zero residual output from the previous state.
+All screen transitions — including home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, and stats dashboard — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state.
+
+### NFR 6 — Terminal Color Rendering
+All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
 ---
 
