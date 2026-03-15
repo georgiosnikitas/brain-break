@@ -375,7 +375,7 @@ describe('showHomeScreen — readDomain fallback per entry', () => {
 
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
 
-    const callArg = mockSelect.mock.calls[0][0] as { choices: Array<{ name: string; value: HomeAction }> }
+    const callArg = mockSelect.mock.calls[0][0] as unknown as { choices: Array<{ name: string; value: HomeAction }> }
     const domainChoice = callArg.choices.find(
       (c) => c.value && (c.value as { action: string }).action === 'select',
     )
