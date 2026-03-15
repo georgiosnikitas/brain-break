@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { CopilotClient } from '@github/copilot-sdk'
-import { generateQuestion, AI_ERRORS, _setClient } from './client.js'
+import { generateQuestion, generateMotivationalMessage, AI_ERRORS, _setClient } from './client.js'
 import { hashQuestion } from '../utils/hash.js'
 
 // Prevent the real SDK (which has a transitive CJS/ESM issue) from loading
@@ -186,5 +186,123 @@ describe('generateQuestion', () => {
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toBe(AI_ERRORS.AUTH)
+  })
+})
+
+describe('settings injection', () => {
+  it('accepts settings parameter and returns ok:true', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
+    const settings = { language: 'Spanish', tone: 'enthusiastic' as const }
+
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('injects voice instruction into prompt when settings are non-default', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
+    const settings = { language: 'Greek', tone: 'pirate' as const }
+
+    await generateQuestion('typescript', 2, new Set(), [], settings)
+
+    const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
+    expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('no voice instruction in prompt when settings are English/normal', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
+    const settings = { language: 'English', tone: 'normal' as const }
+
+    await generateQuestion('typescript', 2, new Set(), [], settings)
+
+    const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
+    expect(sentPrompt).not.toContain('Respond in')
+  })
+
+  it('injects voice instruction into deduplication retry prompt', async () => {
+    const firstQ = 'What is 2+2?'
+    const existingHash = hashQuestion(firstQ)
+    mockSendAndWait
+      .mockResolvedValueOnce(makeEvent(makeValidResponse(firstQ)))
+      .mockResolvedValueOnce(makeEvent(makeValidResponse('What is 3+3?')))
+    const settings = { language: 'Spanish', tone: 'enthusiastic' as const }
+
+    await generateQuestion('typescript', 2, new Set([existingHash]), [], settings)
+
+    const retryPrompt: string = mockSendAndWait.mock.calls[1][0].prompt
+    expect(retryPrompt).toContain('Respond in Spanish using an enthusiastic tone of voice.')
+  })
+})
+
+describe('generateMotivationalMessage', () => {
+  it('returns ok:true with message string on success', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent('Great job coming back!'))
+
+    const result = await generateMotivationalMessage('returning')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('Great job coming back!')
+  })
+
+  it('trims whitespace from the returned message', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent('  Keep it up!  \n'))
+
+    const result = await generateMotivationalMessage('returning')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('Keep it up!')
+  })
+
+  it('returns ok:false on network error', async () => {
+    mockCreateSession.mockRejectedValueOnce(new Error('Connection refused'))
+
+    const result = await generateMotivationalMessage('trending')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK)
+  })
+
+  it('returns ok:false on auth error', async () => {
+    mockCreateSession.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    const result = await generateMotivationalMessage('returning')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH)
+  })
+
+  it('calls session.disconnect after success', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent('Well done!'))
+
+    await generateMotivationalMessage('trending')
+
+    expect(mockDisconnect).toHaveBeenCalled()
+  })
+
+  it('calls session.disconnect even when sendAndWait throws', async () => {
+    mockSendAndWait.mockRejectedValueOnce(new Error('socket hang up'))
+    // session is created, so finally runs
+    mockCreateSession.mockResolvedValueOnce({
+      sendAndWait: mockSendAndWait,
+      disconnect: mockDisconnect,
+    })
+
+    await generateMotivationalMessage('returning')
+
+    expect(mockDisconnect).toHaveBeenCalled()
+  })
+
+  it('passes settings to the prompt (voice instruction injected)', async () => {
+    mockSendAndWait.mockResolvedValueOnce(makeEvent('Kalimera!'))
+    const settings = { language: 'Greek', tone: 'pirate' as const }
+
+    await generateMotivationalMessage('returning', settings)
+
+    const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
+    expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
   })
 })

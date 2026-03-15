@@ -15,6 +15,7 @@ export type HomeAction =
   | { action: 'select'; slug: string }
   | { action: 'create' }
   | { action: 'archived' }
+  | { action: 'settings' }
   | { action: 'coffee' }
   | { action: 'exit' }
 
@@ -46,6 +47,7 @@ export function buildHomeChoices(
   choices.push(
     { name: '➕  Create new domain', value: { action: 'create' } },
     { name: '🗄  View archived domains', value: { action: 'archived' } },
+    { name: '⚙️  Settings', value: { action: 'settings' } },
     new Separator(),
     { name: '☕  Buy me a coffee', value: { action: 'coffee' } },
     { name: '🚪  Exit', value: { action: 'exit' } },
@@ -79,6 +81,7 @@ async function handleHomeAction(answer: HomeAction): Promise<void> {
   if (answer.action === 'select') await router.showDomainMenu(answer.slug)
   if (answer.action === 'create') await router.showCreateDomain()
   if (answer.action === 'archived') await router.showArchived()
+  if (answer.action === 'settings') await router.showSettings()
   if (answer.action === 'coffee') await showCoffeeScreen()
 }
 

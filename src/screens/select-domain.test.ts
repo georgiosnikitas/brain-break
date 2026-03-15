@@ -7,6 +7,45 @@ import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
+// Ora spinner mock
+// ---------------------------------------------------------------------------
+const { mockStop, mockStart } = vi.hoisted(() => ({
+  mockStop: vi.fn(),
+  mockStart: vi.fn().mockReturnThis(),
+}))
+
+vi.mock('ora', () => ({
+  default: vi.fn(() => ({ start: mockStart, stop: mockStop })),
+}))
+
+// ---------------------------------------------------------------------------
+// Mock utils/format.js — typewrite resolves immediately; success passthrough
+// ---------------------------------------------------------------------------
+vi.mock('../utils/format.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/format.js')>()
+  return { ...actual, typewrite: vi.fn().mockResolvedValue(undefined) }
+})
+
+// ---------------------------------------------------------------------------
+// Mock ai/client.js — generateMotivationalMessage returns trigger-appropriate text
+// ---------------------------------------------------------------------------
+vi.mock('../ai/client.js', () => ({
+  generateMotivationalMessage: vi.fn().mockImplementation(async (trigger: string) => {
+    if (trigger === 'returning') return { ok: true, data: 'Welcome back! Keep the streak going.' }
+    if (trigger === 'trending') return { ok: true, data: 'Your score is trending upward.' }
+    return { ok: false, error: 'unknown trigger' }
+  }),
+}))
+
+// ---------------------------------------------------------------------------
+// Partial mock domain/store — keep real file I/O, only mock readSettings
+// ---------------------------------------------------------------------------
+vi.mock('../domain/store.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../domain/store.js')>()
+  return { ...actual, readSettings: vi.fn().mockResolvedValue({ ok: true, data: { language: 'English', tone: 'normal' } }) }
+})
+
+// ---------------------------------------------------------------------------
 // Mock screens/quiz.js so the stub never interferes
 // ---------------------------------------------------------------------------
 vi.mock('./quiz.js', () => ({
@@ -14,6 +53,16 @@ vi.mock('./quiz.js', () => ({
 }))
 
 let showQuizMock: ReturnType<typeof vi.fn>
+
+// ---------------------------------------------------------------------------
+// Mocked AI + settings references
+// ---------------------------------------------------------------------------
+import { generateMotivationalMessage } from '../ai/client.js'
+import { readSettings } from '../domain/store.js'
+import { typewrite } from '../utils/format.js'
+const mockGenerateMotivationalMessage = vi.mocked(generateMotivationalMessage)
+const mockReadSettings = vi.mocked(readSettings)
+const mockTypewrite = vi.mocked(typewrite)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,6 +158,11 @@ beforeEach(async () => {
   const { showQuiz } = await import('./quiz.js')
   showQuizMock = showQuiz as ReturnType<typeof vi.fn>
   showQuizMock.mockClear()
+  mockGenerateMotivationalMessage.mockClear()
+  mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'normal' as const } })
+  mockStart.mockClear()
+  mockStop.mockClear()
+  mockTypewrite.mockClear()
 })
 
 afterEach(async () => {
@@ -152,11 +206,10 @@ describe('showSelectDomainScreen', () => {
     }
     await writeDomain('returning', domain)
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     await showSelectDomainScreen('returning')
-    const calls = logSpy.mock.calls.map((c) => String(c[0]))
-    expect(calls.some((msg) => msg.toLowerCase().includes('welcome back'))).toBe(true)
-    logSpy.mockRestore()
+    expect(mockTypewrite).toHaveBeenCalled()
+    const args = mockTypewrite.mock.calls.map((c) => String(c[0]))
+    expect(args.some((msg) => msg.toLowerCase().includes('welcome back'))).toBe(true)
   })
 
   it('prints a trending message when score is trending upward', async () => {
@@ -166,11 +219,10 @@ describe('showSelectDomainScreen', () => {
     }
     await writeDomain('trending', domain)
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     await showSelectDomainScreen('trending')
-    const calls = logSpy.mock.calls.map((c) => String(c[0]))
-    expect(calls.some((msg) => msg.toLowerCase().includes('trending'))).toBe(true)
-    logSpy.mockRestore()
+    expect(mockTypewrite).toHaveBeenCalled()
+    const args = mockTypewrite.mock.calls.map((c) => String(c[0]))
+    expect(args.some((msg) => msg.toLowerCase().includes('trending'))).toBe(true)
   })
 
   it('prints no motivational message for a fresh domain', async () => {
@@ -185,5 +237,144 @@ describe('showSelectDomainScreen', () => {
     warnSpy.mockRestore()
 
     expect(showQuizMock).toHaveBeenCalledWith('fresh')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// motivational message AI integration tests
+// ---------------------------------------------------------------------------
+describe('showSelectDomainScreen — motivational message AI integration', () => {
+  it('calls generateMotivationalMessage with returning trigger when user is returning', async () => {
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(2) },
+    }
+    await writeDomain('ai-returning', domain)
+
+    await showSelectDomainScreen('ai-returning')
+
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', { language: 'English', tone: 'normal' })
+  })
+
+  it('calls generateMotivationalMessage with trending trigger when score is trending up', async () => {
+    const domain = {
+      ...defaultDomainFile(),
+      history: [5, 5, 5, 20, 20, 20].map(makeRecord),
+    }
+    await writeDomain('ai-trending', domain)
+
+    await showSelectDomainScreen('ai-trending')
+
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('trending', { language: 'English', tone: 'normal' })
+  })
+
+  it('passes settings from readSettings to generateMotivationalMessage', async () => {
+    const customSettings = { language: 'Greek', tone: 'pirate' as const }
+    mockReadSettings.mockResolvedValue({ ok: true, data: customSettings })
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+    }
+    await writeDomain('ai-settings', domain)
+
+    await showSelectDomainScreen('ai-settings')
+
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', customSettings)
+  })
+
+  it('displays message via typewrite when AI returns ok', async () => {
+    mockGenerateMotivationalMessage.mockResolvedValue({ ok: true, data: 'Great job!' })
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+    }
+    await writeDomain('ai-display', domain)
+
+    await showSelectDomainScreen('ai-display')
+
+    expect(mockTypewrite).toHaveBeenCalledOnce()
+    const arg: string = mockTypewrite.mock.calls[0][0]
+    expect(arg).toContain('Great job!')
+  })
+
+  it('silently skips message when AI returns ok:false (typewrite not called)', async () => {
+    mockGenerateMotivationalMessage.mockResolvedValue({ ok: false, error: 'network error' })
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+    }
+    await writeDomain('ai-fail', domain)
+
+    await showSelectDomainScreen('ai-fail')
+
+    expect(mockTypewrite).not.toHaveBeenCalled()
+    expect(showQuizMock).toHaveBeenCalledWith('ai-fail')
+  })
+
+  it('does not call generateMotivationalMessage for a fresh domain', async () => {
+    await writeDomain('ai-fresh', defaultDomainFile())
+
+    await showSelectDomainScreen('ai-fresh')
+
+    expect(mockGenerateMotivationalMessage).not.toHaveBeenCalled()
+    expect(mockStart).not.toHaveBeenCalled()
+  })
+
+  it('starts and stops the ora spinner around AI message generation', async () => {
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+    }
+    await writeDomain('ai-spinner', domain)
+
+    await showSelectDomainScreen('ai-spinner')
+
+    expect(mockStart).toHaveBeenCalled()
+    expect(mockStop).toHaveBeenCalled()
+  })
+
+  it('does not call typewrite when AI returns ok:true but data is empty string', async () => {
+    mockGenerateMotivationalMessage.mockResolvedValue({ ok: true, data: '' })
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+    }
+    await writeDomain('ai-empty', domain)
+
+    await showSelectDomainScreen('ai-empty')
+
+    expect(mockTypewrite).not.toHaveBeenCalled()
+  })
+
+  it('fires both AI calls concurrently when both triggers are met', async () => {
+    mockGenerateMotivationalMessage
+      .mockResolvedValueOnce({ ok: true, data: 'Welcome back!' })
+      .mockResolvedValueOnce({ ok: true, data: 'Trending up!' })
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+      history: [5, 5, 5, 20, 20, 20].map(makeRecord),
+    }
+    await writeDomain('ai-both', domain)
+
+    await showSelectDomainScreen('ai-both')
+
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledTimes(2)
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', { language: 'English', tone: 'normal' })
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('trending', { language: 'English', tone: 'normal' })
+    expect(mockTypewrite).toHaveBeenCalledTimes(2)
+  })
+
+  it('uses defaultSettings when readSettings fails', async () => {
+    mockReadSettings.mockResolvedValue({ ok: false, error: 'disk error' })
+    const domain = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, lastSessionAt: daysAgo(1) },
+    }
+    await writeDomain('ai-settings-fail', domain)
+
+    await showSelectDomainScreen('ai-settings-fail')
+
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', { language: 'English', tone: 'normal' })
   })
 })

@@ -1,6 +1,8 @@
-import { readDomain, writeDomain } from '../domain/store.js'
-import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
-import { warn, success } from '../utils/format.js'
+import { readDomain, writeDomain, readSettings } from '../domain/store.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord } from '../domain/schema.js'
+import { warn, success, typewrite } from '../utils/format.js'
+import { generateMotivationalMessage } from '../ai/client.js'
+import ora from 'ora'
 import { showQuiz } from './quiz.js'
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
@@ -19,6 +21,9 @@ export function isScoreTrendingUp(history: QuestionRecord[]): boolean {
 }
 
 export async function showSelectDomainScreen(slug: string): Promise<void> {
+  const settingsResult = await readSettings()
+  const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+
   const result = await readDomain(slug)
 
   let domain = result.ok ? result.data : defaultDomainFile()
@@ -29,12 +34,17 @@ export async function showSelectDomainScreen(slug: string): Promise<void> {
     await writeDomain(slug, domain)
   }
 
-  if (isReturningUser(domain.meta.lastSessionAt)) {
-    console.log(success('Welcome back! Keep the streak going.'))
-  }
+  const triggers: Array<'returning' | 'trending'> = []
+  if (isReturningUser(domain.meta.lastSessionAt)) triggers.push('returning')
+  if (isScoreTrendingUp(domain.history)) triggers.push('trending')
 
-  if (isScoreTrendingUp(domain.history)) {
-    console.log(success('Your score is trending upward. You\'re on a roll!'))
+  if (triggers.length > 0) {
+    const spinner = ora('Getting your message...').start()
+    const messages = await Promise.all(triggers.map((t) => generateMotivationalMessage(t, settings)))
+    spinner.stop()
+    for (const msg of messages) {
+      if (msg.ok && msg.data) await typewrite(success(msg.data))
+    }
   }
 
   await showQuiz(slug)

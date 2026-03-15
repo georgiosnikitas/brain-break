@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { writeDomain, readDomain, listDomains, deleteDomain, _setDataDir } from './store.js'
-import { defaultDomainFile, DomainFile } from './schema.js'
+import { writeDomain, readDomain, listDomains, deleteDomain, _setDataDir, readSettings, writeSettings, _setSettingsPath } from './store.js'
+import { defaultDomainFile, DomainFile, defaultSettings } from './schema.js'
 
 let testDir: string
 
@@ -126,6 +126,18 @@ describe('listDomains', () => {
     expect(slugs).toContain('real-topic')
   })
 
+  it('excludes settings.json from domain list even when it exists', async () => {
+    await writeDomain('real-topic', defaultDomainFile())
+    // Simulate saved settings file co-existing in DATA_DIR
+    await writeFile(join(testDir, 'settings.json'), JSON.stringify({ language: 'English', tone: 'normal' }))
+    const result = await listDomains()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const slugs = result.data.map((d) => d.slug)
+    expect(slugs).not.toContain('settings')
+    expect(slugs).toContain('real-topic')
+  })
+
   it('returns meta for each valid domain', async () => {
     const domain: DomainFile = {
       ...defaultDomainFile(),
@@ -189,5 +201,53 @@ describe('deleteDomain', () => {
     const slugs = listResult.data.map((d) => d.slug)
     expect(slugs).not.toContain('topic-a')
     expect(slugs).toContain('topic-b')
+  })
+})
+
+describe('writeSettings + readSettings', () => {
+  let settingsFile: string
+
+  beforeEach(() => {
+    settingsFile = join(testDir, 'settings.json')
+    _setSettingsPath(settingsFile)
+  })
+
+  afterEach(() => {
+    _setSettingsPath(null)
+  })
+
+  it('roundtrip returns identical settings', async () => {
+    const settings = { language: 'Greek', tone: 'pirate' as const }
+    const writeResult = await writeSettings(settings)
+    expect(writeResult.ok).toBe(true)
+
+    const readResult = await readSettings()
+    expect(readResult.ok).toBe(true)
+    if (!readResult.ok) return
+    expect(readResult.data.language).toBe('Greek')
+    expect(readResult.data.tone).toBe('pirate')
+  })
+
+  it('ENOENT returns defaultSettings()', async () => {
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toEqual(defaultSettings())
+  })
+
+  it('corrupted JSON returns defaultSettings()', async () => {
+    await writeFile(settingsFile, 'not-json', 'utf8')
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toEqual(defaultSettings())
+  })
+
+  it('Zod-invalid content returns defaultSettings()', async () => {
+    await writeFile(settingsFile, JSON.stringify({ language: 'English', tone: 'aggressive' }), 'utf8')
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toEqual(defaultSettings())
   })
 })

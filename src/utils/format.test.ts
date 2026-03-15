@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   success,
   error,
@@ -10,6 +10,7 @@ import {
   formatScoreDelta,
   formatDuration,
   formatAccuracy,
+  typewrite,
 } from './format.js'
 
 // chalk can produce empty strings in test environments when colors are disabled.
@@ -94,5 +95,51 @@ describe('formatAccuracy', () => {
 
   it('returns 100.0% for all correct', () => {
     expect(formatAccuracy(5, 5)).toBe('100.0%')
+  })
+})
+
+describe('typewrite', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('writes each character to stdout followed by a newline', async () => {
+    vi.useFakeTimers()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+
+    const p = typewrite('hi', 10)
+    await vi.runAllTimersAsync()
+    await p
+
+    const written = writeSpy.mock.calls.map((c) => c[0]).join('')
+    expect(written).toContain('h')
+    expect(written).toContain('i')
+    expect(written).toContain('\n')
+    writeSpy.mockRestore()
+  })
+
+  it('writes exactly text.length + 1 chunks (chars + trailing newline)', async () => {
+    vi.useFakeTimers()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+
+    const p = typewrite('abc', 10)
+    await vi.runAllTimersAsync()
+    await p
+
+    expect(writeSpy).toHaveBeenCalledTimes(4) // 'a', 'b', 'c', '\n'
+    writeSpy.mockRestore()
+  })
+
+  it('resolves immediately for an empty string (only newline written)', async () => {
+    vi.useFakeTimers()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+
+    const p = typewrite('', 10)
+    await vi.runAllTimersAsync()
+    await p
+
+    expect(writeSpy).toHaveBeenCalledTimes(1)
+    expect(writeSpy).toHaveBeenCalledWith('\n')
+    writeSpy.mockRestore()
   })
 })

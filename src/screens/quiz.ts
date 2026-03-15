@@ -2,10 +2,10 @@ import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
 import { generateQuestion, AI_ERRORS, type Question } from '../ai/client.js'
-import { readDomain, writeDomain } from '../domain/store.js'
+import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
-import { defaultDomainFile, type QuestionRecord, type DomainFile, type AnswerOption, type SpeedTier } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SpeedTier, type SettingsFile } from '../domain/schema.js'
 import { formatSpeedTier, formatScoreDelta, formatDuration, success, error as errorFmt, warn, bold } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
@@ -66,6 +66,9 @@ async function askNextAction(): Promise<'next' | 'exit' | null> {
 }
 
 export async function showQuiz(domainSlug: string): Promise<void> {
+  const settingsResult = await readSettings()
+  const settings: SettingsFile = settingsResult.ok ? settingsResult.data : defaultSettings()
+
   const readResult = await readDomain(domainSlug)
   if (!readResult.ok) {
     console.warn(warn(readResult.error))
@@ -76,7 +79,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     const hashes = new Set(domain.hashes)
     const recentQuestions = domain.history.slice(-5).map((r) => r.question)
     const spinner = ora('Generating question...').start()
-    const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes, recentQuestions).finally(() => spinner.stop())
+    const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes, recentQuestions, settings).finally(() => spinner.stop())
 
     if (!questionResult.ok) {
       if (questionResult.error === AI_ERRORS.AUTH) {

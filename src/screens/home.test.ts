@@ -17,6 +17,7 @@ vi.mock('../router.js', () => ({
   archiveDomain: vi.fn(),
   showCreateDomain: vi.fn(),
   showArchived: vi.fn(),
+  showSettings: vi.fn(),
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
@@ -45,6 +46,7 @@ beforeEach(() => {
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.showCreateDomain).mockResolvedValue(undefined)
   vi.mocked(router.showArchived).mockResolvedValue(undefined)
+  vi.mocked(router.showSettings).mockResolvedValue(undefined)
 })
 
 // Separator instances have no `value` property — use this guard throughout
@@ -75,6 +77,7 @@ describe('buildHomeChoices', () => {
 
     const actionTypes = actions.map((c) => c.value.action)
     expect(actionTypes).toContain('archived')
+    expect(actionTypes).toContain('settings')
     expect(actionTypes).toContain('exit')
   })
 
@@ -120,14 +123,26 @@ describe('buildHomeChoices', () => {
     expect(slugs).toContain('rust')
   })
 
-  it('always includes create, archived, coffee, and exit actions regardless of domain count', () => {
+  it('always includes create, archived, settings, coffee, and exit actions regardless of domain count', () => {
     for (const entries of [[], [{ slug: 'go', score: 10, totalQuestions: 1 }]] as HomeEntry[][]) {
       const actions = actionChoices(entries).map((c) => c.value.action)
       expect(actions).toContain('create')
       expect(actions).toContain('archived')
+      expect(actions).toContain('settings')
       expect(actions).toContain('coffee')
       expect(actions).toContain('exit')
     }
+  })
+
+  it('settings action appears between archived and coffee in menu order', () => {
+    const actions = actionChoices([])
+    const types = actions.map((c) => c.value.action)
+    const archivedIdx = types.indexOf('archived')
+    const settingsIdx = types.indexOf('settings')
+    const coffeeIdx = types.indexOf('coffee')
+    expect(archivedIdx).toBeGreaterThanOrEqual(0)
+    expect(settingsIdx).toBeGreaterThan(archivedIdx)
+    expect(coffeeIdx).toBeGreaterThan(settingsIdx)
   })
 
   it('each domain entry produces exactly ONE select action and no archive/history/stats actions', () => {
@@ -229,6 +244,19 @@ describe('showHomeScreen — routing', () => {
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
     expect(vi.mocked(router.showDomainMenu)).toHaveBeenCalledOnce()
     expect(vi.mocked(router.showDomainMenu)).toHaveBeenCalledWith('typescript')
+    exitSpy.mockRestore()
+  })
+
+  it('calls router.showSettings when settings action is selected', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'settings' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showSettings)).toHaveBeenCalledOnce()
     exitSpy.mockRestore()
   })
 

@@ -34,6 +34,7 @@ vi.mock('../ai/client.js', () => ({
 vi.mock('../domain/store.js', () => ({
   readDomain: vi.fn(),
   writeDomain: vi.fn(),
+  readSettings: vi.fn(),
 }))
 
 vi.mock('../router.js', () => ({
@@ -46,7 +47,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
 // Imports after mocks
 // ---------------------------------------------------------------------------
 import { generateQuestion, AI_ERRORS } from '../ai/client.js'
-import { readDomain, writeDomain } from '../domain/store.js'
+import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
 import { clearScreen } from '../utils/screen.js'
@@ -55,6 +56,7 @@ import { showQuiz } from './quiz.js'
 const mockGenerateQuestion = vi.mocked(generateQuestion)
 const mockReadDomain = vi.mocked(readDomain)
 const mockWriteDomain = vi.mocked(writeDomain)
+const mockReadSettings = vi.mocked(readSettings)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 
@@ -84,6 +86,7 @@ beforeEach(() => {
   mockStart.mockReturnThis()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
+  mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'normal' } })
   mockShowDomainMenu.mockResolvedValue(undefined)
 })
 
@@ -317,5 +320,44 @@ describe('showQuiz', () => {
 
     // clearScreen is called once before question, once before feedback
     expect(vi.mocked(clearScreen)).toHaveBeenCalledTimes(2)
+  })
+
+  it('calls readSettings once per quiz session start', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+
+    await showQuiz('typescript')
+
+    expect(mockReadSettings).toHaveBeenCalledOnce()
+  })
+
+  it('passes settings from readSettings to generateQuestion', async () => {
+    const settings = { language: 'Spanish', tone: 'enthusiastic' as const }
+    mockReadSettings.mockResolvedValue({ ok: true, data: settings })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+
+    await showQuiz('typescript')
+
+    expect(mockGenerateQuestion).toHaveBeenCalledWith(
+      'typescript',
+      expect.any(Number),
+      expect.any(Set),
+      expect.any(Array),
+      settings,
+    )
+  })
+
+  it('falls back to defaultSettings when readSettings fails', async () => {
+    mockReadSettings.mockResolvedValue({ ok: false, error: 'disk error' })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+
+    await showQuiz('typescript')
+
+    expect(mockGenerateQuestion).toHaveBeenCalledWith(
+      'typescript',
+      expect.any(Number),
+      expect.any(Set),
+      expect.any(Array),
+      { language: 'English', tone: 'normal' },
+    )
   })
 })

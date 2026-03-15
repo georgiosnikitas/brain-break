@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema } from './schema.js'
+import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings } from './schema.js'
 
 const validMeta = {
   score: 100,
@@ -231,5 +231,44 @@ describe('defaultDomainFile', () => {
 
   it('has empty history array', () => {
     expect(defaultDomainFile().history).toEqual([])
+  })
+})
+
+describe('SettingsFileSchema', () => {
+  it('accepts valid settings with all tone values', () => {
+    for (const tone of ['normal', 'enthusiastic', 'robot', 'pirate'] as const) {
+      const result = SettingsFileSchema.safeParse({ language: 'English', tone })
+      expect(result.success).toBe(true)
+    }
+  })
+
+  it('rejects an invalid tone value', () => {
+    const result = SettingsFileSchema.safeParse({ language: 'English', tone: 'aggressive' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty language string', () => {
+    const result = SettingsFileSchema.safeParse({ language: '', tone: 'normal' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects missing tone field', () => {
+    const result = SettingsFileSchema.safeParse({ language: 'English' })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('defaultSettings', () => {
+  it('returns language: English', () => {
+    expect(defaultSettings().language).toBe('English')
+  })
+
+  it('returns tone: normal', () => {
+    expect(defaultSettings().tone).toBe('normal')
+  })
+
+  it('passes SettingsFileSchema validation', () => {
+    const result = SettingsFileSchema.safeParse(defaultSettings())
+    expect(result.success).toBe(true)
   })
 })

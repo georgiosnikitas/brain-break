@@ -31,3 +31,11 @@ export function formatAccuracy(correct: number, total: number): string {
   const clamped = Math.min(correct, total)
   return `${((clamped / total) * 100).toFixed(1)}%`
 }
+
+export async function typewrite(text: string, delayMs = 30): Promise<void> {
+  for (const char of text) {
+    process.stdout.write(char)
+    await new Promise<void>((resolve) => setTimeout(resolve, delayMs))
+  }
+  process.stdout.write('\n')
+}

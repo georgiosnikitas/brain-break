@@ -5,6 +5,7 @@ import { showArchivedScreen } from './screens/archived.js'
 import { showHistory as showHistoryScreen } from './screens/history.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
+import { showSettingsScreen } from './screens/settings.js'
 import { readDomain, writeDomain, deleteDomain as deleteDomainStore } from './domain/store.js'
 import { warn, error as errorFmt } from './utils/format.js'
 
@@ -54,4 +55,8 @@ export async function deleteDomain(slug: string): Promise<void> {
 
 export async function showDomainMenu(slug: string): Promise<void> {
   await showDomainMenuScreen(slug)
+}
+
+export async function showSettings(): Promise<void> {
+  await showSettingsScreen()
 }

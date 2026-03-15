@@ -1,8 +1,8 @@
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
-import type { Result } from '../domain/schema.js'
+import type { Result, SettingsFile } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
-import { buildQuestionPrompt, buildDeduplicationPrompt, QuestionResponseSchema } from './prompts.js'
-import type { QuestionResponse } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, QuestionResponseSchema } from './prompts.js'
+import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
 
 // ---------------------------------------------------------------------------
 // User-facing error constants (referenced by screens)
@@ -76,6 +76,7 @@ export async function generateQuestion(
   difficultyLevel: number,
   existingHashes: Set<string>,
   previousQuestions: string[] = [],
+  settings?: SettingsFile,
 ): Promise<Result<Question>> {
   try {
     const client = await getClient()
@@ -83,7 +84,7 @@ export async function generateQuestion(
 
     try {
       // First attempt
-      const prompt = buildQuestionPrompt(domain, difficultyLevel)
+      const prompt = buildQuestionPrompt(domain, difficultyLevel, settings)
       const event = await session.sendAndWait({ prompt })
       const raw = event?.data.content ?? ''
       const firstResult = parseAndValidate(raw)
@@ -102,10 +103,34 @@ export async function generateQuestion(
         domain,
         difficultyLevel,
         [...previousQuestions, firstResult.data.question],
+        settings,
       )
       const retryEvent = await session.sendAndWait({ prompt: retryPrompt })
       const retryRaw = retryEvent?.data.content ?? ''
       return parseAndValidate(retryRaw)
+    } finally {
+      await session.disconnect()
+    }
+  } catch (err) {
+    if (isAuthError(err)) {
+      return { ok: false, error: AI_ERRORS.AUTH }
+    }
+    return { ok: false, error: AI_ERRORS.NETWORK }
+  }
+}
+
+export async function generateMotivationalMessage(
+  trigger: MotivationalTrigger,
+  settings?: SettingsFile,
+): Promise<Result<string>> {
+  try {
+    const client = await getClient()
+    const session = await client.createSession({ onPermissionRequest: approveAll })
+    try {
+      const prompt = buildMotivationalPrompt(trigger, settings)
+      const event = await session.sendAndWait({ prompt })
+      const message = (event?.data.content ?? '').trim()
+      return { ok: true, data: message }
     } finally {
       await session.disconnect()
     }

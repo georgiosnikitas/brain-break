@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AnswerOptionSchema } from '../domain/schema.js'
+import { AnswerOptionSchema, type SettingsFile } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
 // Zod schema for the structured JSON the model must return
@@ -31,9 +31,18 @@ function sanitizeInput(input: string): string {
   return input.replaceAll(/[\r\n]+/g, ' ').replaceAll('"', "'")
 }
 
-export function buildQuestionPrompt(domain: string, difficultyLevel: number): string {
+function buildVoiceInstruction(settings: SettingsFile): string {
+  if (settings.language === 'English' && settings.tone === 'normal') return ''
+  const safeLanguage = sanitizeInput(settings.language)
+  const article = /^[aeiou]/i.test(settings.tone) ? 'an' : 'a'
+  const toneClause = settings.tone === 'normal' ? '' : ` using ${article} ${settings.tone} tone of voice`
+  return `Respond in ${safeLanguage}${toneClause}.\n\n`
+}
+
+export function buildQuestionPrompt(domain: string, difficultyLevel: number, settings?: SettingsFile): string {
   const safeDomain = sanitizeInput(domain)
-  return `You are a quiz engine. Generate a single multiple-choice question on the topic of "${safeDomain}" at difficulty level ${difficultyLevel} (scale 1–5, where 1=beginner and 5=expert).
+  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
+  return `${voiceInstruction}You are a quiz engine. Generate a single multiple-choice question on the topic of "${safeDomain}" at difficulty level ${difficultyLevel} (scale 1–5, where 1=beginner and 5=expert).
 
 Respond with ONLY a JSON object in this exact shape — no markdown fences, no extra text:
 {
@@ -64,13 +73,26 @@ export function buildDeduplicationPrompt(
   domain: string,
   difficultyLevel: number,
   previousQuestions: string[],
+  settings?: SettingsFile,
 ): string {
   const questionList = previousQuestions
     .map((q, i) => `${i + 1}. "${sanitizeInput(q)}"`)
     .join('\n')
-  return `${buildQuestionPrompt(domain, difficultyLevel)}
+  return `${buildQuestionPrompt(domain, difficultyLevel, settings)}
 
 IMPORTANT: Do NOT repeat any of the following questions that were already asked:
 ${questionList}
 Generate a completely different question.`
+}
+
+export type MotivationalTrigger = 'returning' | 'trending'
+
+export function buildMotivationalPrompt(trigger: MotivationalTrigger, settings?: SettingsFile): string {
+  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
+  const triggerInstruction = trigger === 'returning'
+    ? 'The user has returned to practise again within the last 7 days. Write a 1–2 sentence motivational message acknowledging their return and encouraging them to keep going.'
+    : 'The user\'s quiz score is trending upward. Write a 1–2 sentence motivational message congratulating them on improving their score.'
+  return `${voiceInstruction}${triggerInstruction}
+
+Reply with ONLY the motivational message — no JSON, no quotes, no extra text.`
 }

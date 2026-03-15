@@ -83,3 +83,19 @@ export function defaultDomainFile(): DomainFile {
     history: [],
   }
 }
+
+// ---------------------------------------------------------------------------
+// Settings file
+// ---------------------------------------------------------------------------
+export const ToneOfVoiceSchema = z.enum(['normal', 'enthusiastic', 'robot', 'pirate'])
+export type ToneOfVoice = z.infer<typeof ToneOfVoiceSchema>
+
+export const SettingsFileSchema = z.object({
+  language: z.string().min(1),
+  tone: ToneOfVoiceSchema,
+})
+export type SettingsFile = z.infer<typeof SettingsFileSchema>
+
+export function defaultSettings(): SettingsFile {
+  return { language: 'English', tone: 'normal' }
+}
