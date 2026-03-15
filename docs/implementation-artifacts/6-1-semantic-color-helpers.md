@@ -83,7 +83,7 @@ So that every screen can apply consistent, tested color semantics without duplic
 
 ### Completion Notes
 - 36 tests in format.test.ts (23 pre-existing + 13 new color helper tests) — all pass
-- Full suite: 375/375 tests passing
+- Full suite: 369/369 tests passing
 
 ## File List
 - src/utils/format.ts

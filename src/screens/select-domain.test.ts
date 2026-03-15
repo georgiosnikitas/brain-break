@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { isReturningUser, isScoreTrendingUp, showSelectDomainScreen } from './select-domain.js'
-import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
+import { writeDomain, readDomain, _setDataDir, readSettings } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,6 @@ let showQuizMock: ReturnType<typeof vi.fn>
 // Mocked AI + settings references
 // ---------------------------------------------------------------------------
 import { generateMotivationalMessage } from '../ai/client.js'
-import { readSettings } from '../domain/store.js'
 import { typewrite } from '../utils/format.js'
 const mockGenerateMotivationalMessage = vi.mocked(generateMotivationalMessage)
 const mockReadSettings = vi.mocked(readSettings)

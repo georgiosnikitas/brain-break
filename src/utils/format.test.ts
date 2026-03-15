@@ -173,6 +173,10 @@ describe('colorDifficultyLevel', () => {
   it('returns string containing "L5" for level 5', () => {
     expect(colorDifficultyLevel(5)).toContain('L5')
   })
+
+  it('returns uncolored label for out-of-range level', () => {
+    expect(colorDifficultyLevel(6)).toBe('L6')
+  })
 })
 
 describe('colorScoreDelta', () => {

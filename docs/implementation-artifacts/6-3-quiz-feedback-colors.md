@@ -92,6 +92,7 @@ I want the post-answer feedback panel to use semantic colors — green for corre
 - src/screens/quiz.test.ts
 - src/screens/history.ts
 - src/screens/history.test.ts
+- src/utils/format.test.ts
 
 ## Change Log
 - Updated `src/screens/quiz.ts`: semantic color helpers in showFeedback, added difficultyLevel display, replaced all errorFmt usages (Date: 2026-03-15)
@@ -99,4 +100,5 @@ I want the post-answer feedback panel to use semantic colors — green for corre
 - Updated `src/screens/history.ts`: displayEntry uses semantic color helpers + colorDifficultyLevel (Date: 2026-03-15, code review fix)
 - Fixed `console.error(warn(...))` → `console.warn(warn(...))` in quiz.ts write-error path (Date: 2026-03-15, code review fix)
 - Updated `src/screens/quiz.test.ts`: write-error test spy changed to console.warn; colorScoreDelta regex tightened (Date: 2026-03-15, code review fix)
-- Updated `src/screens/quiz.test.ts`: write-error test spy changed to console.warn; colorScoreDelta regex tightened (Date: 2026-03-15, code review fix)
+- Fixed `history.test.ts` difficultyLevel assertion: `.toContain('4')` → `.toContain('L4')` to match colorDifficultyLevel output (Date: 2026-03-15, code review fix)
+- Added out-of-range `colorDifficultyLevel` test to `format.test.ts` (Date: 2026-03-15, code review fix)
