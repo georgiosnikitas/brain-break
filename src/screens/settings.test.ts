@@ -37,8 +37,7 @@ beforeEach(() => {
 
 describe('showSettingsScreen', () => {
   it('calls clearScreen on entry', async () => {
-    mockInput.mockResolvedValue('English')
-    mockSelect.mockResolvedValueOnce('normal').mockResolvedValueOnce('back')
+    mockSelect.mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
@@ -46,8 +45,7 @@ describe('showSettingsScreen', () => {
   })
 
   it('calls readSettings() to load current values', async () => {
-    mockInput.mockResolvedValue('English')
-    mockSelect.mockResolvedValueOnce('normal').mockResolvedValueOnce('back')
+    mockSelect.mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
@@ -56,8 +54,8 @@ describe('showSettingsScreen', () => {
 
   it('passes current language as default to input prompt', async () => {
     mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'Greek', tone: 'pirate' } })
+    mockSelect.mockResolvedValueOnce('language').mockResolvedValueOnce('back')
     mockInput.mockResolvedValue('Greek')
-    mockSelect.mockResolvedValueOnce('pirate').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
@@ -66,17 +64,17 @@ describe('showSettingsScreen', () => {
 
   it('passes current tone as default to tone select prompt', async () => {
     mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'enthusiastic' } })
-    mockInput.mockResolvedValue('English')
-    mockSelect.mockResolvedValueOnce('enthusiastic').mockResolvedValueOnce('back')
+    mockSelect.mockResolvedValueOnce('tone').mockResolvedValueOnce('enthusiastic').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
-    expect(mockSelect).toHaveBeenNthCalledWith(1, expect.objectContaining({ default: 'enthusiastic' }))
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ default: 'enthusiastic' }))
   })
 
   it('Save path: calls writeSettings with user inputs and then router.showHome()', async () => {
+    // Select language → type Spanish, select tone → pick robot, then save
+    mockSelect.mockResolvedValueOnce('language').mockResolvedValueOnce('tone').mockResolvedValueOnce('robot').mockResolvedValueOnce('save')
     mockInput.mockResolvedValue('Spanish')
-    mockSelect.mockResolvedValueOnce('robot').mockResolvedValueOnce('save')
 
     await showSettingsScreen()
 
@@ -85,8 +83,7 @@ describe('showSettingsScreen', () => {
   })
 
   it('Save path: logs error and still navigates home when writeSettings fails', async () => {
-    mockInput.mockResolvedValue('Spanish')
-    mockSelect.mockResolvedValueOnce('robot').mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce('save')
     mockWriteSettings.mockResolvedValue({ ok: false, error: 'disk full' })
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -98,8 +95,7 @@ describe('showSettingsScreen', () => {
   })
 
   it('Back path: does NOT call writeSettings and calls router.showHome()', async () => {
-    mockInput.mockResolvedValue('English')
-    mockSelect.mockResolvedValueOnce('normal').mockResolvedValueOnce('back')
+    mockSelect.mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
@@ -107,7 +103,17 @@ describe('showSettingsScreen', () => {
     expect(router.showHome).toHaveBeenCalledOnce()
   })
 
-  it('ExitPromptError is handled gracefully and calls router.showHome()', async () => {
+  it('ExitPromptError from main menu is handled gracefully and calls router.showHome()', async () => {
+    mockSelect.mockRejectedValue(new ExitPromptError())
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).not.toHaveBeenCalled()
+    expect(router.showHome).toHaveBeenCalledOnce()
+  })
+
+  it('ExitPromptError during language input is handled gracefully', async () => {
+    mockSelect.mockResolvedValueOnce('language')
     mockInput.mockRejectedValue(new ExitPromptError())
 
     await showSettingsScreen()
@@ -117,12 +123,20 @@ describe('showSettingsScreen', () => {
   })
 
   it('ExitPromptError during tone select is handled gracefully', async () => {
-    mockInput.mockResolvedValue('English')
-    mockSelect.mockRejectedValue(new ExitPromptError())
+    mockSelect.mockResolvedValueOnce('tone').mockRejectedValue(new ExitPromptError())
 
     await showSettingsScreen()
 
     expect(mockWriteSettings).not.toHaveBeenCalled()
     expect(router.showHome).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to defaults when readSettings fails', async () => {
+    mockReadSettings.mockResolvedValue({ ok: false, error: 'read error' })
+    mockSelect.mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith({ language: 'English', tone: 'normal' })
   })
 })
