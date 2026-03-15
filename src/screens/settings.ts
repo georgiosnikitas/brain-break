@@ -2,6 +2,7 @@ import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readSettings, writeSettings } from '../domain/store.js'
 import type { ToneOfVoice } from '../domain/schema.js'
+import { menuTheme } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -28,6 +29,7 @@ export async function showSettingsScreen(): Promise<void> {
       message: 'Tone of Voice',
       choices: TONE_CHOICES,
       default: current.tone,
+      theme: menuTheme,
     })
 
     const nav = await select<'save' | 'back'>({
@@ -37,6 +39,7 @@ export async function showSettingsScreen(): Promise<void> {
         { name: '💾  Save', value: 'save' as const },
         { name: '←  Back', value: 'back' as const },
       ],
+      theme: menuTheme,
     })
 
     if (nav === 'save') {

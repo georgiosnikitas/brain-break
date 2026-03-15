@@ -6,7 +6,7 @@ import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
 import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SpeedTier, type SettingsFile } from '../domain/schema.js'
-import { formatSpeedTier, formatScoreDelta, formatDuration, success, error as errorFmt, warn, bold } from '../utils/format.js'
+import { formatDuration, colorCorrect, colorIncorrect, colorSpeedTier, colorScoreDelta, colorDifficultyLevel, warn, bold, menuTheme } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -23,6 +23,7 @@ async function askQuestion(
         { name: `C) ${question.options.C}`, value: 'C' as const },
         { name: `D) ${question.options.D}`, value: 'D' as const },
       ],
+      theme: menuTheme,
     })
     const timeTakenMs = Date.now() - startTime
     return { userAnswer, timeTakenMs }
@@ -38,16 +39,17 @@ function showFeedback(
   timeTakenMs: number,
   speedTier: SpeedTier,
   scoreDelta: number,
+  difficultyLevel: number,
 ): void {
   if (isCorrect) {
-    console.log(success('✓ Correct!'))
+    console.log(colorCorrect('✓ Correct!'))
   } else {
-    console.log(errorFmt('✗ Incorrect'))
+    console.log(colorIncorrect('✗ Incorrect'))
     const correctText = `${question.correctAnswer}) ${question.options[question.correctAnswer]}`
-    console.log(`Correct answer: ${bold(correctText)}`)
+    console.log(`Correct answer: ${colorCorrect(bold(correctText))}`)
   }
-  console.log(`Time: ${formatDuration(timeTakenMs)} | Speed: ${formatSpeedTier(speedTier)}`)
-  console.log(`Score: ${formatScoreDelta(scoreDelta)}`)
+  console.log(`Time: ${formatDuration(timeTakenMs)} | Speed: ${colorSpeedTier(speedTier)} | Difficulty: ${colorDifficultyLevel(difficultyLevel)}`)
+  console.log(`Score: ${colorScoreDelta(scoreDelta)}`)
 }
 
 async function askNextAction(): Promise<'next' | 'exit' | null> {
@@ -58,6 +60,7 @@ async function askNextAction(): Promise<'next' | 'exit' | null> {
         { name: '▶️  Next question', value: 'next' as const },
         { name: '🚪 Exit quiz', value: 'exit' as const },
       ],
+      theme: menuTheme,
     })
   } catch (err) {
     if (err instanceof ExitPromptError) return null
@@ -83,10 +86,10 @@ export async function showQuiz(domainSlug: string): Promise<void> {
 
     if (!questionResult.ok) {
       if (questionResult.error === AI_ERRORS.AUTH) {
-        console.error(errorFmt(questionResult.error))
+        console.error(colorIncorrect(questionResult.error))
         process.exit(1)
       }
-      console.error(errorFmt(questionResult.error))
+      console.error(colorIncorrect(questionResult.error))
       await router.showDomainMenu(domainSlug)
       return
     }
@@ -134,11 +137,11 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     // Atomic persist before showing feedback or the next question
     const writeResult = await writeDomain(domainSlug, domain)
     if (!writeResult.ok) {
-      console.error(errorFmt(`Failed to save progress: ${writeResult.error}`))
+      console.warn(warn(`Failed to save progress: ${writeResult.error}`))
     }
 
     clearScreen()
-    showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta)
+    showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta, record.difficultyLevel)
 
     // Exit option available after every answer
     const nextAction = await askNextAction()

@@ -7,11 +7,13 @@ import {
   bold,
   dim,
   header,
-  success,
-  error as errorFmt,
-  formatSpeedTier,
-  formatScoreDelta,
+  colorCorrect,
+  colorIncorrect,
+  colorSpeedTier,
+  colorScoreDelta,
+  colorDifficultyLevel,
   formatDuration,
+  menuTheme,
 } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
@@ -40,8 +42,8 @@ function displayEntry(record: QuestionRecord, globalIndex: number): void {
   console.log(dim(`  B) ${record.options.B}`))
   console.log(dim(`  C) ${record.options.C}`))
   console.log(dim(`  D) ${record.options.D}`))
-  console.log(`  Your answer: ${bold(record.userAnswer)}  |  Correct: ${bold(record.correctAnswer)}  |  ${record.isCorrect ? success('✓ Correct') : errorFmt('✗ Wrong')}`)
-  console.log(`  Time: ${formatDuration(record.timeTakenMs)}  |  Speed: ${formatSpeedTier(record.speedTier)}  |  Score: ${formatScoreDelta(record.scoreDelta)}  |  Difficulty: ${record.difficultyLevel}`)
+  console.log(`  Your answer: ${bold(record.userAnswer)}  |  Correct: ${bold(record.correctAnswer)}  |  ${record.isCorrect ? colorCorrect('✓ Correct') : colorIncorrect('✗ Wrong')}`)
+  console.log(`  Time: ${formatDuration(record.timeTakenMs)}  |  Speed: ${colorSpeedTier(record.speedTier)}  |  Score: ${colorScoreDelta(record.scoreDelta)}  |  Difficulty: ${colorDifficultyLevel(record.difficultyLevel)}`)
   console.log(dim(`  Answered: ${formatTimestamp(record.answeredAt)}`))
 }
 
@@ -60,6 +62,7 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
       nav = await select<NavAction>({
         message: `Question ${index + 1} of ${totalItems}`,
         choices,
+        theme: menuTheme,
       })
     } catch (err) {
       if (err instanceof ExitPromptError) {
@@ -96,6 +99,7 @@ export async function showHistory(domainSlug: string): Promise<void> {
       await select<NavAction>({
         message: 'Navigation',
         choices: [{ name: '←  Back', value: 'back' }],
+        theme: menuTheme,
       })
     } catch (err) {
       if (!(err instanceof ExitPromptError)) throw err

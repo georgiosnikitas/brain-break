@@ -244,7 +244,7 @@ describe('showQuiz', () => {
   })
 
   it('logs write error but continues to the next action when writeDomain fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    const consoleSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
     mockWriteDomain.mockResolvedValueOnce({ ok: false, error: 'disk full' })
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
@@ -359,5 +359,68 @@ describe('showQuiz', () => {
       expect.any(Array),
       { language: 'English', tone: 'normal' },
     )
+  })
+
+  it('uses colorCorrect for correct answer feedback', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('✓ Correct!')
+    consoleSpy.mockRestore()
+  })
+
+  it('uses colorIncorrect and colorCorrect reveal for incorrect answer feedback', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('B') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('✗ Incorrect')
+    expect(logged).toContain('Correct answer:')
+    expect(logged).toContain('B)')
+    consoleSpy.mockRestore()
+  })
+
+  it('uses colorSpeedTier in feedback — speed tier label is present', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toMatch(/Fast|Normal|Slow/)
+    consoleSpy.mockRestore()
+  })
+
+  it('uses colorScoreDelta in feedback — score delta is present', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toMatch(/Score:.*[+-]\d+/)
+    consoleSpy.mockRestore()
+  })
+
+  it('uses colorDifficultyLevel in feedback — difficulty label is present', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // defaultDomainFile() starts at difficultyLevel 2 → label 'L2'
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('L2')
+    consoleSpy.mockRestore()
   })
 })

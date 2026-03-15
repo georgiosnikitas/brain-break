@@ -2,7 +2,7 @@ import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
-import { warn, bold, header, formatAccuracy } from '../utils/format.js'
+import { warn, bold, header, formatAccuracy, menuTheme } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -125,6 +125,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     await select({
       message: 'Navigation',
       choices: [{ name: '←  Back', value: 'back' as const }],
+      theme: menuTheme,
     })
   } catch (err) {
     if (err instanceof ExitPromptError) {

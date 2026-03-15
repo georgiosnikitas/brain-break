@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, type DomainListEntry } from '../domain/store.js'
-import { dim, bold, error as errorFmt } from '../utils/format.js'
+import { dim, bold, error as errorFmt, menuTheme } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 import type { Result } from '../domain/schema.js'
@@ -101,6 +101,7 @@ export async function showCoffeeScreen(): Promise<void> {
     await select({
       message: 'Navigation',
       choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+      theme: menuTheme,
     })
   } catch (err) {
     if (!(err instanceof ExitPromptError)) throw err
@@ -119,6 +120,7 @@ export async function showHomeScreen(): Promise<void> {
         message: '🧠🔨 brain-break',
         choices: buildHomeChoices(homeEntries),
         pageSize: 20,
+        theme: menuTheme,
       })
     } catch (err) {
       if (err instanceof ExitPromptError) process.exit(0)

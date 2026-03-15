@@ -9,8 +9,11 @@ export const dim = (s: string) => chalk.dim(s)
 export const bold = (s: string) => chalk.bold(s)
 export const header = (s: string) => chalk.bold.cyan(s)
 
-// Domain-specific helpers
-export function formatSpeedTier(tier: SpeedTier): string {
+// Semantic color helpers (FR20–FR23)
+export const colorCorrect = (text: string) => chalk.green(text)
+export const colorIncorrect = (text: string) => chalk.red(text)
+
+export function colorSpeedTier(tier: SpeedTier): string {
   switch (tier) {
     case 'fast': return chalk.green('Fast')
     case 'normal': return chalk.yellow('Normal')
@@ -18,10 +21,29 @@ export function formatSpeedTier(tier: SpeedTier): string {
   }
 }
 
-export function formatScoreDelta(delta: number): string {
+export function colorDifficultyLevel(level: number): string {
+  switch (level) {
+    case 1: return chalk.cyan('L1')
+    case 2: return chalk.green('L2')
+    case 3: return chalk.yellow('L3')
+    case 4: return chalk.magenta('L4')
+    case 5: return chalk.red('L5')
+    default: return `L${level}`
+  }
+}
+
+export function colorScoreDelta(delta: number): string {
   return delta >= 0 ? chalk.green(`+${delta}`) : chalk.red(`${delta}`)
 }
 
+// Menu highlight theme for all inquirer select prompts (FR20)
+export const menuTheme = {
+  style: {
+    highlight: (text: string) => chalk.inverse(text),
+  },
+}
+
+// Domain-specific helpers
 export function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`
 }

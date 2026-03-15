@@ -6,11 +6,14 @@ import {
   dim,
   bold,
   header,
-  formatSpeedTier,
-  formatScoreDelta,
   formatDuration,
   formatAccuracy,
   typewrite,
+  colorCorrect,
+  colorIncorrect,
+  colorSpeedTier,
+  colorDifficultyLevel,
+  colorScoreDelta,
 } from './format.js'
 
 // chalk can produce empty strings in test environments when colors are disabled.
@@ -39,34 +42,6 @@ describe('basic chalk wrappers', () => {
 
   it('header returns a string containing the input', () => {
     expect(header('Title')).toContain('Title')
-  })
-})
-
-describe('formatSpeedTier', () => {
-  it('returns string containing "Fast" for fast tier', () => {
-    expect(formatSpeedTier('fast')).toContain('Fast')
-  })
-
-  it('returns string containing "Normal" for normal tier', () => {
-    expect(formatSpeedTier('normal')).toContain('Normal')
-  })
-
-  it('returns string containing "Slow" for slow tier', () => {
-    expect(formatSpeedTier('slow')).toContain('Slow')
-  })
-})
-
-describe('formatScoreDelta', () => {
-  it('includes + sign for positive delta', () => {
-    expect(formatScoreDelta(20)).toContain('+20')
-  })
-
-  it('includes the number for negative delta', () => {
-    expect(formatScoreDelta(-15)).toContain('-15')
-  })
-
-  it('includes + sign for zero', () => {
-    expect(formatScoreDelta(0)).toContain('+0')
   })
 })
 
@@ -141,5 +116,75 @@ describe('typewrite', () => {
     expect(writeSpy).toHaveBeenCalledTimes(1)
     expect(writeSpy).toHaveBeenCalledWith('\n')
     writeSpy.mockRestore()
+  })
+})
+
+describe('colorCorrect', () => {
+  it('returns a string containing the input text', () => {
+    expect(colorCorrect('✓ Correct!')).toContain('✓ Correct!')
+  })
+
+  it('returns a string for any input', () => {
+    expect(typeof colorCorrect('test')).toBe('string')
+  })
+})
+
+describe('colorIncorrect', () => {
+  it('returns a string containing the input text', () => {
+    expect(colorIncorrect('✗ Incorrect')).toContain('✗ Incorrect')
+  })
+
+  it('returns a string for any input', () => {
+    expect(typeof colorIncorrect('test')).toBe('string')
+  })
+})
+
+describe('colorSpeedTier', () => {
+  it('returns string containing "Fast" for fast tier', () => {
+    expect(colorSpeedTier('fast')).toContain('Fast')
+  })
+
+  it('returns string containing "Normal" for normal tier', () => {
+    expect(colorSpeedTier('normal')).toContain('Normal')
+  })
+
+  it('returns string containing "Slow" for slow tier', () => {
+    expect(colorSpeedTier('slow')).toContain('Slow')
+  })
+})
+
+describe('colorDifficultyLevel', () => {
+  it('returns string containing "L1" for level 1', () => {
+    expect(colorDifficultyLevel(1)).toContain('L1')
+  })
+
+  it('returns string containing "L2" for level 2', () => {
+    expect(colorDifficultyLevel(2)).toContain('L2')
+  })
+
+  it('returns string containing "L3" for level 3', () => {
+    expect(colorDifficultyLevel(3)).toContain('L3')
+  })
+
+  it('returns string containing "L4" for level 4', () => {
+    expect(colorDifficultyLevel(4)).toContain('L4')
+  })
+
+  it('returns string containing "L5" for level 5', () => {
+    expect(colorDifficultyLevel(5)).toContain('L5')
+  })
+})
+
+describe('colorScoreDelta', () => {
+  it('includes + sign for positive delta', () => {
+    expect(colorScoreDelta(20)).toContain('+20')
+  })
+
+  it('includes the number for negative delta', () => {
+    expect(colorScoreDelta(-15)).toContain('-15')
+  })
+
+  it('includes + sign for zero', () => {
+    expect(colorScoreDelta(0)).toContain('+0')
   })
 })

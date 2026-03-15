@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, writeDomain, type DomainListEntry } from '../domain/store.js'
-import { dim, bold, warn, error as errorFmt } from '../utils/format.js'
+import { dim, bold, warn, error as errorFmt, menuTheme } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import type { HomeEntry } from './home.js'
 import type { Result } from '../domain/schema.js'
@@ -83,6 +83,7 @@ export async function showArchivedScreen(): Promise<void> {
         message: '🗄  Archived domains',
         choices: buildArchivedChoices(archivedEntries),
         pageSize: 15,
+        theme: menuTheme,
       })
     } catch (err) {
       if (err instanceof ExitPromptError) return
