@@ -38,7 +38,7 @@ const mockReadDomain = vi.mocked(readDomain)
 const FIXED_NOW = new Date('2026-03-15T12:00:00.000Z').getTime()
 
 /** Remove ANSI escape codes so snapshots are readable plain text. */
-const stripAnsi = (s: string) => s.replace(/\u001b\[[0-9;]*[mGKHF]/g, '')
+const stripAnsi = (s: string) => s.replaceAll(/\u001b\[[0-9;]*[mGKHF]/g, '')
 
 // ---------------------------------------------------------------------------
 // Fixed domain data for the stats output snapshot
