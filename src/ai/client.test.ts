@@ -219,7 +219,7 @@ describe('getClient initialization', () => {
 describe('settings injection', () => {
   it('accepts settings parameter and returns ok:true', async () => {
     mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-    const settings = { language: 'Spanish', tone: 'enthusiastic' as const }
+    const settings = { language: 'Spanish', tone: 'expressive' as const }
 
     const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
@@ -238,7 +238,7 @@ describe('settings injection', () => {
 
   it('no voice instruction in prompt when settings are English/normal', async () => {
     mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-    const settings = { language: 'English', tone: 'normal' as const }
+    const settings = { language: 'English', tone: 'natural' as const }
 
     await generateQuestion('typescript', 2, new Set(), [], settings)
 
@@ -252,12 +252,12 @@ describe('settings injection', () => {
     mockSendAndWait
       .mockResolvedValueOnce(makeEvent(makeValidResponse(firstQ)))
       .mockResolvedValueOnce(makeEvent(makeValidResponse('What is 3+3?')))
-    const settings = { language: 'Spanish', tone: 'enthusiastic' as const }
+    const settings = { language: 'Spanish', tone: 'expressive' as const }
 
     await generateQuestion('typescript', 2, new Set([existingHash]), [], settings)
 
     const retryPrompt: string = mockSendAndWait.mock.calls[1][0].prompt
-    expect(retryPrompt).toContain('Respond in Spanish using an enthusiastic tone of voice.')
+    expect(retryPrompt).toContain('Respond in Spanish using an expressive tone of voice.')
   })
 })
 

@@ -129,7 +129,7 @@ describe('listDomains', () => {
   it('excludes settings.json from domain list even when it exists', async () => {
     await writeDomain('real-topic', defaultDomainFile())
     // Simulate saved settings file co-existing in DATA_DIR
-    await writeFile(join(testDir, 'settings.json'), JSON.stringify({ language: 'English', tone: 'normal' }))
+    await writeFile(join(testDir, 'settings.json'), JSON.stringify({ language: 'English', tone: 'natural' }))
     const result = await listDomains()
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -263,6 +263,23 @@ describe('writeSettings + readSettings', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data).toEqual(defaultSettings())
+  })
+
+  it('migrates legacy tone "normal" to "natural"', async () => {
+    await writeFile(settingsFile, JSON.stringify({ language: 'English', tone: 'normal' }), 'utf8')
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.tone).toBe('natural')
+  })
+
+  it('migrates legacy tone "enthusiastic" to "expressive"', async () => {
+    await writeFile(settingsFile, JSON.stringify({ language: 'Greek', tone: 'enthusiastic' }), 'utf8')
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.tone).toBe('expressive')
+    expect(result.data.language).toBe('Greek')
   })
 
   it('returns { ok: false } and cleans up when writeSettings fails (tmp path is a directory)', async () => {

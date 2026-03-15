@@ -21,7 +21,7 @@ editHistory:
   - date: '2026-03-15'
     changes: 'Validation fixes: classification frontmatter added (domain: general, projectType: cli_tool); session completion rate KPI added; User Journeys updated with Core Usage visual nav + Settings journey; Feature 1 "appropriately focused" → "domain-specific"; Feature 9 "clearly distinguishable" → concrete inverted-color spec + explicit menu list; NFR 6 self-contradiction resolved; frontmatter classification added'
   - date: '2026-03-15'
-    changes: 'Feature 8 added: Global Settings — language (free-text) and tone of voice (Normal/Enthusiastic/Robot/Pirate), stored at ~/.brain-break/settings.json; injected into all AI calls'
+    changes: 'Feature 8 added: Global Settings — language (free-text) and tone of voice (Natural/Expressive/Calm/Humorous/Sarcastic/Robot/Pirate), stored at ~/.brain-break/settings.json; injected into all AI calls'
   - date: '2026-03-15'
     changes: 'Feature 9 added: Terminal UI Highlighting & Color System — full-row menu highlight, semantic post-answer colors (green/red), speed tier badge colors, difficulty level badge colors'
   - date: '2026-03-15'
@@ -238,7 +238,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 - **Question generation:** The Copilot SDK is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
 - **Language and tone injection:** Every AI prompt (questions, motivational messages) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the question generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `language` (string) and `tone` (string enum: `normal` | `enthusiastic` | `robot` | `pirate`); defaults applied on missing file: `{ "language": "English", "tone": "normal" }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `language` (string) and `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`); defaults applied on missing file: `{ "language": "English", "tone": "natural" }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`)
 

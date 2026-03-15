@@ -86,7 +86,7 @@ beforeEach(() => {
   mockStart.mockReturnThis()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
-  mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'normal' } })
+  mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'natural' } })
   mockShowDomainMenu.mockResolvedValue(undefined)
 })
 
@@ -331,7 +331,7 @@ describe('showQuiz', () => {
   })
 
   it('passes settings from readSettings to generateQuestion', async () => {
-    const settings = { language: 'Spanish', tone: 'enthusiastic' as const }
+    const settings = { language: 'Spanish', tone: 'expressive' as const }
     mockReadSettings.mockResolvedValue({ ok: true, data: settings })
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
 
@@ -357,7 +357,7 @@ describe('showQuiz', () => {
       expect.any(Number),
       expect.any(Set),
       expect.any(Array),
-      { language: 'English', tone: 'normal' },
+      { language: 'English', tone: 'natural' },
     )
   })
 

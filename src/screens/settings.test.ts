@@ -63,12 +63,12 @@ describe('showSettingsScreen', () => {
   })
 
   it('passes current tone as default to tone select prompt', async () => {
-    mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'enthusiastic' } })
-    mockSelect.mockResolvedValueOnce('tone').mockResolvedValueOnce('enthusiastic').mockResolvedValueOnce('back')
+    mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'expressive' } })
+    mockSelect.mockResolvedValueOnce('tone').mockResolvedValueOnce('expressive').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
-    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ default: 'enthusiastic' }))
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ default: 'expressive' }))
   })
 
   it('Save path: calls writeSettings with user inputs and then router.showHome()', async () => {
@@ -137,7 +137,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockWriteSettings).toHaveBeenCalledWith({ language: 'English', tone: 'normal' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ language: 'English', tone: 'natural' })
   })
 
   it('re-throws non-ExitPromptError from settings select', async () => {

@@ -7,15 +7,18 @@ import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
 
 const TONE_CHOICES: Array<{ name: string; value: ToneOfVoice }> = [
-  { name: 'Normal', value: 'normal' },
-  { name: 'Enthusiastic', value: 'enthusiastic' },
+  { name: 'Natural', value: 'natural' },
+  { name: 'Expressive', value: 'expressive' },
+  { name: 'Calm', value: 'calm' },
+  { name: 'Humorous', value: 'humorous' },
+  { name: 'Sarcastic', value: 'sarcastic' },
   { name: 'Robot', value: 'robot' },
   { name: 'Pirate', value: 'pirate' },
 ]
 
-const TONE_LABELS = Object.fromEntries(
+const TONE_LABELS: Record<string, string> = Object.fromEntries(
   TONE_CHOICES.map(c => [c.value, c.name])
-) as Record<ToneOfVoice, string>
+)
 
 type SettingsAction = 'language' | 'tone' | 'save' | 'back'
 
@@ -24,7 +27,7 @@ export async function showSettingsScreen(): Promise<void> {
 
   const settingsResult = await readSettings()
   let language = settingsResult.ok ? settingsResult.data.language : 'English'
-  let tone: ToneOfVoice = settingsResult.ok ? settingsResult.data.tone : 'normal'
+  let tone: ToneOfVoice = settingsResult.ok ? settingsResult.data.tone : 'natural'
 
   try {
     while (true) {

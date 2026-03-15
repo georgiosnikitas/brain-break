@@ -134,10 +134,25 @@ function settingsTmpPath(): string {
   return join(dirname(settingsPath()), '.tmp-settings.json')
 }
 
+const TONE_MIGRATIONS: Record<string, string> = {
+  normal: 'natural',
+  enthusiastic: 'expressive',
+}
+
+function migrateSettings(parsed: unknown): unknown {
+  if (parsed !== null && typeof parsed === 'object' && 'tone' in parsed) {
+    const tone = (parsed as Record<string, unknown>).tone
+    if (typeof tone === 'string' && tone in TONE_MIGRATIONS) {
+      return { ...parsed as object, tone: TONE_MIGRATIONS[tone] }
+    }
+  }
+  return parsed
+}
+
 export async function readSettings(): Promise<Result<SettingsFile>> {
   try {
     const raw = await readFile(settingsPath(), 'utf8')
-    const parsed = JSON.parse(raw)
+    const parsed = migrateSettings(JSON.parse(raw))
     const result = SettingsFileSchema.safeParse(parsed)
     if (!result.success) {
       return { ok: true, data: defaultSettings() }

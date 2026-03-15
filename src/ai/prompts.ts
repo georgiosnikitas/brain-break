@@ -32,10 +32,10 @@ function sanitizeInput(input: string): string {
 }
 
 function buildVoiceInstruction(settings: SettingsFile): string {
-  if (settings.language === 'English' && settings.tone === 'normal') return ''
+  if (settings.language === 'English' && settings.tone === 'natural') return ''
   const safeLanguage = sanitizeInput(settings.language)
   const article = /^[aeiou]/i.test(settings.tone) ? 'an' : 'a'
-  const toneClause = settings.tone === 'normal' ? '' : ` using ${article} ${settings.tone} tone of voice`
+  const toneClause = settings.tone === 'natural' ? '' : ` using ${article} ${settings.tone} tone of voice`
   return `Respond in ${safeLanguage}${toneClause}.\n\n`
 }
 

@@ -236,7 +236,7 @@ describe('defaultDomainFile', () => {
 
 describe('SettingsFileSchema', () => {
   it('accepts valid settings with all tone values', () => {
-    for (const tone of ['normal', 'enthusiastic', 'robot', 'pirate'] as const) {
+    for (const tone of ['natural', 'expressive', 'calm', 'humorous', 'sarcastic', 'robot', 'pirate'] as const) {
       const result = SettingsFileSchema.safeParse({ language: 'English', tone })
       expect(result.success).toBe(true)
     }
@@ -248,7 +248,7 @@ describe('SettingsFileSchema', () => {
   })
 
   it('rejects empty language string', () => {
-    const result = SettingsFileSchema.safeParse({ language: '', tone: 'normal' })
+    const result = SettingsFileSchema.safeParse({ language: '', tone: 'natural' })
     expect(result.success).toBe(false)
   })
 
@@ -263,8 +263,8 @@ describe('defaultSettings', () => {
     expect(defaultSettings().language).toBe('English')
   })
 
-  it('returns tone: normal', () => {
-    expect(defaultSettings().tone).toBe('normal')
+  it('returns tone: natural', () => {
+    expect(defaultSettings().tone).toBe('natural')
   })
 
   it('passes SettingsFileSchema validation', () => {
