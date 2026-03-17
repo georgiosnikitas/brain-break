@@ -199,24 +199,24 @@ So that I have a verified, runnable foundation to build all features on.
 
 **Acceptance Criteria:**
 
-**Given** a fresh clone of the repo
-**When** I run `npm install`
-**Then** all runtime deps (`inquirer@12`, `ora@8`, `chalk@5`, `zod`) and dev deps (`typescript`, `tsx`, `@types/node`, `vitest`) are installed without errors
+**Given** a fresh clone of the repo  
+**When** I run `npm install`  
+**Then** all runtime deps (`inquirer@12`, `ora@8`, `chalk@5`, `zod`) and dev deps (`typescript`, `tsx`, `@types/node`, `vitest`) are installed without errors  
 
-**Given** the project is installed
-**When** I run `npm run typecheck`
-**Then** `tsc --noEmit` exits with code 0 and no errors
+**Given** the project is installed  
+**When** I run `npm run typecheck`  
+**Then** `tsc --noEmit` exits with code 0 and no errors  
 
-**Given** the project is installed
-**When** I run `tsx src/index.ts`
-**Then** the process starts without crashing (may print a placeholder message and exit cleanly)
+**Given** the project is installed  
+**When** I run `tsx src/index.ts`  
+**Then** the process starts without crashing (may print a placeholder message and exit cleanly)  
 
-**Given** the project structure
-**When** I inspect the repo
-**Then** `package.json` has `"type": "module"`, a `bin` field pointing to `dist/index.js`, `engines.node: ">=25.8.0"`, and all required scripts (`dev`, `build`, `start`, `typecheck`, `test`, `test:watch`)
-**And** `tsconfig.json` has `strict: true`, `module: "nodenext"`, `moduleResolution: "nodenext"`, `target: "es2022"`
-**And** the full `src/` directory tree exists (all files may be empty stubs): `index.ts`, `router.ts`, `screens/`, `ai/`, `domain/`, `utils/`
-**And** `.gitignore` excludes `node_modules/` and `dist/`
+**Given** the project structure  
+**When** I inspect the repo  
+**Then** `package.json` has `"type": "module"`, a `bin` field pointing to `dist/index.js`, `engines.node: ">=25.8.0"`, and all required scripts (`dev`, `build`, `start`, `typecheck`, `test`, `test:watch`)  
+**And** `tsconfig.json` has `strict: true`, `module: "nodenext"`, `moduleResolution: "nodenext"`, `target: "es2022"`  
+**And** the full `src/` directory tree exists (all files may be empty stubs): `index.ts`, `router.ts`, `screens/`, `ai/`, `domain/`, `utils/`  
+**And** `.gitignore` excludes `node_modules/` and `dist/`  
 
 ---
 
@@ -228,21 +228,21 @@ So that all modules have a single, type-safe source of truth for domain file str
 
 **Acceptance Criteria:**
 
-**Given** `domain/schema.ts` is implemented
-**When** I import `DomainFileSchema`
-**Then** it is a Zod schema that validates a complete domain JSON object with `meta`, `hashes`, and `history` fields matching the architecture-defined structure
+**Given** `domain/schema.ts` is implemented  
+**When** I import `DomainFileSchema`  
+**Then** it is a Zod schema that validates a complete domain JSON object with `meta`, `hashes`, and `history` fields matching the architecture-defined structure  
 
-**Given** `domain/schema.ts` is implemented
-**When** I call `defaultDomainFile()`
-**Then** it returns a valid `DomainFile` with `score: 0`, `difficultyLevel: 2`, `streakCount: 0`, `streakType: "none"`, `totalTimePlayedMs: 0`, empty `hashes: []`, and empty `history: []`
+**Given** `domain/schema.ts` is implemented  
+**When** I call `defaultDomainFile()`  
+**Then** it returns a valid `DomainFile` with `score: 0`, `difficultyLevel: 2`, `streakCount: 0`, `streakType: "none"`, `totalTimePlayedMs: 0`, empty `hashes: []`, and empty `history: []`  
 
-**Given** `domain/schema.ts` is implemented
-**When** I import the `Result<T>` type
-**Then** it resolves to `{ ok: true; data: T } | { ok: false; error: string }`
+**Given** `domain/schema.ts` is implemented  
+**When** I import the `Result<T>` type  
+**Then** it resolves to `{ ok: true; data: T } | { ok: false; error: string }`  
 
-**Given** `domain/schema.ts` has tests in `domain/schema.test.ts`
-**When** I run `npm test`
-**Then** all schema tests pass, covering valid input, `defaultDomainFile()` output, and rejection of malformed input
+**Given** `domain/schema.ts` has tests in `domain/schema.test.ts`  
+**When** I run `npm test`  
+**Then** all schema tests pass, covering valid input, `defaultDomainFile()` output, and rejection of malformed input  
 
 ---
 
@@ -254,32 +254,32 @@ So that domain data is never corrupted by partial writes.
 
 **Acceptance Criteria:**
 
-**Given** `domain/store.ts` is implemented
-**When** I call `writeDomain(slug, domainFile)`
-**Then** it writes to `~/.brain-break/.tmp-<slug>.json` first, then renames it to `~/.brain-break/<slug>.json` atomically
-**And** the `~/.brain-break/` directory is created if it does not exist
+**Given** `domain/store.ts` is implemented  
+**When** I call `writeDomain(slug, domainFile)`  
+**Then** it writes to `~/.brain-break/.tmp-<slug>.json` first, then renames it to `~/.brain-break/<slug>.json` atomically  
+**And** the `~/.brain-break/` directory is created if it does not exist  
 
-**Given** `domain/store.ts` is implemented
-**When** I call `readDomain(slug)` and the file exists and is valid
-**Then** it returns `{ ok: true, data: <DomainFile> }` with the parsed, Zod-validated domain
+**Given** `domain/store.ts` is implemented  
+**When** I call `readDomain(slug)` and the file exists and is valid  
+**Then** it returns `{ ok: true, data: <DomainFile> }` with the parsed, Zod-validated domain  
 
-**Given** `domain/store.ts` is implemented
-**When** I call `readDomain(slug)` and the file does not exist (ENOENT)
-**Then** it returns `{ ok: true, data: defaultDomainFile() }` — no error propagated
+**Given** `domain/store.ts` is implemented  
+**When** I call `readDomain(slug)` and the file does not exist (ENOENT)  
+**Then** it returns `{ ok: true, data: defaultDomainFile() }` — no error propagated  
 
-**Given** `domain/store.ts` is implemented
-**When** I call `readDomain(slug)` and the file is corrupted (Zod validation fails)
-**Then** it returns `{ ok: false, error: "Domain data for [slug] appears corrupted and cannot be loaded. Starting fresh." }`
+**Given** `domain/store.ts` is implemented  
+**When** I call `readDomain(slug)` and the file is corrupted (Zod validation fails)  
+**Then** it returns `{ ok: false, error: "Domain data for [slug] appears corrupted and cannot be loaded. Starting fresh." }`  
 
-**Given** `domain/store.ts` is implemented
-**When** I call `listDomains()`
-**Then** it returns an array of `{ slug, meta }` for every `*.json` file in `~/.brain-break/` that is not prefixed with `.tmp-` — including archived domains
-**And** it returns `{ ok: true, data: [] }` when the directory does not exist yet
-**And** callers (e.g. `screens/home.ts`) are responsible for filtering by `meta.archived` to separate active from archived domains
+**Given** `domain/store.ts` is implemented  
+**When** I call `listDomains()`  
+**Then** it returns an array of `{ slug, meta }` for every `*.json` file in `~/.brain-break/` that is not prefixed with `.tmp-` — including archived domains  
+**And** it returns `{ ok: true, data: [] }` when the directory does not exist yet  
+**And** callers (e.g. `screens/home.ts`) are responsible for filtering by `meta.archived` to separate active from archived domains  
 
-**Given** `domain/store.ts` has tests in `domain/store.test.ts`
-**When** I run `npm test`
-**Then** all store tests pass, covering write/read roundtrip, ENOENT default, corrupted file, and listDomains empty
+**Given** `domain/store.ts` has tests in `domain/store.test.ts`  
+**When** I run `npm test`  
+**Then** all store tests pass, covering write/read roundtrip, ENOENT default, corrupted file, and listDomains empty  
 
 ---
 
@@ -291,24 +291,24 @@ So that SHA-256 hashing, domain name slugification, and shared terminal formatti
 
 **Acceptance Criteria:**
 
-**Given** `utils/hash.ts` is implemented
-**When** I call `hashQuestion(text)`
-**Then** it returns the SHA-256 hex digest of the lowercased, whitespace-stripped input string
-**And** calling it twice with the same normalized input returns the same hash
+**Given** `utils/hash.ts` is implemented  
+**When** I call `hashQuestion(text)`  
+**Then** it returns the SHA-256 hex digest of the lowercased, whitespace-stripped input string  
+**And** calling it twice with the same normalized input returns the same hash  
 
-**Given** `utils/slugify.ts` is implemented
-**When** I call `slugify("Spring Boot microservices")`
-**Then** it returns `"spring-boot-microservices"`
-**And** special characters and multiple consecutive spaces are collapsed to single hyphens
-**And** leading/trailing hyphens are removed
+**Given** `utils/slugify.ts` is implemented  
+**When** I call `slugify("Spring Boot microservices")`  
+**Then** it returns `"spring-boot-microservices"`  
+**And** special characters and multiple consecutive spaces are collapsed to single hyphens  
+**And** leading/trailing hyphens are removed  
 
-**Given** `utils/format.ts` is implemented
-**When** I import shared formatting helpers
-**Then** they use `chalk` v5 for color/styling and are usable in all screen modules without duplicating chalk imports
+**Given** `utils/format.ts` is implemented  
+**When** I import shared formatting helpers  
+**Then** they use `chalk` v5 for color/styling and are usable in all screen modules without duplicating chalk imports  
 
-**Given** all three utils have co-located test files (`*.test.ts`)
-**When** I run `npm test`
-**Then** all utility tests pass
+**Given** all three utils have co-located test files (`*.test.ts`)  
+**When** I run `npm test`  
+**Then** all utility tests pass  
 
 ---
 
@@ -320,14 +320,14 @@ So that regressions are caught automatically before they reach the main branch.
 
 **Acceptance Criteria:**
 
-**Given** `.github/workflows/ci.yml` is implemented
-**When** a push is made to any branch
-**Then** the CI workflow runs `npm run typecheck` (`tsc --noEmit`) and `npm test` (`vitest run`)
-**And** the workflow fails if either command exits with a non-zero code
+**Given** `.github/workflows/ci.yml` is implemented  
+**When** a push is made to any branch  
+**Then** the CI workflow runs `npm run typecheck` (`tsc --noEmit`) and `npm test` (`vitest run`)  
+**And** the workflow fails if either command exits with a non-zero code  
 
-**Given** the CI workflow runs
-**When** all checks pass
-**Then** the workflow completes successfully with a green status
+**Given** the CI workflow runs  
+**When** all checks pass  
+**Then** the workflow completes successfully with a green status  
 
 ---
 
@@ -339,37 +339,37 @@ So that the app always feels like a persistent full-screen application and previ
 
 **Acceptance Criteria:**
 
-**Given** `utils/screen.ts` is implemented
-**When** I call `clearScreen()`
-**Then** the terminal viewport is fully cleared, leaving no prior output visible
+**Given** `utils/screen.ts` is implemented  
+**When** I call `clearScreen()`  
+**Then** the terminal viewport is fully cleared, leaving no prior output visible  
 
-**Given** the home screen renders (on launch or navigation)
-**When** the screen is drawn
-**Then** `clearScreen()` is called before rendering — no prior output persists in the visible area
+**Given** the home screen renders (on launch or navigation)  
+**When** the screen is drawn  
+**Then** `clearScreen()` is called before rendering — no prior output persists in the visible area  
 
-**Given** the create domain screen renders
-**When** the input prompt is displayed
-**Then** `clearScreen()` is called before the prompt appears
+**Given** the create domain screen renders  
+**When** the input prompt is displayed  
+**Then** `clearScreen()` is called before the prompt appears  
 
-**Given** the domain sub-menu renders (on domain select, post-quiz return, or Back navigation)
-**When** the sub-menu is drawn
-**Then** `clearScreen()` is called before the sub-menu is displayed
+**Given** the domain sub-menu renders (on domain select, post-quiz return, or Back navigation)  
+**When** the sub-menu is drawn  
+**Then** `clearScreen()` is called before the sub-menu is displayed  
 
-**Given** the archived domains list renders
-**When** the screen is drawn
-**Then** `clearScreen()` is called before rendering
+**Given** the archived domains list renders  
+**When** the screen is drawn  
+**Then** `clearScreen()` is called before rendering  
 
-**Given** a quiz question or post-answer feedback panel renders
-**When** either screen is drawn
-**Then** `clearScreen()` is called before the new content is displayed — no prior question or feedback output persists
+**Given** a quiz question or post-answer feedback panel renders  
+**When** either screen is drawn  
+**Then** `clearScreen()` is called before the new content is displayed — no prior question or feedback output persists  
 
-**Given** the history screen renders (on load or page navigation)
-**When** any entry or page is displayed
-**Then** `clearScreen()` is called before rendering
+**Given** the history screen renders (on load or page navigation)  
+**When** any entry or page is displayed  
+**Then** `clearScreen()` is called before rendering  
 
-**Given** the stats dashboard renders
-**When** the screen is drawn
-**Then** `clearScreen()` is called before displaying content
+**Given** the stats dashboard renders  
+**When** the screen is drawn  
+**Then** `clearScreen()` is called before displaying content  
 
 ---
 
@@ -381,30 +381,30 @@ So that I can easily support the developer without leaving the terminal.
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen
-**When** I inspect the menu options
-**Then** a "☕  Buy me a coffee" action is present between the archived-domains action and the Exit action, separated from Exit by a visual separator
+**Given** I am on the home screen  
+**When** I inspect the menu options  
+**Then** a "☕  Buy me a coffee" action is present between the archived-domains action and the Exit action, separated from Exit by a visual separator  
 
-**Given** I select "☕  Buy me a coffee" from the home screen
-**When** the coffee screen loads
-**Then** the terminal is cleared and the following are displayed in order:
+**Given** I select "☕  Buy me a coffee" from the home screen  
+**When** the coffee screen loads  
+**Then** the terminal is cleared and the following are displayed in order:  
 - A heading: "☕  Enjoying brain-break? Buy me a coffee!"
 - An instruction: "Scan the QR code with your phone:"
 - An ASCII QR code (small, indented) encoding `https://www.buymeacoffee.com/georgiosnikitas`
 - The URL `https://www.buymeacoffee.com/georgiosnikitas` in plain text
 - A `Navigation` prompt with a separator and a `←  Back` option
 
-**Given** I am on the coffee screen
-**When** I select "←  Back"
-**Then** I return to the home screen
+**Given** I am on the coffee screen  
+**When** I select "←  Back"  
+**Then** I return to the home screen  
 
-**Given** I am on the coffee screen
-**When** I force-exit the prompt (Ctrl+C)
-**Then** the app handles the exit gracefully and returns to the home screen without crashing
+**Given** I am on the coffee screen  
+**When** I force-exit the prompt (Ctrl+C)  
+**Then** the app handles the exit gracefully and returns to the home screen without crashing  
 
-**Given** `src/screens/home.test.ts` covers the new screen
-**When** I run `npm test`
-**Then** all tests pass, covering: coffee action present in menu, routing from home to coffee screen, QR code and URL rendered, `clearScreen()` called, Back resolves cleanly, force-exit handled silently
+**Given** `src/screens/home.test.ts` covers the new screen  
+**When** I run `npm test`  
+**Then** all tests pass, covering: coffee action present in menu, routing from home to coffee screen, QR code and URL rendered, `clearScreen()` called, Back resolves cleanly, force-exit handled silently  
 
 ---
 
@@ -420,20 +420,20 @@ So that I can see my current progress at a glance and choose what to do next.
 
 **Acceptance Criteria:**
 
-**Given** `screens/home.ts` and `router.ts` are implemented and `index.ts` bootstraps the app
-**When** I run `tsx src/index.ts`
-**Then** the home screen renders within ≤ 2 seconds showing a list of all active (non-archived) domains
-**And** each domain entry shows: domain name, current score, and total questions answered
-**And** the available actions include: select a domain (opens domain sub-menu), create a new domain, view archived domains, and exit
-**And** archive / view history / view stats actions are NOT shown on the home screen — they are accessed from the domain sub-menu
+**Given** `screens/home.ts` and `router.ts` are implemented and `index.ts` bootstraps the app  
+**When** I run `tsx src/index.ts`  
+**Then** the home screen renders within ≤ 2 seconds showing a list of all active (non-archived) domains  
+**And** each domain entry shows: domain name, current score, and total questions answered  
+**And** the available actions include: select a domain (opens domain sub-menu), create a new domain, view archived domains, and exit  
+**And** archive / view history / view stats actions are NOT shown on the home screen — they are accessed from the domain sub-menu  
 
-**Given** no domain files exist in `~/.brain-break/`
-**When** the home screen loads
-**Then** the domain list is empty and the only highlighted action is "Create new domain"
+**Given** no domain files exist in `~/.brain-break/`  
+**When** the home screen loads  
+**Then** the domain list is empty and the only highlighted action is "Create new domain"  
 
-**Given** the home screen loads
-**When** I select "Exit"
-**Then** the process exits cleanly with code 0
+**Given** the home screen loads  
+**When** I select "Exit"  
+**Then** the process exits cleanly with code 0  
 
 ---
 
@@ -445,27 +445,27 @@ So that I can immediately start getting quiz questions on any topic I choose.
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen
-**When** I select "Create new domain"
-**Then** an input prompt is shown: `New domain name (Ctrl+C to go back):`
+**Given** I am on the home screen  
+**When** I select "Create new domain"  
+**Then** an input prompt is shown: `New domain name (Ctrl+C to go back):`  
 
-**Given** I am on the create domain screen
-**When** I press Ctrl+C
-**Then** I return to the home screen without creating a domain
+**Given** I am on the create domain screen  
+**When** I press Ctrl+C  
+**Then** I return to the home screen without creating a domain  
 
-**Given** I am on the create domain screen
-**When** I type a domain name (e.g. "Spring Boot microservices") and press Enter
-**Then** the app calls `slugify()` to derive a file slug (e.g. `spring-boot-microservices`)
-**And** a new domain file is created at `~/.brain-break/spring-boot-microservices.json` with `defaultDomainFile()` values
-**And** the home screen refreshes showing the new domain in the active list
+**Given** I am on the create domain screen  
+**When** I type a domain name (e.g. "Spring Boot microservices") and press Enter  
+**Then** the app calls `slugify()` to derive a file slug (e.g. `spring-boot-microservices`)  
+**And** a new domain file is created at `~/.brain-break/spring-boot-microservices.json` with `defaultDomainFile()` values  
+**And** the home screen refreshes showing the new domain in the active list  
 
-**Given** I type a domain name that slugifies to an already-existing slug
-**When** I confirm creation
-**Then** the app informs me the domain already exists and returns to the home screen without creating a duplicate file
+**Given** I type a domain name that slugifies to an already-existing slug  
+**When** I confirm creation  
+**Then** the app informs me the domain already exists and returns to the home screen without creating a duplicate file  
 
-**Given** I am creating a domain
-**When** I leave the name field empty and confirm
-**Then** the app displays a validation message and re-prompts without creating a file
+**Given** I am creating a domain  
+**When** I leave the name field empty and confirm  
+**Then** the app displays a validation message and re-prompts without creating a file  
 
 ---
 
@@ -477,28 +477,28 @@ So that I can choose to play, review history, check stats, or archive — all fr
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen and at least one active domain exists
-**When** I select a domain
-**Then** the domain sub-menu opens with the prompt header showing: domain name, current score, and total questions answered (read fresh from disk)
-**And** the available options are: Play, View History, View Stats, Archive, Delete, and Back
+**Given** I am on the home screen and at least one active domain exists  
+**When** I select a domain  
+**Then** the domain sub-menu opens with the prompt header showing: domain name, current score, and total questions answered (read fresh from disk)  
+**And** the available options are: Play, View History, View Stats, Archive, Delete, and Back  
 
-**Given** I am on the domain sub-menu
-**When** I select "Play"
-**Then** if my last session for that domain was within 7 days, a motivational message is displayed (e.g. "Welcome back! Keep the streak going.")
-**And** if my score has been trending upward over the last 3+ sessions, a motivational message referencing the upward trend is displayed
-**And** the quiz starts immediately after any messages
+**Given** I am on the domain sub-menu  
+**When** I select "Play"  
+**Then** if my last session for that domain was within 7 days, a motivational message is displayed (e.g. "Welcome back! Keep the streak going.")  
+**And** if my score has been trending upward over the last 3+ sessions, a motivational message referencing the upward trend is displayed  
+**And** the quiz starts immediately after any messages  
 
-**Given** I am on the domain sub-menu
-**When** I select "Back"
-**Then** I return to the home screen
+**Given** I am on the domain sub-menu  
+**When** I select "Back"  
+**Then** I return to the home screen  
 
-**Given** I select a domain and the domain file is corrupted (Zod validation fails on read)
-**When** the sub-menu loads
-**Then** the app displays the corrupted-file warning message and resets the domain to `defaultDomainFile()` before showing the sub-menu
+**Given** I select a domain and the domain file is corrupted (Zod validation fails on read)  
+**When** the sub-menu loads  
+**Then** the app displays the corrupted-file warning message and resets the domain to `defaultDomainFile()` before showing the sub-menu  
 
-**Given** I complete or exit a quiz session
-**When** the session ends
-**Then** I am returned to the domain sub-menu (not the home screen)
+**Given** I complete or exit a quiz session  
+**When** the session ends  
+**Then** I am returned to the domain sub-menu (not the home screen)  
 
 ---
 
@@ -510,23 +510,23 @@ So that my active domain list stays focused without losing any history or progre
 
 **Acceptance Criteria:**
 
-**Given** I am on the domain sub-menu
-**When** I choose "Archive"
-**Then** the domain file is updated with `meta.archived: true` and saved atomically
-**And** the domain disappears from the active domain list and I am returned to the home screen
+**Given** I am on the domain sub-menu  
+**When** I choose "Archive"  
+**Then** the domain file is updated with `meta.archived: true` and saved atomically  
+**And** the domain disappears from the active domain list and I am returned to the home screen  
 
-**Given** I archived one or more domains
-**When** I select "View archived domains" from the home screen
-**Then** the app shows a list of all archived domains with their last-known scores and question counts
+**Given** I archived one or more domains  
+**When** I select "View archived domains" from the home screen  
+**Then** the app shows a list of all archived domains with their last-known scores and question counts  
 
-**Given** I am viewing the archived domains list
-**When** I select a domain and choose "Unarchive"
-**Then** the archived flag is removed, the file is saved atomically, and the domain reappears in the active list on the home screen
-**And** all history, score, difficulty level, and streak data are exactly as they were before archiving
+**Given** I am viewing the archived domains list  
+**When** I select a domain and choose "Unarchive"  
+**Then** the archived flag is removed, the file is saved atomically, and the domain reappears in the active list on the home screen  
+**And** all history, score, difficulty level, and streak data are exactly as they were before archiving  
 
-**Given** I am viewing the archived domains list
-**When** I select "Back"
-**Then** I return to the home screen
+**Given** I am viewing the archived domains list  
+**When** I select "Back"  
+**Then** I return to the home screen  
 
 ---
 
@@ -538,35 +538,35 @@ So that I can remove domains I no longer need and keep my list clean.
 
 **Acceptance Criteria:**
 
-**Given** I am on the domain sub-menu
-**When** I inspect the available options
-**Then** a "🗑  Delete" action is present immediately after the "Archive" option
+**Given** I am on the domain sub-menu  
+**When** I inspect the available options  
+**Then** a "🗑  Delete" action is present immediately after the "Archive" option  
 
-**Given** I am on the domain sub-menu
-**When** I select "Delete"
-**Then** a confirmation prompt is shown: `Delete "<slug>" permanently? This cannot be undone.` with default answer "No"
+**Given** I am on the domain sub-menu  
+**When** I select "Delete"  
+**Then** a confirmation prompt is shown: `Delete "<slug>" permanently? This cannot be undone.` with default answer "No"  
 
-**Given** the delete confirmation prompt is shown
-**When** I confirm (answer "Yes")
-**Then** the domain file at `~/.brain-break/<slug>.json` is permanently removed
-**And** I am returned to the home screen
-**And** the domain no longer appears in the active domain list
+**Given** the delete confirmation prompt is shown  
+**When** I confirm (answer "Yes")  
+**Then** the domain file at `~/.brain-break/<slug>.json` is permanently removed  
+**And** I am returned to the home screen  
+**And** the domain no longer appears in the active domain list  
 
-**Given** the delete confirmation prompt is shown
-**When** I cancel (answer "No")
-**Then** no file is deleted and I remain on the domain sub-menu
+**Given** the delete confirmation prompt is shown  
+**When** I cancel (answer "No")  
+**Then** no file is deleted and I remain on the domain sub-menu  
 
-**Given** `domain/store.ts` exports `deleteDomain(slug)`
-**When** I call `deleteDomain(slug)` and the file exists
-**Then** it removes the file and returns `{ ok: true }`
+**Given** `domain/store.ts` exports `deleteDomain(slug)`  
+**When** I call `deleteDomain(slug)` and the file exists  
+**Then** it removes the file and returns `{ ok: true }`  
 
-**Given** `domain/store.ts` exports `deleteDomain(slug)`
-**When** I call `deleteDomain(slug)` and the file does not exist (ENOENT)
-**Then** it returns `{ ok: true }` — idempotent, no error
+**Given** `domain/store.ts` exports `deleteDomain(slug)`  
+**When** I call `deleteDomain(slug)` and the file does not exist (ENOENT)  
+**Then** it returns `{ ok: true }` — idempotent, no error  
 
-**Given** `domain/store.test.ts` and `screens/domain-menu.test.ts` cover the new story
-**When** I run `npm test`
-**Then** all tests pass, covering: file removal, ENOENT idempotency, domain removed from list, confirmed delete navigates home, cancelled delete stays in menu
+**Given** `domain/store.test.ts` and `screens/domain-menu.test.ts` cover the new story  
+**When** I run `npm test`  
+**Then** all tests pass, covering: file removal, ENOENT idempotency, domain removed from list, confirmed delete navigates home, cancelled delete stays in menu  
 
 ---
 
@@ -582,34 +582,34 @@ So that any screen can request a question and always receive either a valid resu
 
 **Acceptance Criteria:**
 
-**Given** `ai/prompts.ts` is implemented
-**When** I call `buildQuestionPrompt(domain, difficultyLevel)`
-**Then** it returns a structured prompt string instructing the model to return a JSON object with: `question`, `options` (A–D), `correctAnswer`, `difficultyLevel`, and `speedThresholds` (`{ fastMs, slowMs }`)
-**And** `QuestionResponseSchema` (Zod) is exported and validates this exact shape
+**Given** `ai/prompts.ts` is implemented  
+**When** I call `buildQuestionPrompt(domain, difficultyLevel)`  
+**Then** it returns a structured prompt string instructing the model to return a JSON object with: `question`, `options` (A–D), `correctAnswer`, `difficultyLevel`, and `speedThresholds` (`{ fastMs, slowMs }`)  
+**And** `QuestionResponseSchema` (Zod) is exported and validates this exact shape  
 
-**Given** `ai/client.ts` is implemented
-**When** I call `generateQuestion(domain, difficultyLevel, existingHashes)`
-**Then** it calls the Copilot SDK with the prompt from `buildQuestionPrompt()`
-**And** validates the response with `QuestionResponseSchema` before returning
-**And** computes `hashQuestion()` on the returned question text and checks it against `existingHashes`
-**And** if the hash already exists (duplicate), retries once with an explicit "do not repeat" instruction
-**And** returns `{ ok: true, data: Question }` on success
+**Given** `ai/client.ts` is implemented  
+**When** I call `generateQuestion(domain, difficultyLevel, existingHashes)`  
+**Then** it calls the Copilot SDK with the prompt from `buildQuestionPrompt()`  
+**And** validates the response with `QuestionResponseSchema` before returning  
+**And** computes `hashQuestion()` on the returned question text and checks it against `existingHashes`  
+**And** if the hash already exists (duplicate), retries once with an explicit "do not repeat" instruction  
+**And** returns `{ ok: true, data: Question }` on success  
 
-**Given** the Copilot API is unreachable or returns a network error
-**When** `generateQuestion()` is called
-**Then** it returns `{ ok: false, error: AI_ERRORS.NETWORK }`
+**Given** the Copilot API is unreachable or returns a network error  
+**When** `generateQuestion()` is called  
+**Then** it returns `{ ok: false, error: AI_ERRORS.NETWORK }`  
 
-**Given** the Copilot API returns an authentication failure
-**When** `generateQuestion()` is called
-**Then** it returns `{ ok: false, error: AI_ERRORS.AUTH }`
+**Given** the Copilot API returns an authentication failure  
+**When** `generateQuestion()` is called  
+**Then** it returns `{ ok: false, error: AI_ERRORS.AUTH }`  
 
-**Given** the Copilot API returns a response that fails Zod validation
-**When** `generateQuestion()` is called
-**Then** it returns `{ ok: false, error: AI_ERRORS.PARSE }`
+**Given** the Copilot API returns a response that fails Zod validation  
+**When** `generateQuestion()` is called  
+**Then** it returns `{ ok: false, error: AI_ERRORS.PARSE }`  
 
-**Given** `ai/client.test.ts` exists
-**When** I run `npm test`
-**Then** all tests pass, covering success path, network error, auth error, and parse error (SDK mocked)
+**Given** `ai/client.test.ts` exists  
+**When** I run `npm test`  
+**Then** all tests pass, covering success path, network error, auth error, and parse error (SDK mocked)  
 
 ---
 
@@ -621,35 +621,35 @@ So that all score and difficulty mutations happen in one tested, side-effect-fre
 
 **Acceptance Criteria:**
 
-**Given** `domain/scoring.ts` is implemented
-**When** I call `applyAnswer(meta, isCorrect, timeTakenMs, speedThresholds)`
-**Then** it returns `{ updatedMeta: DomainMeta, scoreDelta: number }` without mutating the input
+**Given** `domain/scoring.ts` is implemented  
+**When** I call `applyAnswer(meta, isCorrect, timeTakenMs, speedThresholds)`  
+**Then** it returns `{ updatedMeta: DomainMeta, scoreDelta: number }` without mutating the input  
 
-**Given** a correct answer at difficulty level 3 answered fast (timeTakenMs < speedThresholds.fastMs)
-**When** `applyAnswer()` runs
-**Then** `scoreDelta` = `30 × 2` = `60`
-**And** `updatedMeta.score` = `meta.score + 60`
+**Given** a correct answer at difficulty level 3 answered fast (timeTakenMs < speedThresholds.fastMs)  
+**When** `applyAnswer()` runs  
+**Then** `scoreDelta` = `30 × 2` = `60`  
+**And** `updatedMeta.score` = `meta.score + 60`  
 
-**Given** an incorrect answer at difficulty level 3 answered slowly (timeTakenMs > speedThresholds.slowMs)
-**When** `applyAnswer()` runs
-**Then** `scoreDelta` = `-(30 × 2)` = `-60`
-**And** `updatedMeta.score` = `meta.score - 60`
+**Given** an incorrect answer at difficulty level 3 answered slowly (timeTakenMs > speedThresholds.slowMs)  
+**When** `applyAnswer()` runs  
+**Then** `scoreDelta` = `-(30 × 2)` = `-60`  
+**And** `updatedMeta.score` = `meta.score - 60`  
 
-**Given** a streak of 3 consecutive correct answers at difficulty level 3
-**When** the 3rd correct answer is processed by `applyAnswer()`
-**Then** `updatedMeta.difficultyLevel` = `4` (increased by 1), capped at 5
+**Given** a streak of 3 consecutive correct answers at difficulty level 3  
+**When** the 3rd correct answer is processed by `applyAnswer()`  
+**Then** `updatedMeta.difficultyLevel` = `4` (increased by 1), capped at 5  
 
-**Given** a streak of 3 consecutive incorrect answers at difficulty level 2
-**When** the 3rd incorrect answer is processed by `applyAnswer()`
-**Then** `updatedMeta.difficultyLevel` = `1` (decreased by 1), minimum 1
+**Given** a streak of 3 consecutive incorrect answers at difficulty level 2  
+**When** the 3rd incorrect answer is processed by `applyAnswer()`  
+**Then** `updatedMeta.difficultyLevel` = `1` (decreased by 1), minimum 1  
 
-**Given** a correct answer after a wrong streak (or vice versa)
-**When** `applyAnswer()` runs
-**Then** `updatedMeta.streakCount` resets to `1` and `streakType` flips accordingly
+**Given** a correct answer after a wrong streak (or vice versa)  
+**When** `applyAnswer()` runs  
+**Then** `updatedMeta.streakCount` resets to `1` and `streakType` flips accordingly  
 
-**Given** `domain/scoring.test.ts` exists
-**When** I run `npm test`
-**Then** all tests pass, covering all 6 speed×outcome combinations, streak transitions, and difficulty boundary clamping
+**Given** `domain/scoring.test.ts` exists  
+**When** I run `npm test`  
+**Then** all tests pass, covering all 6 speed×outcome combinations, streak transitions, and difficulty boundary clamping  
 
 ---
 
@@ -661,33 +661,33 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 
 **Acceptance Criteria:**
 
-**Given** I have selected a domain from the home screen
-**When** `screens/quiz.ts` loads
-**Then** an `ora` spinner starts with "Generating question..." while `generateQuestion()` is called
-**And** the spinner stops and the question is displayed once the result is received
+**Given** I have selected a domain from the home screen  
+**When** `screens/quiz.ts` loads  
+**Then** an `ora` spinner starts with "Generating question..." while `generateQuestion()` is called  
+**And** the spinner stops and the question is displayed once the result is received  
 
-**Given** a question is displayed
-**When** I choose one of the 4 answer options (A–D)
-**Then** the silent timer stops and `timeTakenMs` is recorded
-**And** `applyAnswer()` is called to compute `scoreDelta` and `updatedMeta`
-**And** the feedback panel shows: correct/incorrect, the correct answer (if I was wrong), time taken (ms), speed tier (fast/normal/slow based on `speedThresholds`), and score delta
+**Given** a question is displayed  
+**When** I choose one of the 4 answer options (A–D)  
+**Then** the silent timer stops and `timeTakenMs` is recorded  
+**And** `applyAnswer()` is called to compute `scoreDelta` and `updatedMeta`  
+**And** the feedback panel shows: correct/incorrect, the correct answer (if I was wrong), time taken (ms), speed tier (fast/normal/slow based on `speedThresholds`), and score delta  
 
-**Given** an answer has been processed
-**When** `writeDomain()` is called
-**Then** the full updated domain state (meta, hashes + new hash appended, history + new record appended) is atomically persisted before the next question is shown
-**And** every `QuestionRecord` field specified in FR11 is written (question, options, correctAnswer, userAnswer, isCorrect, answeredAt ISO8601, timeTakenMs, speedTier, scoreDelta, difficultyLevel)
+**Given** an answer has been processed  
+**When** `writeDomain()` is called  
+**Then** the full updated domain state (meta, hashes + new hash appended, history + new record appended) is atomically persisted before the next question is shown  
+**And** every `QuestionRecord` field specified in FR11 is written (question, options, correctAnswer, userAnswer, isCorrect, answeredAt ISO8601, timeTakenMs, speedTier, scoreDelta, difficultyLevel)  
 
-**Given** `generateQuestion()` returns `{ ok: false, error: AI_ERRORS.NETWORK }`
-**When** the error is received in the quiz screen
-**Then** the error message is displayed and the user is returned to the home screen without crashing
+**Given** `generateQuestion()` returns `{ ok: false, error: AI_ERRORS.NETWORK }`  
+**When** the error is received in the quiz screen  
+**Then** the error message is displayed and the user is returned to the home screen without crashing  
 
-**Given** `generateQuestion()` returns `{ ok: false, error: AI_ERRORS.AUTH }`
-**When** the error is received in the quiz screen
-**Then** the auth error message is displayed and the process exits cleanly
+**Given** `generateQuestion()` returns `{ ok: false, error: AI_ERRORS.AUTH }`  
+**When** the error is received in the quiz screen  
+**Then** the auth error message is displayed and the process exits cleanly  
 
-**Given** I am in an active quiz session
-**When** I choose "Exit quiz" (available after each answer)
-**Then** all persisted data is preserved and I am returned to the domain sub-menu
+**Given** I am in an active quiz session  
+**When** I choose "Exit quiz" (available after each answer)  
+**Then** all persisted data is preserved and I am returned to the domain sub-menu  
 
 ---
 
@@ -703,26 +703,26 @@ So that I can review past questions, see where I went wrong, and track my learni
 
 **Acceptance Criteria:**
 
-**Given** I am on the domain sub-menu and choose "View History"
-**When** `screens/history.ts` loads
-**Then** the history is read from the domain file and displayed 10 entries per page, most recent first
-**And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level
+**Given** I am on the domain sub-menu and choose "View History"  
+**When** `screens/history.ts` loads  
+**Then** the history is read from the domain file and displayed 10 entries per page, most recent first  
+**And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level  
 
-**Given** the domain has more than 10 history entries
-**When** viewing history
-**Then** pagination controls are shown (Next / Previous / Back) and navigate correctly between pages
+**Given** the domain has more than 10 history entries  
+**When** viewing history  
+**Then** pagination controls are shown (Next / Previous / Back) and navigate correctly between pages  
 
-**Given** the domain has 10 or fewer history entries
-**When** viewing history
-**Then** all entries are shown on a single page with no pagination controls, only a "Back" option
+**Given** the domain has 10 or fewer history entries  
+**When** viewing history  
+**Then** all entries are shown on a single page with no pagination controls, only a "Back" option  
 
-**Given** the domain has no history entries
-**When** I navigate to View History
-**Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the domain sub-menu
+**Given** the domain has no history entries  
+**When** I navigate to View History  
+**Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the domain sub-menu  
 
-**Given** I am on the history screen
-**When** I select "Back"
-**Then** I return to the domain sub-menu
+**Given** I am on the history screen  
+**When** I select "Back"  
+**Then** I return to the domain sub-menu  
 
 ---
 
@@ -734,9 +734,9 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 
 **Acceptance Criteria:**
 
-**Given** I am on the domain sub-menu and choose "View Stats"
-**When** `screens/stats.ts` loads
-**Then** the stats dashboard displays all of the following, derived from the domain file:
+**Given** I am on the domain sub-menu and choose "View Stats"  
+**When** `screens/stats.ts` loads  
+**Then** the stats dashboard displays all of the following, derived from the domain file:  
 - Current score
 - Total questions answered
 - Correct answer count, incorrect answer count, and accuracy % (rounded to 1 decimal)
@@ -746,13 +746,13 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 - Days since first session (derived from earliest `answeredAt`)
 - Current return streak in days (consecutive days with at least one answered question, derived from `answeredAt` history)
 
-**Given** the domain has no history entries
-**When** I navigate to View Stats
-**Then** the dashboard shows current score (0), totals (0), and placeholders for derived fields (e.g. "No data yet")
+**Given** the domain has no history entries  
+**When** I navigate to View Stats  
+**Then** the dashboard shows current score (0), totals (0), and placeholders for derived fields (e.g. "No data yet")  
 
-**Given** I am on the stats screen
-**When** I select "Back"
-**Then** I return to the domain sub-menu
+**Given** I am on the stats screen  
+**When** I select "Back"  
+**Then** I return to the domain sub-menu  
 
 ---
 
@@ -768,31 +768,31 @@ So that all modules have a single, type-safe, tested source of truth for user se
 
 **Acceptance Criteria:**
 
-**Given** `domain/schema.ts` (or a new `settings/schema.ts`) is updated
-**When** I import `SettingsFileSchema`
-**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["normal", "enthusiastic", "robot", "pirate"]) }`
-**And** `defaultSettings()` returns `{ language: "English", tone: "normal" }`
+**Given** `domain/schema.ts` (or a new `settings/schema.ts`) is updated  
+**When** I import `SettingsFileSchema`  
+**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["normal", "enthusiastic", "robot", "pirate"]) }`  
+**And** `defaultSettings()` returns `{ language: "English", tone: "normal" }`  
 
-**Given** `domain/store.ts` (or a new `settings/store.ts`) exports `readSettings()` and `writeSettings(settings)`
-**When** I call `readSettings()` and `~/.brain-break/settings.json` exists and is valid
-**Then** it returns `{ ok: true, data: SettingsFile }` with the parsed, Zod-validated settings
+**Given** `domain/store.ts` (or a new `settings/store.ts`) exports `readSettings()` and `writeSettings(settings)`  
+**When** I call `readSettings()` and `~/.brain-break/settings.json` exists and is valid  
+**Then** it returns `{ ok: true, data: SettingsFile }` with the parsed, Zod-validated settings  
 
-**Given** I call `readSettings()` and the file does not exist (ENOENT)
-**When** the function runs
-**Then** it returns `{ ok: true, data: defaultSettings() }` — no error propagated
+**Given** I call `readSettings()` and the file does not exist (ENOENT)  
+**When** the function runs  
+**Then** it returns `{ ok: true, data: defaultSettings() }` — no error propagated  
 
-**Given** I call `readSettings()` and the file is corrupted (Zod validation fails)
-**When** the function runs
-**Then** it returns `{ ok: true, data: defaultSettings() }` — silently falls back to defaults (settings corruption is non-critical)
+**Given** I call `readSettings()` and the file is corrupted (Zod validation fails)  
+**When** the function runs  
+**Then** it returns `{ ok: true, data: defaultSettings() }` — silently falls back to defaults (settings corruption is non-critical)  
 
-**Given** I call `writeSettings(settings)`
-**When** the function runs
-**Then** it writes atomically (write-then-rename pattern) to `~/.brain-break/settings.json`
-**And** returns `{ ok: true }` on success
+**Given** I call `writeSettings(settings)`  
+**When** the function runs  
+**Then** it writes atomically (write-then-rename pattern) to `~/.brain-break/settings.json`  
+**And** returns `{ ok: true }` on success  
 
-**Given** co-located tests exist for the schema and store
-**When** I run `npm test`
-**Then** all tests pass, covering: valid input, `defaultSettings()` output, ENOENT fallback, Zod rejection fallback, and write/read roundtrip
+**Given** co-located tests exist for the schema and store  
+**When** I run `npm test`  
+**Then** all tests pass, covering: valid input, `defaultSettings()` output, ENOENT fallback, Zod rejection fallback, and write/read roundtrip  
 
 ---
 
@@ -804,35 +804,35 @@ So that I can personalise how questions and AI responses are delivered to me.
 
 **Acceptance Criteria:**
 
-**Given** I am on the home screen
-**When** I inspect the menu options
-**Then** a "⚙️  Settings" action is present between "View archived domains" and "☕  Buy me a coffee"
+**Given** I am on the home screen  
+**When** I inspect the menu options  
+**Then** a "⚙️  Settings" action is present between "View archived domains" and "☕  Buy me a coffee"  
 
-**Given** I select "⚙️  Settings" from the home screen
-**When** the settings screen loads
-**Then** the terminal is cleared and current settings are read from disk via `readSettings()`
-**And** the screen displays the current values for Question Language and Tone of Voice
+**Given** I select "⚙️  Settings" from the home screen  
+**When** the settings screen loads  
+**Then** the terminal is cleared and current settings are read from disk via `readSettings()`  
+**And** the screen displays the current values for Question Language and Tone of Voice  
 
-**Given** the settings screen is open
-**When** I edit the Question Language field
-**Then** I can type any free-text value (e.g. `Greek`, `Japanese`, `Pirate English`)
+**Given** the settings screen is open  
+**When** I edit the Question Language field  
+**Then** I can type any free-text value (e.g. `Greek`, `Japanese`, `Pirate English`)  
 
-**Given** the settings screen is open
-**When** I navigate the Tone of Voice selector
-**Then** I can choose from: Normal, Enthusiastic, Robot, Pirate — navigated with arrow keys
+**Given** the settings screen is open  
+**When** I navigate the Tone of Voice selector  
+**Then** I can choose from: Normal, Enthusiastic, Robot, Pirate — navigated with arrow keys  
 
-**Given** I have made changes on the settings screen
-**When** I select "Save"
-**Then** `writeSettings()` is called with the new values and persists to `~/.brain-break/settings.json`
-**And** I am returned to the home screen
+**Given** I have made changes on the settings screen  
+**When** I select "Save"  
+**Then** `writeSettings()` is called with the new values and persists to `~/.brain-break/settings.json`  
+**And** I am returned to the home screen  
 
-**Given** I have made changes on the settings screen
-**When** I select "Back" (or press Ctrl+C)
-**Then** no changes are written to disk and I am returned to the home screen
+**Given** I have made changes on the settings screen  
+**When** I select "Back" (or press Ctrl+C)  
+**Then** no changes are written to disk and I am returned to the home screen  
 
-**Given** `screens/settings.ts` has co-located tests
-**When** I run `npm test`
-**Then** all tests pass, covering: Settings action present in home menu, routing home → settings screen, current values loaded on open, Save persists + navigates home, Back discards + navigates home, Ctrl+C handled gracefully
+**Given** `screens/settings.ts` has co-located tests  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Settings action present in home menu, routing home → settings screen, current values loaded on open, Save persists + navigates home, Back discards + navigates home, Ctrl+C handled gracefully  
 
 ---
 
@@ -844,26 +844,26 @@ So that the quiz experience matches my personal preference from start to finish.
 
 **Acceptance Criteria:**
 
-**Given** `ai/prompts.ts` is updated
-**When** I call `buildQuestionPrompt(domain, difficultyLevel, settings)`
-**Then** the prompt includes a voice instruction prepended to the generation request — e.g. `"Respond in Greek using a pirate tone of voice."`
-**And** when `settings.language` is `"English"` and `settings.tone` is `"normal"`, no voice instruction prefix is added (or a neutral one)
+**Given** `ai/prompts.ts` is updated  
+**When** I call `buildQuestionPrompt(domain, difficultyLevel, settings)`  
+**Then** the prompt includes a voice instruction prepended to the generation request — e.g. `"Respond in Greek using a pirate tone of voice."`  
+**And** when `settings.language` is `"English"` and `settings.tone` is `"normal"`, no voice instruction prefix is added (or a neutral one)  
 
-**Given** `ai/client.ts` is updated
-**When** `generateQuestion(domain, difficultyLevel, existingHashes, settings)` is called
-**Then** it passes `settings` to `buildQuestionPrompt()` so language + tone are injected into every API call
+**Given** `ai/client.ts` is updated  
+**When** `generateQuestion(domain, difficultyLevel, existingHashes, settings)` is called  
+**Then** it passes `settings` to `buildQuestionPrompt()` so language + tone are injected into every API call  
 
-**Given** `screens/quiz.ts` is updated
-**When** a quiz session starts
-**Then** `readSettings()` is called once at session start and the result is passed to every `generateQuestion()` call in that session
+**Given** `screens/quiz.ts` is updated  
+**When** a quiz session starts  
+**Then** `readSettings()` is called once at session start and the result is passed to every `generateQuestion()` call in that session  
 
-**Given** the active language is `"Spanish"` and tone is `"enthusiastic"`
-**When** a question is generated
-**Then** the question text, all four answer options (A–D), and the correct answer reveal are rendered in Spanish with enthusiastic phrasing
+**Given** the active language is `"Spanish"` and tone is `"enthusiastic"`  
+**When** a question is generated  
+**Then** the question text, all four answer options (A–D), and the correct answer reveal are rendered in Spanish with enthusiastic phrasing  
 
-**Given** `ai/client.test.ts` and `ai/prompts.test.ts` are updated
-**When** I run `npm test`
-**Then** all tests pass, covering: settings injected into prompt, language + tone appear in system message, neutral case (English/normal) produces valid output
+**Given** `ai/client.test.ts` and `ai/prompts.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: settings injected into prompt, language + tone appear in system message, neutral case (English/normal) produces valid output  
 
 ---
 
@@ -875,26 +875,26 @@ So that the encouragement feels contextual and consistent with the rest of the q
 
 **Acceptance Criteria:**
 
-**Given** `screens/select-domain.ts` is updated
-**When** the motivational message condition is met (returning user within 7 days OR score trending upward)
-**Then** `generateMotivationalMessage(trigger, settings)` is called — a new function in `ai/client.ts` — before the quiz starts
-**And** the message is displayed using `success()` formatting
+**Given** `screens/select-domain.ts` is updated  
+**When** the motivational message condition is met (returning user within 7 days OR score trending upward)  
+**Then** `generateMotivationalMessage(trigger, settings)` is called — a new function in `ai/client.ts` — before the quiz starts  
+**And** the message is displayed using `success()` formatting  
 
-**Given** `ai/prompts.ts` exports `buildMotivationalPrompt(trigger, settings)`
-**When** called with `trigger = "returning"` and `settings = { language: "Greek", tone: "pirate" }`
-**Then** the prompt instructs the model to generate a short (1–2 sentence) motivational message in Greek using pirate tone, acknowledging the user's return
+**Given** `ai/prompts.ts` exports `buildMotivationalPrompt(trigger, settings)`  
+**When** called with `trigger = "returning"` and `settings = { language: "Greek", tone: "pirate" }`  
+**Then** the prompt instructs the model to generate a short (1–2 sentence) motivational message in Greek using pirate tone, acknowledging the user's return  
 
-**Given** `trigger = "trending"` (score trending upward)
-**When** the prompt is built
-**Then** it instructs the model to congratulate the user on their upward score trend in the configured language and tone
+**Given** `trigger = "trending"` (score trending upward)  
+**When** the prompt is built  
+**Then** it instructs the model to congratulate the user on their upward score trend in the configured language and tone  
 
-**Given** the Copilot API is unreachable when generating the motivational message
-**When** `generateMotivationalMessage()` fails
-**Then** the error is silently swallowed — no message is displayed and the quiz starts normally (motivational message is non-critical)
+**Given** the Copilot API is unreachable when generating the motivational message  
+**When** `generateMotivationalMessage()` fails  
+**Then** the error is silently swallowed — no message is displayed and the quiz starts normally (motivational message is non-critical)  
 
-**Given** `screens/select-domain.test.ts` is updated
-**When** I run `npm test`
-**Then** all tests pass, covering: AI call made when trigger met, settings passed to prompt builder, graceful degradation on API failure, no message shown on fresh domain
+**Given** `screens/select-domain.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: AI call made when trigger met, settings passed to prompt builder, graceful degradation on API failure, no message shown on fresh domain  
 
 ---
 
@@ -910,31 +910,31 @@ So that every screen can apply consistent, tested color semantics without duplic
 
 **Acceptance Criteria:**
 
-**Given** `utils/format.ts` is updated
-**When** I call `colorCorrect(text)`
-**Then** it returns the text styled in ANSI green
+**Given** `utils/format.ts` is updated  
+**When** I call `colorCorrect(text)`  
+**Then** it returns the text styled in ANSI green  
 
-**Given** `utils/format.ts` is updated
-**When** I call `colorIncorrect(text)`
-**Then** it returns the text styled in ANSI red
+**Given** `utils/format.ts` is updated  
+**When** I call `colorIncorrect(text)`  
+**Then** it returns the text styled in ANSI red  
 
-**Given** `utils/format.ts` exports `colorSpeedTier(tier)`
-**When** called with `"fast"`, `"normal"`, or `"slow"`
-**Then** it returns the text in green, yellow, or red respectively
+**Given** `utils/format.ts` exports `colorSpeedTier(tier)`  
+**When** called with `"fast"`, `"normal"`, or `"slow"`  
+**Then** it returns the text in green, yellow, or red respectively  
 
-**Given** `utils/format.ts` exports `colorDifficultyLevel(level)`
-**When** called with levels 1–5
-**Then** it returns the label styled in: cyan (1), green (2), yellow (3), magenta (4), red (5)
+**Given** `utils/format.ts` exports `colorDifficultyLevel(level)`  
+**When** called with levels 1–5  
+**Then** it returns the label styled in: cyan (1), green (2), yellow (3), magenta (4), red (5)  
 
-**Given** `utils/format.ts` exports `colorScoreDelta(delta)`
-**When** called with a positive number
-**Then** it returns the formatted delta string in green
-**When** called with a negative number
-**Then** it returns the formatted delta string in red
+**Given** `utils/format.ts` exports `colorScoreDelta(delta)`  
+**When** called with a positive number  
+**Then** it returns the formatted delta string in green  
+**When** called with a negative number  
+**Then** it returns the formatted delta string in red  
 
-**Given** co-located tests exist in `utils/format.test.ts`
-**When** I run `npm test`
-**Then** all new color helper tests pass for all branches
+**Given** co-located tests exist in `utils/format.test.ts`  
+**When** I run `npm test`  
+**Then** all new color helper tests pass for all branches  
 
 ---
 
@@ -946,38 +946,38 @@ So that I always know exactly which option I am about to select.
 
 **Acceptance Criteria:**
 
-**Given** a shared `menuTheme` object (or helper) is defined — e.g. in `utils/format.ts` or a new `utils/theme.ts`
-**When** any `inquirer` `select` prompt is rendered
-**Then** the focused item renders with inverted foreground/background colors (white text on colored background)
-**And** unfocused items render in the terminal's default colors
+**Given** a shared `menuTheme` object (or helper) is defined — e.g. in `utils/format.ts` or a new `utils/theme.ts`  
+**When** any `inquirer` `select` prompt is rendered  
+**Then** the focused item renders with inverted foreground/background colors (white text on colored background)  
+**And** unfocused items render in the terminal's default colors  
 
-**Given** the home screen renders its menu
-**When** I navigate with ↑↓ arrow keys
-**Then** the focused item is visually highlighted as described above
+**Given** the home screen renders its menu  
+**When** I navigate with ↑↓ arrow keys  
+**Then** the focused item is visually highlighted as described above  
 
-**Given** the domain sub-menu renders
-**When** I navigate with ↑↓ arrow keys
-**Then** the focused item is visually highlighted
+**Given** the domain sub-menu renders  
+**When** I navigate with ↑↓ arrow keys  
+**Then** the focused item is visually highlighted  
 
-**Given** the settings screen renders its Tone of Voice selector
-**When** I navigate with ↑↓ arrow keys
-**Then** the focused item is visually highlighted
+**Given** the settings screen renders its Tone of Voice selector  
+**When** I navigate with ↑↓ arrow keys  
+**Then** the focused item is visually highlighted  
 
-**Given** the archived domains list renders
-**When** I navigate with ↑↓ arrow keys
-**Then** the focused item is visually highlighted
+**Given** the archived domains list renders  
+**When** I navigate with ↑↓ arrow keys  
+**Then** the focused item is visually highlighted  
 
-**Given** post-quiz navigation (Next question / Exit quiz) renders
-**When** I navigate with ↑↓ arrow keys
-**Then** the focused item is visually highlighted
+**Given** post-quiz navigation (Next question / Exit quiz) renders  
+**When** I navigate with ↑↓ arrow keys  
+**Then** the focused item is visually highlighted  
 
-**Given** the history navigation controls render (Previous / Next / Back)
-**When** I navigate with ↑↓ arrow keys
-**Then** the focused item is visually highlighted
+**Given** the history navigation controls render (Previous / Next / Back)  
+**When** I navigate with ↑↓ arrow keys  
+**Then** the focused item is visually highlighted  
 
-**Given** `menuTheme` is applied via the `theme` option on all `inquirer` `select` calls
-**When** I run `npm test`
-**Then** all existing menu-related tests continue to pass (theme is a visual-only change, not a behavioral one)
+**Given** `menuTheme` is applied via the `theme` option on all `inquirer` `select` calls  
+**When** I run `npm test`  
+**Then** all existing menu-related tests continue to pass (theme is a visual-only change, not a behavioral one)  
 
 ---
 
@@ -988,25 +988,25 @@ I want the post-answer feedback panel to use semantic colors — green for corre
 
 **Acceptance Criteria:**
 
-**Given** `screens/quiz.ts` is updated to use the semantic color helpers from Story 6.1
-**When** I answer a question correctly
-**Then** the correct confirmation line is rendered using `colorCorrect()`
-**And** the score delta is rendered using `colorScoreDelta()` (green for positive)
+**Given** `screens/quiz.ts` is updated to use the semantic color helpers from Story 6.1  
+**When** I answer a question correctly  
+**Then** the correct confirmation line is rendered using `colorCorrect()`  
+**And** the score delta is rendered using `colorScoreDelta()` (green for positive)  
 
-**Given** I answer a question incorrectly
-**When** the feedback panel renders
-**Then** the incorrect line (my wrong answer) is rendered using `colorIncorrect()`
-**And** the correct answer reveal is rendered using `colorCorrect()`
-**And** the score delta is rendered using `colorScoreDelta()` (red for negative)
+**Given** I answer a question incorrectly  
+**When** the feedback panel renders  
+**Then** the incorrect line (my wrong answer) is rendered using `colorIncorrect()`  
+**And** the correct answer reveal is rendered using `colorCorrect()`  
+**And** the score delta is rendered using `colorScoreDelta()` (red for negative)  
 
-**Given** the speed tier is determined after an answer
-**When** the feedback panel renders
-**Then** the speed tier badge is rendered using `colorSpeedTier(tier)` — green/yellow/red
+**Given** the speed tier is determined after an answer  
+**When** the feedback panel renders  
+**Then** the speed tier badge is rendered using `colorSpeedTier(tier)` — green/yellow/red  
 
-**Given** the current difficulty level is shown in the feedback panel
-**When** the panel renders
-**Then** the difficulty label is rendered using `colorDifficultyLevel(level)` — cyan/green/yellow/magenta/red
+**Given** the current difficulty level is shown in the feedback panel  
+**When** the panel renders  
+**Then** the difficulty label is rendered using `colorDifficultyLevel(level)` — cyan/green/yellow/magenta/red  
 
-**Given** `screens/quiz.ts` tests are updated
-**When** I run `npm test`
-**Then** all tests pass, covering: correct answer path uses colorCorrect, incorrect path uses colorIncorrect + colorCorrect reveal, score delta uses colorScoreDelta, speed tier uses colorSpeedTier, difficulty uses colorDifficultyLevel
+**Given** `screens/quiz.ts` tests are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: correct answer path uses colorCorrect, incorrect path uses colorIncorrect + colorCorrect reveal, score delta uses colorScoreDelta, speed tier uses colorSpeedTier, difficulty uses colorDifficultyLevel  
