@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-14'
+lastEdited: '2026-03-17'
 editHistory:
+  - date: '2026-03-17'
+    changes: 'Architecture sync with PRD 2026-03-15 and implemented codebase: added Feature 8 (Global Settings — settings schema, store functions, settings screen, prompt injection, tone migration), Feature 9 (Terminal UI Highlighting & Color System — semantic color helpers, menuTheme), Feature 10 (Coffee Supporter Screen — qrcode-terminal), Feature 1 Delete action; expanded screens list (archived, create-domain, domain-menu, select-domain, settings); updated navigation model to two-level menu; added qrcode-terminal and @inquirer/prompts dependencies; updated Requirements Overview, feature-to-structure mapping, cross-cutting concerns, NFR coverage, and validation sections'
   - date: '2026-03-14'
     changes: 'Added Story 1.6 — Terminal Screen Management: utils/screen.ts, clearScreen() pattern, NFR 5 coverage'
 project_name: 'brain-break'
@@ -25,27 +27,28 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-7 requirements covering: domain lifecycle management (create, select, archive, unarchive), AI-powered question generation via GitHub Copilot SDK with adaptive difficulty (5 levels, streak-driven), interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, paginated history view, and a stats dashboard with trend analysis.
+10 features covering: domain lifecycle management (create, select, archive, unarchive, delete), AI-powered question generation via GitHub Copilot SDK with adaptive difficulty (5 levels, streak-driven) and language/tone injection, interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, a stats dashboard with trend analysis, global settings (language & tone of voice), terminal UI highlighting with semantic color system, and a coffee supporter screen.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
 - Reliability: Graceful degradation on API unavailability or auth failure; corrupted domain file recovery without crash
 - Data integrity: SHA-256 deduplication persisted across sessions; missing file treated as clean new domain
 - Terminal screen management: every state-changing navigation action clears the viewport before rendering new content — no residual output from the previous screen persists
+- Terminal color rendering: ANSI 8/16-color baseline for cross-terminal compatibility
 
 **Scale & Complexity:**
 
 - Primary domain: CLI / terminal application (Unix-like: macOS, Linux, WSL)
 - Complexity level: Low-Medium
 - External dependency: GitHub Copilot SDK (single, hard-required)
-- Estimated architectural components: 6–8 focused modules
+- Estimated architectural components: 10–12 focused modules
 
 ### Technical Constraints & Dependencies
 
 - Runtime: Node.js v25.8.0
 - Interface: Terminal only — no web UI, no GUI
 - AI: GitHub Copilot SDK — structured chat completion returning JSON (question text, options A–D, correct answer, difficulty, speed tier thresholds)
-- Storage: `~/.brain-break/<domain-slug>.json` — one file per domain
+- Storage: `~/.brain-break/<domain-slug>.json` — one file per domain; `~/.brain-break/settings.json` — global settings
 - Distribution: npm / npx — must reach home screen in ≤ 2s cold start
 - Platform: Unix-like only (macOS, Linux, WSL)
 
@@ -56,6 +59,8 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer and must be atomically persisted
 - **Terminal rendering:** All user-facing output (home screen, quiz, feedback, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output
 - **Deduplication:** SHA-256 lookup on every question generation — must be fast and correctly scoped per domain
+- **Global settings & AI voice injection:** Language and tone of voice settings stored in a global settings file, injected into every AI prompt — affects questions, answer options, and motivational messages; must be read before any AI call
+- **Semantic color system:** Post-answer feedback, speed tier badges, difficulty level badges, and menu highlighting all use a consistent color vocabulary defined in a single utility module
 
 ## Starter Template Evaluation
 
@@ -93,9 +98,10 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - `tsx` for development execution; `tsc` for production build to `dist/`
 
 **Interactive Terminal:**
-- `inquirer` v12 — interactive prompts (menus, free-text input), ESM-native
+- `inquirer` v12 + `@inquirer/prompts` — interactive prompts (menus, free-text input, confirmations), ESM-native
 - `ora` v8 — loading spinner during question generation
 - `chalk` v5 — terminal color and styling, ESM-native
+- `qrcode-terminal` — ASCII QR code rendering for Coffee Supporter Screen (Feature 10)
 
 **CLI Entry & Distribution:**
 - `bin` field in `package.json` pointing to compiled `dist/index.js`
@@ -195,6 +201,43 @@ All domain file writes use a tmp-file-then-rename pattern:
 
 ---
 
+### Global Settings Architecture
+
+**Settings File Schema**
+
+A single global settings file at `~/.brain-break/settings.json` stores user preferences that affect all AI-generated content:
+
+```jsonc
+{
+  "language": "English",        // Free-text — any language name
+  "tone": "natural"             // Enum: natural | expressive | calm | humorous | sarcastic | robot | pirate
+}
+```
+
+**Tone of Voice Enum:**
+
+| Value | Label | Description |
+|---|---|---|
+| `natural` | Natural | Neutral, factual, professional quiz tone |
+| `expressive` | Expressive | Energetic, encouraging, high-energy delivery |
+| `calm` | Calm | Measured, gentle, relaxed phrasing |
+| `humorous` | Humorous | Witty, playful, light-hearted delivery |
+| `sarcastic` | Sarcastic | Dry wit, ironic observations |
+| `robot` | Robot | Terse, mechanical, emotionless phrasing |
+| `pirate` | Pirate | Pirate vernacular, nautical metaphors |
+
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` types live in `domain/schema.ts` alongside domain types. Factory function `defaultSettings()` returns `{ language: 'English', tone: 'natural' }`.
+
+**Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
+
+**Tone migration:** `store.ts` includes a migration layer that maps legacy tone values (`normal` → `natural`, `enthusiastic` → `expressive`) transparently on read. This ensures forward compatibility when the enum evolves.
+
+**AI prompt injection:** `ai/prompts.ts` conditionally prepends a voice instruction to every prompt when language ≠ `"English"` or tone ≠ `"natural"` — e.g., `"Respond in Greek using a pirate tone of voice."`. The settings object is passed through from the screen layer to `ai/client.ts` to `ai/prompts.ts`.
+
+**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change language (free-text input) and tone (select from 7 presets). Save persists + returns to home; Back discards + returns to home.
+
+---
+
 ### Authentication & Security
 
 - **Copilot auth:** Fully delegated to the GitHub Copilot SDK — no token management in the app
@@ -225,21 +268,31 @@ No retry loop for MVP. Retry adds complexity and can mask auth failures.
 
 ### Terminal UI Architecture
 
-**Navigation Pattern — Sequential prompts with thin router**
+**Navigation Pattern — Two-level menu with thin router**
 
-No state machine framework. Navigation is explicit function calls dispatched from a `router.ts` module:
+No state machine framework. Navigation is explicit function calls dispatched from a `router.ts` module. The app uses a two-level menu model:
+
+- **Level 1 — Home screen:** Lists active domains (with score/count) + actions: create domain, view archived, settings, buy me a coffee, exit
+- **Level 2 — Domain sub-menu:** Selected from home; shows Play, View History, View Stats, Archive, Delete, Back
 
 ```
 startup → router.showHome()
-  → user selects domain → router.showQuiz(domain)
-  → user exits quiz → router.showHome()
-  → user views history → router.showHistory(domain)
-  → user views stats → router.showStats(domain)
+  → user creates domain     → router.showCreateDomain() → router.showHome()
+  → user selects domain      → router.showDomainMenu(slug)
+    → Play                   → router.showQuiz(slug) → router.showDomainMenu(slug)
+    → View History            → router.showHistory(slug) → router.showDomainMenu(slug)
+    → View Stats              → router.showStats(slug) → router.showDomainMenu(slug)
+    → Archive                 → router.archiveDomain(slug) → router.showHome()
+    → Delete                  → router.deleteDomain(slug) → router.showHome()
+    → Back                    → router.showHome()
+  → user views archived      → router.showArchived() → router.showHome()
+  → user opens settings      → router.showSettings() → router.showHome()
+  → user exits               → process.exit(0)
 ```
 
 Each screen is a standalone `async` function that resolves when the user exits it. `router.ts` is the only place that calls other screens — screens never call each other directly.
 
-*Rationale:* 4 screens, linear flows, no concurrent state. A full state machine would be abstraction for its own sake.
+*Rationale:* 9 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
@@ -272,6 +325,36 @@ Using `\x1Bc` (full terminal reset) over `\x1B[2J\x1B[H` (erase + cursor-home) e
 
 ---
 
+### Terminal UI Highlighting & Color System
+
+All semantic coloring logic is centralised in `utils/format.ts`. No screen module defines its own color values.
+
+**Menu highlighting — `menuTheme`**
+
+`utils/format.ts` exports a `menuTheme` object consumed by `inquirer` as a custom theme. The focused menu item renders with inverted foreground/background colors (white text on colored background); unfocused items render in default terminal colors. Applies to all interactive menus: home screen, domain sub-menu, settings screen, archived domains list, history navigation, and post-quiz navigation.
+
+**Semantic color helpers:**
+
+| Helper | Purpose | Colors |
+|---|---|---|
+| `colorCorrect(text)` | Correct answer / positive feedback | Green |
+| `colorIncorrect(text)` | Wrong answer / negative feedback | Red |
+| `colorScoreDelta(delta)` | Score change display | Green (positive) / Red (negative) |
+| `colorSpeedTier(tier)` | Speed tier badge | Fast = green, Normal = yellow, Slow = red |
+| `colorDifficultyLevel(level)` | Difficulty badge | L1 = cyan, L2 = green, L3 = yellow, L4 = magenta, L5 = red |
+
+**Additional format utilities:** `success()`, `error()`, `warn()`, `dim()`, `bold()`, `header()` chalk wrappers; `formatDuration(ms)`, `formatAccuracy(correct, total)`, `typewrite(text, delayMs)` animation.
+
+**ANSI compatibility:** All color output uses standard 8/16-color ANSI escape codes as baseline (NFR 6). Extended color codes may be used where supported. Non-TTY output is out of scope.
+
+---
+
+### Coffee Supporter Screen
+
+`screens/home.ts` exports `showCoffeeScreen()` — a dedicated screen that clears the terminal and displays an ASCII QR code (via `qrcode-terminal`) encoding the creator's Buy Me a Coffee URL, followed by the URL in plain text. A single Back action returns to the home screen. The coffee action is positioned between the archived domains separator and the Exit action on the home screen.
+
+---
+
 ### Module Architecture
 
 **`src/` Directory Structure**
@@ -279,30 +362,35 @@ Using `\x1Bc` (full terminal reset) over `\x1B[2J\x1B[H` (erase + cursor-home) e
 ```
 src/
 ├── index.ts              # Entry point — bootstraps and calls router
-├── router.ts             # Navigation between screens
+├── router.ts             # Navigation between screens — 10 exported functions
 ├── screens/
-│   ├── home.ts           # Domain list, create, archive/unarchive
-│   ├── quiz.ts           # Question loop, timer, answer feedback
-│   ├── history.ts        # Paginated history view
-│   └── stats.ts          # Stats dashboard
+│   ├── home.ts           # F1: domain list + coffee screen (F10)
+│   ├── create-domain.ts  # F1: new domain input + validation + duplicate check
+│   ├── domain-menu.ts    # F1: domain sub-menu (Play, History, Stats, Archive, Delete, Back)
+│   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
+│   ├── archived.ts       # F1: archived domain list + unarchive
+│   ├── quiz.ts           # F3: question loop, timer, answer feedback
+│   ├── history.ts        # F6: single-question navigation history view
+│   ├── stats.ts          # F7: stats dashboard
+│   └── settings.ts       # F8: language & tone settings screen
 ├── ai/
-│   ├── client.ts         # Copilot SDK integration + error handling
-│   └── prompts.ts        # Prompt templates and Zod response schema
+│   ├── client.ts         # F2: Copilot SDK integration + error handling
+│   └── prompts.ts        # F2: prompt templates + Zod response schema + voice injection
 ├── domain/
-│   ├── store.ts          # Read/write domain files (atomic)
-│   ├── schema.ts         # TypeScript types + Zod schema for domain file
-│   └── scoring.ts        # Score delta formula, difficulty progression
+│   ├── store.ts          # F5: read/write domain + settings files (atomic)
+│   ├── schema.ts         # F5/F8: types + Zod schemas (DomainFile, SettingsFile, ToneOfVoice)
+│   └── scoring.ts        # F4: score delta formula, difficulty progression
 └── utils/
     ├── hash.ts           # SHA-256 hashing helpers
     ├── slugify.ts        # Domain name → file slug
     ├── screen.ts         # clearScreen() — viewport reset before every render
-    └── format.ts         # Shared terminal formatting helpers
+    └── format.ts         # F9: semantic color helpers, menuTheme, formatting utilities
 ```
 
 **Dependency Rules:**
 - `screens/` may import from `domain/`, `ai/`, and `utils/` — never the reverse
-- `router.ts` may import from `screens/` only
-- `domain/store.ts` is the **only** module that writes to disk
+- `router.ts` may import from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)
+- `domain/store.ts` is the **only** module that writes to disk (domain files and settings)
 - `ai/client.ts` is the **only** module that calls the Copilot SDK
 
 ### Decision Impact Analysis
@@ -483,25 +571,35 @@ brain-break/
 │       └── ci.yml                  # tsc --noEmit + vitest
 ├── src/
 │   ├── index.ts                    # Entry: bootstraps app, calls router.showHome()
-│   ├── router.ts                   # Navigation dispatcher — only file that calls screens
+│   ├── router.ts                   # Navigation dispatcher — 10 exported functions, only file that calls screens
 │   ├── screens/
-│   │   ├── home.ts                 # F1: domain list, create, archive/unarchive
+│   │   ├── home.ts                 # F1/F10: domain list + coffee screen
 │   │   ├── home.test.ts
+│   │   ├── create-domain.ts        # F1: new domain input + validation + duplicate check
+│   │   ├── create-domain.test.ts
+│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, History, Stats, Archive, Delete, Back)
+│   │   ├── domain-menu.test.ts
+│   │   ├── select-domain.ts        # F1/F2: motivational message + quiz transition
+│   │   ├── select-domain.test.ts
+│   │   ├── archived.ts             # F1: archived domain list + unarchive
+│   │   ├── archived.test.ts
 │   │   ├── quiz.ts                 # F3: question loop, timer, answer feedback
 │   │   ├── quiz.test.ts
-│   │   ├── history.ts              # F6: paginated history view
+│   │   ├── history.ts              # F6: single-question navigation history view
 │   │   ├── history.test.ts
 │   │   ├── stats.ts                # F7: stats dashboard
-│   │   └── stats.test.ts
+│   │   ├── stats.test.ts
+│   │   ├── settings.ts             # F8: language & tone settings screen
+│   │   └── settings.test.ts
 │   ├── ai/
 │   │   ├── client.ts               # F2: Copilot SDK calls + Result<T> error wrapping
 │   │   ├── client.test.ts
-│   │   ├── prompts.ts              # F2: prompt templates + Zod QuestionResponseSchema
+│   │   ├── prompts.ts              # F2: prompt templates + Zod QuestionResponseSchema + voice injection
 │   │   └── prompts.test.ts
 │   ├── domain/
-│   │   ├── schema.ts               # F5: DomainFile type + DomainFileSchema (Zod)
+│   │   ├── schema.ts               # F5/F8: DomainFile + SettingsFile types + Zod schemas
 │   │   ├── schema.test.ts
-│   │   ├── store.ts                # F5: read/write domain files (atomic)
+│   │   ├── store.ts                # F5/F8: read/write domain + settings files (atomic) + tone migration
 │   │   ├── store.test.ts
 │   │   ├── scoring.ts              # F4: applyAnswer(), score delta formula
 │   │   └── scoring.test.ts
@@ -510,9 +608,9 @@ brain-break/
 │       ├── hash.test.ts
 │       ├── slugify.ts              # Domain name → kebab-case file slug
 │       ├── slugify.test.ts
-│       ├── screen.ts               # Story 1.6: clearScreen() — ANSI viewport reset
+│       ├── screen.ts               # NFR 5: clearScreen() — ANSI viewport reset
 │       ├── screen.test.ts
-│       ├── format.ts               # Shared chalk/terminal formatting helpers
+│       ├── format.ts               # F9: semantic color helpers, menuTheme, formatting utilities
 │       └── format.test.ts
 └── dist/                           # Compiled output — gitignored
 ```
@@ -529,7 +627,7 @@ brain-break/
 
 **Internal Boundaries:**
 - `screens/` → may import from `domain/`, `ai/`, `utils/` — never the reverse
-- `router.ts` → imports from `screens/` only — never from `domain/` or `ai/` directly
+- `router.ts` → imports from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)
 - `domain/scoring.ts` → pure computation, no imports from `screens/` or `ai/`
 - `utils/` → no imports from any other `src/` directory
 
@@ -537,14 +635,18 @@ brain-break/
 
 | Feature | Primary Module(s) |
 |---|---|
-| F1 — Domain Management | `screens/home.ts`, `domain/store.ts`, `utils/slugify.ts` |
+| F1 — Domain Management | `screens/home.ts`, `screens/create-domain.ts`, `screens/domain-menu.ts`, `screens/select-domain.ts`, `screens/archived.ts`, `domain/store.ts`, `utils/slugify.ts` |
 | F2 — AI Question Generation | `ai/client.ts`, `ai/prompts.ts`, `domain/scoring.ts` (difficulty input) |
 | F3 — Interactive Quiz | `screens/quiz.ts`, `ai/client.ts`, `domain/store.ts`, `domain/scoring.ts` |
 | F4 — Scoring System | `domain/scoring.ts` (pure logic), `domain/store.ts` (persist) |
 | F5 — Persistent History | `domain/store.ts`, `domain/schema.ts` |
 | F6 — View History | `screens/history.ts`, `domain/store.ts` |
 | F7 — View Stats | `screens/stats.ts`, `domain/store.ts` |
+| F8 — Global Settings | `screens/settings.ts`, `domain/store.ts` (readSettings/writeSettings), `domain/schema.ts` (SettingsFile/ToneOfVoice), `ai/prompts.ts` (voice injection) |
+| F9 — Color System | `utils/format.ts` (semantic color helpers, menuTheme) + all `screens/*.ts` (consumers) |
+| F10 — Coffee Screen | `screens/home.ts` (showCoffeeScreen) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
+| NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
 **Cross-Cutting Concern Mapping:**
 
@@ -552,21 +654,25 @@ brain-break/
 |---|---|
 | SHA-256 deduplication | `utils/hash.ts` (compute) + `domain/store.ts` (persist hashes) |
 | Adaptive difficulty | `domain/scoring.ts` → `applyAnswer()` |
-| Atomic file write | `domain/store.ts` → `writeDomain()` |
+| Atomic file write | `domain/store.ts` → `writeDomain()`, `writeSettings()` |
 | AI error messages | `ai/client.ts` → `AI_ERRORS` constants |
 | Domain slug derivation | `utils/slugify.ts` exclusively |
 | Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path |
+| Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
+| Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme` |
+| Settings tone migration | `domain/store.ts` → `migrateSettings()` — maps legacy tone values on read |
 
 ### Integration Points
 
 **Data Flow — Question Cycle:**
 ```
 screens/quiz.ts
-  → ai/client.ts.generateQuestion(domain, difficulty)  [Copilot API]
-  → ai/prompts.ts (prompt + Zod parse)
+  → domain/store.ts.readSettings()                     [reads ~/.brain-break/settings.json]
+  → ai/client.ts.generateQuestion(domain, difficulty, hashes, prev, settings)  [Copilot API]
+  → ai/prompts.ts (prompt + voice injection + Zod parse)
   → returns Result<Question>
-  → domain/scoring.ts.applyAnswer(meta, isCorrect, timeTakenMs)
-  → returns { updatedMeta, scoreDelta }
+  → domain/scoring.ts.applyAnswer(meta, isCorrect, timeTakenMs, thresholds)
+  → returns { updatedMeta, scoreDelta, speedTier }
   → domain/store.ts.writeDomain(slug, updatedState)    [fs.rename atomic]
 ```
 
@@ -577,6 +683,15 @@ index.ts
   → screens/home.ts
   → domain/store.ts.listDomains()                      [reads ~/.brain-break/]
   → renders domain list with scores
+```
+
+**Data Flow — Settings Change:**
+```
+screens/settings.ts
+  → domain/store.ts.readSettings()                     [reads current or defaults]
+  → user modifies language / tone
+  → domain/store.ts.writeSettings(updatedSettings)     [fs.rename atomic]
+  → returns to home screen
 ```
 
 ### Development Workflow
@@ -599,19 +714,22 @@ index.ts
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `ora` v8, `chalk` v5, `zod`, and `vitest` are all ESM-native and internally consistent. The `Result<T>` error pattern, atomic write strategy, and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
+All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, and `vitest` are all ESM-native and internally consistent. The `Result<T>` error pattern, atomic write strategy, and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
 
 ### Requirements Coverage Validation ✅
 
 | Feature | Status | Location |
 |---|---|---|
-| F1 — Domain Management | ✅ | `screens/home.ts`, `domain/store.ts`, `utils/slugify.ts` |
+| F1 — Domain Management | ✅ | `screens/home.ts`, `screens/create-domain.ts`, `screens/domain-menu.ts`, `screens/select-domain.ts`, `screens/archived.ts`, `domain/store.ts`, `utils/slugify.ts` |
 | F2 — AI Question Generation | ✅ | `ai/client.ts`, `ai/prompts.ts`, `domain/scoring.ts` |
 | F3 — Interactive Quiz | ✅ | `screens/quiz.ts` + both data layers |
 | F4 — Scoring System | ✅ | `domain/scoring.ts` (pure) + `domain/store.ts` (persist) |
 | F5 — Persistent History | ✅ | `domain/store.ts`, `domain/schema.ts` |
 | F6 — View History | ✅ | `screens/history.ts` |
 | F7 — View Stats | ✅ | `screens/stats.ts` |
+| F8 — Global Settings | ✅ | `screens/settings.ts`, `domain/store.ts`, `domain/schema.ts`, `ai/prompts.ts` |
+| F9 — Color System | ✅ | `utils/format.ts` (semantic helpers + menuTheme) |
+| F10 — Coffee Screen | ✅ | `screens/home.ts` (showCoffeeScreen + qrcode-terminal) |
 
 | NFR | Status | Addressed By |
 |---|---|---|
@@ -620,10 +738,13 @@ All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNex
 | NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT |
 | NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
 | NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path |
+| NFR 6 — Terminal color rendering | ✅ | `utils/format.ts` → ANSI 8/16-color baseline; `chalk` handles terminal capability detection |
 
 ### Implementation Readiness Validation ✅
 
 All critical decisions are documented with explicit versions. Patterns are comprehensive with concrete examples and anti-patterns. Project structure is fully specified with feature-to-file mapping. All potential AI agent conflict points have been addressed with clear enforcement guidelines.
+
+**2026-03-17 update:** Architecture synced with PRD 2026-03-15 and implemented codebase — added Feature 8 (Global Settings), Feature 9 (Color System), Feature 10 (Coffee Screen), Feature 1 Delete action; expanded screen list to 9 modules; updated navigation model to two-level menu; added `qrcode-terminal` and `@inquirer/prompts` dependencies; updated all coverage and mapping tables.
 
 **2026-03-14 update:** NFR 5 (Terminal Screen Management) added — `utils/screen.ts` is a new module; all `screens/*.ts` files must call `clearScreen()` as their first render operation. The screen-clearing pattern and enforcement rule are documented in the Terminal UI Architecture section above.
 
@@ -635,6 +756,9 @@ All critical decisions are documented with explicit versions. Patterns are compr
 `domain/store.ts.readDomain()` MUST return a default value (not an error) when the target file does not exist. This "missing = clean start" behaviour is required by NFR 3.
 
 **Resolution:** `domain/schema.ts` exports a `defaultDomainFile()` factory function returning a valid `DomainFile` at difficulty level 2, score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller.
+
+**Missing settings file = defaults (F8):**
+`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ language: 'English', tone: 'natural' }`) when the settings file does not exist. No error propagated to the caller.
 
 ### Architecture Completeness Checklist
 
