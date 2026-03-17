@@ -450,7 +450,3 @@ All screen transitions — including home screen, domain sub-menu, quiz question
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
 ---
-
-## Open Questions
-
-No open questions — all design and implementation decisions were resolved during PRD review.
