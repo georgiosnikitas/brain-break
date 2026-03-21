@@ -77,6 +77,25 @@ async function handleSaveAction(settings: SettingsFile): Promise<void> {
   }
 }
 
+async function selectSettingsAction(
+  provider: AiProviderType | null,
+  language: string,
+  tone: ToneOfVoice,
+): Promise<SettingsAction> {
+  return select<SettingsAction>({
+    message: 'Settings',
+    choices: [
+      { name: `AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
+      { name: `Language:      ${language}`, value: 'language' as const },
+      { name: `Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
+      new Separator(),
+      { name: '💾  Save', value: 'save' as const },
+      { name: '←  Back', value: 'back' as const },
+    ],
+    theme: menuTheme,
+  })
+}
+
 export async function showSettingsScreen(): Promise<void> {
   const settingsResult = await readSettings()
   const currentSettings = settingsResult.ok ? settingsResult.data : defaultSettings()
@@ -96,18 +115,7 @@ export async function showSettingsScreen(): Promise<void> {
         banner = ''
       }
       
-      const action = await select<SettingsAction>({
-        message: 'Settings',
-        choices: [
-          { name: `AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
-          { name: `Language:      ${language}`, value: 'language' as const },
-          { name: `Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
-          new Separator(),
-          { name: '💾  Save', value: 'save' as const },
-          { name: '←  Back', value: 'back' as const },
-        ],
-        theme: menuTheme,
-      })
+      const action = await selectSettingsAction(provider, language, tone)
 
       switch (action) {
         case 'provider': {
