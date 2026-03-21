@@ -14,8 +14,10 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-15'
+lastEdited: '2026-03-17'
 editHistory:
+  - date: '2026-03-17'
+    changes: 'Multi-provider AI integration: Copilot SDK is no longer the sole AI backend; 5 providers supported (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama). Feature 2 rewritten as provider-agnostic. Feature 8 expanded with AI Provider setting and first-launch Provider Setup screen (non-blocking validation). NFR 2 rewritten with per-provider error handling. Project-Type Requirements updated with provider list, env var auth, and provider abstraction in Implementation Decisions. Executive Summary, Target Users, User Journeys, Innovation Analysis updated to remove Copilot-only language.'
   - date: '2026-03-15'
     changes: 'Brownfield additions: Feature 1 Delete action (permanent deletion with confirmation); Feature 10 (Coffee Supporter Screen) added; Feature 1 home screen actions updated with buy-me-a-coffee; NFR 5 updated to full terminal reset spec (clears scroll-back buffer); Project-Type Requirements updated with License (MIT)'
   - date: '2026-03-15'
@@ -48,11 +50,11 @@ editHistory:
 
 ## Executive Summary
 
-`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. Powered by the GitHub Copilot SDK, it generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone and run.
+`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or a local Ollama instance. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
 
 Curious people want to stay sharp across a wide variety of topics, but existing learning tools demand 30–60 minute structured sessions that don't fit the short, unplanned breaks that naturally occur during a day. The result: knowledge gaps compound silently, and people either over-commit to platforms they never finish, or do nothing during natural break windows. No existing CLI-first tool combines AI question generation, user-defined open-ended domains, duplicate prevention, and honest skill tracking in a single, zero-friction package.
 
-`brain-break` targets anyone with daily terminal use and an active GitHub Copilot subscription who wants short, purposeful learning sessions on topics they care about.
+`brain-break` targets anyone with daily terminal use and access to an LLM provider (GitHub Copilot, OpenAI, Anthropic, Google Gemini, or a local Ollama instance) who wants short, purposeful learning sessions on topics they care about.
 
 ---
 
@@ -94,7 +96,7 @@ The MVP is considered successful when:
 The following 10 capabilities define the complete MVP:
 
 1. In-App Domain Management
-2. AI-Powered Question Generation (GitHub Copilot SDK)
+2. AI-Powered Question Generation (Multi-Provider)
 3. Interactive Terminal Quiz
 4. Scoring System
 5. Persistent History (Per Domain)
@@ -133,13 +135,13 @@ The following are explicitly out of scope for the MVP:
 
 ## Target Users
 
-`brain-break` targets anyone with daily terminal use and an active GitHub Copilot subscription. Three personas cover the typical range of motivations and use patterns.
+`brain-break` targets anyone with daily terminal use and access to at least one supported AI provider. Three personas cover the typical range of motivations and use patterns.
 
 ### Primary Users
 
 #### Persona 1 — "Alex, the Developer"
 **Role:** Mid-level fullstack developer, 3–5 years experience  
-**Context:** Uses the terminal daily, has GitHub Copilot access
+**Context:** Uses the terminal daily, has access to at least one supported AI provider
 
 **Motivation:** Wants to feel confident across the full stack. Suspects there are gaps in knowledge they haven't consciously identified yet. Values honest self-assessment over completion badges.
 
@@ -183,7 +185,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. The home screen appears immediately. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup, no friction.
+**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys. The app validates readiness (checks Copilot auth, env var presence, or Ollama endpoint reachability). If validation fails, the app displays what’s needed and proceeds to the home screen anyway — the user can explore all UI except Play. Once the provider is ready, the full experience works. On subsequent launches, the saved provider is used automatically. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -215,7 +217,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 | Session length | 2–10 minutes | 30–60+ minutes | Variable |
 | Terminal-native | ✅ | ❌ | ❌ |
 | Any user-defined domain | ✅ | ❌ (fixed catalogue) | ✅ (manual) |
-| AI-generated questions | ✅ (Copilot SDK) | ❌ | ❌ |
+| AI-generated questions | ✅ (5 providers) | ❌ | ❌ |
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill-signal scoring | ✅ | ❌ (completion %) | ❌ |
@@ -228,7 +230,13 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 - **Runtime:** Node.js (no minimum version mandated for MVP — use current LTS)
 - **Interface:** Terminal only — no web UI, no GUI, no browser-based components
-- **AI Integration:** GitHub Copilot SDK — required hard dependency; users must have an active GitHub Copilot subscription; authentication uses the user's existing Copilot credentials (no token setup required by the user)
+- **AI Integration:** The app supports 5 AI providers, selectable by the user at first launch or in Settings:
+  - **GitHub Copilot SDK** — uses the user’s existing Copilot credentials (no API key required)
+  - **OpenAI** — requires `OPENAI_API_KEY` environment variable
+  - **Anthropic** — requires `ANTHROPIC_API_KEY` environment variable
+  - **Google Gemini** — requires `GOOGLE_API_KEY` environment variable
+  - **Ollama** — local instance, no API key; requires endpoint URL and model name
+- All providers must produce the same structured JSON response schema; the app treats providers as interchangeable backends behind a unified interface
 - **Storage:** Local file system only — one JSON file per domain at `~/.brain-break/<domain-slug>.json`; no database server, no cloud sync
 - **Distribution:** Published to npm — installable via `npx` with no global install required
 - **Platform:** Unix-like terminals only (macOS, Linux, WSL) — native Windows CMD/PowerShell is out of scope for MVP
@@ -236,9 +244,11 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ### Implementation Decisions
 
-- **Question generation:** The Copilot SDK is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
+- **Provider abstraction:** All AI calls route through a unified provider interface. Each provider adapter translates the app’s prompt format to the provider’s API. Adding a new provider requires implementing the adapter interface — no changes to business logic
+- **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`). API keys are read from environment variables at runtime — never stored in settings
+- **Question generation:** The active provider is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
 - **Language and tone injection:** Every AI prompt (questions, motivational messages) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the question generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `language` (string) and `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`); defaults applied on missing file: `{ "language": "English", "tone": "natural" }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural" }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`)
 
@@ -277,12 +287,14 @@ The following 10 features define the complete MVP capability set. Each feature i
 - The home screen includes a *"View archived domains"* action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off
 - Switching to a previously used domain resumes exactly where the user left off
 
-### Feature 2 — AI-Powered Question Generation (GitHub Copilot SDK)
+### Feature 2 — AI-Powered Question Generation (Multi-Provider)
 
-- Questions are generated on demand via the GitHub Copilot SDK
+- Questions are generated on demand via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama)
+- The app sends identical prompt structures to all providers and expects the same JSON response schema — provider differences are abstracted behind the provider adapter layer
 - All questions are multiple choice (4 options: A, B, C, D)
 - Every AI call injects the active language and tone of voice from global settings — questions, answer options, and AI-generated motivational messages are rendered in the configured language and voice
 - Users never receive a repeated question within the same domain — deduplication persists across all sessions (see Project-Type Requirements — Implementation Decisions)
+- If no provider is configured or the configured provider is unreachable, Play displays: *"AI provider not ready. Go to Settings to configure."* and returns the user to the domain sub-menu
 - **Adaptive difficulty:** Difficulty is measured on a 5-level scale. The level adjusts based on consecutive answer streaks:
   - 3 consecutive correct answers → difficulty increases by 1 (max level 5)
   - 3 consecutive wrong answers → difficulty decreases by 1 (min level 1)
@@ -298,7 +310,7 @@ The following 10 features define the complete MVP capability set. Each feature i
 | 4 | Advanced | Architecture decisions, performance trade-offs, complex debugging |
 | 5 | Expert | Deep internals, uncommon edge cases, cross-domain reasoning |
 
-- **API error handling:** If the Copilot API is unreachable or authentication fails, the app fails gracefully without crashing — see NFR 2 for specified behavior.
+- **API error handling:** If the configured AI provider is unreachable or authentication fails, the app fails gracefully without crashing — see NFR 2 for specified behavior.
 
 ### Feature 3 — Interactive Terminal Quiz
 
@@ -373,10 +385,31 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure two global preferences: **Question Language** and **Tone of Voice**
+- Selecting Settings opens a settings screen where the user can configure three global preferences: **AI Provider**, **Question Language**, and **Tone of Voice**
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
-- On first launch with no settings file, defaults are: language = `English`, tone = `Normal`
+- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Normal`
+
+**First-Launch Provider Setup**
+
+- On first launch (no `settings.json` exists), a one-time **Provider Setup** screen appears before the home screen
+- The user selects an AI provider from the fixed list using arrow key navigation: **GitHub Copilot**, **OpenAI**, **Anthropic**, **Google Gemini**, **Ollama**
+- After selection, the app validates provider readiness:
+  - **GitHub Copilot:** Checks Copilot authentication — if successful, proceed; if not, display: *"Copilot authentication not detected. Ensure you have an active GitHub Copilot subscription and are logged in."*
+  - **OpenAI / Anthropic / Google Gemini:** Checks for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) — if found, proceed; if missing, display: *"Set the `[VAR_NAME]` environment variable and restart the app."*
+  - **Ollama:** Prompts for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3`) — tests connection; if unreachable, display: *"Could not reach Ollama at [endpoint]. Ensure Ollama is running."*
+- If validation fails, the app **proceeds to the home screen anyway** — the user can explore all features except Play; attempting Play shows: *"AI provider not ready. Go to Settings to configure."*
+- If validation succeeds, the app proceeds to the home screen with full functionality
+- The selected provider (and Ollama endpoint/model if applicable) is saved to `settings.json`
+- On subsequent launches, the saved provider is used automatically — no re-prompting
+
+**AI Provider**
+
+- User selects from 5 providers via arrow key navigation: **GitHub Copilot**, **OpenAI**, **Anthropic**, **Google Gemini**, **Ollama**
+- Selecting a provider triggers the same validation logic as first-launch setup
+- For Ollama, the user can edit the endpoint URL and model name
+- API keys are never entered in-app — they are read from environment variables at runtime
+- Changing providers takes effect on the next AI call — no restart required
 
 **Question Language**
 - Free-text entry — any language name the user types becomes the active language (e.g., `Greek`, `Spanish`, `Japanese`, `Pirate English`)
@@ -384,9 +417,12 @@ User can view a summary dashboard for the active domain:
 - No validation — the language string is passed directly to the AI; unsupported or misspelled entries produce AI-best-effort output
 
 **Tone of Voice**
-- User selects from 4 preset options via arrow key navigation:
-  - **Normal** — neutral, factual, professional quiz tone
-  - **Enthusiastic** — energetic, encouraging, high-energy delivery
+- User selects from 7 preset options via arrow key navigation:
+  - **Natural** — neutral, factual, professional quiz tone
+  - **Expressive** — energetic, encouraging, high-energy delivery
+  - **Calm** — relaxed, measured, unhurried phrasing
+  - **Humorous** — witty, playful, light-hearted delivery
+  - **Sarcastic** — dry, ironic, deadpan commentary
   - **Robot** — terse, mechanical, emotionless phrasing
   - **Pirate** — pirate vernacular throughout, nautical metaphors, "Arr" as appropriate
 - The selected tone is injected into every AI prompt as a voice instruction
@@ -430,11 +466,19 @@ All interactive menus throughout the application use full-row background highlig
 ## Non-Functional Requirements
 
 ### NFR 1 — Question Generation Response Time
-The next question must appear within **≤ 5 seconds** of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner is displayed during generation so the terminal does not appear frozen.
+The next question must appear within **≤ 5 seconds** of the user submitting an answer (covering AI provider API call + local persistence). A loading spinner is displayed during generation so the terminal does not appear frozen.
 
 ### NFR 2 — API Error Handling
-- **Network / API unavailable:** The app displays a clear error message (*"Could not reach the Copilot API. Check your connection and try again."*) and returns the user to the home screen without crashing.
-- **Authentication failure:** The app displays a specific message (*"Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."*) and exits cleanly.
+- **No provider configured:** If no provider is set in `settings.json`, Play displays: *"AI provider not ready. Go to Settings to configure."* and returns the user to the domain sub-menu. All other app features remain functional.
+- **Network / API unavailable:** The app displays a provider-specific error message and returns the user to the domain sub-menu without crashing:
+  - GitHub Copilot: *"Could not reach the Copilot API. Check your connection and try again."*
+  - OpenAI / Anthropic / Gemini: *"Could not reach [Provider] API. Check your connection and try again."*
+  - Ollama: *"Could not reach Ollama at [endpoint]. Ensure Ollama is running and try again."*
+- **Authentication / API key failure:**
+  - GitHub Copilot: *"Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."*
+  - OpenAI / Anthropic / Gemini: *"[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."*
+  - Ollama: *"Could not connect to Ollama. Check that the endpoint and model are correct in Settings."*
+- In all error cases, the app remains running and the user can navigate to Settings to reconfigure.
 
 ### NFR 3 — Data Integrity
 - **Missing domain file:** Treated as a new domain — the app starts fresh with score 0 and no history. No error displayed.
