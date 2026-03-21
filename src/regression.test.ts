@@ -12,8 +12,9 @@
  *     labels, ordering, or formatting causes the snapshot diff to fail.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { defaultDomainFile, type DomainFile } from './domain/schema.js'
+import { defaultDomainFile, type DomainFile, type QuestionRecord } from './domain/schema.js'
 import { applyAnswer } from './domain/scoring.js'
+import { computeScoreTrend, daysSinceFirstSession, computeReturnStreak } from './screens/stats.js'
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted — must appear before the imports they affect)
@@ -39,6 +40,23 @@ const FIXED_NOW = new Date('2026-03-15T12:00:00.000Z').getTime()
 
 /** Remove ANSI escape codes so snapshots are readable plain text. */
 const stripAnsi = (s: string) => s.replaceAll(/\u001b\[[0-9;]*[mGKHF]/g, '')
+
+/** Factory for QuestionRecord with sensible defaults — override only what matters. */
+function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
+  return {
+    question: 'Test question?',
+    options: { A: 'Opt A', B: 'Opt B', C: 'Opt C', D: 'Opt D' },
+    correctAnswer: 'A',
+    userAnswer: 'A',
+    isCorrect: true,
+    answeredAt: '2026-03-15T10:00:00.000Z',
+    timeTakenMs: 5_000,
+    speedTier: 'fast',
+    scoreDelta: 40,
+    difficultyLevel: 2,
+    ...overrides,
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Fixed domain data for the stats output snapshot
@@ -122,7 +140,128 @@ describe('scoring chain — 6-question session golden state', () => {
 })
 
 // ===========================================================================
-// 2. Stats screen — full console output snapshot
+// 2. Scoring boundary conditions — edge-case regression
+// ===========================================================================
+describe('scoring boundaries — difficulty and streak edge cases', () => {
+  const thresholds = { fastMs: 10_000, slowMs: 30_000 }
+
+  it('caps difficulty at 5 when streak of 3 correct at level 5', () => {
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 5 as 1 | 2 | 3 | 4 | 5 }
+    for (let i = 0; i < 3; i++) {
+      const { updatedMeta } = applyAnswer(meta, true, 5_000, thresholds)
+      meta = updatedMeta
+    }
+    expect(meta.difficultyLevel).toBe(5)
+    expect(meta.streakCount).toBe(0)
+    expect(meta.streakType).toBe('none')
+  })
+
+  it('floors difficulty at 1 when streak of 3 incorrect at level 1', () => {
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 1 as 1 | 2 | 3 | 4 | 5 }
+    for (let i = 0; i < 3; i++) {
+      const { updatedMeta } = applyAnswer(meta, false, 15_000, thresholds)
+      meta = updatedMeta
+    }
+    expect(meta.difficultyLevel).toBe(1)
+    expect(meta.streakCount).toBe(0)
+    expect(meta.streakType).toBe('none')
+  })
+
+  it('allows score to go negative', () => {
+    let meta = { ...defaultDomainFile().meta, score: 0, difficultyLevel: 5 as 1 | 2 | 3 | 4 | 5 }
+    const { updatedMeta } = applyAnswer(meta, false, 35_000, thresholds)
+    expect(updatedMeta.score).toBe(-100) // 50 * -2
+  })
+
+  it('resets streak to none after promotion then starts fresh', () => {
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 3 as 1 | 2 | 3 | 4 | 5 }
+
+    // 3 correct → promote to L4, streak resets
+    for (let i = 0; i < 3; i++) {
+      const { updatedMeta } = applyAnswer(meta, true, 5_000, thresholds)
+      meta = updatedMeta
+    }
+    expect(meta.difficultyLevel).toBe(4)
+    expect(meta.streakCount).toBe(0)
+    expect(meta.streakType).toBe('none')
+
+    // Next incorrect starts a fresh incorrect streak at 1
+    const { updatedMeta } = applyAnswer(meta, false, 15_000, thresholds)
+    expect(updatedMeta.streakCount).toBe(1)
+    expect(updatedMeta.streakType).toBe('incorrect')
+  })
+})
+
+// ===========================================================================
+// 3. Stats computation edge-case regression
+// ===========================================================================
+describe('stats computations — edge-case regression', () => {
+  it('computeScoreTrend returns flat for empty history', () => {
+    expect(computeScoreTrend([], FIXED_NOW)).toBe('flat')
+  })
+
+  it('computeScoreTrend returns declining when recent scores are net negative', () => {
+    const history: QuestionRecord[] = [
+      makeRecord({ scoreDelta: -30, answeredAt: '2026-03-14T10:00:00.000Z' }),
+      makeRecord({ scoreDelta: -20, answeredAt: '2026-03-15T10:00:00.000Z' }),
+      makeRecord({ scoreDelta: 10, answeredAt: '2026-03-15T11:00:00.000Z' }),
+    ]
+    expect(computeScoreTrend(history, FIXED_NOW)).toBe('declining')
+  })
+
+  it('computeScoreTrend ignores questions older than 30 days', () => {
+    const history: QuestionRecord[] = [
+      makeRecord({ scoreDelta: -200, answeredAt: '2026-02-01T10:00:00.000Z' }),
+      makeRecord({ scoreDelta: 10, answeredAt: '2026-03-14T10:00:00.000Z' }),
+    ]
+    expect(computeScoreTrend(history, FIXED_NOW)).toBe('growing')
+  })
+
+  it('daysSinceFirstSession returns null for empty history', () => {
+    expect(daysSinceFirstSession([], FIXED_NOW)).toBeNull()
+  })
+
+  it('daysSinceFirstSession returns 0 for same-day first question', () => {
+    const history: QuestionRecord[] = [
+      makeRecord({ answeredAt: '2026-03-15T10:00:00.000Z' }),
+    ]
+    expect(daysSinceFirstSession(history, FIXED_NOW)).toBe(0)
+  })
+
+  it('computeReturnStreak returns 0 for empty history', () => {
+    expect(computeReturnStreak([], FIXED_NOW)).toBe(0)
+  })
+
+  it('computeReturnStreak returns 0 when last play was more than 1 day ago', () => {
+    const history: QuestionRecord[] = [
+      makeRecord({ answeredAt: '2026-03-12T10:00:00.000Z' }),
+    ]
+    expect(computeReturnStreak(history, FIXED_NOW)).toBe(0)
+  })
+
+  it('computeReturnStreak counts consecutive days correctly', () => {
+    const history: QuestionRecord[] = [
+      makeRecord({ answeredAt: '2026-03-13T10:00:00.000Z' }),
+      makeRecord({ answeredAt: '2026-03-14T10:00:00.000Z' }),
+      makeRecord({ answeredAt: '2026-03-15T08:00:00.000Z' }),
+    ]
+    expect(computeReturnStreak(history, FIXED_NOW)).toBe(3)
+  })
+
+  it('computeReturnStreak breaks on a gap day', () => {
+    const history: QuestionRecord[] = [
+      makeRecord({ answeredAt: '2026-03-11T10:00:00.000Z' }),
+      // gap on 2026-03-12
+      makeRecord({ answeredAt: '2026-03-13T10:00:00.000Z' }),
+      makeRecord({ answeredAt: '2026-03-14T10:00:00.000Z' }),
+      makeRecord({ answeredAt: '2026-03-15T08:00:00.000Z' }),
+    ]
+    expect(computeReturnStreak(history, FIXED_NOW)).toBe(3)
+  })
+})
+
+// ===========================================================================
+// 4. Stats screen — full console output snapshot
 // ===========================================================================
 describe('stats screen — full output snapshot', () => {
   beforeEach(() => {
