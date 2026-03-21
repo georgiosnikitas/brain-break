@@ -57,11 +57,32 @@ async function handleProviderAction(
   return { provider: selectedProvider, ollamaEndpoint, ollamaModel, message }
 }
 
+async function handleLanguageAction(currentLanguage: string): Promise<string> {
+  return (await input({ message: 'Question Language', default: currentLanguage })).trim()
+}
+
+async function handleToneAction(currentTone: ToneOfVoice): Promise<ToneOfVoice> {
+  return await select<ToneOfVoice>({
+    message: 'Tone of Voice',
+    choices: TONE_CHOICES,
+    default: currentTone,
+    theme: menuTheme,
+  })
+}
+
+async function handleSaveAction(settings: SettingsFile): Promise<void> {
+  const result = await writeSettings(settings)
+  if (!result.ok) {
+    console.error(`Failed to save settings: ${result.error}`)
+  }
+}
+
 export async function showSettingsScreen(): Promise<void> {
   const settingsResult = await readSettings()
   const currentSettings = settingsResult.ok ? settingsResult.data : defaultSettings()
+  
   let language = currentSettings.language
-  let tone: ToneOfVoice = currentSettings.tone
+  let tone = currentSettings.tone
   let provider = currentSettings.provider
   let ollamaEndpoint = currentSettings.ollamaEndpoint
   let ollamaModel = currentSettings.ollamaModel
@@ -74,6 +95,7 @@ export async function showSettingsScreen(): Promise<void> {
         console.log(banner + '\n')
         banner = ''
       }
+      
       const action = await select<SettingsAction>({
         message: 'Settings',
         choices: [
@@ -87,24 +109,26 @@ export async function showSettingsScreen(): Promise<void> {
         theme: menuTheme,
       })
 
-      if (action === 'provider') {
-        const result = await handleProviderAction(provider, currentSettings, ollamaEndpoint, ollamaModel)
-        provider = result.provider
-        ollamaEndpoint = result.ollamaEndpoint
-        ollamaModel = result.ollamaModel
-        banner = result.message
-      } else if (action === 'language') {
-        language = (await input({ message: 'Question Language', default: language })).trim()
-      } else if (action === 'tone') {
-        tone = await select<ToneOfVoice>({ message: 'Tone of Voice', choices: TONE_CHOICES, default: tone, theme: menuTheme })
-      } else if (action === 'save') {
-        const result = await writeSettings({ ...currentSettings, language, tone, provider, ollamaEndpoint, ollamaModel })
-        if (!result.ok) {
-          console.error(`Failed to save settings: ${result.error}`)
+      switch (action) {
+        case 'provider': {
+          const result = await handleProviderAction(provider, currentSettings, ollamaEndpoint, ollamaModel)
+          provider = result.provider
+          ollamaEndpoint = result.ollamaEndpoint
+          ollamaModel = result.ollamaModel
+          banner = result.message
+          break
         }
-        break
-      } else {
-        break
+        case 'language':
+          language = await handleLanguageAction(language)
+          break
+        case 'tone':
+          tone = await handleToneAction(tone)
+          break
+        case 'save':
+          await handleSaveAction({ ...currentSettings, language, tone, provider, ollamaEndpoint, ollamaModel })
+          return await router.showHome()
+        case 'back':
+          return await router.showHome()
       }
     }
   } catch (err) {
