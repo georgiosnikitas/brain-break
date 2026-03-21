@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { showSettingsScreen } from './settings.js'
+import { showSettingsScreen, getProviderLabel } from './settings.js'
 
 vi.mock('@github/copilot-sdk', () => ({ CopilotClient: vi.fn(), approveAll: vi.fn() }))
 vi.mock('@inquirer/prompts', () => ({
@@ -284,5 +284,19 @@ describe('showSettingsScreen', () => {
 
     expect(mockWriteSettings).not.toHaveBeenCalled()
     expect(router.showHome).toHaveBeenCalledOnce()
+  })
+})
+
+describe('getProviderLabel', () => {
+  it('returns "Not set" when provider is null', () => {
+    expect(getProviderLabel(null)).toBe('Not set')
+  })
+
+  it('maps every provider value to its display name', () => {
+    expect(getProviderLabel('copilot')).toBe('GitHub Copilot')
+    expect(getProviderLabel('openai')).toBe('OpenAI')
+    expect(getProviderLabel('anthropic')).toBe('Anthropic')
+    expect(getProviderLabel('gemini')).toBe('Google Gemini')
+    expect(getProviderLabel('ollama')).toBe('Ollama')
   })
 })

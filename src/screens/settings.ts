@@ -2,7 +2,7 @@ import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { validateProvider } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
-import { defaultSettings, type AiProviderType, type ToneOfVoice } from '../domain/schema.js'
+import { defaultSettings, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
@@ -35,9 +35,13 @@ const TONE_LABELS: Record<string, string> = Object.fromEntries(
 
 type SettingsAction = 'provider' | 'language' | 'tone' | 'save' | 'back'
 
+export function getProviderLabel(provider: AiProviderType | null): string {
+  return provider ? PROVIDER_LABELS[provider] : 'Not set'
+}
+
 async function handleProviderAction(
   provider: AiProviderType | null,
-  settings: ReturnType<typeof defaultSettings>,
+  settings: SettingsFile,
   ollamaEndpoint: string,
   ollamaModel: string,
 ) {
@@ -80,7 +84,7 @@ export async function showSettingsScreen(): Promise<void> {
       const action = await select<SettingsAction>({
         message: 'Settings',
         choices: [
-          { name: `AI Provider:   ${provider ? PROVIDER_LABELS[provider] : 'Not set'}`, value: 'provider' as const },
+          { name: `AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
           { name: `Language:      ${language}`, value: 'language' as const },
           { name: `Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
           new Separator(),
