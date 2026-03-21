@@ -94,11 +94,11 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Multi-Provider AI Integration
-  epic-7: in-progress
+  epic-7: done
   7-1-settings-schema-provider-fields: done
   7-2-ai-provider-abstraction-layer: done
   7-3-provider-agnostic-ai-client: done
   7-4-first-launch-provider-setup-screen: done
   7-5-settings-screen-provider-configuration: done
-  7-6-router-startup-flow-provider-setup-wiring: backlog
+  7-6-router-startup-flow-provider-setup-wiring: done
   epic-7-retrospective: optional
