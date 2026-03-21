@@ -35,6 +35,35 @@ const TONE_LABELS: Record<string, string> = Object.fromEntries(
 
 type SettingsAction = 'provider' | 'language' | 'tone' | 'save' | 'back'
 
+async function handleProviderAction(
+  provider: AiProviderType | null,
+  settings: ReturnType<typeof defaultSettings>,
+  ollamaEndpoint: string,
+  ollamaModel: string,
+) {
+  const selectedProvider = await select<AiProviderType>({
+    message: 'AI Provider',
+    choices: PROVIDER_CHOICES,
+    default: provider ?? undefined,
+    theme: menuTheme,
+  })
+
+  if (selectedProvider === 'ollama') {
+    ollamaEndpoint = (await input({ message: 'Ollama Endpoint URL', default: ollamaEndpoint })).trim() || ollamaEndpoint
+    ollamaModel = (await input({ message: 'Ollama Model Name', default: ollamaModel })).trim() || ollamaModel
+  }
+
+  const validationResult = await validateProvider(selectedProvider, { ...settings, provider: selectedProvider, ollamaEndpoint, ollamaModel })
+
+  if (validationResult.ok) {
+    console.log(success(`\n✓ ${PROVIDER_LABELS[selectedProvider]} is ready to go!`))
+  } else {
+    console.log(warn(`\n${validationResult.error}`))
+  }
+
+  return { provider: selectedProvider, ollamaEndpoint, ollamaModel }
+}
+
 export async function showSettingsScreen(): Promise<void> {
   clearScreen()
 
@@ -62,46 +91,11 @@ export async function showSettingsScreen(): Promise<void> {
       })
 
       if (action === 'provider') {
-        const selectedProvider = await select<AiProviderType>({
-          message: 'AI Provider',
-          choices: PROVIDER_CHOICES,
-          default: provider ?? undefined,
-          theme: menuTheme,
-        })
-
-        if (selectedProvider === 'ollama') {
-          ollamaEndpoint = (await input({
-            message: 'Ollama Endpoint URL',
-            default: ollamaEndpoint,
-          })).trim() || ollamaEndpoint
-
-          ollamaModel = (await input({
-            message: 'Ollama Model Name',
-            default: ollamaModel,
-          })).trim() || ollamaModel
-        }
-
-        const validationResult = await validateProvider(selectedProvider, { ...currentSettings, provider: selectedProvider, ollamaEndpoint, ollamaModel })
-
-        if (validationResult.ok) {
-          console.log(success(`\n✓ ${PROVIDER_LABELS[selectedProvider]} is ready to go!`))
-        } else {
-          console.log(warn(`\n${validationResult.error}`))
-        }
-
-        provider = selectedProvider
+        ({ provider, ollamaEndpoint, ollamaModel } = await handleProviderAction(provider, currentSettings, ollamaEndpoint, ollamaModel))
       } else if (action === 'language') {
-        language = (await input({
-          message: 'Question Language',
-          default: language,
-        })).trim()
+        language = (await input({ message: 'Question Language', default: language })).trim()
       } else if (action === 'tone') {
-        tone = await select<ToneOfVoice>({
-          message: 'Tone of Voice',
-          choices: TONE_CHOICES,
-          default: tone,
-          theme: menuTheme,
-        })
+        tone = await select<ToneOfVoice>({ message: 'Tone of Voice', choices: TONE_CHOICES, default: tone, theme: menuTheme })
       } else if (action === 'save') {
         const result = await writeSettings({ ...currentSettings, language, tone, provider, ollamaEndpoint, ollamaModel })
         if (!result.ok) {

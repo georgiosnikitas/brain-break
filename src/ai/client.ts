@@ -6,7 +6,7 @@ import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt,
 import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
 
 // Re-export AI_ERRORS so downstream consumers keep working without import path changes
-export { AI_ERRORS }
+export { AI_ERRORS } from './providers.js'
 
 export type Question = QuestionResponse
 

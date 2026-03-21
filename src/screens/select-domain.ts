@@ -1,7 +1,6 @@
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { defaultDomainFile, defaultSettings, type QuestionRecord } from '../domain/schema.js'
 import { warn, success, typewrite } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
 import { generateMotivationalMessage } from '../ai/client.js'
 import ora from 'ora'
 import { showQuiz } from './quiz.js'
