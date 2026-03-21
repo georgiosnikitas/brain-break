@@ -96,7 +96,7 @@ development_status:
   # Epic 7: Multi-Provider AI Integration
   epic-7: in-progress
   7-1-settings-schema-provider-fields: done
-  7-2-ai-provider-abstraction-layer: backlog
+  7-2-ai-provider-abstraction-layer: done
   7-3-provider-agnostic-ai-client: backlog
   7-4-first-launch-provider-setup-screen: backlog
   7-5-settings-screen-provider-configuration: backlog
