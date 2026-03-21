@@ -12,9 +12,9 @@
  *     labels, ordering, or formatting causes the snapshot diff to fail.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { defaultDomainFile, type DomainFile, type QuestionRecord } from './domain/schema.js'
+import { defaultDomainFile, type DomainFile, type QuestionRecord, type DifficultyLevel } from './domain/schema.js'
 import { applyAnswer } from './domain/scoring.js'
-import { computeScoreTrend, daysSinceFirstSession, computeReturnStreak } from './screens/stats.js'
+import { computeScoreTrend, daysSinceFirstSession, computeReturnStreak, showStats } from './screens/stats.js'
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted — must appear before the imports they affect)
@@ -26,7 +26,6 @@ vi.mock('./utils/screen.js', () => ({ clearScreen: vi.fn() }))
 
 import { select } from '@inquirer/prompts'
 import { readDomain } from './domain/store.js'
-import { showStats } from './screens/stats.js'
 
 const mockSelect = vi.mocked(select)
 const mockReadDomain = vi.mocked(readDomain)
@@ -146,7 +145,7 @@ describe('scoring boundaries — difficulty and streak edge cases', () => {
   const thresholds = { fastMs: 10_000, slowMs: 30_000 }
 
   it('caps difficulty at 5 when streak of 3 correct at level 5', () => {
-    let meta = { ...defaultDomainFile().meta, difficultyLevel: 5 as 1 | 2 | 3 | 4 | 5 }
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 5 as DifficultyLevel }
     for (let i = 0; i < 3; i++) {
       const { updatedMeta } = applyAnswer(meta, true, 5_000, thresholds)
       meta = updatedMeta
@@ -157,7 +156,7 @@ describe('scoring boundaries — difficulty and streak edge cases', () => {
   })
 
   it('floors difficulty at 1 when streak of 3 incorrect at level 1', () => {
-    let meta = { ...defaultDomainFile().meta, difficultyLevel: 1 as 1 | 2 | 3 | 4 | 5 }
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 1 as DifficultyLevel }
     for (let i = 0; i < 3; i++) {
       const { updatedMeta } = applyAnswer(meta, false, 15_000, thresholds)
       meta = updatedMeta
@@ -168,13 +167,13 @@ describe('scoring boundaries — difficulty and streak edge cases', () => {
   })
 
   it('allows score to go negative', () => {
-    let meta = { ...defaultDomainFile().meta, score: 0, difficultyLevel: 5 as 1 | 2 | 3 | 4 | 5 }
+    let meta = { ...defaultDomainFile().meta, score: 0, difficultyLevel: 5 as DifficultyLevel }
     const { updatedMeta } = applyAnswer(meta, false, 35_000, thresholds)
     expect(updatedMeta.score).toBe(-100) // 50 * -2
   })
 
   it('resets streak to none after promotion then starts fresh', () => {
-    let meta = { ...defaultDomainFile().meta, difficultyLevel: 3 as 1 | 2 | 3 | 4 | 5 }
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 3 as DifficultyLevel }
 
     // 3 correct → promote to L4, streak resets
     for (let i = 0; i < 3; i++) {

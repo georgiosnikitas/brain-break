@@ -31,6 +31,7 @@ export const DomainMetaSchema = z.object({
   archived: z.boolean(),
 })
 export type DomainMeta = z.infer<typeof DomainMetaSchema>
+export type DifficultyLevel = 1 | 2 | 3 | 4 | 5
 
 // ---------------------------------------------------------------------------
 // Question record (history entry)
