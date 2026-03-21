@@ -1,23 +1,12 @@
 import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { validateProvider } from '../ai/providers.js'
+import ora from 'ora'
+import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
-import { defaultSettings, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
+import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
-
-const PROVIDER_CHOICES: Array<{ name: string; value: AiProviderType }> = [
-  { name: 'GitHub Copilot', value: 'copilot' },
-  { name: 'OpenAI', value: 'openai' },
-  { name: 'Anthropic', value: 'anthropic' },
-  { name: 'Google Gemini', value: 'gemini' },
-  { name: 'Ollama', value: 'ollama' },
-]
-
-const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntries(
-  PROVIDER_CHOICES.map(c => [c.value, c.name]),
-) as Record<AiProviderType, string>
 
 const TONE_CHOICES: Array<{ name: string; value: ToneOfVoice }> = [
   { name: 'Natural', value: 'natural' },
@@ -57,10 +46,12 @@ async function handleProviderAction(
     ollamaModel = (await input({ message: 'Ollama Model Name', default: ollamaModel })).trim() || ollamaModel
   }
 
-  const validationResult = await validateProvider(selectedProvider, { ...settings, provider: selectedProvider, ollamaEndpoint, ollamaModel })
+  const spinner = ora('Testing connection...').start()
+  const validationResult = await testProviderConnection(selectedProvider, { ...settings, provider: selectedProvider, ollamaEndpoint, ollamaModel })
+  spinner.stop()
 
   const message = validationResult.ok
-    ? success(`✓ ${PROVIDER_LABELS[selectedProvider]} is ready to go!`)
+    ? success(`✓ ${PROVIDER_LABELS[selectedProvider]}: ${validationResult.data}`)
     : warn(validationResult.error)
 
   return { provider: selectedProvider, ollamaEndpoint, ollamaModel, message }

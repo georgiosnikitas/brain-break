@@ -33,7 +33,7 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
   - **GitHub Copilot** — a GitHub account with an active Copilot subscription and Copilot authentication in the environment
   - **OpenAI** — `OPENAI_API_KEY` environment variable
   - **Anthropic** — `ANTHROPIC_API_KEY` environment variable
-  - **Google Gemini** — `GOOGLE_API_KEY` environment variable
+  - **Google Gemini** — `GOOGLE_GENERATIVE_AI_API_KEY` environment variable
   - **Ollama** — a running Ollama instance (default: `http://localhost:11434`)
 
 ## 🚀 Installation

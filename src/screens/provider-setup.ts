@@ -1,22 +1,13 @@
 import { select, input } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { validateProvider } from '../ai/providers.js'
+import ora from 'ora'
+import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
-import type { AiProviderType, SettingsFile } from '../domain/schema.js'
+import { PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 
-const PROVIDER_CHOICES: Array<{ name: string; value: AiProviderType }> = [
-  { name: 'GitHub Copilot', value: 'copilot' },
-  { name: 'OpenAI', value: 'openai' },
-  { name: 'Anthropic', value: 'anthropic' },
-  { name: 'Google Gemini', value: 'gemini' },
-  { name: 'Ollama', value: 'ollama' },
-]
-
-const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntries(
-  PROVIDER_CHOICES.map(c => [c.value, c.name]),
-) as Record<AiProviderType, string>
+const MESSAGE_DISPLAY_MS = 2000
 
 export async function showProviderSetupScreen(settings: SettingsFile): Promise<void> {
   clearScreen()
@@ -47,13 +38,17 @@ export async function showProviderSetupScreen(settings: SettingsFile): Promise<v
       updatedSettings.ollamaModel = ollamaModel
     }
 
-    const validationResult = await validateProvider(provider, updatedSettings)
+    const spinner = ora('Testing connection...').start()
+    const validationResult = await testProviderConnection(provider, updatedSettings)
+    spinner.stop()
 
     if (validationResult.ok) {
-      console.log(success(`\n✓ ${PROVIDER_LABELS[provider]} is ready to go!`))
+      console.log(success(`\n✓ ${PROVIDER_LABELS[provider]}: ${validationResult.data}`))
     } else {
       console.log(warn(`\n${validationResult.error}`))
     }
+
+    await new Promise(resolve => setTimeout(resolve, MESSAGE_DISPLAY_MS))
 
     const writeResult = await writeSettings(updatedSettings)
     if (!writeResult.ok) {

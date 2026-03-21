@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import type { CopilotClient } from '@github/copilot-sdk'
 import type { SettingsFile } from '../domain/schema.js'
-import { createProvider, validateProvider, AI_ERRORS, _setCopilotClient } from './providers.js'
+import { createProvider, validateProvider, testProviderConnection, AI_ERRORS, _setCopilotClient } from './providers.js'
 import type { AiProvider } from './providers.js'
 
 // ---------------------------------------------------------------------------
@@ -19,7 +19,9 @@ const mockAnthropic = vi.fn()
 vi.mock('@ai-sdk/anthropic', () => ({ anthropic: (...args: unknown[]) => mockAnthropic(...args) }))
 
 const mockGoogle = vi.fn()
-vi.mock('@ai-sdk/google', () => ({ google: (...args: unknown[]) => mockGoogle(...args) }))
+vi.mock('@ai-sdk/google', () => ({
+  createGoogleGenerativeAI: () => (...args: unknown[]) => mockGoogle(...args),
+}))
 
 const mockOllamaModel = vi.fn()
 const mockCreateOllama = vi.fn()
@@ -373,16 +375,16 @@ describe('validateProvider', () => {
   })
 
   describe('gemini', () => {
-    it('returns ok:true when GOOGLE_API_KEY is set', async () => {
-      process.env = { ...originalEnv, GOOGLE_API_KEY: 'gk-test' }
+    it('returns ok:true when GOOGLE_GENERATIVE_AI_API_KEY is set', async () => {
+      process.env = { ...originalEnv, GOOGLE_GENERATIVE_AI_API_KEY: 'gk-test' }
 
       const result = await validateProvider('gemini', makeSettings())
       expect(result).toEqual({ ok: true, data: undefined })
     })
 
-    it('returns AUTH_GEMINI error when GOOGLE_API_KEY is missing', async () => {
+    it('returns AUTH_GEMINI error when GOOGLE_GENERATIVE_AI_API_KEY is missing', async () => {
       process.env = { ...originalEnv }
-      delete process.env['GOOGLE_API_KEY']
+      delete process.env['GOOGLE_GENERATIVE_AI_API_KEY']
 
       const result = await validateProvider('gemini', makeSettings())
       expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_GEMINI })
@@ -464,6 +466,180 @@ describe('validateProvider', () => {
 })
 
 // ---------------------------------------------------------------------------
+// testProviderConnection
+// ---------------------------------------------------------------------------
+describe('testProviderConnection', () => {
+  const originalEnv = process.env
+
+  afterEach(() => {
+    process.env = originalEnv
+    vi.unstubAllGlobals()
+  })
+
+  it('returns validation error when validateProvider fails (e.g. missing API key)', async () => {
+    process.env = { ...originalEnv }
+    delete process.env['OPENAI_API_KEY']
+
+    const result = await testProviderConnection('openai', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_OPENAI })
+  })
+
+  it('returns ok:true with response text when test API call succeeds for openai', async () => {
+    process.env = { ...originalEnv, OPENAI_API_KEY: 'sk-test' }
+    mockGenerateText.mockResolvedValueOnce({ text: 'Hello! I am working.' })
+
+    const result = await testProviderConnection('openai', makeSettings())
+
+    expect(result).toEqual({ ok: true, data: 'Hello! I am working.' })
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({ prompt: 'Say a short, one-sentence greeting to confirm you are working.' }),
+    )
+  })
+
+  it('returns ok:true with response text when test API call succeeds for anthropic', async () => {
+    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'sk-ant-test' }
+    mockGenerateText.mockResolvedValueOnce({ text: 'Greetings!' })
+
+    const result = await testProviderConnection('anthropic', makeSettings())
+
+    expect(result).toEqual({ ok: true, data: 'Greetings!' })
+    expect(mockGenerateText).toHaveBeenCalled()
+  })
+
+  it('returns ok:true with response text when test API call succeeds for gemini', async () => {
+    process.env = { ...originalEnv, GOOGLE_GENERATIVE_AI_API_KEY: 'gk-test' }
+    mockGenerateText.mockResolvedValueOnce({ text: 'Hi there!' })
+
+    const result = await testProviderConnection('gemini', makeSettings())
+
+    expect(result).toEqual({ ok: true, data: 'Hi there!' })
+    expect(mockGenerateText).toHaveBeenCalled()
+  })
+
+  it('returns ok:true with response text when test API call succeeds for ollama', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true }))
+    mockGenerateText.mockResolvedValueOnce({ text: 'Ready!' })
+
+    const result = await testProviderConnection('ollama', makeSettings({ ollamaEndpoint: 'http://localhost:11434' }))
+
+    expect(result).toEqual({ ok: true, data: 'Ready!' })
+    expect(mockGenerateText).toHaveBeenCalled()
+  })
+
+  it('returns ok:true with response text when test API call succeeds for copilot', async () => {
+    _setCopilotClient(makeFakeCopilotClient())
+    mockSendAndWait.mockResolvedValueOnce({ data: { content: 'Hello!' } })
+
+    const result = await testProviderConnection('copilot', makeSettings())
+
+    expect(result).toEqual({ ok: true, data: 'Hello!' })
+    _setCopilotClient(null)
+  })
+
+  it('returns NETWORK_OPENAI error when test call throws for openai', async () => {
+    process.env = { ...originalEnv, OPENAI_API_KEY: 'sk-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('connection refused'))
+
+    const result = await testProviderConnection('openai', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+  })
+
+  it('returns NETWORK_ANTHROPIC error when test call throws for anthropic', async () => {
+    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'sk-ant-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('timeout'))
+
+    const result = await testProviderConnection('anthropic', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_ANTHROPIC })
+  })
+
+  it('returns NETWORK_GEMINI error when test call throws for gemini', async () => {
+    process.env = { ...originalEnv, GOOGLE_GENERATIVE_AI_API_KEY: 'gk-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('service unavailable'))
+
+    const result = await testProviderConnection('gemini', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_GEMINI })
+  })
+
+  it('returns NETWORK_OLLAMA error with endpoint when test call throws for ollama', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true }))
+    mockGenerateText.mockRejectedValueOnce(new Error('model not found'))
+
+    const settings = makeSettings({ ollamaEndpoint: 'http://custom:11434' })
+    const result = await testProviderConnection('ollama', settings)
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_OLLAMA('http://custom:11434') })
+  })
+
+  it('returns NETWORK_COPILOT error when test call throws for copilot', async () => {
+    _setCopilotClient(makeFakeCopilotClient())
+    mockSendAndWait.mockRejectedValueOnce(new Error('network error'))
+
+    const result = await testProviderConnection('copilot', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_COPILOT })
+    _setCopilotClient(null)
+  })
+
+  it('returns AUTH_GEMINI error when test call throws with 403 message', async () => {
+    process.env = { ...originalEnv, GOOGLE_GENERATIVE_AI_API_KEY: 'gk-invalid' }
+    mockGenerateText.mockRejectedValueOnce(new Error('403 Forbidden: API key not valid'))
+
+    const result = await testProviderConnection('gemini', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_GEMINI })
+  })
+
+  it('returns AUTH_OPENAI error when test call throws with 401 message', async () => {
+    process.env = { ...originalEnv, OPENAI_API_KEY: 'sk-invalid' }
+    mockGenerateText.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    const result = await testProviderConnection('openai', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_OPENAI })
+  })
+
+  it('returns AUTH_ANTHROPIC error when test call throws with invalid key message', async () => {
+    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'sk-ant-invalid' }
+    mockGenerateText.mockRejectedValueOnce(new Error('invalid api key'))
+
+    const result = await testProviderConnection('anthropic', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_ANTHROPIC })
+  })
+
+  it('returns QUOTA error when test call throws with quota exceeded message', async () => {
+    process.env = { ...originalEnv, GOOGLE_GENERATIVE_AI_API_KEY: 'gk-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('You exceeded your current quota, please check your plan and billing details.'))
+
+    const result = await testProviderConnection('gemini', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.QUOTA })
+  })
+
+  it('returns QUOTA error when test call throws with 429 status', async () => {
+    process.env = { ...originalEnv, OPENAI_API_KEY: 'sk-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('429 Too Many Requests'))
+
+    const result = await testProviderConnection('openai', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.QUOTA })
+  })
+
+  it('returns QUOTA error when test call throws with rate limit message', async () => {
+    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'sk-ant-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('rate limit exceeded'))
+
+    const result = await testProviderConnection('anthropic', makeSettings())
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.QUOTA })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // AI_ERRORS constants
 // ---------------------------------------------------------------------------
 describe('AI_ERRORS', () => {
@@ -492,7 +668,7 @@ describe('AI_ERRORS', () => {
     expect(AI_ERRORS.AUTH_COPILOT).toContain('Copilot')
     expect(AI_ERRORS.AUTH_OPENAI).toContain('OPENAI_API_KEY')
     expect(AI_ERRORS.AUTH_ANTHROPIC).toContain('ANTHROPIC_API_KEY')
-    expect(AI_ERRORS.AUTH_GEMINI).toContain('GOOGLE_API_KEY')
+    expect(AI_ERRORS.AUTH_GEMINI).toContain('GOOGLE_GENERATIVE_AI_API_KEY')
     expect(AI_ERRORS.AUTH_OLLAMA).toContain('Ollama')
   })
 })

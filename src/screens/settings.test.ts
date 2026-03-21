@@ -2,13 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { showSettingsScreen, getProviderLabel } from './settings.js'
 
 vi.mock('@github/copilot-sdk', () => ({ CopilotClient: vi.fn(), approveAll: vi.fn() }))
+
+const mockStart = vi.fn().mockReturnThis()
+const mockStop = vi.fn()
+vi.mock('ora', () => ({
+  default: vi.fn(() => ({ start: mockStart, stop: mockStop })),
+}))
+
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
   input: vi.fn(),
   Separator: vi.fn(),
 }))
 vi.mock('../ai/providers.js', () => ({
-  validateProvider: vi.fn(),
+  testProviderConnection: vi.fn(),
 }))
 vi.mock('../domain/store.js', () => ({
   readSettings: vi.fn(),
@@ -26,7 +33,7 @@ vi.mock('../utils/format.js', () => ({
 
 import { select, input } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { validateProvider } from '../ai/providers.js'
+import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { clearScreen } from '../utils/screen.js'
@@ -36,7 +43,7 @@ const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockReadSettings = vi.mocked(readSettings)
 const mockWriteSettings = vi.mocked(writeSettings)
-const mockValidateProvider = vi.mocked(validateProvider)
+const mockTestProviderConnection = vi.mocked(testProviderConnection)
 
 let logSpy: ReturnType<typeof vi.spyOn>
 
@@ -44,7 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockReadSettings.mockResolvedValue({ ok: true, data: defaultSettings() })
   mockWriteSettings.mockResolvedValue({ ok: true, data: undefined })
-  mockValidateProvider.mockResolvedValue({ ok: true, data: undefined })
+  mockTestProviderConnection.mockResolvedValue({ ok: true, data: 'Hello! I am working.' })
   vi.mocked(router.showHome).mockResolvedValue(undefined)
   logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 })
@@ -205,21 +212,21 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockValidateProvider).toHaveBeenCalledWith('openai', expect.objectContaining({ provider: 'openai' }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ provider: 'openai' }))
   })
 
-  it('provider validation success displays success message', async () => {
-    mockValidateProvider.mockResolvedValue({ ok: true, data: undefined })
+  it('provider validation success displays LLM greeting', async () => {
+    mockTestProviderConnection.mockResolvedValue({ ok: true, data: 'Hello from OpenAI!' })
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI'))
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('ready to go'))
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Hello from OpenAI!'))
   })
 
   it('provider validation failure displays warning message (non-blocking)', async () => {
-    mockValidateProvider.mockResolvedValue({ ok: false, error: 'API key missing' })
+    mockTestProviderConnection.mockResolvedValue({ ok: false, error: 'API key missing' })
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
@@ -235,7 +242,7 @@ describe('showSettingsScreen', () => {
 
     expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Ollama Endpoint URL' }))
     expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Ollama Model Name' }))
-    expect(mockValidateProvider).toHaveBeenCalledWith('ollama', expect.objectContaining({
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', expect.objectContaining({
       provider: 'ollama',
       ollamaEndpoint: 'http://custom:11434',
       ollamaModel: 'mistral',
@@ -248,7 +255,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockValidateProvider).toHaveBeenCalledWith('ollama', expect.objectContaining({
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', expect.objectContaining({
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
     }))

@@ -11,7 +11,7 @@ vi.mock('@inquirer/prompts', () => ({
 }))
 
 vi.mock('../ai/providers.js', () => ({
-  validateProvider: vi.fn(),
+  testProviderConnection: vi.fn(),
 }))
 
 vi.mock('../domain/store.js', () => ({
@@ -22,6 +22,12 @@ vi.mock('../utils/screen.js', () => ({
   clearScreen: vi.fn(),
 }))
 
+const mockStart = vi.fn().mockReturnThis()
+const mockStop = vi.fn()
+vi.mock('ora', () => ({
+  default: vi.fn(() => ({ start: mockStart, stop: mockStop })),
+}))
+
 vi.mock('../utils/format.js', () => ({
   success: (s: string) => s,
   warn: (s: string) => s,
@@ -29,14 +35,14 @@ vi.mock('../utils/format.js', () => ({
 }))
 
 import { select, input } from '@inquirer/prompts'
-import { validateProvider } from '../ai/providers.js'
+import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
 import { clearScreen } from '../utils/screen.js'
 import { showProviderSetupScreen } from './provider-setup.js'
 
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
-const mockValidateProvider = vi.mocked(validateProvider)
+const mockTestProviderConnection = vi.mocked(testProviderConnection)
 const mockWriteSettings = vi.mocked(writeSettings)
 const mockClearScreen = vi.mocked(clearScreen)
 
@@ -45,12 +51,14 @@ let logSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.useFakeTimers()
   settings = defaultSettings()
   logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   mockWriteSettings.mockResolvedValue({ ok: true, data: undefined })
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
 })
 
@@ -60,27 +68,33 @@ afterEach(() => {
 describe('showProviderSetupScreen', () => {
   it('calls clearScreen as first operation', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(mockClearScreen).toHaveBeenCalledOnce()
   })
 
   it('displays first-time setup heading', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('First-Time Setup'))
   })
 
   it('calls select with 5 provider choices in correct order', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(mockSelect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -100,20 +114,24 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('OpenAI selected + validation success → success message + settings saved', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello from OpenAI!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
-    expect(mockValidateProvider).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai' })
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI is ready to go!'))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai' })
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Hello from OpenAI!'))
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai' })
   })
 
   it('OpenAI selected + validation failure → warning message + settings still saved', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('API key missing'))
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai' })
@@ -124,11 +142,13 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('Anthropic selected → validateProvider called with correct args', async () => {
     mockSelect.mockResolvedValueOnce('anthropic' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
-    expect(mockValidateProvider).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic' })
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic' })
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'anthropic' })
   })
 
@@ -137,11 +157,13 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('Gemini selected → validateProvider called with correct args', async () => {
     mockSelect.mockResolvedValueOnce('gemini' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
-    expect(mockValidateProvider).toHaveBeenCalledWith('gemini', { ...settings, provider: 'gemini' })
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('gemini', { ...settings, provider: 'gemini' })
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'gemini' })
   })
 
@@ -150,11 +172,13 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('Copilot selected → validateProvider called with correct args', async () => {
     mockSelect.mockResolvedValueOnce('copilot' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
-    expect(mockValidateProvider).toHaveBeenCalledWith('copilot', { ...settings, provider: 'copilot' })
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('copilot', { ...settings, provider: 'copilot' })
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'copilot' })
   })
 
@@ -166,9 +190,11 @@ describe('showProviderSetupScreen', () => {
     mockInput
       .mockResolvedValueOnce('http://my-server:11434')
       .mockResolvedValueOnce('mistral')
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(mockInput).toHaveBeenCalledTimes(2)
     expect(mockInput).toHaveBeenCalledWith(
@@ -184,7 +210,7 @@ describe('showProviderSetupScreen', () => {
       ollamaEndpoint: 'http://my-server:11434',
       ollamaModel: 'mistral',
     }
-    expect(mockValidateProvider).toHaveBeenCalledWith('ollama', expectedSettings)
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', expectedSettings)
     expect(mockWriteSettings).toHaveBeenCalledWith(expectedSettings)
   })
 
@@ -193,9 +219,11 @@ describe('showProviderSetupScreen', () => {
     mockInput
       .mockResolvedValueOnce('http://localhost:11434')
       .mockResolvedValueOnce('llama3')
-    mockValidateProvider.mockResolvedValueOnce({ ok: false, error: 'Could not reach Ollama' })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'Could not reach Ollama' })
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Could not reach Ollama'))
     expect(mockWriteSettings).toHaveBeenCalledWith(
@@ -208,12 +236,14 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('logs console.error when writeSettings fails', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockValidateProvider.mockResolvedValueOnce({ ok: true, data: undefined })
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
     mockWriteSettings.mockResolvedValueOnce({ ok: false, error: 'disk full' })
 
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    await showProviderSetupScreen(settings)
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
 
     expect(errorSpy).toHaveBeenCalledWith('Failed to save settings: disk full')
   })

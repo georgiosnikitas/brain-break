@@ -1,7 +1,7 @@
 import { generateText, type LanguageModel } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
-import { google } from '@ai-sdk/google'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOllama } from 'ollama-ai-provider'
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
 import type { AiProviderType, Result, SettingsFile } from '../domain/schema.js'
@@ -29,8 +29,10 @@ export const AI_ERRORS = {
   AUTH_COPILOT: 'Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in.',
   AUTH_OPENAI: 'OpenAI API key is invalid or missing. Set the OPENAI_API_KEY environment variable with a valid key and restart the app.',
   AUTH_ANTHROPIC: 'Anthropic API key is invalid or missing. Set the ANTHROPIC_API_KEY environment variable with a valid key and restart the app.',
-  AUTH_GEMINI: 'Google API key is invalid or missing. Set the GOOGLE_API_KEY environment variable with a valid key and restart the app.',
+  AUTH_GEMINI: 'Google API key is invalid or missing. Set the GOOGLE_GENERATIVE_AI_API_KEY environment variable with a valid key and restart the app.',
   AUTH_OLLAMA: 'Could not connect to Ollama. Check that the endpoint and model are correct in Settings.',
+  // Quota errors
+  QUOTA: 'API quota exceeded. Check your plan and billing details with your provider.',
 } as const
 
 // ---------------------------------------------------------------------------
@@ -88,6 +90,7 @@ function createAnthropicAdapter(): AiProvider {
 }
 
 function createGeminiAdapter(): AiProvider {
+  const google = createGoogleGenerativeAI({ apiKey: process.env['GOOGLE_GENERATIVE_AI_API_KEY'] })
   return {
     async generateCompletion(prompt: string): Promise<string> {
       const { text } = await generateText({ model: google('gemini-2.0-flash'), prompt })
@@ -130,6 +133,54 @@ export function createProvider(settings: SettingsFile): Result<AiProvider> {
 }
 
 // ---------------------------------------------------------------------------
+// Test connection — validates provider AND makes a real API call
+// ---------------------------------------------------------------------------
+export async function testProviderConnection(
+  providerType: AiProviderType,
+  settings: SettingsFile,
+): Promise<Result<string>> {
+  const validation = await validateProvider(providerType, settings)
+  if (!validation.ok) return validation
+
+  const providerResult = createProvider({ ...settings, provider: providerType })
+  if (!providerResult.ok) return providerResult
+
+  try {
+    const response = await providerResult.data.generateCompletion('Say a short, one-sentence greeting to confirm you are working.')
+    return { ok: true, data: response }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+
+    const isQuota = /quota|rate.?limit|too many requests|429/i.test(msg)
+    if (isQuota) {
+      return { ok: false, error: AI_ERRORS.QUOTA }
+    }
+
+    const isAuth = /401|403|unauthorized|unauthenticated|authentication|api key|invalid key/i.test(msg)
+
+    if (isAuth) {
+      const authErrors: Record<AiProviderType, string> = {
+        copilot: AI_ERRORS.AUTH_COPILOT,
+        openai: AI_ERRORS.AUTH_OPENAI,
+        anthropic: AI_ERRORS.AUTH_ANTHROPIC,
+        gemini: AI_ERRORS.AUTH_GEMINI,
+        ollama: AI_ERRORS.AUTH_OLLAMA,
+      }
+      return { ok: false, error: authErrors[providerType] }
+    }
+
+    const networkErrors: Record<AiProviderType, string> = {
+      copilot: AI_ERRORS.NETWORK_COPILOT,
+      openai: AI_ERRORS.NETWORK_OPENAI,
+      anthropic: AI_ERRORS.NETWORK_ANTHROPIC,
+      gemini: AI_ERRORS.NETWORK_GEMINI,
+      ollama: AI_ERRORS.NETWORK_OLLAMA(settings.ollamaEndpoint),
+    }
+    return { ok: false, error: networkErrors[providerType] }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Validation — checks provider readiness without generating a question
 // ---------------------------------------------------------------------------
 export async function validateProvider(
@@ -148,7 +199,7 @@ export async function validateProvider(
         : { ok: false, error: AI_ERRORS.AUTH_ANTHROPIC }
 
     case 'gemini':
-      return process.env['GOOGLE_API_KEY']
+      return process.env['GOOGLE_GENERATIVE_AI_API_KEY']
         ? { ok: true, data: undefined }
         : { ok: false, error: AI_ERRORS.AUTH_GEMINI }
 

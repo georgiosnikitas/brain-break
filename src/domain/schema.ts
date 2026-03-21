@@ -94,6 +94,18 @@ export type ToneOfVoice = z.infer<typeof ToneOfVoiceSchema>
 export const AiProviderTypeSchema = z.enum(['copilot', 'openai', 'anthropic', 'gemini', 'ollama'])
 export type AiProviderType = z.infer<typeof AiProviderTypeSchema>
 
+export const PROVIDER_CHOICES: Array<{ name: string; value: AiProviderType }> = [
+  { name: 'GitHub Copilot', value: 'copilot' },
+  { name: 'OpenAI', value: 'openai' },
+  { name: 'Anthropic', value: 'anthropic' },
+  { name: 'Google Gemini', value: 'gemini' },
+  { name: 'Ollama', value: 'ollama' },
+]
+
+export const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntries(
+  PROVIDER_CHOICES.map(c => [c.value, c.name]),
+) as Record<AiProviderType, string>
+
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),
   language: z.string().min(1),
