@@ -1,21 +1,37 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { CopilotClient } from '@github/copilot-sdk'
-import { generateQuestion, generateMotivationalMessage, AI_ERRORS, _setClient } from './client.js'
 import { hashQuestion } from '../utils/hash.js'
-
-// Prevent the real SDK (which has a transitive CJS/ESM issue) from loading
-vi.mock('@github/copilot-sdk', () => ({ CopilotClient: vi.fn(), approveAll: vi.fn() }))
+import type { AiProvider } from './providers.js'
+import type { SettingsFile } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
-// Mock session fns
+// Mock providers module — intercept createProvider, keep real AI_ERRORS
 // ---------------------------------------------------------------------------
-const mockSendAndWait = vi.fn()
-const mockDisconnect = vi.fn()
-const mockCreateSession = vi.fn()
+const mockGenerateCompletion = vi.fn<(prompt: string) => Promise<string>>()
+
+vi.mock('./providers.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./providers.js')>()
+  return {
+    ...actual,
+    createProvider: vi.fn(),
+  }
+})
+
+// Must import after mock setup
+const { generateQuestion, generateMotivationalMessage, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
+const { createProvider } = await import('./providers.js')
+const mockCreateProvider = vi.mocked(createProvider)
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+function makeMockProvider(): AiProvider {
+  return { generateCompletion: mockGenerateCompletion }
+}
+
+function makeSettings(provider: SettingsFile['provider'] = 'openai'): SettingsFile {
+  return { provider, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }
+}
+
 function makeValidResponse(question = 'What is 2+2?') {
   return JSON.stringify({
     question,
@@ -26,45 +42,26 @@ function makeValidResponse(question = 'What is 2+2?') {
   })
 }
 
-function makeEvent(content: string) {
-  return { data: { content } }
-}
-
-// Build a fake CopilotClient that bypasses the real CLI constructor
-function makeFakeClient(): CopilotClient {
-  return {
-    start: vi.fn().mockResolvedValue(undefined),
-    stop: vi.fn().mockResolvedValue([]),
-    createSession: mockCreateSession,
-  } as unknown as CopilotClient
-}
-
 // ---------------------------------------------------------------------------
-// Setup: inject mock client before each test so getClient() skips start()
+// Setup
 // ---------------------------------------------------------------------------
 beforeEach(() => {
-  mockSendAndWait.mockReset()
-  mockDisconnect.mockReset()
-  mockCreateSession.mockReset()
-
-  mockDisconnect.mockResolvedValue(undefined)
-  mockCreateSession.mockResolvedValue({
-    sendAndWait: mockSendAndWait,
-    disconnect: mockDisconnect,
-  })
-
-  // Inject pre-built client — getClient() returns it without calling start()
-  _setClient(makeFakeClient())
+  mockGenerateCompletion.mockReset()
+  mockCreateProvider.mockReset()
+  // Default: provider creation succeeds
+  mockCreateProvider.mockReturnValue({ ok: true, data: makeMockProvider() })
 })
 
 // ---------------------------------------------------------------------------
-// Tests
+// generateQuestion
 // ---------------------------------------------------------------------------
 describe('generateQuestion', () => {
-  it('returns ok:true with a valid Question on success', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
+  const settings = makeSettings('openai')
 
-    const result = await generateQuestion('typescript', 2, new Set())
+  it('returns ok:true with a valid Question on success', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
+
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -77,16 +74,16 @@ describe('generateQuestion', () => {
 
   it('strips ```json fences before parsing', async () => {
     const wrapped = '```json\n' + makeValidResponse() + '\n```'
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(wrapped))
+    mockGenerateCompletion.mockResolvedValueOnce(wrapped)
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
     expect(result.ok).toBe(true)
   })
 
   it('returns PARSE error when response is not valid JSON', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent('not json at all'))
+    mockGenerateCompletion.mockResolvedValueOnce('not json at all')
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -94,47 +91,58 @@ describe('generateQuestion', () => {
   })
 
   it('returns PARSE error when JSON does not match schema', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(JSON.stringify({ foo: 'bar' })))
+    mockGenerateCompletion.mockResolvedValueOnce(JSON.stringify({ foo: 'bar' }))
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toBe(AI_ERRORS.PARSE)
   })
 
-  it('returns NETWORK error on generic createSession error', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('Connection refused'))
+  it('returns NO_PROVIDER error when provider is not configured', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings(null))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.NETWORK)
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
   })
 
-  it('returns NETWORK error on generic sendAndWait error', async () => {
-    mockSendAndWait.mockRejectedValueOnce(new Error('socket hang up'))
+  it('returns provider-specific NETWORK error on generic error (openai)', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('openai'))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.NETWORK)
+    expect(result.error).toBe(AI_ERRORS.NETWORK_OPENAI)
+  })
+
+  it('returns provider-specific NETWORK error on generic error (copilot)', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('socket hang up'))
+
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('copilot'))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_COPILOT)
   })
 
   it.each([
     ['401', 'HTTP 401 Unauthorized'],
     ['unauthorized', 'unauthorized access'],
     ['authentication', 'authentication failed'],
-  ])('returns AUTH error when error message contains "%s"', async (_, errorMsg) => {
-    mockCreateSession.mockRejectedValueOnce(new Error(errorMsg))
+    ['api key', 'Invalid api key provided'],
+  ])('returns provider-specific AUTH error when error message contains "%s"', async (_, errorMsg) => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error(errorMsg))
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('anthropic'))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.AUTH)
+    expect(result.error).toBe(AI_ERRORS.AUTH_ANTHROPIC)
   })
 
   it('retries with deduplication prompt when first question is a duplicate', async () => {
@@ -142,130 +150,91 @@ describe('generateQuestion', () => {
     const secondQ = 'What is 3+3?'
     const existingHash = hashQuestion(firstQ)
 
-    mockSendAndWait
-      .mockResolvedValueOnce(makeEvent(makeValidResponse(firstQ)))
-      .mockResolvedValueOnce(makeEvent(makeValidResponse(secondQ)))
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse(firstQ))
+      .mockResolvedValueOnce(makeValidResponse(secondQ))
 
-    const result = await generateQuestion('typescript', 2, new Set([existingHash]))
+    const result = await generateQuestion('typescript', 2, new Set([existingHash]), [], settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.question).toBe(secondQ)
-    expect(mockSendAndWait).toHaveBeenCalledTimes(2)
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(2)
   })
 
   it('does not retry when first question is not a duplicate', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
+    mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
 
-    await generateQuestion('typescript', 2, new Set())
+    await generateQuestion('typescript', 2, new Set(), [], settings)
 
-    expect(mockSendAndWait).toHaveBeenCalledTimes(1)
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(1)
   })
 
-  it('calls session.disconnect after a successful call', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-
-    await generateQuestion('typescript', 2, new Set())
-
-    expect(mockDisconnect).toHaveBeenCalled()
-  })
-
-  it('calls session.disconnect even when parse fails', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent('bad json'))
-
-    await generateQuestion('typescript', 2, new Set())
-
-    expect(mockDisconnect).toHaveBeenCalled()
-  })
-
-  it('returns AUTH error when error message contains "unauthenticated"', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('unauthenticated request'))
+  it('uses defaultSettings when no settings provided', async () => {
+    // defaultSettings has provider: null, so createProvider returns NO_PROVIDER
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
     const result = await generateQuestion('typescript', 2, new Set())
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.AUTH)
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
   })
 })
 
-describe('getClient initialization', () => {
-  it('calls client.start() when no client has been previously injected', async () => {
-    _setClient(null)
-
-    const { CopilotClient } = await import('@github/copilot-sdk')
-    const mockStartFn = vi.fn().mockResolvedValue(undefined)
-    // Use a regular function (not arrow) so it works properly as a constructor mock
-    vi.mocked(CopilotClient).mockImplementationOnce(function (this: unknown) {
-      return {
-        start: mockStartFn,
-        stop: vi.fn().mockResolvedValue([]),
-        createSession: mockCreateSession,
-      } as unknown as InstanceType<typeof CopilotClient>
-    } as unknown as new () => InstanceType<typeof CopilotClient>)
-
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-
-    const result = await generateQuestion('typescript', 2, new Set())
-
-    expect(result.ok).toBe(true)
-    expect(mockStartFn).toHaveBeenCalledOnce()
-
-    // Re-inject a mock so subsequent tests are not affected
-    _setClient(makeFakeClient())
-  })
-})
-
+// ---------------------------------------------------------------------------
+// settings injection
+// ---------------------------------------------------------------------------
 describe('settings injection', () => {
-  it('accepts settings parameter and returns ok:true', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-    const settings = { language: 'Spanish', tone: 'expressive' as const }
-
-    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
-
-    expect(result.ok).toBe(true)
-  })
-
   it('injects voice instruction into prompt when settings are non-default', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-    const settings = { language: 'Greek', tone: 'pirate' as const }
+    mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
+    const settings = makeSettings('openai')
+    settings.language = 'Greek'
+    settings.tone = 'pirate'
 
     await generateQuestion('typescript', 2, new Set(), [], settings)
 
-    const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
     expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
   })
 
-  it('no voice instruction in prompt when settings are English/normal', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(makeValidResponse()))
-    const settings = { language: 'English', tone: 'natural' as const }
+  it('no voice instruction in prompt when settings are English/natural', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
+    const settings = makeSettings('openai')
 
     await generateQuestion('typescript', 2, new Set(), [], settings)
 
-    const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
     expect(sentPrompt).not.toContain('Respond in')
   })
 
   it('injects voice instruction into deduplication retry prompt', async () => {
     const firstQ = 'What is 2+2?'
     const existingHash = hashQuestion(firstQ)
-    mockSendAndWait
-      .mockResolvedValueOnce(makeEvent(makeValidResponse(firstQ)))
-      .mockResolvedValueOnce(makeEvent(makeValidResponse('What is 3+3?')))
-    const settings = { language: 'Spanish', tone: 'expressive' as const }
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse(firstQ))
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
+    const settings = makeSettings('openai')
+    settings.language = 'Spanish'
+    settings.tone = 'expressive'
 
     await generateQuestion('typescript', 2, new Set([existingHash]), [], settings)
 
-    const retryPrompt: string = mockSendAndWait.mock.calls[1][0].prompt
+    const retryPrompt: string = mockGenerateCompletion.mock.calls[1][0]
     expect(retryPrompt).toContain('Respond in Spanish using an expressive tone of voice.')
   })
 })
 
+// ---------------------------------------------------------------------------
+// generateMotivationalMessage
+// ---------------------------------------------------------------------------
 describe('generateMotivationalMessage', () => {
-  it('returns ok:true with message string on success', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent('Great job coming back!'))
+  const settings = makeSettings('openai')
 
-    const result = await generateMotivationalMessage('returning')
+  it('returns ok:true with message string on success', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Great job coming back!')
+
+    const result = await generateMotivationalMessage('returning', settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -273,130 +242,154 @@ describe('generateMotivationalMessage', () => {
   })
 
   it('trims whitespace from the returned message', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent('  Keep it up!  \n'))
+    mockGenerateCompletion.mockResolvedValueOnce('  Keep it up!  \n')
 
-    const result = await generateMotivationalMessage('returning')
+    const result = await generateMotivationalMessage('returning', settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data).toBe('Keep it up!')
   })
 
-  it('returns ok:false on network error', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('Connection refused'))
+  it('returns NO_PROVIDER error when provider is not configured', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
-    const result = await generateMotivationalMessage('trending')
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.NETWORK)
-  })
-
-  it('returns ok:false on auth error', async () => {
-    mockCreateSession.mockRejectedValueOnce(new Error('401 Unauthorized'))
-
-    const result = await generateMotivationalMessage('returning')
+    const result = await generateMotivationalMessage('returning', makeSettings(null))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.AUTH)
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
   })
 
-  it('calls session.disconnect after success', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent('Well done!'))
+  it('returns provider-specific error on network error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    await generateMotivationalMessage('trending')
+    const result = await generateMotivationalMessage('trending', makeSettings('gemini'))
 
-    expect(mockDisconnect).toHaveBeenCalled()
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_GEMINI)
   })
 
-  it('calls session.disconnect even when sendAndWait throws', async () => {
-    mockSendAndWait.mockRejectedValueOnce(new Error('socket hang up'))
-    // session is created, so finally runs
-    mockCreateSession.mockResolvedValueOnce({
-      sendAndWait: mockSendAndWait,
-      disconnect: mockDisconnect,
-    })
+  it('returns provider-specific error on auth error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
 
-    await generateMotivationalMessage('returning')
+    const result = await generateMotivationalMessage('returning', makeSettings('copilot'))
 
-    expect(mockDisconnect).toHaveBeenCalled()
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH_COPILOT)
   })
 
   it('passes settings to the prompt (voice instruction injected)', async () => {
-    mockSendAndWait.mockResolvedValueOnce(makeEvent('Kalimera!'))
-    const settings = { language: 'Greek', tone: 'pirate' as const }
+    mockGenerateCompletion.mockResolvedValueOnce('Kalimera!')
+    const settings = makeSettings('openai')
+    settings.language = 'Greek'
+    settings.tone = 'pirate'
 
     await generateMotivationalMessage('returning', settings)
 
-    const sentPrompt: string = mockSendAndWait.mock.calls[0][0].prompt
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
     expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
   })
 })
 
-describe('edge cases', () => {
-  it('returns NETWORK error when a non-Error value is thrown', async () => {
-    // Throws a plain string — isAuthError returns false (err not instanceof Error)
-    mockCreateSession.mockRejectedValueOnce('plain string error')
+// ---------------------------------------------------------------------------
+// isAuthErrorMessage
+// ---------------------------------------------------------------------------
+describe('isAuthErrorMessage', () => {
+  it.each([
+    AI_ERRORS.AUTH_COPILOT,
+    AI_ERRORS.AUTH_OPENAI,
+    AI_ERRORS.AUTH_ANTHROPIC,
+    AI_ERRORS.AUTH_GEMINI,
+    AI_ERRORS.AUTH_OLLAMA,
+  ])('returns true for "%s"', (msg) => {
+    expect(isAuthErrorMessage(msg)).toBe(true)
+  })
 
-    const result = await generateQuestion('typescript', 2, new Set())
+  it.each([
+    AI_ERRORS.NETWORK_COPILOT,
+    AI_ERRORS.NETWORK_OPENAI,
+    AI_ERRORS.PARSE,
+    AI_ERRORS.NO_PROVIDER,
+    'some random error',
+    '',
+  ])('returns false for "%s"', (msg) => {
+    expect(isAuthErrorMessage(msg)).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// edge cases
+// ---------------------------------------------------------------------------
+describe('edge cases', () => {
+  const settings = makeSettings('openai')
+
+  it('returns NETWORK error when a non-Error value is thrown', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce('plain string error')
+
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.NETWORK)
+    expect(result.error).toBe(AI_ERRORS.NETWORK_OPENAI)
   })
 
-  it('handles ``` fence with no newline after language tag (slice(3) branch)', async () => {
-    // '```' immediately followed by JSON (no newline) — exercises newlineIdx === -1 branch
+  it('handles ``` fence with no newline after language tag', async () => {
     const noNewlineFence = '```' + makeValidResponse() + '```'
-    mockSendAndWait.mockResolvedValueOnce(makeEvent(noNewlineFence))
+    mockGenerateCompletion.mockResolvedValueOnce(noNewlineFence)
 
-    const result = await generateQuestion('typescript', 2, new Set())
+    const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(true)
   })
 
-  it('returns PARSE error when sendAndWait returns a null event (content ?? fallback)', async () => {
-    mockSendAndWait.mockResolvedValueOnce(null)
+  it('returns NETWORK_OLLAMA with custom endpoint', async () => {
+    const ollamaSettings = makeSettings('ollama')
+    ollamaSettings.ollamaEndpoint = 'http://custom:9999'
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    const result = await generateQuestion('typescript', 2, new Set())
-
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.PARSE)
-  })
-
-  it('returns PARSE error when retry sendAndWait returns a null event', async () => {
-    const firstQ = 'What is 2+2?'
-    const existingHash = hashQuestion(firstQ)
-    mockSendAndWait
-      .mockResolvedValueOnce(makeEvent(makeValidResponse(firstQ)))
-      .mockResolvedValueOnce(null)
-
-    const result = await generateQuestion('typescript', 2, new Set([existingHash]))
+    const result = await generateQuestion('typescript', 2, new Set(), [], ollamaSettings)
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.PARSE)
+    expect(result.error).toBe(AI_ERRORS.NETWORK_OLLAMA('http://custom:9999'))
   })
 
-  it('returns NETWORK error when generateMotivationalMessage receives non-Error throw', async () => {
-    mockCreateSession.mockRejectedValueOnce('string error')
+  it('classifies auth error per provider for ollama', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('401 unauthorized'))
 
-    const result = await generateMotivationalMessage('returning')
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('ollama'))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.error).toBe(AI_ERRORS.NETWORK)
+    expect(result.error).toBe(AI_ERRORS.AUTH_OLLAMA)
   })
 
-  it('returns empty string data when motivational event content is null', async () => {
-    mockSendAndWait.mockResolvedValueOnce(null)
+  it('returns NETWORK error for motivational message with non-Error throw', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce('string error')
 
-    const result = await generateMotivationalMessage('returning')
+    const result = await generateMotivationalMessage('returning', settings)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_OPENAI)
+  })
+
+  it('returns empty string data when provider returns empty content', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('')
+
+    const result = await generateMotivationalMessage('returning', settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data).toBe('')
+  })
+
+  it('AI_ERRORS re-exported from client matches providers AI_ERRORS', async () => {
+    const { AI_ERRORS: clientErrors } = await import('./client.js')
+    const { AI_ERRORS: providerErrors } = await import('./providers.js')
+    expect(clientErrors).toBe(providerErrors)
   })
 })

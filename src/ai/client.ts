@@ -1,45 +1,50 @@
-import { CopilotClient, approveAll } from '@github/copilot-sdk'
+import { createProvider, AI_ERRORS } from './providers.js'
 import type { Result, SettingsFile } from '../domain/schema.js'
+import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
 import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, QuestionResponseSchema } from './prompts.js'
 import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
 
-// ---------------------------------------------------------------------------
-// User-facing error constants (referenced by screens)
-// ---------------------------------------------------------------------------
-export const AI_ERRORS = {
-  NETWORK: 'Could not reach the Copilot API. Check your connection and try again.',
-  AUTH: 'Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in.',
-  PARSE: 'Received an unexpected response from Copilot. Please try again.',
-} as const
+// Re-export AI_ERRORS so downstream consumers keep working without import path changes
+export { AI_ERRORS }
 
 export type Question = QuestionResponse
 
 // ---------------------------------------------------------------------------
-// Module-level singleton client (lazy-started, reused across calls)
-// ---------------------------------------------------------------------------
-let _client: CopilotClient | null = null
-
-async function getClient(): Promise<CopilotClient> {
-  if (_client) return _client
-  const client = new CopilotClient()
-  await client.start()
-  _client = client
-  return _client
-}
-
-// Exported for testing — allows tests to inject a mock client
-export function _setClient(client: CopilotClient | null): void {
-  _client = client
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function isAuthError(err: unknown): boolean {
-  if (!(err instanceof Error)) return false
-  const msg = err.message.toLowerCase()
-  return msg.includes('401') || msg.includes('unauthorized') || msg.includes('unauthenticated') || msg.includes('authentication')
+function classifyError(err: unknown, settings?: SettingsFile): string {
+  const provider = settings?.provider ?? null
+  const isAuth = err instanceof Error
+    && /401|unauthorized|unauthenticated|authentication|api key|invalid key/i.test(err.message)
+
+  if (isAuth) {
+    switch (provider) {
+      case 'copilot': return AI_ERRORS.AUTH_COPILOT
+      case 'openai': return AI_ERRORS.AUTH_OPENAI
+      case 'anthropic': return AI_ERRORS.AUTH_ANTHROPIC
+      case 'gemini': return AI_ERRORS.AUTH_GEMINI
+      case 'ollama': return AI_ERRORS.AUTH_OLLAMA
+      default: return AI_ERRORS.NO_PROVIDER
+    }
+  }
+
+  switch (provider) {
+    case 'copilot': return AI_ERRORS.NETWORK_COPILOT
+    case 'openai': return AI_ERRORS.NETWORK_OPENAI
+    case 'anthropic': return AI_ERRORS.NETWORK_ANTHROPIC
+    case 'gemini': return AI_ERRORS.NETWORK_GEMINI
+    case 'ollama': return AI_ERRORS.NETWORK_OLLAMA(settings?.ollamaEndpoint ?? 'http://localhost:11434')
+    default: return AI_ERRORS.NO_PROVIDER
+  }
+}
+
+export function isAuthErrorMessage(error: string): boolean {
+  return error === AI_ERRORS.AUTH_COPILOT
+    || error === AI_ERRORS.AUTH_OPENAI
+    || error === AI_ERRORS.AUTH_ANTHROPIC
+    || error === AI_ERRORS.AUTH_GEMINI
+    || error === AI_ERRORS.AUTH_OLLAMA
 }
 
 function stripJsonFences(text: string): string {
@@ -78,44 +83,39 @@ export async function generateQuestion(
   previousQuestions: string[] = [],
   settings?: SettingsFile,
 ): Promise<Result<Question>> {
+  const effectiveSettings = settings ?? defaultSettings()
+  const providerResult = createProvider(effectiveSettings)
+  if (!providerResult.ok) {
+    return { ok: false, error: providerResult.error }
+  }
+  const provider = providerResult.data
+
   try {
-    const client = await getClient()
-    const session = await client.createSession({ onPermissionRequest: approveAll })
+    // First attempt
+    const prompt = buildQuestionPrompt(domain, difficultyLevel, settings)
+    const raw = await provider.generateCompletion(prompt)
+    const firstResult = parseAndValidate(raw)
 
-    try {
-      // First attempt
-      const prompt = buildQuestionPrompt(domain, difficultyLevel, settings)
-      const event = await session.sendAndWait({ prompt })
-      const raw = event?.data.content ?? ''
-      const firstResult = parseAndValidate(raw)
-
-      if (!firstResult.ok) {
-        return firstResult
-      }
-
-      const hash = hashQuestion(firstResult.data.question)
-      if (!existingHashes.has(hash)) {
-        return firstResult
-      }
-
-      // Duplicate — retry once
-      const retryPrompt = buildDeduplicationPrompt(
-        domain,
-        difficultyLevel,
-        [...previousQuestions, firstResult.data.question],
-        settings,
-      )
-      const retryEvent = await session.sendAndWait({ prompt: retryPrompt })
-      const retryRaw = retryEvent?.data.content ?? ''
-      return parseAndValidate(retryRaw)
-    } finally {
-      await session.disconnect()
+    if (!firstResult.ok) {
+      return firstResult
     }
+
+    const hash = hashQuestion(firstResult.data.question)
+    if (!existingHashes.has(hash)) {
+      return firstResult
+    }
+
+    // Duplicate — retry once
+    const retryPrompt = buildDeduplicationPrompt(
+      domain,
+      difficultyLevel,
+      [...previousQuestions, firstResult.data.question],
+      settings,
+    )
+    const retryRaw = await provider.generateCompletion(retryPrompt)
+    return parseAndValidate(retryRaw)
   } catch (err) {
-    if (isAuthError(err)) {
-      return { ok: false, error: AI_ERRORS.AUTH }
-    }
-    return { ok: false, error: AI_ERRORS.NETWORK }
+    return { ok: false, error: classifyError(err, effectiveSettings) }
   }
 }
 
@@ -123,21 +123,18 @@ export async function generateMotivationalMessage(
   trigger: MotivationalTrigger,
   settings?: SettingsFile,
 ): Promise<Result<string>> {
+  const effectiveSettings = settings ?? defaultSettings()
+  const providerResult = createProvider(effectiveSettings)
+  if (!providerResult.ok) {
+    return { ok: false, error: providerResult.error }
+  }
+  const provider = providerResult.data
+
   try {
-    const client = await getClient()
-    const session = await client.createSession({ onPermissionRequest: approveAll })
-    try {
-      const prompt = buildMotivationalPrompt(trigger, settings)
-      const event = await session.sendAndWait({ prompt })
-      const message = (event?.data.content ?? '').trim()
-      return { ok: true, data: message }
-    } finally {
-      await session.disconnect()
-    }
+    const prompt = buildMotivationalPrompt(trigger, settings)
+    const message = (await provider.generateCompletion(prompt)).trim()
+    return { ok: true, data: message }
   } catch (err) {
-    if (isAuthError(err)) {
-      return { ok: false, error: AI_ERRORS.AUTH }
-    }
-    return { ok: false, error: AI_ERRORS.NETWORK }
+    return { ok: false, error: classifyError(err, effectiveSettings) }
   }
 }

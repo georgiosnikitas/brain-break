@@ -22,14 +22,13 @@ vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
 }))
 
-vi.mock('../ai/client.js', () => ({
-  generateQuestion: vi.fn(),
-  AI_ERRORS: {
-    NETWORK: 'Could not reach the Copilot API. Check your connection and try again.',
-    AUTH: 'Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in.',
-    PARSE: 'Received an unexpected response from Copilot. Please try again.',
-  },
-}))
+vi.mock('../ai/client.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../ai/client.js')>()
+  return {
+    ...actual,
+    generateQuestion: vi.fn(),
+  }
+})
 
 vi.mock('../domain/store.js', () => ({
   readDomain: vi.fn(),
@@ -95,7 +94,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 describe('showQuiz', () => {
   it('starts and stops the ora spinner around question generation', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
 
     await showQuiz('typescript')
 
@@ -105,11 +104,11 @@ describe('showQuiz', () => {
 
   it('displays error and navigates home on NETWORK error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
 
     await showQuiz('typescript')
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Copilot API'))
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI API'))
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     expect(mockSelect).not.toHaveBeenCalled()
     consoleSpy.mockRestore()
@@ -120,7 +119,7 @@ describe('showQuiz', () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementationOnce((_code?: string | number | null) => {
       throw new Error('process.exit called')
     })
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.AUTH })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.AUTH_COPILOT })
 
     await expect(showQuiz('typescript')).rejects.toThrow('process.exit called')
 
@@ -323,7 +322,7 @@ describe('showQuiz', () => {
   })
 
   it('calls readSettings once per quiz session start', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
 
     await showQuiz('typescript')
 
@@ -333,7 +332,7 @@ describe('showQuiz', () => {
   it('passes settings from readSettings to generateQuestion', async () => {
     const settings = { language: 'Spanish', tone: 'expressive' as const }
     mockReadSettings.mockResolvedValue({ ok: true, data: settings })
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
 
     await showQuiz('typescript')
 
@@ -348,7 +347,7 @@ describe('showQuiz', () => {
 
   it('falls back to defaultSettings when readSettings fails', async () => {
     mockReadSettings.mockResolvedValue({ ok: false, error: 'disk error' })
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
 
     await showQuiz('typescript')
 

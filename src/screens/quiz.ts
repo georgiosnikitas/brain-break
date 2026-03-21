@@ -1,7 +1,7 @@
 import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
-import { generateQuestion, AI_ERRORS, type Question } from '../ai/client.js'
+import { generateQuestion, isAuthErrorMessage, type Question } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
@@ -85,7 +85,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes, recentQuestions, settings).finally(() => spinner.stop())
 
     if (!questionResult.ok) {
-      if (questionResult.error === AI_ERRORS.AUTH) {
+      if (isAuthErrorMessage(questionResult.error)) {
         console.error(colorIncorrect(questionResult.error))
         process.exit(1)
       }

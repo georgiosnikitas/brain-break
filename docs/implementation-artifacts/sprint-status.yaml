@@ -97,7 +97,7 @@ development_status:
   epic-7: in-progress
   7-1-settings-schema-provider-fields: done
   7-2-ai-provider-abstraction-layer: done
-  7-3-provider-agnostic-ai-client: backlog
+  7-3-provider-agnostic-ai-client: done
   7-4-first-launch-provider-setup-screen: backlog
   7-5-settings-screen-provider-configuration: backlog
   7-6-router-startup-flow-provider-setup-wiring: backlog
