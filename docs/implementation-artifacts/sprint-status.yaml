@@ -99,6 +99,6 @@ development_status:
   7-2-ai-provider-abstraction-layer: done
   7-3-provider-agnostic-ai-client: done
   7-4-first-launch-provider-setup-screen: done
-  7-5-settings-screen-provider-configuration: backlog
+  7-5-settings-screen-provider-configuration: done
   7-6-router-startup-flow-provider-setup-wiring: backlog
   epic-7-retrospective: optional
