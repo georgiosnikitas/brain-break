@@ -59,18 +59,14 @@ async function handleProviderAction(
 
   const validationResult = await validateProvider(selectedProvider, { ...settings, provider: selectedProvider, ollamaEndpoint, ollamaModel })
 
-  if (validationResult.ok) {
-    console.log(success(`\n✓ ${PROVIDER_LABELS[selectedProvider]} is ready to go!`))
-  } else {
-    console.log(warn(`\n${validationResult.error}`))
-  }
+  const message = validationResult.ok
+    ? success(`✓ ${PROVIDER_LABELS[selectedProvider]} is ready to go!`)
+    : warn(validationResult.error)
 
-  return { provider: selectedProvider, ollamaEndpoint, ollamaModel }
+  return { provider: selectedProvider, ollamaEndpoint, ollamaModel, message }
 }
 
 export async function showSettingsScreen(): Promise<void> {
-  clearScreen()
-
   const settingsResult = await readSettings()
   const currentSettings = settingsResult.ok ? settingsResult.data : defaultSettings()
   let language = currentSettings.language
@@ -78,9 +74,15 @@ export async function showSettingsScreen(): Promise<void> {
   let provider = currentSettings.provider
   let ollamaEndpoint = currentSettings.ollamaEndpoint
   let ollamaModel = currentSettings.ollamaModel
+  let banner = ''
 
   try {
     while (true) {
+      clearScreen()
+      if (banner) {
+        console.log(banner + '\n')
+        banner = ''
+      }
       const action = await select<SettingsAction>({
         message: 'Settings',
         choices: [
@@ -95,7 +97,11 @@ export async function showSettingsScreen(): Promise<void> {
       })
 
       if (action === 'provider') {
-        ({ provider, ollamaEndpoint, ollamaModel } = await handleProviderAction(provider, currentSettings, ollamaEndpoint, ollamaModel))
+        const result = await handleProviderAction(provider, currentSettings, ollamaEndpoint, ollamaModel)
+        provider = result.provider
+        ollamaEndpoint = result.ollamaEndpoint
+        ollamaModel = result.ollamaModel
+        banner = result.message
       } else if (action === 'language') {
         language = (await input({ message: 'Question Language', default: language })).trim()
       } else if (action === 'tone') {
