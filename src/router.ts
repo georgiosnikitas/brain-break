@@ -6,8 +6,10 @@ import { showHistory as showHistoryScreen } from './screens/history.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSettingsScreen } from './screens/settings.js'
+import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { readDomain, writeDomain, deleteDomain as deleteDomainStore } from './domain/store.js'
 import { warn, error as errorFmt } from './utils/format.js'
+import type { SettingsFile } from './domain/schema.js'
 
 export async function showHome(): Promise<void> {
   await showHomeScreen()
@@ -59,4 +61,8 @@ export async function showDomainMenu(slug: string): Promise<void> {
 
 export async function showSettings(): Promise<void> {
   await showSettingsScreen()
+}
+
+export async function showProviderSetup(settings: SettingsFile): Promise<void> {
+  await showProviderSetupScreen(settings)
 }
