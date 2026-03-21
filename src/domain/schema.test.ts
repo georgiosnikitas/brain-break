@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings } from './schema.js'
+import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema } from './schema.js'
 
 const validMeta = {
   score: 100,
@@ -270,5 +270,103 @@ describe('defaultSettings', () => {
   it('passes SettingsFileSchema validation', () => {
     const result = SettingsFileSchema.safeParse(defaultSettings())
     expect(result.success).toBe(true)
+  })
+})
+
+describe('AiProviderTypeSchema', () => {
+  it('accepts all 5 valid provider types', () => {
+    for (const provider of ['copilot', 'openai', 'anthropic', 'gemini', 'ollama']) {
+      expect(AiProviderTypeSchema.safeParse(provider).success).toBe(true)
+    }
+  })
+
+  it('rejects invalid provider value', () => {
+    expect(AiProviderTypeSchema.safeParse('grok').success).toBe(false)
+    expect(AiProviderTypeSchema.safeParse('').success).toBe(false)
+  })
+})
+
+describe('SettingsFileSchema — provider fields', () => {
+  it('accepts full valid input with all 5 fields including null provider', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: null,
+      language: 'English',
+      tone: 'natural',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts input with provider set to each valid provider type', () => {
+    for (const provider of ['copilot', 'openai', 'anthropic', 'gemini', 'ollama'] as const) {
+      const result = SettingsFileSchema.safeParse({
+        provider,
+        language: 'English',
+        tone: 'natural',
+        ollamaEndpoint: 'http://localhost:11434',
+        ollamaModel: 'llama3',
+      })
+      expect(result.success).toBe(true)
+    }
+  })
+
+  it('rejects invalid non-null provider value', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: 'grok',
+      language: 'English',
+      tone: 'natural',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('fills defaults for missing provider, ollamaEndpoint, ollamaModel (backward compat)', () => {
+    const result = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
+    expect(result.provider).toBeNull()
+    expect(result.ollamaEndpoint).toBe('http://localhost:11434')
+    expect(result.ollamaModel).toBe('llama3')
+  })
+
+  it('rejects empty ollamaEndpoint string', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: 'ollama',
+      language: 'English',
+      tone: 'natural',
+      ollamaEndpoint: '',
+      ollamaModel: 'llama3',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty ollamaModel string', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: 'ollama',
+      language: 'English',
+      tone: 'natural',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: '',
+    })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('defaultSettings — provider fields', () => {
+  it('returns provider: null', () => {
+    expect(defaultSettings().provider).toBeNull()
+  })
+
+  it('returns ollamaEndpoint: http://localhost:11434', () => {
+    expect(defaultSettings().ollamaEndpoint).toBe('http://localhost:11434')
+  })
+
+  it('returns ollamaModel: llama3', () => {
+    expect(defaultSettings().ollamaModel).toBe('llama3')
+  })
+
+  it('returns all 5 fields', () => {
+    const s = defaultSettings()
+    expect(Object.keys(s).sort((a, b) => a.localeCompare(b))).toEqual(['language', 'ollamaEndpoint', 'ollamaModel', 'provider', 'tone'])
   })
 })

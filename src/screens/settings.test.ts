@@ -53,7 +53,7 @@ describe('showSettingsScreen', () => {
   })
 
   it('passes current language as default to input prompt', async () => {
-    mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'Greek', tone: 'pirate' } })
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), language: 'Greek', tone: 'pirate' } })
     mockSelect.mockResolvedValueOnce('language').mockResolvedValueOnce('back')
     mockInput.mockResolvedValue('Greek')
 
@@ -63,7 +63,7 @@ describe('showSettingsScreen', () => {
   })
 
   it('passes current tone as default to tone select prompt', async () => {
-    mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'expressive' } })
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), language: 'English', tone: 'expressive' } })
     mockSelect.mockResolvedValueOnce('tone').mockResolvedValueOnce('expressive').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
@@ -78,7 +78,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockWriteSettings).toHaveBeenCalledWith({ language: 'Spanish', tone: 'robot' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...defaultSettings(), language: 'Spanish', tone: 'robot' })
     expect(router.showHome).toHaveBeenCalledOnce()
   })
 
@@ -137,7 +137,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockWriteSettings).toHaveBeenCalledWith({ language: 'English', tone: 'natural' })
+    expect(mockWriteSettings).toHaveBeenCalledWith(defaultSettings())
   })
 
   it('re-throws non-ExitPromptError from settings select', async () => {

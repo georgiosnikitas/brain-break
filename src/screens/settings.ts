@@ -1,7 +1,7 @@
 import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readSettings, writeSettings } from '../domain/store.js'
-import type { ToneOfVoice } from '../domain/schema.js'
+import { defaultSettings, type ToneOfVoice } from '../domain/schema.js'
 import { menuTheme } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
 import * as router from '../router.js'
@@ -26,8 +26,9 @@ export async function showSettingsScreen(): Promise<void> {
   clearScreen()
 
   const settingsResult = await readSettings()
-  let language = settingsResult.ok ? settingsResult.data.language : 'English'
-  let tone: ToneOfVoice = settingsResult.ok ? settingsResult.data.tone : 'natural'
+  const currentSettings = settingsResult.ok ? settingsResult.data : defaultSettings()
+  let language = currentSettings.language
+  let tone: ToneOfVoice = currentSettings.tone
 
   try {
     while (true) {
@@ -56,7 +57,7 @@ export async function showSettingsScreen(): Promise<void> {
           theme: menuTheme,
         })
       } else if (action === 'save') {
-        const result = await writeSettings({ language, tone })
+        const result = await writeSettings({ ...currentSettings, language, tone })
         if (!result.ok) {
           console.error(`Failed to save settings: ${result.error}`)
         }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
-import { defaultDomainFile } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings } from '../domain/schema.js'
 import type { AnswerOption } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
@@ -357,7 +357,7 @@ describe('showQuiz', () => {
       expect.any(Number),
       expect.any(Set),
       expect.any(Array),
-      { language: 'English', tone: 'natural' },
+      defaultSettings(),
     )
   })
 

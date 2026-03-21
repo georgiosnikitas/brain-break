@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { isReturningUser, isScoreTrendingUp, showSelectDomainScreen } from './select-domain.js'
 import { writeDomain, readDomain, _setDataDir, readSettings } from '../domain/store.js'
-import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
 // Ora spinner mock
@@ -374,6 +374,6 @@ describe('showSelectDomainScreen — motivational message AI integration', () =>
 
     await showSelectDomainScreen('ai-settings-fail')
 
-    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', { language: 'English', tone: 'natural' })
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', defaultSettings())
   })
 })

@@ -90,12 +90,18 @@ export function defaultDomainFile(): DomainFile {
 export const ToneOfVoiceSchema = z.enum(['natural', 'expressive', 'calm', 'humorous', 'sarcastic', 'robot', 'pirate'])
 export type ToneOfVoice = z.infer<typeof ToneOfVoiceSchema>
 
+export const AiProviderTypeSchema = z.enum(['copilot', 'openai', 'anthropic', 'gemini', 'ollama'])
+export type AiProviderType = z.infer<typeof AiProviderTypeSchema>
+
 export const SettingsFileSchema = z.object({
+  provider: AiProviderTypeSchema.nullable().default(null),
   language: z.string().min(1),
   tone: ToneOfVoiceSchema,
+  ollamaEndpoint: z.string().min(1).default('http://localhost:11434'),
+  ollamaModel: z.string().min(1).default('llama3'),
 })
 export type SettingsFile = z.infer<typeof SettingsFileSchema>
 
 export function defaultSettings(): SettingsFile {
-  return { language: 'English', tone: 'natural' }
+  return { provider: null, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }
 }

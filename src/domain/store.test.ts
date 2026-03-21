@@ -217,15 +217,20 @@ describe('writeSettings + readSettings', () => {
   })
 
   it('roundtrip returns identical settings', async () => {
-    const settings = { language: 'Greek', tone: 'pirate' as const }
+    const settings = {
+      provider: 'anthropic' as const,
+      language: 'Greek',
+      tone: 'pirate' as const,
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    }
     const writeResult = await writeSettings(settings)
     expect(writeResult.ok).toBe(true)
 
     const readResult = await readSettings()
     expect(readResult.ok).toBe(true)
     if (!readResult.ok) return
-    expect(readResult.data.language).toBe('Greek')
-    expect(readResult.data.tone).toBe('pirate')
+    expect(readResult.data).toEqual(settings)
   })
 
   it('ENOENT returns defaultSettings()', async () => {
@@ -280,6 +285,35 @@ describe('writeSettings + readSettings', () => {
     if (!result.ok) return
     expect(result.data.tone).toBe('expressive')
     expect(result.data.language).toBe('Greek')
+  })
+
+  it('fills provider defaults when reading old-format settings', async () => {
+    await writeFile(settingsFile, JSON.stringify({ language: 'French', tone: 'pirate' }), 'utf8')
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.language).toBe('French')
+    expect(result.data.tone).toBe('pirate')
+    expect(result.data.provider).toBeNull()
+    expect(result.data.ollamaEndpoint).toBe('http://localhost:11434')
+    expect(result.data.ollamaModel).toBe('llama3')
+  })
+
+  it('roundtrips expanded settings with all provider fields', async () => {
+    const full = {
+      provider: 'openai' as const,
+      language: 'Greek',
+      tone: 'pirate' as const,
+      ollamaEndpoint: 'http://custom:1234',
+      ollamaModel: 'mistral',
+    }
+    const writeResult = await writeSettings(full)
+    expect(writeResult.ok).toBe(true)
+
+    const readResult = await readSettings()
+    expect(readResult.ok).toBe(true)
+    if (!readResult.ok) return
+    expect(readResult.data).toEqual(full)
   })
 
   it('returns { ok: false } and cleans up when writeSettings fails (tmp path is a directory)', async () => {
