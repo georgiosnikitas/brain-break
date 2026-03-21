@@ -227,7 +227,7 @@ describe('Gemini adapter', () => {
 // ---------------------------------------------------------------------------
 describe('Ollama adapter', () => {
   it('calls generateText with ollama model, custom endpoint and model', async () => {
-    const settings = makeSettings({ provider: 'ollama', ollamaEndpoint: 'http://myhost:11434', ollamaModel: 'mistral' })
+    const settings = makeSettings({ provider: 'ollama', ollamaEndpoint: 'https://myhost:11434', ollamaModel: 'mistral' })
     const result = createProvider(settings)
     if (!result.ok) throw new Error('expected ok')
 
@@ -236,7 +236,7 @@ describe('Ollama adapter', () => {
     const text = await result.data.generateCompletion('test prompt')
 
     expect(text).toBe('ollama response')
-    expect(mockCreateOllama).toHaveBeenCalledWith({ baseURL: 'http://myhost:11434/api' })
+    expect(mockCreateOllama).toHaveBeenCalledWith({ baseURL: 'https://myhost:11434/api' })
     expect(mockOllamaModel).toHaveBeenCalledWith('mistral')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'ollama-model',
@@ -568,10 +568,10 @@ describe('testProviderConnection', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true }))
     mockGenerateText.mockRejectedValueOnce(new Error('model not found'))
 
-    const settings = makeSettings({ ollamaEndpoint: 'http://custom:11434' })
+    const settings = makeSettings({ ollamaEndpoint: 'https://custom:11434' })
     const result = await testProviderConnection('ollama', settings)
 
-    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_OLLAMA('http://custom:11434') })
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_OLLAMA('https://custom:11434') })
   })
 
   it('returns NETWORK_COPILOT error when test call throws for copilot', async () => {
@@ -659,8 +659,8 @@ describe('AI_ERRORS', () => {
   })
 
   it('NETWORK_OLLAMA is a function that includes the endpoint', () => {
-    const msg = AI_ERRORS.NETWORK_OLLAMA('http://custom:1234')
-    expect(msg).toContain('http://custom:1234')
+    const msg = AI_ERRORS.NETWORK_OLLAMA('https://custom:1234')
+    expect(msg).toContain('https://custom:1234')
     expect(msg).toContain('Ollama')
   })
 
