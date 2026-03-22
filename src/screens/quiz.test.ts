@@ -18,9 +18,13 @@ vi.mock('ora', () => ({
   default: vi.fn(() => ({ start: mockStart, stop: mockStop })),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
-  select: vi.fn(),
-}))
+vi.mock('@inquirer/prompts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@inquirer/prompts')>()
+  return {
+    ...actual,
+    select: vi.fn(),
+  }
+})
 
 vi.mock('../ai/client.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../ai/client.js')>()
@@ -95,6 +99,7 @@ beforeEach(() => {
 describe('showQuiz', () => {
   it('starts and stops the ora spinner around question generation', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect.mockResolvedValueOnce(true as any)
 
     await showQuiz('typescript')
 
@@ -105,39 +110,39 @@ describe('showQuiz', () => {
   it('displays error and navigates home on NETWORK error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect.mockResolvedValueOnce(true as any)
 
     await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI API'))
+    expect(mockSelect).toHaveBeenCalledOnce()
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
-    expect(mockSelect).not.toHaveBeenCalled()
     consoleSpy.mockRestore()
   })
 
-  it('calls process.exit(1) on AUTH error', async () => {
+  it('displays error and navigates to domain menu on AUTH error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementationOnce((_code?: string | number | null) => {
-      throw new Error('process.exit called')
-    })
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.AUTH_COPILOT })
+    mockSelect.mockResolvedValueOnce(true as any)
 
-    await expect(showQuiz('typescript')).rejects.toThrow('process.exit called')
+    await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('authentication'))
-    expect(exitSpy).toHaveBeenCalledWith(1)
+    expect(mockSelect).toHaveBeenCalledOnce()
+    expect(mockShowDomainMenu).toHaveBeenCalledWith('typescript')
     consoleSpy.mockRestore()
-    exitSpy.mockRestore()
   })
 
   it('displays error and navigates home on PARSE error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.PARSE })
+    mockSelect.mockResolvedValueOnce(true as any)
 
     await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('unexpected response'))
+    expect(mockSelect).toHaveBeenCalledOnce()
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
-    expect(mockSelect).not.toHaveBeenCalled()
     consoleSpy.mockRestore()
   })
 
@@ -323,6 +328,7 @@ describe('showQuiz', () => {
 
   it('calls readSettings once per quiz session start', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect.mockResolvedValueOnce(true as any)
 
     await showQuiz('typescript')
 
@@ -333,6 +339,7 @@ describe('showQuiz', () => {
     const settings = { language: 'Spanish', tone: 'expressive' as const }
     mockReadSettings.mockResolvedValue({ ok: true, data: settings })
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect.mockResolvedValueOnce(true as any)
 
     await showQuiz('typescript')
 
@@ -348,6 +355,7 @@ describe('showQuiz', () => {
   it('falls back to defaultSettings when readSettings fails', async () => {
     mockReadSettings.mockResolvedValue({ ok: false, error: 'disk error' })
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect.mockResolvedValueOnce(true as any)
 
     await showQuiz('typescript')
 
