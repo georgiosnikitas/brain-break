@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-21'
+lastEdited: '2026-03-22'
 editHistory:
+  - date: '2026-03-22'
+    changes: 'Per-provider model selection: settings schema expanded with openaiModel, anthropicModel, geminiModel fields and defaults. Settings JSON example updated. defaultSettings() output updated. First-launch provider setup and settings screen descriptions updated to reflect hosted provider model prompts with defaults and empty-string-resets-to-default. File tree updated with provider-settings.ts.'
   - date: '2026-03-21'
     changes: 'Adopted Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for multi-provider abstraction. Replaced 4 individual provider SDKs (`openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, Ollama via fetch) with unified `generateText()` from Vercel AI SDK + thin `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `ollama-ai-provider` provider packages. GitHub Copilot SDK remains a custom adapter (not supported by Vercel AI SDK). Updated: Technical Constraints, AI Provider SDKs section, Multi-Provider Architecture (adapter table + usage example), Response Validation, dependency rules, module structure comments, enforcement guidelines, boundary tables, coherence validation.'
   - date: '2026-03-17'
@@ -51,7 +53,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - Runtime: Node.js v25.8.0
 - Interface: Terminal only — no web UI, no GUI
-- AI: 5 interchangeable providers unified via the Vercel AI SDK (`ai`) — OpenAI (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`), Google Gemini (`@ai-sdk/google`), Ollama (`ollama-ai-provider`), plus GitHub Copilot SDK (`@github/copilot-sdk`) as a custom adapter wrapping the `AiProvider` interface. All providers receive identical prompts and must return the same JSON schema (question text, options A–D, correct answer, difficulty, speed tier thresholds). API keys read from environment variables at runtime — never stored in settings
+- AI: 5 interchangeable providers — OpenAI (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`), Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK (`ai`), Ollama via raw HTTP fetch, plus GitHub Copilot SDK (`@github/copilot-sdk`) as a custom adapter wrapping the `AiProvider` interface. All providers receive identical prompts and must return the same JSON schema (question text, options A–D, correct answer, difficulty, speed tier thresholds). API keys read from environment variables at runtime — never stored in settings
 - Storage: `~/.brain-break/<domain-slug>.json` — one file per domain; `~/.brain-break/settings.json` — global settings (includes provider selection)
 - Distribution: npm / npx — must reach home screen in ≤ 2s cold start
 - Platform: Unix-like only (macOS, Linux, WSL)
@@ -112,7 +114,6 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - `@ai-sdk/openai` — OpenAI provider adapter
 - `@ai-sdk/anthropic` — Anthropic provider adapter
 - `@ai-sdk/google` — Google Gemini provider adapter
-- `ollama-ai-provider` — Ollama provider adapter
 - `@github/copilot-sdk` — GitHub Copilot integration (custom adapter — not supported by Vercel AI SDK)
 
 **CLI Entry & Distribution:**
@@ -224,6 +225,9 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "provider": "copilot",        // Enum: copilot | openai | anthropic | gemini | ollama — null on first launch
   "language": "English",        // Free-text — any language name
   "tone": "natural",            // Enum: natural | expressive | calm | humorous | sarcastic | robot | pirate
+  "openaiModel": "gpt-4o-mini",           // OpenAI — preferred model name
+  "anthropicModel": "claude-sonnet-4-20250514", // Anthropic — preferred model name
+  "geminiModel": "gemini-2.0-flash",       // Gemini — preferred model name
   "ollamaEndpoint": "http://localhost:11434",  // Ollama only — endpoint URL
   "ollamaModel": "llama3"       // Ollama only — model name
 }
@@ -251,7 +255,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`.
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`.
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -259,11 +263,11 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 **AI prompt injection:** `ai/prompts.ts` conditionally prepends a voice instruction to every prompt when language ≠ `"English"` or tone ≠ `"natural"` — e.g., `"Respond in Greek using a pirate tone of voice."`. The settings object is passed through from the screen layer to `ai/client.ts` to `ai/prompts.ts`.
 
-**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 5 presets — triggers provider validation), language (free-text input), and tone (select from 7 presets). For Ollama, the user can also edit the endpoint URL and model name. Save persists + returns to home; Back discards + returns to home.
+**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 5 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, prompts for a preferred model name with a sensible default; entering an empty string resets to the default), language (free-text input), and tone (select from 7 presets). For Ollama, the user can also edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
 
 **First-launch provider setup:** `screens/provider-setup.ts` displays a one-time provider selection screen on first launch (when `provider` is `null`). The user selects a provider via arrow keys; the app validates readiness:
 - **Copilot:** checks Copilot authentication
-- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`)
+- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default)
 - **Ollama:** prompts for endpoint URL + model name, tests connection
 
 If validation fails, the app displays what’s needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
@@ -312,7 +316,7 @@ export async function validateProvider(providerType: AiProviderType, settings: S
 | OpenAI | `ai` + `@ai-sdk/openai` — `generateText({ model: openai(modelId), prompt })` | `OPENAI_API_KEY` env var |
 | Anthropic | `ai` + `@ai-sdk/anthropic` — `generateText({ model: anthropic(modelId), prompt })` | `ANTHROPIC_API_KEY` env var |
 | Gemini | `ai` + `@ai-sdk/google` — `generateText({ model: google(modelId), prompt })` | `GOOGLE_API_KEY` env var |
-| Ollama | `ai` + `ollama-ai-provider` — `generateText({ model: ollama(modelId), prompt })` | Endpoint reachability |
+| Ollama | Raw HTTP `fetch()` — `POST {endpoint}/api/generate` with `{ model, prompt, stream: false }` | Endpoint reachability |
 
 **Vercel AI SDK usage example (OpenAI adapter):**
 
@@ -492,6 +496,7 @@ src/
 │   ├── history.ts        # F6: single-question navigation history view
 │   ├── stats.ts          # F7: stats dashboard
 │   ├── settings.ts       # F8: language, tone & AI provider settings screen
+│   ├── provider-settings.ts # F8: per-provider model/endpoint prompts with defaults
 │   └── provider-setup.ts # F8: first-launch provider selection + validation
 ├── ai/
 │   ├── client.ts         # F2: provider-agnostic AI client + error handling
@@ -512,7 +517,7 @@ src/
 - `screens/` may import from `domain/`, `ai/`, and `utils/` — never the reverse
 - `router.ts` may import from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)
 - `domain/store.ts` is the **only** module that writes to disk (domain files and settings)
-- `ai/providers.ts` is the **only** module that imports provider SDKs (`@github/copilot-sdk`, `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `ollama-ai-provider`)
+- `ai/providers.ts` is the **only** module that imports provider SDKs (`@github/copilot-sdk`, `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`) and makes raw HTTP calls (Ollama via `fetch()`)
 - `ai/client.ts` is the **only** module that calls `createProvider()` and orchestrates AI completions — screens never call providers directly
 
 ### Decision Impact Analysis
@@ -721,6 +726,8 @@ brain-break/
 │   │   ├── stats.test.ts
 │   │   ├── settings.ts             # F8: language, tone & AI provider settings screen
 │   │   ├── settings.test.ts
+│   │   ├── provider-settings.ts     # F8: per-provider model/endpoint prompts with defaults
+│   │   ├── provider-settings.test.ts
 │   │   ├── provider-setup.ts       # F8: first-launch provider selection + validation
 │   │   └── provider-setup.test.ts
 │   ├── ai/
@@ -861,7 +868,7 @@ screens/settings.ts
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `ollama-ai-provider`, `@github/copilot-sdk`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 4 of 5 provider adapters under a single `generateText()` interface, reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
+All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
 
 ### Requirements Coverage Validation ✅
 

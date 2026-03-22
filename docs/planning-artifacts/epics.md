@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-21'
+lastEdited: '2026-03-22'
 status: 'complete'
 editHistory:
+  - date: '2026-03-22'
+    changes: 'Per-provider model selection: FR17 updated (settings defaults expanded with openaiModel, anthropicModel, geminiModel); FR27 updated (hosted providers prompt for model name with defaults); FR28 updated (hosted provider model editing with empty-string-resets-to-default); FR Coverage Map FR28 updated; Story 7.1 ACs updated with per-provider model fields and defaults; Story 7.4 ACs updated with model prompt on hosted provider selection; Story 7.5 ACs updated with model editing for hosted providers.'
   - date: '2026-03-21'
     changes: 'Multi-provider sync: FR6 updated (Copilot-only → 5-provider abstraction); FR12 updated (paginated → single-question navigation); FR15 updated (4 tones → 7 tones + AI Provider selector); FR17 updated (settings defaults expanded with provider, ollamaEndpoint, ollamaModel); NFR2 updated (per-provider error messages); FR26–FR30 added (Provider Setup screen, provider validation, Settings provider selector, no-provider guard, per-provider errors); FR/NFR coverage maps updated; Epic 7 (Multi-Provider AI Integration) added with 6 stories (7.1–7.6): Settings Schema Provider Fields, AI Provider Abstraction Layer, Provider-Agnostic AI Client, First-Launch Provider Setup Screen, Settings Screen Provider Configuration, Router & Startup Flow Provider Setup Wiring. Final validation passed — 30/30 FRs + 6/6 NFRs covered across 7 epics, 28 stories.'
   - date: '2026-03-15'
@@ -60,7 +62,7 @@ FR15: The Settings screen allows configuring: AI Provider (selectable from 5 pro
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3" }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3" }`.
 
 FR18: Every AI call (questions, motivational messages) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -80,9 +82,9 @@ FR25: The home screen includes a "☕ Buy me a coffee" action positioned between
 
 FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow key navigation.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays what's needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays what's needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
-FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For Ollama, the user can edit the endpoint URL and model name. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
+FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the default). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
 FR29: If no provider is configured or the configured provider is unreachable, Play displays: "AI provider not ready. Go to Settings to configure." and returns the user to the domain sub-menu. All other app features remain functional.
 
@@ -157,7 +159,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR25 | Epic 1 | Coffee Supporter Screen — QR code + URL + Back navigation |
 | FR26 | Epic 7 | First-launch Provider Setup screen |
 | FR27 | Epic 7 | Provider readiness validation (non-blocking) |
-| FR28 | Epic 7 | Settings screen — AI Provider selector + Ollama config |
+| FR28 | Epic 7 | Settings screen — AI Provider selector + per-provider model config + Ollama config |
 | FR29 | Epic 7 | No-provider guard on Play action |
 | FR30 | Epic 7 | Per-provider AI error messages |
 
@@ -1045,7 +1047,7 @@ Users can select their preferred AI provider (GitHub Copilot, OpenAI, Anthropic,
 ### Story 7.1: Settings Schema — Provider Fields
 
 As a developer,
-I want `domain/schema.ts` extended with `AiProviderType`, `provider`, `ollamaEndpoint`, and `ollamaModel` fields in the `SettingsFile` schema,
+I want `domain/schema.ts` extended with `AiProviderType`, `provider`, `openaiModel`, `anthropicModel`, `geminiModel`, `ollamaEndpoint`, and `ollamaModel` fields in the `SettingsFile` schema,
 So that the settings store and all downstream modules have a single, type-safe source of truth for multi-provider configuration.
 
 **Acceptance Criteria:**
@@ -1057,19 +1059,19 @@ So that the settings store and all downstream modules have a single, type-safe s
 
 **Given** `domain/schema.ts` is updated  
 **When** I import `SettingsFileSchema`  
-**Then** it validates a JSON object with fields: `provider` (nullable `AiProviderType`), `language` (string), `tone` (`ToneOfVoice`), `ollamaEndpoint` (string), and `ollamaModel` (string)  
+**Then** it validates a JSON object with fields: `provider` (nullable `AiProviderType`), `language` (string), `tone` (`ToneOfVoice`), `openaiModel` (string), `anthropicModel` (string), `geminiModel` (string), `ollamaEndpoint` (string), and `ollamaModel` (string)  
 
 **Given** `domain/schema.ts` is updated  
 **When** I call `defaultSettings()`  
-**Then** it returns `{ provider: null, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`  
+**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`  
 
 **Given** `domain/store.ts` already handles `readSettings()` and `writeSettings()`  
 **When** the expanded schema is deployed  
-**Then** existing `settings.json` files without `provider`, `ollamaEndpoint`, or `ollamaModel` fields are handled gracefully — missing fields fall back to defaults via Zod `.default()` or post-parse merge  
+**Then** existing `settings.json` files without `provider`, `openaiModel`, `anthropicModel`, `geminiModel`, `ollamaEndpoint`, or `ollamaModel` fields are handled gracefully — missing fields fall back to defaults via Zod `.default()` or post-parse merge  
 
 **Given** `domain/schema.test.ts` is updated  
 **When** I run `npm test`  
-**Then** all schema tests pass, covering: `AiProviderType` enum validation, expanded `SettingsFileSchema` valid input, `defaultSettings()` output includes all 5 fields, backward compatibility with settings files missing provider fields  
+**Then** all schema tests pass, covering: `AiProviderType` enum validation, expanded `SettingsFileSchema` valid input, `defaultSettings()` output includes all 8 fields, backward compatibility with settings files missing provider fields  
 
 ---
 
@@ -1205,16 +1207,16 @@ So that I can start using the app with my preferred provider without editing con
 **Given** I select "OpenAI" from the provider list  
 **When** the selection is confirmed  
 **Then** `validateProvider('openai', settings)` is called  
-**And** if `OPENAI_API_KEY` env var is present → success message displayed, provider saved to `settings.json`, app proceeds to home screen  
+**And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-4o-mini`; entering empty string resets to `gpt-4o-mini`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
 **And** if `OPENAI_API_KEY` env var is missing → message displayed: "Set the `OPENAI_API_KEY` environment variable and restart the app." — provider is still saved, app proceeds to home screen (non-blocking)  
 
 **Given** I select "Anthropic" from the provider list  
 **When** validation runs  
-**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI  
+**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model prompt pre-filled with `claude-sonnet-4-20250514`  
 
 **Given** I select "Google Gemini" from the provider list  
 **When** validation runs  
-**Then** it checks for `GOOGLE_API_KEY` — same success/failure pattern  
+**Then** it checks for `GOOGLE_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.0-flash`  
 
 **Given** I select "GitHub Copilot" from the provider list  
 **When** validation runs  
@@ -1261,8 +1263,9 @@ So that I can switch providers or fix configuration issues without restarting th
 **Given** I select a new provider (e.g., "Anthropic")  
 **When** the selection is confirmed  
 **Then** `validateProvider('anthropic', settings)` is called  
+**And** the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the provider's default)  
 **And** a success or failure message is displayed (same validation as first-launch setup)  
-**And** the provider selection is updated in the in-memory settings (persisted on Save)  
+**And** the provider selection and model are updated in the in-memory settings (persisted on Save)  
 
 **Given** I select "Ollama" as the provider  
 **When** the selection is confirmed  
@@ -1270,9 +1273,14 @@ So that I can switch providers or fix configuration issues without restarting th
 **And** validation tests the connection  
 **And** the Ollama-specific fields are updated in the in-memory settings  
 
+**Given** I select "GitHub Copilot" as the provider  
+**When** the selection is confirmed  
+**Then** no model prompt is displayed — Copilot manages models internally  
+**And** validation checks Copilot authentication  
+
 **Given** I have changed the provider on the Settings screen  
 **When** I select "Save"  
-**Then** `writeSettings()` persists the new provider, `ollamaEndpoint`, and `ollamaModel` (if applicable) alongside language and tone  
+**Then** `writeSettings()` persists the new provider, per-provider model field (if applicable), `ollamaEndpoint`, and `ollamaModel` (if applicable) alongside language and tone  
 **And** I am returned to the home screen  
 **And** the new provider takes effect on the next AI call — no app restart required  
 
@@ -1282,7 +1290,7 @@ So that I can switch providers or fix configuration issues without restarting th
 
 **Given** `screens/settings.test.ts` is updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: AI Provider option present on Settings screen, provider selector renders all 5 options, provider change triggers validation, Ollama prompts for endpoint/model, Save persists provider, Back discards provider change, `clearScreen()` called  
+**Then** all tests pass, covering: AI Provider option present on Settings screen, provider selector renders all 5 options, provider change triggers validation, hosted providers prompt for model name with defaults, Ollama prompts for endpoint/model, Save persists provider and model, Back discards provider change, `clearScreen()` called  
 
 ---
 

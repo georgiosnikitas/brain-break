@@ -14,8 +14,10 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-17'
+lastEdited: '2026-03-22'
 editHistory:
+  - date: '2026-03-22'
+    changes: 'Feature 8 per-provider model selection: selecting OpenAI, Anthropic, or Google Gemini now prompts the user to enter a preferred model name (with a sensible default pre-filled). Entering an empty string resets to the default model. Copilot does not prompt for a model. Implementation Decisions updated with per-provider model fields (openaiModel, anthropicModel, geminiModel) and their defaults. Settings persistence schema updated with new model fields.'
   - date: '2026-03-17'
     changes: 'Multi-provider AI integration: Copilot SDK is no longer the sole AI backend; 5 providers supported (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama). Feature 2 rewritten as provider-agnostic. Feature 8 expanded with AI Provider setting and first-launch Provider Setup screen (non-blocking validation). NFR 2 rewritten with per-provider error handling. Project-Type Requirements updated with provider list, env var auth, and provider abstraction in Implementation Decisions. Executive Summary, Target Users, User Journeys, Innovation Analysis updated to remove Copilot-only language.'
   - date: '2026-03-15'
@@ -245,10 +247,10 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 ### Implementation Decisions
 
 - **Provider abstraction:** All AI calls route through a unified provider interface. Each provider adapter translates the app’s prompt format to the provider’s API. Adding a new provider requires implementing the adapter interface — no changes to business logic
-- **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`). API keys are read from environment variables at runtime — never stored in settings
+- **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
 - **Language and tone injection:** Every AI prompt (questions, motivational messages) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the question generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural" }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-4o-mini", "anthropicModel": "claude-sonnet-4-20250514", "geminiModel": "gemini-2.0-flash" }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`)
 
@@ -396,7 +398,7 @@ User can view a summary dashboard for the active domain:
 - The user selects an AI provider from the fixed list using arrow key navigation: **GitHub Copilot**, **OpenAI**, **Anthropic**, **Google Gemini**, **Ollama**
 - After selection, the app validates provider readiness:
   - **GitHub Copilot:** Checks Copilot authentication — if successful, proceed; if not, display: *"Copilot authentication not detected. Ensure you have an active GitHub Copilot subscription and are logged in."*
-  - **OpenAI / Anthropic / Google Gemini:** Checks for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) — if found, proceed; if missing, display: *"Set the `[VAR_NAME]` environment variable and restart the app."*
+  - **OpenAI / Anthropic / Google Gemini:** Checks for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) — if found, prompts the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini). The user can accept the default by pressing Enter, type a different model name, or enter an empty string to reset to the default. If the env var is missing, display: *"Set the `[VAR_NAME]` environment variable and restart the app."*
   - **Ollama:** Prompts for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3`) — tests connection; if unreachable, display: *"Could not reach Ollama at [endpoint]. Ensure Ollama is running."*
 - If validation fails, the app **proceeds to the home screen anyway** — the user can explore all features except Play; attempting Play shows: *"AI provider not ready. Go to Settings to configure."*
 - If validation succeeds, the app proceeds to the home screen with full functionality
@@ -407,7 +409,9 @@ User can view a summary dashboard for the active domain:
 
 - User selects from 5 providers via arrow key navigation: **GitHub Copilot**, **OpenAI**, **Anthropic**, **Google Gemini**, **Ollama**
 - Selecting a provider triggers the same validation logic as first-launch setup
+- For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value). Entering an empty string resets the model to the provider's default (`gpt-4o-mini`, `claude-sonnet-4-20250514`, or `gemini-2.0-flash` respectively)
 - For Ollama, the user can edit the endpoint URL and model name
+- GitHub Copilot does not prompt for a model — model selection is managed internally by the Copilot SDK
 - API keys are never entered in-app — they are read from environment variables at runtime
 - Changing providers takes effect on the next AI call — no restart required
 
