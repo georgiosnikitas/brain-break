@@ -23,10 +23,6 @@ vi.mock('@ai-sdk/google', () => ({
   createGoogleGenerativeAI: () => (...args: unknown[]) => mockGoogle(...args),
 }))
 
-const mockOllamaModel = vi.fn()
-const mockCreateOllama = vi.fn()
-vi.mock('ollama-ai-provider', () => ({ createOllama: (...args: unknown[]) => mockCreateOllama(...args) }))
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -61,8 +57,6 @@ beforeEach(() => {
   mockOpenai.mockReset()
   mockAnthropic.mockReset()
   mockGoogle.mockReset()
-  mockOllamaModel.mockReset()
-  mockCreateOllama.mockReset()
   mockSendAndWait.mockReset()
   mockDisconnect.mockReset()
   mockCreateSession.mockReset()
@@ -77,8 +71,6 @@ beforeEach(() => {
   mockOpenai.mockReturnValue('openai-model')
   mockAnthropic.mockReturnValue('anthropic-model')
   mockGoogle.mockReturnValue('google-model')
-  mockOllamaModel.mockReturnValue('ollama-model')
-  mockCreateOllama.mockReturnValue((...args: unknown[]) => mockOllamaModel(...args))
 
   _setCopilotClient(null)
 })
@@ -226,21 +218,31 @@ describe('Gemini adapter', () => {
 // Ollama adapter — generateCompletion
 // ---------------------------------------------------------------------------
 describe('Ollama adapter', () => {
-  it('calls generateText with ollama model, custom endpoint and model', async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('calls the Ollama generate API with custom endpoint and model', async () => {
     const settings = makeSettings({ provider: 'ollama', ollamaEndpoint: 'https://myhost:11434', ollamaModel: 'mistral' })
     const result = createProvider(settings)
     if (!result.ok) throw new Error('expected ok')
 
-    mockGenerateText.mockResolvedValueOnce({ text: 'ollama response' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce({ response: 'ollama response' }),
+    }))
 
     const text = await result.data.generateCompletion('test prompt')
 
     expect(text).toBe('ollama response')
-    expect(mockCreateOllama).toHaveBeenCalledWith({ baseURL: 'https://myhost:11434/api' })
-    expect(mockOllamaModel).toHaveBeenCalledWith('mistral')
-    expect(mockGenerateText).toHaveBeenCalledWith({
-      model: 'ollama-model',
-      prompt: 'test prompt',
+    expect(fetch).toHaveBeenCalledWith('https://myhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'mistral',
+        prompt: 'test prompt',
+        stream: false,
+      }),
     })
   })
 
@@ -248,11 +250,30 @@ describe('Ollama adapter', () => {
     const result = createProvider(makeSettings({ provider: 'ollama' }))
     if (!result.ok) throw new Error('expected ok')
 
-    mockGenerateText.mockResolvedValueOnce({ text: 'ok' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce({ response: 'ok' }),
+    }))
+
     await result.data.generateCompletion('prompt')
 
-    expect(mockCreateOllama).toHaveBeenCalledWith({ baseURL: 'http://localhost:11434/api' })
-    expect(mockOllamaModel).toHaveBeenCalledWith('llama3')
+    expect(fetch).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.objectContaining({
+      body: JSON.stringify({ model: 'llama3', prompt: 'prompt', stream: false }),
+    }))
+  })
+
+  it('throws the Ollama API error message when the request fails', async () => {
+    const result = createProvider(makeSettings({ provider: 'ollama' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: vi.fn().mockResolvedValueOnce({ error: 'model not found' }),
+      text: vi.fn().mockResolvedValueOnce('model not found'),
+    }))
+
+    await expect(result.data.generateCompletion('prompt')).rejects.toThrow('model not found')
   })
 })
 
@@ -518,13 +539,18 @@ describe('testProviderConnection', () => {
   })
 
   it('returns ok:true with response text when test API call succeeds for ollama', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true }))
-    mockGenerateText.mockResolvedValueOnce({ text: 'Ready!' })
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValueOnce({ response: 'Ready!' }),
+      }))
 
     const result = await testProviderConnection('ollama', makeSettings({ ollamaEndpoint: 'http://localhost:11434' }))
 
     expect(result).toEqual({ ok: true, data: 'Ready!' })
-    expect(mockGenerateText).toHaveBeenCalled()
+    expect(fetch).toHaveBeenNthCalledWith(1, 'http://localhost:11434/api/tags')
+    expect(fetch).toHaveBeenNthCalledWith(2, 'http://localhost:11434/api/generate', expect.any(Object))
   })
 
   it('returns ok:true with response text when test API call succeeds for copilot', async () => {
@@ -565,8 +591,9 @@ describe('testProviderConnection', () => {
   })
 
   it('returns NETWORK_OLLAMA error with endpoint when test call throws for ollama', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true }))
-    mockGenerateText.mockRejectedValueOnce(new Error('model not found'))
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ ok: true })
+      .mockRejectedValueOnce(new Error('connection refused')))
 
     const settings = makeSettings({ ollamaEndpoint: 'https://custom:11434' })
     const result = await testProviderConnection('ollama', settings)

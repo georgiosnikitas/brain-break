@@ -1,8 +1,7 @@
-import { generateText, type LanguageModel } from 'ai'
+import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createOllama } from 'ollama-ai-provider'
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
 import type { AiProviderType, Result, SettingsFile } from '../domain/schema.js'
 
@@ -99,16 +98,52 @@ function createGeminiAdapter(): AiProvider {
   }
 }
 
+function getOllamaApiUrl(endpoint: string, path: string): string {
+  let normalizedEndpoint = endpoint
+  while (normalizedEndpoint.endsWith('/')) {
+    normalizedEndpoint = normalizedEndpoint.slice(0, -1)
+  }
+  return `${normalizedEndpoint}/api/${path}`
+}
+
+async function parseOllamaError(response: Response): Promise<string> {
+  try {
+    const body = await response.json() as { error?: { message?: string } | string }
+    if (typeof body.error === 'string') return body.error
+    if (typeof body.error?.message === 'string') return body.error.message
+  } catch {
+    // Fall back to raw text when Ollama returns a non-JSON error payload.
+  }
+
+  try {
+    const text = await response.text()
+    if (text.trim().length > 0) return text.trim()
+  } catch {
+    // Ignore read failures and use the status line fallback below.
+  }
+
+  return `Ollama request failed with status ${response.status}`
+}
+
 function createOllamaAdapter(settings: SettingsFile): AiProvider {
-  const ollamaProvider = createOllama({ baseURL: `${settings.ollamaEndpoint}/api` })
   return {
     async generateCompletion(prompt: string): Promise<string> {
-      // ollama-ai-provider exports LanguageModelV1; ai v6 expects LanguageModelV3 — runtime-compatible
-      const { text } = await generateText({
-        model: ollamaProvider(settings.ollamaModel) as unknown as LanguageModel,
-        prompt,
+      const response = await fetch(getOllamaApiUrl(settings.ollamaEndpoint, 'generate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: settings.ollamaModel,
+          prompt,
+          stream: false,
+        }),
       })
-      return text
+
+      if (!response.ok) {
+        throw new Error(await parseOllamaError(response))
+      }
+
+      const data = await response.json() as { response?: string }
+      return (data.response ?? '').trim()
     },
   }
 }
@@ -205,7 +240,7 @@ export async function validateProvider(
 
     case 'ollama':
       try {
-        const response = await fetch(`${settings.ollamaEndpoint}/api/tags`)
+        const response = await fetch(getOllamaApiUrl(settings.ollamaEndpoint, 'tags'))
         if (response.ok) {
           return { ok: true, data: undefined }
         }
