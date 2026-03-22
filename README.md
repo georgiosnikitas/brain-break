@@ -24,17 +24,17 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 - Persistent local history and settings
 - Per-domain stats dashboard with score trend, accuracy, and return streak
 - Paginated single-question history navigation
-- **Settings screen** to change AI provider, language, and tone at any time
+- **Settings screen** to change AI provider, model, language, and tone at any time
 
 ## 📋 Requirements
 
 - Node.js `>= 25.8.0`
 - An AI provider configured through the in-app settings:
   - **GitHub Copilot** — a GitHub account with an active Copilot subscription and Copilot authentication in the environment
-  - **OpenAI** — `OPENAI_API_KEY` environment variable
-  - **Anthropic** — `ANTHROPIC_API_KEY` environment variable
-  - **Google Gemini** — `GOOGLE_GENERATIVE_AI_API_KEY` environment variable
-  - **Ollama** — a running Ollama instance (default: `http://localhost:11434`)
+  - **OpenAI** — `OPENAI_API_KEY` environment variable and a model name configured in setup/settings (default: `gpt-4o-mini`)
+  - **Anthropic** — `ANTHROPIC_API_KEY` environment variable and a model name configured in setup/settings (default: `claude-sonnet-4-20250514`)
+  - **Google Gemini** — `GOOGLE_GENERATIVE_AI_API_KEY` environment variable and a model name configured in setup/settings (default: `gemini-2.0-flash`)
+  - **Ollama** — a running Ollama instance with endpoint and model configured in setup/settings (defaults: `http://localhost:11434`, `llama3`)
 
 ## 🚀 Installation
 
@@ -86,6 +86,9 @@ Each domain gets its own JSON file, plus a global settings file:
 - **provider** — selected AI provider (`copilot`, `openai`, `anthropic`, `gemini`, or `ollama`)
 - **language** — language for generated questions and messages (e.g., `English`, `Spanish`)
 - **tone** — tone of voice (`natural`, `expressive`, `calm`, `humorous`, `sarcastic`, `robot`, or `pirate`)
+- **openaiModel** — OpenAI model name (default: `gpt-4o-mini`)
+- **anthropicModel** — Anthropic model name (default: `claude-sonnet-4-20250514`)
+- **geminiModel** — Google Gemini model name (default: `gemini-2.0-flash`)
 - **ollamaEndpoint** — Ollama server URL (default: `http://localhost:11434`)
 - **ollamaModel** — Ollama model name (default: `llama3`)
 
@@ -130,8 +133,9 @@ brain-break/
       history.ts         Paginated single-question history viewer
       stats.ts           Stats dashboard with trends and accuracy
       archived.ts        Archived domains list with unarchive option
-      settings.ts        Settings screen for provider, language, and tone
+      settings.ts        Settings screen for provider, model, language, and tone
       provider-setup.ts  First-time AI provider setup and validation
+      provider-settings.ts Shared provider-specific prompts for hosted/Ollama models
     utils/
       format.ts   Formatting helpers for time, accuracy, and display
       hash.ts     SHA-256 hashing for question deduplication
@@ -146,12 +150,12 @@ brain-break/
 
 ## ⚙️ How It Works
 
-On first launch, Brain Break prompts you to select and validate an AI provider. After setup, the home screen shows all active quiz domains and lets you:
+On first launch, Brain Break prompts you to select and validate an AI provider. For OpenAI, Anthropic, Gemini, and Ollama, setup also captures the model configuration used for requests. After setup, the home screen shows all active quiz domains and lets you:
 
 - select a domain to open its sub-menu (play, history, stats, archive, delete)
 - create a new domain
 - browse archived domains
-- change settings (AI provider, language, tone of voice)
+- change settings (AI provider, model, language, tone of voice)
 - view a "Buy me a coffee" QR code
 
 When you select a domain, the app may show a **motivational message** if you're a returning player or your recent scores are trending upward.
@@ -196,7 +200,7 @@ The app starts new domains at **level 2 (Easy)**.
 ## 📝 Notes
 
 - On first launch, you must configure an AI provider before starting a quiz. The app validates connectivity before saving.
-- For cloud providers (OpenAI, Anthropic, Gemini), set the corresponding API key environment variable before running the app.
+- For cloud providers (OpenAI, Anthropic, Gemini), set the corresponding API key environment variable before running the app and choose the model name during setup/settings.
 - For Ollama, ensure the Ollama server is running and the chosen model is pulled locally.
 - Domain names are slugified before being stored on disk (`"System Design"` → `system-design`).
 - If a domain file is missing or unreadable, the app starts from a clean default state for that domain.
@@ -212,4 +216,3 @@ For context on the product goals and feature decisions, see the planning artifac
 - [Product Brief](docs/planning-artifacts/product-brief.md) — vision, problem statement, and success metrics
 - [PRD](docs/planning-artifacts/prd.md) — detailed feature specifications and acceptance criteria
 - [Architecture](docs/planning-artifacts/architecture.md) — technical design decisions
-

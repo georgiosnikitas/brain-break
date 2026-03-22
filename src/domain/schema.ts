@@ -106,15 +106,33 @@ export const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntrie
   PROVIDER_CHOICES.map(c => [c.value, c.name]),
 ) as Record<AiProviderType, string>
 
+export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-20250514'
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash'
+export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434'
+export const DEFAULT_OLLAMA_MODEL = 'llama3'
+
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),
   language: z.string().min(1),
   tone: ToneOfVoiceSchema,
-  ollamaEndpoint: z.string().min(1).default('http://localhost:11434'),
-  ollamaModel: z.string().min(1).default('llama3'),
+  openaiModel: z.string().min(1).default(DEFAULT_OPENAI_MODEL),
+  anthropicModel: z.string().min(1).default(DEFAULT_ANTHROPIC_MODEL),
+  geminiModel: z.string().min(1).default(DEFAULT_GEMINI_MODEL),
+  ollamaEndpoint: z.string().min(1).default(DEFAULT_OLLAMA_ENDPOINT),
+  ollamaModel: z.string().min(1).default(DEFAULT_OLLAMA_MODEL),
 })
 export type SettingsFile = z.infer<typeof SettingsFileSchema>
 
 export function defaultSettings(): SettingsFile {
-  return { provider: null, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }
+  return {
+    provider: null,
+    language: 'English',
+    tone: 'natural',
+    openaiModel: DEFAULT_OPENAI_MODEL,
+    anthropicModel: DEFAULT_ANTHROPIC_MODEL,
+    geminiModel: DEFAULT_GEMINI_MODEL,
+    ollamaEndpoint: DEFAULT_OLLAMA_ENDPOINT,
+    ollamaModel: DEFAULT_OLLAMA_MODEL,
+  }
 }

@@ -70,29 +70,29 @@ function createCopilotAdapter(): AiProvider {
 // ---------------------------------------------------------------------------
 // Vercel AI SDK adapters — thin wrappers around generateText()
 // ---------------------------------------------------------------------------
-function createOpenAIAdapter(): AiProvider {
+function createOpenAIAdapter(settings: SettingsFile): AiProvider {
   return {
     async generateCompletion(prompt: string): Promise<string> {
-      const { text } = await generateText({ model: openai('gpt-4o-mini'), prompt })
+      const { text } = await generateText({ model: openai(settings.openaiModel), prompt })
       return text
     },
   }
 }
 
-function createAnthropicAdapter(): AiProvider {
+function createAnthropicAdapter(settings: SettingsFile): AiProvider {
   return {
     async generateCompletion(prompt: string): Promise<string> {
-      const { text } = await generateText({ model: anthropic('claude-sonnet-4-20250514'), prompt })
+      const { text } = await generateText({ model: anthropic(settings.anthropicModel), prompt })
       return text
     },
   }
 }
 
-function createGeminiAdapter(): AiProvider {
+function createGeminiAdapter(settings: SettingsFile): AiProvider {
   const google = createGoogleGenerativeAI({ apiKey: process.env['GOOGLE_GENERATIVE_AI_API_KEY'] })
   return {
     async generateCompletion(prompt: string): Promise<string> {
-      const { text } = await generateText({ model: google('gemini-2.0-flash'), prompt })
+      const { text } = await generateText({ model: google(settings.geminiModel), prompt })
       return text
     },
   }
@@ -158,9 +158,9 @@ export function createProvider(settings: SettingsFile): Result<AiProvider> {
 
   const adapters: Record<AiProviderType, () => AiProvider> = {
     copilot: createCopilotAdapter,
-    openai: createOpenAIAdapter,
-    anthropic: createAnthropicAdapter,
-    gemini: createGeminiAdapter,
+    openai: () => createOpenAIAdapter(settings),
+    anthropic: () => createAnthropicAdapter(settings),
+    gemini: () => createGeminiAdapter(settings),
     ollama: () => createOllamaAdapter(settings),
   }
 

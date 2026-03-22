@@ -221,6 +221,9 @@ describe('writeSettings + readSettings', () => {
       provider: 'anthropic' as const,
       language: 'Greek',
       tone: 'pirate' as const,
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-3-5-haiku-latest',
+      geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
     }
@@ -295,6 +298,9 @@ describe('writeSettings + readSettings', () => {
     expect(result.data.language).toBe('French')
     expect(result.data.tone).toBe('pirate')
     expect(result.data.provider).toBeNull()
+    expect(result.data.openaiModel).toBe('gpt-4o-mini')
+    expect(result.data.anthropicModel).toBe('claude-sonnet-4-20250514')
+    expect(result.data.geminiModel).toBe('gemini-2.0-flash')
     expect(result.data.ollamaEndpoint).toBe('http://localhost:11434')
     expect(result.data.ollamaModel).toBe('llama3')
   })
@@ -304,6 +310,9 @@ describe('writeSettings + readSettings', () => {
       provider: 'openai' as const,
       language: 'Greek',
       tone: 'pirate' as const,
+      openaiModel: 'gpt-4.1-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.5-flash',
       ollamaEndpoint: 'http://custom:1234',
       ollamaModel: 'mistral',
     }

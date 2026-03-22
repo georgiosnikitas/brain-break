@@ -29,7 +29,16 @@ function makeMockProvider(): AiProvider {
 }
 
 function makeSettings(provider: SettingsFile['provider'] = 'openai'): SettingsFile {
-  return { provider, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }
+  return {
+    provider,
+    language: 'English',
+    tone: 'natural',
+    openaiModel: 'gpt-4o-mini',
+    anthropicModel: 'claude-sonnet-4-20250514',
+    geminiModel: 'gemini-2.0-flash',
+    ollamaEndpoint: 'http://localhost:11434',
+    ollamaModel: 'llama3',
+  }
 }
 
 function makeValidResponse(question = 'What is 2+2?') {

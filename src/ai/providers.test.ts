@@ -31,6 +31,9 @@ function makeSettings(overrides: Partial<SettingsFile> = {}): SettingsFile {
     provider: null,
     language: 'English',
     tone: 'natural',
+    openaiModel: 'gpt-4o-mini',
+    anthropicModel: 'claude-sonnet-4-20250514',
+    geminiModel: 'gemini-2.0-flash',
     ollamaEndpoint: 'http://localhost:11434',
     ollamaModel: 'llama3',
     ...overrides,
@@ -142,7 +145,7 @@ describe('OpenAI adapter', () => {
     provider = result.data
   })
 
-  it('calls generateText with openai model and prompt', async () => {
+  it('calls generateText with configured openai model and prompt', async () => {
     mockGenerateText.mockResolvedValueOnce({ text: 'response text' })
 
     const text = await provider.generateCompletion('test prompt')
@@ -153,6 +156,16 @@ describe('OpenAI adapter', () => {
       model: 'openai-model',
       prompt: 'test prompt',
     })
+  })
+
+  it('uses a custom OpenAI model from settings', async () => {
+    mockGenerateText.mockResolvedValueOnce({ text: 'response text' })
+    const result = createProvider(makeSettings({ provider: 'openai', openaiModel: 'gpt-4.1-mini' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    await result.data.generateCompletion('test prompt')
+
+    expect(mockOpenai).toHaveBeenCalledWith('gpt-4.1-mini')
   })
 
   it('propagates errors from generateText', async () => {
@@ -174,7 +187,7 @@ describe('Anthropic adapter', () => {
     provider = result.data
   })
 
-  it('calls generateText with anthropic model and prompt', async () => {
+  it('calls generateText with configured anthropic model and prompt', async () => {
     mockGenerateText.mockResolvedValueOnce({ text: 'anthropic response' })
 
     const text = await provider.generateCompletion('test prompt')
@@ -185,6 +198,16 @@ describe('Anthropic adapter', () => {
       model: 'anthropic-model',
       prompt: 'test prompt',
     })
+  })
+
+  it('uses a custom Anthropic model from settings', async () => {
+    mockGenerateText.mockResolvedValueOnce({ text: 'anthropic response' })
+    const result = createProvider(makeSettings({ provider: 'anthropic', anthropicModel: 'claude-3-5-haiku-latest' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    await result.data.generateCompletion('test prompt')
+
+    expect(mockAnthropic).toHaveBeenCalledWith('claude-3-5-haiku-latest')
   })
 })
 
@@ -200,7 +223,7 @@ describe('Gemini adapter', () => {
     provider = result.data
   })
 
-  it('calls generateText with google model and prompt', async () => {
+  it('calls generateText with configured google model and prompt', async () => {
     mockGenerateText.mockResolvedValueOnce({ text: 'gemini response' })
 
     const text = await provider.generateCompletion('test prompt')
@@ -211,6 +234,16 @@ describe('Gemini adapter', () => {
       model: 'google-model',
       prompt: 'test prompt',
     })
+  })
+
+  it('uses a custom Gemini model from settings', async () => {
+    mockGenerateText.mockResolvedValueOnce({ text: 'gemini response' })
+    const result = createProvider(makeSettings({ provider: 'gemini', geminiModel: 'gemini-2.5-flash' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    await result.data.generateCompletion('test prompt')
+
+    expect(mockGoogle).toHaveBeenCalledWith('gemini-2.5-flash')
   })
 })
 

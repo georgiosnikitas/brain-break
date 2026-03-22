@@ -68,6 +68,7 @@ afterEach(() => {
 describe('showProviderSetupScreen', () => {
   it('calls clearScreen as first operation', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     const promise = showProviderSetupScreen(settings)
@@ -79,6 +80,7 @@ describe('showProviderSetupScreen', () => {
 
   it('displays first-time setup heading', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     const promise = showProviderSetupScreen(settings)
@@ -90,6 +92,7 @@ describe('showProviderSetupScreen', () => {
 
   it('calls select with 5 provider choices in correct order', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     const promise = showProviderSetupScreen(settings)
@@ -114,19 +117,22 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('OpenAI selected + validation success → success message + settings saved', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('gpt-4.1-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello from OpenAI!' })
 
     const promise = showProviderSetupScreen(settings)
     await vi.advanceTimersByTimeAsync(2000)
     await promise
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai' })
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: settings.openaiModel }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-4.1-mini' })
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Hello from OpenAI!'))
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-4.1-mini' })
   })
 
   it('OpenAI selected + validation failure → warning message + settings still saved', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
 
     const promise = showProviderSetupScreen(settings)
@@ -137,19 +143,35 @@ describe('showProviderSetupScreen', () => {
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai' })
   })
 
-  // -------------------------------------------------------------------------
-  // Anthropic
-  // -------------------------------------------------------------------------
-  it('Anthropic selected → validateProvider called with correct args', async () => {
-    mockSelect.mockResolvedValueOnce('anthropic' as never)
+  it('OpenAI empty input resets to the default model', async () => {
+    settings = { ...settings, openaiModel: 'gpt-4.1-mini' }
+    mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     const promise = showProviderSetupScreen(settings)
     await vi.advanceTimersByTimeAsync(2000)
     await promise
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic' })
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'anthropic' })
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-4o-mini' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-4o-mini' })
+  })
+
+  // -------------------------------------------------------------------------
+  // Anthropic
+  // -------------------------------------------------------------------------
+  it('Anthropic selected → validateProvider called with correct args', async () => {
+    mockSelect.mockResolvedValueOnce('anthropic' as never)
+    mockInput.mockResolvedValueOnce('claude-3-5-haiku-latest')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
+
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
+
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Anthropic Model Name', default: settings.anthropicModel }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic', anthropicModel: 'claude-3-5-haiku-latest' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'anthropic', anthropicModel: 'claude-3-5-haiku-latest' })
   })
 
   // -------------------------------------------------------------------------
@@ -157,14 +179,16 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('Gemini selected → validateProvider called with correct args', async () => {
     mockSelect.mockResolvedValueOnce('gemini' as never)
+    mockInput.mockResolvedValueOnce('gemini-2.5-flash')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     const promise = showProviderSetupScreen(settings)
     await vi.advanceTimersByTimeAsync(2000)
     await promise
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('gemini', { ...settings, provider: 'gemini' })
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'gemini' })
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Google Gemini Model Name', default: settings.geminiModel }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('gemini', { ...settings, provider: 'gemini', geminiModel: 'gemini-2.5-flash' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'gemini', geminiModel: 'gemini-2.5-flash' })
   })
 
   // -------------------------------------------------------------------------
@@ -214,6 +238,32 @@ describe('showProviderSetupScreen', () => {
     expect(mockWriteSettings).toHaveBeenCalledWith(expectedSettings)
   })
 
+  it('Ollama empty model input resets to the default model', async () => {
+    settings = { ...settings, ollamaModel: 'mistral' }
+    mockSelect.mockResolvedValueOnce('ollama' as never)
+    mockInput
+      .mockResolvedValueOnce('http://localhost:11434')
+      .mockResolvedValueOnce('')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
+
+    const promise = showProviderSetupScreen(settings)
+    await vi.advanceTimersByTimeAsync(2000)
+    await promise
+
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', {
+      ...settings,
+      provider: 'ollama',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    })
+    expect(mockWriteSettings).toHaveBeenCalledWith({
+      ...settings,
+      provider: 'ollama',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    })
+  })
+
   it('Ollama validation failure → warning message + settings still saved', async () => {
     mockSelect.mockResolvedValueOnce('ollama' as never)
     mockInput
@@ -236,6 +286,7 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('logs console.error when writeSettings fails', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
     mockWriteSettings.mockResolvedValueOnce({ ok: false, error: 'disk full' })
 

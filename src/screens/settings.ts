@@ -6,6 +6,7 @@ import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
+import { promptForProviderSettings } from './provider-settings.js'
 import * as router from '../router.js'
 
 const TONE_CHOICES: Array<{ name: string; value: ToneOfVoice }> = [
@@ -31,6 +32,9 @@ export function getProviderLabel(provider: AiProviderType | null): string {
 async function handleProviderAction(
   provider: AiProviderType | null,
   settings: SettingsFile,
+  openaiModel: string,
+  anthropicModel: string,
+  geminiModel: string,
   ollamaEndpoint: string,
   ollamaModel: string,
 ) {
@@ -41,20 +45,25 @@ async function handleProviderAction(
     theme: menuTheme,
   })
 
-  if (selectedProvider === 'ollama') {
-    ollamaEndpoint = (await input({ message: 'Ollama Endpoint URL', default: ollamaEndpoint })).trim() || ollamaEndpoint
-    ollamaModel = (await input({ message: 'Ollama Model Name', default: ollamaModel })).trim() || ollamaModel
-  }
+  const updatedSettings = await promptForProviderSettings(selectedProvider, {
+    ...settings,
+    provider: selectedProvider,
+    openaiModel,
+    anthropicModel,
+    geminiModel,
+    ollamaEndpoint,
+    ollamaModel,
+  })
 
   const spinner = ora('Testing connection...').start()
-  const validationResult = await testProviderConnection(selectedProvider, { ...settings, provider: selectedProvider, ollamaEndpoint, ollamaModel })
+  const validationResult = await testProviderConnection(selectedProvider, updatedSettings)
   spinner.stop()
 
   const message = validationResult.ok
     ? success(`✓ ${PROVIDER_LABELS[selectedProvider]}: ${validationResult.data}`)
     : warn(validationResult.error)
 
-  return { provider: selectedProvider, ollamaEndpoint, ollamaModel, message }
+  return { ...updatedSettings, message }
 }
 
 async function handleLanguageAction(currentLanguage: string): Promise<string> {
@@ -103,6 +112,9 @@ export async function showSettingsScreen(): Promise<void> {
   let language = currentSettings.language
   let tone = currentSettings.tone
   let provider = currentSettings.provider
+  let openaiModel = currentSettings.openaiModel
+  let anthropicModel = currentSettings.anthropicModel
+  let geminiModel = currentSettings.geminiModel
   let ollamaEndpoint = currentSettings.ollamaEndpoint
   let ollamaModel = currentSettings.ollamaModel
   let banner = ''
@@ -115,12 +127,23 @@ export async function showSettingsScreen(): Promise<void> {
         banner = ''
       }
       
-      const action = await selectSettingsAction(provider, language, tone)
+        const action = await selectSettingsAction(provider, language, tone)
 
       switch (action) {
         case 'provider': {
-          const result = await handleProviderAction(provider, currentSettings, ollamaEndpoint, ollamaModel)
+          const result = await handleProviderAction(
+            provider,
+            currentSettings,
+            openaiModel,
+            anthropicModel,
+            geminiModel,
+            ollamaEndpoint,
+            ollamaModel,
+          )
           provider = result.provider
+          openaiModel = result.openaiModel
+          anthropicModel = result.anthropicModel
+          geminiModel = result.geminiModel
           ollamaEndpoint = result.ollamaEndpoint
           ollamaModel = result.ollamaModel
           banner = result.message
@@ -133,7 +156,17 @@ export async function showSettingsScreen(): Promise<void> {
           tone = await handleToneAction(tone)
           break
         case 'save':
-          await handleSaveAction({ ...currentSettings, language, tone, provider, ollamaEndpoint, ollamaModel })
+          await handleSaveAction({
+            ...currentSettings,
+            language,
+            tone,
+            provider,
+            openaiModel,
+            anthropicModel,
+            geminiModel,
+            ollamaEndpoint,
+            ollamaModel,
+          })
           return await router.showHome()
         case 'back':
           return await router.showHome()

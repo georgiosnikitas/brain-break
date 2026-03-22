@@ -42,7 +42,22 @@ vi.mock('../ai/client.js', () => ({
 // ---------------------------------------------------------------------------
 vi.mock('../domain/store.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../domain/store.js')>()
-  return { ...actual, readSettings: vi.fn().mockResolvedValue({ ok: true, data: { language: 'English', tone: 'natural' } }) }
+  return {
+    ...actual,
+    readSettings: vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        provider: null,
+        language: 'English',
+        tone: 'natural',
+        openaiModel: 'gpt-4o-mini',
+        anthropicModel: 'claude-sonnet-4-20250514',
+        geminiModel: 'gemini-2.0-flash',
+        ollamaEndpoint: 'http://localhost:11434',
+        ollamaModel: 'llama3',
+      },
+    }),
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -158,7 +173,7 @@ beforeEach(async () => {
   showQuizMock = showQuiz as ReturnType<typeof vi.fn>
   showQuizMock.mockClear()
   mockGenerateMotivationalMessage.mockClear()
-  mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'natural' as const } })
+  mockReadSettings.mockResolvedValue({ ok: true, data: defaultSettings() })
   mockStart.mockClear()
   mockStop.mockClear()
   mockTypewrite.mockClear()
@@ -252,7 +267,7 @@ describe('showSelectDomainScreen — motivational message AI integration', () =>
 
     await showSelectDomainScreen('ai-returning')
 
-    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', { language: 'English', tone: 'natural' })
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', defaultSettings())
   })
 
   it('calls generateMotivationalMessage with trending trigger when score is trending up', async () => {
@@ -264,11 +279,11 @@ describe('showSelectDomainScreen — motivational message AI integration', () =>
 
     await showSelectDomainScreen('ai-trending')
 
-    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('trending', { language: 'English', tone: 'natural' })
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('trending', defaultSettings())
   })
 
   it('passes settings from readSettings to generateMotivationalMessage', async () => {
-    const customSettings = { language: 'Greek', tone: 'pirate' as const }
+    const customSettings = { ...defaultSettings(), language: 'Greek', tone: 'pirate' as const }
     mockReadSettings.mockResolvedValue({ ok: true, data: customSettings })
     const domain = {
       ...defaultDomainFile(),
@@ -359,8 +374,8 @@ describe('showSelectDomainScreen — motivational message AI integration', () =>
     await showSelectDomainScreen('ai-both')
 
     expect(mockGenerateMotivationalMessage).toHaveBeenCalledTimes(2)
-    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', { language: 'English', tone: 'natural' })
-    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('trending', { language: 'English', tone: 'natural' })
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('returning', defaultSettings())
+    expect(mockGenerateMotivationalMessage).toHaveBeenCalledWith('trending', defaultSettings())
     expect(mockTypewrite).toHaveBeenCalledTimes(2)
   })
 

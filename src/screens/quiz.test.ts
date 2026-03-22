@@ -89,7 +89,7 @@ beforeEach(() => {
   mockStart.mockReturnThis()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
-  mockReadSettings.mockResolvedValue({ ok: true, data: { language: 'English', tone: 'natural' } })
+  mockReadSettings.mockResolvedValue({ ok: true, data: defaultSettings() })
   mockShowDomainMenu.mockResolvedValue(undefined)
 })
 
@@ -288,8 +288,9 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     const meta = mockWriteDomain.mock.calls[0][1].meta
-    expect(meta.lastSessionAt).not.toBeNull()
-    expect(new Date(meta.lastSessionAt as string).getTime()).toBeGreaterThanOrEqual(
+    expect(meta.lastSessionAt).toBeTypeOf('string')
+    const lastSession = meta.lastSessionAt ?? ''
+    expect(new Date(lastSession).getTime()).toBeGreaterThanOrEqual(
       new Date(before).getTime(),
     )
   })
@@ -336,7 +337,7 @@ describe('showQuiz', () => {
   })
 
   it('passes settings from readSettings to generateQuestion', async () => {
-    const settings = { language: 'Spanish', tone: 'expressive' as const }
+    const settings = { ...defaultSettings(), language: 'Spanish', tone: 'expressive' as const }
     mockReadSettings.mockResolvedValue({ ok: true, data: settings })
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
     mockSelect.mockResolvedValueOnce(true as any)

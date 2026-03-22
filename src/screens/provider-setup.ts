@@ -1,4 +1,4 @@
-import { select, input } from '@inquirer/prompts'
+import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
@@ -6,6 +6,7 @@ import { writeSettings } from '../domain/store.js'
 import { PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
 import { clearScreen } from '../utils/screen.js'
+import { promptForProviderSettings } from './provider-settings.js'
 
 const MESSAGE_DISPLAY_MS = 2000
 
@@ -21,22 +22,7 @@ export async function showProviderSetupScreen(settings: SettingsFile): Promise<v
       theme: menuTheme,
     })
 
-    const updatedSettings: SettingsFile = { ...settings, provider }
-
-    if (provider === 'ollama') {
-      const ollamaEndpoint = (await input({
-        message: 'Ollama Endpoint URL',
-        default: settings.ollamaEndpoint,
-      })).trim() || settings.ollamaEndpoint
-
-      const ollamaModel = (await input({
-        message: 'Ollama Model Name',
-        default: settings.ollamaModel,
-      })).trim() || settings.ollamaModel
-
-      updatedSettings.ollamaEndpoint = ollamaEndpoint
-      updatedSettings.ollamaModel = ollamaModel
-    }
+    const updatedSettings = await promptForProviderSettings(provider, settings)
 
     const spinner = ora('Testing connection...').start()
     const validationResult = await testProviderConnection(provider, updatedSettings)

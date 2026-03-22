@@ -292,6 +292,9 @@ describe('SettingsFileSchema — provider fields', () => {
       provider: null,
       language: 'English',
       tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
     })
@@ -304,6 +307,9 @@ describe('SettingsFileSchema — provider fields', () => {
         provider,
         language: 'English',
         tone: 'natural',
+        openaiModel: 'gpt-4o-mini',
+        anthropicModel: 'claude-sonnet-4-20250514',
+        geminiModel: 'gemini-2.0-flash',
         ollamaEndpoint: 'http://localhost:11434',
         ollamaModel: 'llama3',
       })
@@ -316,15 +322,21 @@ describe('SettingsFileSchema — provider fields', () => {
       provider: 'grok',
       language: 'English',
       tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
     })
     expect(result.success).toBe(false)
   })
 
-  it('fills defaults for missing provider, ollamaEndpoint, ollamaModel (backward compat)', () => {
+  it('fills defaults for missing provider and model fields (backward compat)', () => {
     const result = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
     expect(result.provider).toBeNull()
+    expect(result.openaiModel).toBe('gpt-4o-mini')
+    expect(result.anthropicModel).toBe('claude-sonnet-4-20250514')
+    expect(result.geminiModel).toBe('gemini-2.0-flash')
     expect(result.ollamaEndpoint).toBe('http://localhost:11434')
     expect(result.ollamaModel).toBe('llama3')
   })
@@ -334,6 +346,9 @@ describe('SettingsFileSchema — provider fields', () => {
       provider: 'ollama',
       language: 'English',
       tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: '',
       ollamaModel: 'llama3',
     })
@@ -345,8 +360,53 @@ describe('SettingsFileSchema — provider fields', () => {
       provider: 'ollama',
       language: 'English',
       tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: '',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty openaiModel string', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: 'openai',
+      language: 'English',
+      tone: 'natural',
+      openaiModel: '',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.0-flash',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty anthropicModel string', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: 'anthropic',
+      language: 'English',
+      tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: '',
+      geminiModel: 'gemini-2.0-flash',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty geminiModel string', () => {
+    const result = SettingsFileSchema.safeParse({
+      provider: 'gemini',
+      language: 'English',
+      tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: '',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
     })
     expect(result.success).toBe(false)
   })
@@ -357,6 +417,18 @@ describe('defaultSettings — provider fields', () => {
     expect(defaultSettings().provider).toBeNull()
   })
 
+  it('returns openaiModel: gpt-4o-mini', () => {
+    expect(defaultSettings().openaiModel).toBe('gpt-4o-mini')
+  })
+
+  it('returns anthropicModel: claude-sonnet-4-20250514', () => {
+    expect(defaultSettings().anthropicModel).toBe('claude-sonnet-4-20250514')
+  })
+
+  it('returns geminiModel: gemini-2.0-flash', () => {
+    expect(defaultSettings().geminiModel).toBe('gemini-2.0-flash')
+  })
+
   it('returns ollamaEndpoint: http://localhost:11434', () => {
     expect(defaultSettings().ollamaEndpoint).toBe('http://localhost:11434')
   })
@@ -365,8 +437,17 @@ describe('defaultSettings — provider fields', () => {
     expect(defaultSettings().ollamaModel).toBe('llama3')
   })
 
-  it('returns all 5 fields', () => {
+  it('returns all settings fields', () => {
     const s = defaultSettings()
-    expect(Object.keys(s).sort((a, b) => a.localeCompare(b))).toEqual(['language', 'ollamaEndpoint', 'ollamaModel', 'provider', 'tone'])
+    expect(Object.keys(s).sort((a, b) => a.localeCompare(b))).toEqual([
+      'anthropicModel',
+      'geminiModel',
+      'language',
+      'ollamaEndpoint',
+      'ollamaModel',
+      'openaiModel',
+      'provider',
+      'tone',
+    ])
   })
 })
