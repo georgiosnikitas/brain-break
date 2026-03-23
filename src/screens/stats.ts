@@ -1,9 +1,9 @@
-import { select } from '@inquirer/prompts'
+import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 import { warn, bold, header, formatAccuracy, menuTheme } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
 export function formatTotalTimePlayed(ms: number): string {
@@ -88,8 +88,8 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   const correct = history.filter((r) => r.isCorrect).length
   const incorrect = total - correct
 
-  clearScreen()
-  console.log(header('\nStats Dashboard'))
+  clearAndBanner()
+  console.log(header(`📊 Stats Dashboard — ${domainSlug}`))
 
   if (total === 0) {
     console.log(bold('Score:') + ` ${meta.score}`)
@@ -124,7 +124,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   try {
     await select({
       message: 'Navigation',
-      choices: [{ name: '←  Back', value: 'back' as const }],
+      choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
       theme: menuTheme,
     })
   } catch (err) {

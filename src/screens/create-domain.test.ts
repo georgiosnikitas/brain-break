@@ -6,7 +6,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { validateDomainName, showCreateDomainScreen } from './create-domain.js'
 import { writeDomain, readDomain, listDomains, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 
 // ---------------------------------------------------------------------------
 // Mock @inquirer/prompts so interactive prompts can be controlled in tests
@@ -17,7 +17,7 @@ vi.mock('@inquirer/prompts', () => ({
   Separator: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 import { select, input } from '@inquirer/prompts'
 const mockSelect = vi.mocked(select)
@@ -209,7 +209,7 @@ describe('showCreateDomainScreen', () => {
 
     await showCreateDomainScreen()
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 
   it('re-throws non-ExitPromptError from input prompt', async () => {

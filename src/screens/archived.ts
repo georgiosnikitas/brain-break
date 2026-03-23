@@ -2,7 +2,7 @@ import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, writeDomain, type DomainListEntry } from '../domain/store.js'
 import { dim, bold, warn, error as errorFmt, menuTheme } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import type { HomeEntry } from './home.js'
 import type { Result } from '../domain/schema.js'
 
@@ -73,7 +73,7 @@ async function handleUnarchiveAction(slug: string): Promise<void> {
 
 export async function showArchivedScreen(): Promise<void> {
   while (true) {
-    clearScreen()
+    clearAndBanner()
     const listResult = await listDomains()
     const archivedEntries = await loadArchivedEntries(listResult)
 

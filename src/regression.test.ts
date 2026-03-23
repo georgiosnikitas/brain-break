@@ -19,10 +19,10 @@ import { computeScoreTrend, daysSinceFirstSession, computeReturnStreak, showStat
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted — must appear before the imports they affect)
 // ---------------------------------------------------------------------------
-vi.mock('@inquirer/prompts', () => ({ select: vi.fn() }))
+vi.mock('@inquirer/prompts', () => ({ select: vi.fn(), Separator: vi.fn() }))
 vi.mock('./domain/store.js', () => ({ readDomain: vi.fn() }))
 vi.mock('./router.js', () => ({ showDomainMenu: vi.fn(), showHome: vi.fn() }))
-vi.mock('./utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('./utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 import { select } from '@inquirer/prompts'
 import { readDomain } from './domain/store.js'

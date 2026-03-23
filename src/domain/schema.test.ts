@@ -447,7 +447,39 @@ describe('defaultSettings — provider fields', () => {
       'ollamaModel',
       'openaiModel',
       'provider',
+      'showWelcome',
       'tone',
     ])
+  })
+})
+
+describe('showWelcome setting', () => {
+  it('defaults showWelcome to true in defaultSettings', () => {
+    expect(defaultSettings().showWelcome).toBe(true)
+  })
+
+  it('defaults showWelcome to true when parsing empty object', () => {
+    const parsed = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
+    expect(parsed.showWelcome).toBe(true)
+  })
+
+  it('preserves showWelcome: false when explicitly set', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), showWelcome: false })
+    expect(parsed.showWelcome).toBe(false)
+  })
+
+  it('defaults showWelcome when old settings file lacks the field', () => {
+    const oldSettings = {
+      provider: 'openai',
+      language: 'English',
+      tone: 'natural',
+      openaiModel: 'gpt-4o-mini',
+      anthropicModel: 'claude-sonnet-4-20250514',
+      geminiModel: 'gemini-2.0-flash',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3',
+    }
+    const parsed = SettingsFileSchema.parse(oldSettings)
+    expect(parsed.showWelcome).toBe(true)
   })
 })

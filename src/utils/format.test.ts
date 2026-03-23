@@ -15,6 +15,9 @@ import {
   colorDifficultyLevel,
   colorScoreDelta,
   menuTheme,
+  getGradientWidth,
+  gradientBg,
+  gradientShadow,
 } from './format.js'
 
 // chalk can produce empty strings in test environments when colors are disabled.
@@ -198,5 +201,49 @@ describe('menuTheme', () => {
   it('highlight returns a string containing the input text', () => {
     const result = menuTheme.style.highlight('selected item')
     expect(result).toContain('selected item')
+  })
+})
+
+describe('getGradientWidth', () => {
+  const originalColumns = process.stdout.columns
+
+  afterEach(() => {
+    Object.defineProperty(process.stdout, 'columns', { value: originalColumns, writable: true })
+  })
+
+  it('returns terminal width when under 80', () => {
+    Object.defineProperty(process.stdout, 'columns', { value: 60, writable: true })
+    expect(getGradientWidth()).toBe(60)
+  })
+
+  it('caps at 80 for wide terminals', () => {
+    Object.defineProperty(process.stdout, 'columns', { value: 200, writable: true })
+    expect(getGradientWidth()).toBe(80)
+  })
+
+  it('defaults to 60 when columns is undefined', () => {
+    Object.defineProperty(process.stdout, 'columns', { value: undefined, writable: true })
+    expect(getGradientWidth()).toBe(60)
+  })
+})
+
+describe('gradientBg', () => {
+  it('returns a string containing the input text', () => {
+    const result = gradientBg('Hello', 20)
+    expect(result).toContain('Hello')
+  })
+
+  it('pads output to the specified width', () => {
+    // The styled string contains ANSI codes, so we strip them to check width
+    const result = gradientBg('Hi', 10)
+    const stripped = result.replaceAll(/\x1B\[[0-9;]*m/g, '')
+    expect(stripped.length).toBe(10)
+  })
+})
+
+describe('gradientShadow', () => {
+  it('returns a string when called', () => {
+    const result = gradientShadow(10)
+    expect(typeof result).toBe('string')
   })
 })

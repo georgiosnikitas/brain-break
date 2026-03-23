@@ -44,7 +44,7 @@ vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Imports after mocks
@@ -53,7 +53,7 @@ import { generateQuestion, AI_ERRORS } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { showQuiz } from './quiz.js'
 
 const mockGenerateQuestion = vi.mocked(generateQuestion)
@@ -314,7 +314,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 
   it('calls clearScreen before showing feedback', async () => {
@@ -324,7 +324,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // clearScreen is called once before question, once before feedback
-    expect(vi.mocked(clearScreen)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(2)
   })
 
   it('calls readSettings once per quiz session start', async () => {

@@ -226,6 +226,7 @@ describe('writeSettings + readSettings', () => {
       geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
+      showWelcome: true,
     }
     const writeResult = await writeSettings(settings)
     expect(writeResult.ok).toBe(true)
@@ -315,6 +316,7 @@ describe('writeSettings + readSettings', () => {
       geminiModel: 'gemini-2.5-flash',
       ollamaEndpoint: 'http://custom:1234',
       ollamaModel: 'mistral',
+      showWelcome: true,
     }
     const writeResult = await writeSettings(full)
     expect(writeResult.ok).toBe(true)

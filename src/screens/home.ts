@@ -2,7 +2,7 @@ import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, type DomainListEntry } from '../domain/store.js'
 import { dim, bold, error as errorFmt, menuTheme } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 import type { Result } from '../domain/schema.js'
 import qrcode from 'qrcode-terminal'
@@ -86,7 +86,7 @@ async function handleHomeAction(answer: HomeAction): Promise<void> {
 }
 
 export async function showCoffeeScreen(): Promise<void> {
-  clearScreen()
+  clearAndBanner()
   console.log('\n  ☕  Enjoying brain-break? Buy me a coffee!\n')
   console.log('  Scan the QR code with your phone:\n')
   await new Promise<void>((resolve) => {
@@ -110,14 +110,14 @@ export async function showCoffeeScreen(): Promise<void> {
 
 export async function showHomeScreen(): Promise<void> {
   while (true) {
-    clearScreen()
+    clearAndBanner()
     const listResult = await listDomains()
     const homeEntries = await loadHomeEntries(listResult)
 
     let answer: HomeAction
     try {
       answer = await select<HomeAction>({
-        message: '🧠🔨 brain-break',
+        message: '👨‍💻 Options',
         choices: buildHomeChoices(homeEntries),
         pageSize: 20,
         theme: menuTheme,

@@ -15,7 +15,7 @@ import {
   formatDuration,
   menuTheme,
 } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
 type NavAction = 'next' | 'prev' | 'back'
@@ -29,8 +29,8 @@ export function buildPageChoices(
   totalItems: number,
 ): Array<{ name: string; value: NavAction } | Separator> {
   const choices: Array<{ name: string; value: NavAction } | Separator> = []
-  if (currentIndex > 0) choices.push({ name: 'Previous', value: 'prev' })
-  if (currentIndex < totalItems - 1) choices.push({ name: 'Next', value: 'next' })
+  if (currentIndex > 0) choices.push({ name: '⬅️  Previous', value: 'prev' })
+  if (currentIndex < totalItems - 1) choices.push({ name: '➡️  Next', value: 'next' })
   if (choices.length > 0) choices.push(new Separator())
   choices.push({ name: '←  Back', value: 'back' })
   return choices
@@ -52,8 +52,8 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
   let index = 0
 
   while (true) {
-    clearScreen()
-    console.log(header(`\nQuestion History — Question ${index + 1} of ${totalItems}`))
+    clearAndBanner()
+    console.log(header(`📜 Question History — ${domainSlug}`))
     displayEntry(history[index], index)
 
     const choices = buildPageChoices(index, totalItems)
@@ -92,8 +92,8 @@ export async function showHistory(domainSlug: string): Promise<void> {
   const history = [...domain.history].reverse()
 
   if (history.length === 0) {
-    clearScreen()
-    console.log(header('Question History'))
+    clearAndBanner()
+    console.log(header(`📜 Question History — ${domainSlug}`))
     console.log(dim('No questions answered yet'))
     try {
       await select<NavAction>({

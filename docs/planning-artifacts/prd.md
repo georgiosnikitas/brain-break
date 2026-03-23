@@ -16,6 +16,8 @@ stepsCompleted:
   - step-e-03-edit
 lastEdited: '2026-03-22'
 editHistory:
+  - date: '2026-03-23'
+    changes: 'Feature 11 (Welcome Screen) added: on launch, a branded splash screen shows gradient-colored ASCII art, tagline, and version — dismissible with Enter. Controllable via showWelcome setting (default: true). Feature 12 (Static Banner) added: every screen renders a persistent "🧠🔨 Brain Break" header with a cyan-to-magenta gradient shadow bar via clearAndBanner(). Feature 8 (Settings) updated: showWelcome toggle (🎬 Welcome screen: ON/OFF) added. FR31–FR34 added. Startup flow updated. FR Coverage Map updated. NFR5 updated (banner rendering on every screen transition). Settings defaults updated with showWelcome: true.'
   - date: '2026-03-22'
     changes: 'Feature 8 per-provider model selection: selecting OpenAI, Anthropic, or Google Gemini now prompts the user to enter a preferred model name (with a sensible default pre-filled). Entering an empty string resets to the default model. Copilot does not prompt for a model. Implementation Decisions updated with per-provider model fields (openaiModel, anthropicModel, geminiModel) and their defaults. Settings persistence schema updated with new model fields.'
   - date: '2026-03-17'
@@ -95,7 +97,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 10 capabilities define the complete MVP:
+The following 12 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -107,6 +109,8 @@ The following 10 capabilities define the complete MVP:
 8. Global Settings (Language & Tone)
 9. Terminal UI Highlighting & Color System
 10. Coffee Supporter Screen
+11. Welcome Screen
+12. Static Banner
 
 ### Out of Scope
 
@@ -187,7 +191,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys. The app validates readiness (checks Copilot auth, env var presence, or Ollama endpoint reachability). If validation fails, the app displays what’s needed and proceeds to the home screen anyway — the user can explore all UI except Play. Once the provider is ready, the full experience works. On subsequent launches, the saved provider is used automatically. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup.
+**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a tagline (*"Train your brain, one question at a time!"*), the current version number, and a "Press enter to continue" prompt. The welcome screen can be disabled in Settings. After dismissing the welcome screen, the home screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys. The app validates readiness (checks Copilot auth, env var presence, or Ollama endpoint reachability). If validation fails, the app displays what’s needed and proceeds to the home screen anyway — the user can explore all UI except Play. Once the provider is ready, the full experience works. On subsequent launches, the saved provider is used automatically. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -250,7 +254,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
 - **Language and tone injection:** Every AI prompt (questions, motivational messages) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the question generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-4o-mini", "anthropicModel": "claude-sonnet-4-20250514", "geminiModel": "gemini-2.0-flash" }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-4o-mini", "anthropicModel": "claude-sonnet-4-20250514", "geminiModel": "gemini-2.0-flash", "showWelcome": true }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`)
 
@@ -387,10 +391,10 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure three global preferences: **AI Provider**, **Question Language**, and **Tone of Voice**
+- Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Question Language**, **Tone of Voice**, and **Welcome Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
-- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Normal`
+- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Normal`, showWelcome = `true`
 
 **First-Launch Provider Setup**
 
@@ -430,6 +434,11 @@ User can view a summary dashboard for the active domain:
   - **Robot** — terse, mechanical, emotionless phrasing
   - **Pirate** — pirate vernacular throughout, nautical metaphors, "Arr" as appropriate
 - The selected tone is injected into every AI prompt as a voice instruction
+
+**Welcome Screen**
+- A 🎬 Welcome screen toggle (displayed as ON/OFF) controls whether the branded Welcome Screen is shown on every app launch
+- Default is ON — when disabled, the app skips the Welcome Screen and proceeds directly to the home screen after Provider Setup (if needed)
+
 - Selecting Back from Settings returns the user to the home screen without saving unsaved changes
 - Selecting Save persists the changes and returns the user to the home screen
 
@@ -465,6 +474,32 @@ All interactive menus throughout the application use full-row background highlig
 - Selecting it opens a dedicated screen that clears the terminal and displays an ASCII QR code linking to the creator's Buy Me a Coffee page, followed by the URL (`https://www.buymeacoffee.com/georgiosnikitas`) in plain text
 - The screen provides a single **Back** action that returns the user to the home screen
 
+### Feature 11 — Welcome Screen
+
+- On every launch where the `showWelcome` setting is `true` (default), a branded Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen
+- The Welcome Screen renders the following content in order:
+  1. The app emoji branding (`🧠🔨`)
+  2. A gradient-colored ASCII art rendering of "Brain Break" — the text interpolates from cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan
+  3. A tagline: *"Train your brain, one question at a time!"* rendered in bold yellow
+  4. The current app version (e.g., `v1.2.0`) rendered in dim white
+  5. A gradient shadow bar spanning the terminal width (same cyan-to-magenta gradient)
+- The user dismisses the Welcome Screen by pressing Enter (via a single "Press enter to continue..." prompt)
+- Pressing Ctrl+C on the Welcome Screen exits the app cleanly with code 0
+- The Welcome Screen uses `clearScreen()` (not `clearAndBanner()`) because it renders its own full-screen branded layout
+- When `showWelcome` is `false` in settings, the Welcome Screen is skipped entirely — the app proceeds directly from Provider Setup (if needed) to the home screen
+- The `showWelcome` setting is a boolean stored in `~/.brain-break/settings.json` (default: `true`)
+- The Settings screen includes a **🎬 Welcome screen** toggle (displayed as ON/OFF) allowing the user to enable or disable the Welcome Screen; the toggle takes effect on the next app launch
+
+### Feature 12 — Static Banner
+
+- Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top of the terminal after clearing the viewport
+- The banner consists of:
+  1. A bold text line: `🧠🔨 Brain Break`
+  2. A gradient shadow bar immediately below — the same cyan-to-magenta gradient used in the Welcome Screen, spanning the terminal width (capped at 80 columns)
+- The banner is rendered via a shared `clearAndBanner()` utility in `utils/screen.ts` that calls `clearScreen()` followed by `banner()`
+- The banner applies to: home screen, domain sub-menu, quiz question display, post-answer feedback, history navigation, stats dashboard, archived domains list, settings screen, and coffee supporter screen
+- The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) — they render their own branded header layout
+
 ---
 
 ## Non-Functional Requirements
@@ -492,7 +527,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, and stats dashboard — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state.
+All screen transitions — including home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard, welcome screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.

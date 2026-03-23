@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { showHome, showProviderSetup } from './router.js'
+import { showHome, showProviderSetup, showWelcome } from './router.js'
 import { readSettings } from './domain/store.js'
 import { defaultSettings } from './domain/schema.js'
 
@@ -8,6 +8,10 @@ const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
 
 if (settings.provider === null) {
   await showProviderSetup(settings)
+}
+
+if (settings.showWelcome) {
+  await showWelcome()
 }
 
 await showHome()

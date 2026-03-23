@@ -5,13 +5,13 @@ import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
 import { PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { promptForProviderSettings } from './provider-settings.js'
 
 const MESSAGE_DISPLAY_MS = 2000
 
 export async function showProviderSetupScreen(settings: SettingsFile): Promise<void> {
-  clearScreen()
+  clearAndBanner()
   console.log('\n🔧 First-Time Setup\n')
   console.log('Select your preferred AI provider to get started.\n')
 

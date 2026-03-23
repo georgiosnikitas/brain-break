@@ -4,7 +4,7 @@ import { slugify } from '../utils/slugify.js'
 import { listDomains, writeDomain } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import { warn, success, error as errorFmt, menuTheme } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 
 export function validateDomainName(name: string): string | true {
   if (name.trim().length === 0) return 'Domain name cannot be empty'
@@ -14,7 +14,7 @@ export function validateDomainName(name: string): string | true {
 }
 
 export async function showCreateDomainScreen(): Promise<void> {
-  clearScreen()
+  clearAndBanner()
   try {
     const name = (await input({
       message: 'New domain name:',

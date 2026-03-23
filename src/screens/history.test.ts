@@ -18,7 +18,7 @@ vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Imports after mocks
@@ -26,7 +26,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { showHistory, buildPageChoices, formatTimestamp } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
@@ -177,7 +177,7 @@ describe('showHistory — single question', () => {
     expect(values).toContain('back')
   })
 
-  it('shows "Question 1 of 1" header when there is exactly one question (AC6)', async () => {
+  it('shows "Question 1 of 1" in select message when there is exactly one question (AC6)', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
@@ -185,8 +185,8 @@ describe('showHistory — single question', () => {
 
     await showHistory('typescript')
 
-    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('Question 1 of 1')
+    const selectMessage = mockSelect.mock.calls[0][0].message
+    expect(selectMessage).toContain('Question 1 of 1')
     consoleSpy.mockRestore()
   })
 
@@ -244,7 +244,7 @@ describe('showHistory — single question', () => {
     consoleSpy.mockRestore()
   })
 
-  it('shows progress header "Question 1 of N"', async () => {
+  it('shows progress "Question 1 of N" in select message', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(5) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
@@ -252,8 +252,8 @@ describe('showHistory — single question', () => {
 
     await showHistory('typescript')
 
-    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('Question 1 of 5')
+    const selectMessage = mockSelect.mock.calls[0][0].message
+    expect(selectMessage).toContain('Question 1 of 5')
     consoleSpy.mockRestore()
   })
 })
@@ -285,9 +285,8 @@ describe('showHistory — navigation', () => {
 
     await showHistory('typescript')
 
-    const secondCallLogs = consoleSpy.mock.calls.map((c) => String(c[0]))
-    const secondHeader = secondCallLogs.filter((l) => l.includes('Question 2 of'))
-    expect(secondHeader.length).toBeGreaterThan(0)
+    const secondMessage = mockSelect.mock.calls[1][0].message
+    expect(secondMessage).toContain('Question 2 of')
     consoleSpy.mockRestore()
   })
 
@@ -397,7 +396,7 @@ describe('showHistory — ExitPromptError', () => {
 
     await showHistory('typescript')
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 
   it('calls clearScreen before rendering the empty history screen', async () => {
@@ -407,7 +406,7 @@ describe('showHistory — ExitPromptError', () => {
 
     await showHistory('typescript')
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 
   it('re-throws non-ExitPromptError from navigation select', async () => {

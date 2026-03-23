@@ -26,7 +26,7 @@ vi.mock('../router.js', () => ({
   showHome: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Imports after mocks
@@ -34,7 +34,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
 import { select, confirm } from '@inquirer/prompts'
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { buildDomainMenuChoices, showDomainMenuScreen, type DomainMenuAction } from './domain-menu.js'
 
 const mockSelect = vi.mocked(select)
@@ -205,7 +205,7 @@ describe('showDomainMenuScreen — clearScreen', () => {
 
     await showDomainMenuScreen('typescript')
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 })
 

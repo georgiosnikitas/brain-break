@@ -13,7 +13,7 @@ import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 
 // ---------------------------------------------------------------------------
 // Mock @inquirer/prompts
@@ -24,7 +24,7 @@ vi.mock('@inquirer/prompts', () => ({
   Separator: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -96,7 +96,7 @@ describe('buildArchivedChoices', () => {
     const slugs = unarchives.map((c) => (c.value as { action: 'unarchive'; slug: string }).slug)
     expect(slugs).toContain('typescript')
     expect(slugs).toContain('rust')
-    expect(actions.at(-1)!.value.action).toBe('back')
+    expect(actions.at(-1)?.value.action).toBe('back')
   })
 
   it('shows score and question count in unarchive choice name', () => {
@@ -280,6 +280,6 @@ describe('showArchivedScreen', () => {
 
     await showArchivedScreen()
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 })

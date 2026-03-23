@@ -20,7 +20,7 @@ vi.mock('../router.js', () => ({
   showSettings: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 vi.mock('qrcode-terminal', () => ({
   default: { generate: vi.fn((_url: string, _opts: unknown, cb: (code: string) => void) => cb('QR')) },
 }))
@@ -30,7 +30,7 @@ import type { DomainMeta } from '../domain/schema.js'
 import { select } from '@inquirer/prompts'
 import { listDomains, readDomain } from '../domain/store.js'
 import * as router from '../router.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { defaultDomainFile } from '../domain/schema.js'
 
 const mockSelect = vi.mocked(select)
@@ -283,7 +283,7 @@ describe('showHomeScreen — routing', () => {
     mockSelect.mockResolvedValueOnce({ action: 'exit' })
 
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
     exitSpy.mockRestore()
   })
 })
@@ -298,7 +298,7 @@ describe('showCoffeeScreen', () => {
 
     await showCoffeeScreen()
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('buymeacoffee.com/georgiosnikitas'))
     logSpy.mockRestore()
   })

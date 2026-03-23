@@ -4,6 +4,7 @@ import { defaultSettings } from './domain/schema.js'
 vi.mock('./router.js', () => ({
   showHome: vi.fn(),
   showProviderSetup: vi.fn(),
+  showWelcome: vi.fn(),
 }))
 
 vi.mock('./domain/store.js', () => ({
@@ -15,12 +16,13 @@ vi.mock('./domain/schema.js', async (importOriginal) => {
   return { ...actual }
 })
 
-import { showHome, showProviderSetup } from './router.js'
+import { showHome, showProviderSetup, showWelcome } from './router.js'
 import { readSettings } from './domain/store.js'
 
 const mockReadSettings = vi.mocked(readSettings)
 const mockShowHome = vi.mocked(showHome)
 const mockShowProviderSetup = vi.mocked(showProviderSetup)
+const mockShowWelcome = vi.mocked(showWelcome)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -45,6 +47,25 @@ describe('startup flow', () => {
     await import('./index.js')
 
     expect(mockShowProviderSetup).not.toHaveBeenCalled()
+    expect(mockShowHome).toHaveBeenCalledOnce()
+  })
+
+  it('calls showWelcome when showWelcome setting is true', async () => {
+    const settings = { ...defaultSettings(), provider: 'openai' as const, showWelcome: true }
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: settings })
+
+    await import('./index.js')
+
+    expect(mockShowWelcome).toHaveBeenCalledOnce()
+  })
+
+  it('skips showWelcome when showWelcome setting is false', async () => {
+    const settings = { ...defaultSettings(), provider: 'openai' as const, showWelcome: false }
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: settings })
+
+    await import('./index.js')
+
+    expect(mockShowWelcome).not.toHaveBeenCalled()
     expect(mockShowHome).toHaveBeenCalledOnce()
   })
 })

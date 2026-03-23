@@ -20,6 +20,7 @@ vi.mock('../domain/store.js', () => ({
 
 vi.mock('../utils/screen.js', () => ({
   clearScreen: vi.fn(),
+  clearAndBanner: vi.fn(),
 }))
 
 const mockStart = vi.fn().mockReturnThis()
@@ -37,14 +38,14 @@ vi.mock('../utils/format.js', () => ({
 import { select, input } from '@inquirer/prompts'
 import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { showProviderSetupScreen } from './provider-setup.js'
 
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockTestProviderConnection = vi.mocked(testProviderConnection)
 const mockWriteSettings = vi.mocked(writeSettings)
-const mockClearScreen = vi.mocked(clearScreen)
+const mockClearAndBanner = vi.mocked(clearAndBanner)
 
 let settings: SettingsFile
 let logSpy: ReturnType<typeof vi.spyOn>
@@ -75,7 +76,7 @@ describe('showProviderSetupScreen', () => {
     await vi.advanceTimersByTimeAsync(2000)
     await promise
 
-    expect(mockClearScreen).toHaveBeenCalledOnce()
+    expect(mockClearAndBanner).toHaveBeenCalledOnce()
   })
 
   it('displays first-time setup heading', async () => {

@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-22'
+lastEdited: '2026-03-23'
 status: 'complete'
 editHistory:
+  - date: '2026-03-23'
+    changes: 'Welcome Screen & Static Banner: FR31–FR34 added (Welcome Screen on launch, showWelcome setting, Welcome Screen settings toggle, Static Banner via clearAndBanner). FR15 updated (Settings screen adds Welcome Screen toggle). FR17 updated (settings defaults expanded with showWelcome: true). NFR5 updated (banner rendering after terminal reset on all screens except Welcome/Provider Setup). FR Coverage Map updated with FR31–FR34. Epic 8 (Welcome Screen & Static Banner) added with 2 stories (8.1–8.2). Final validation passed — 34/34 FRs + 6/6 NFRs covered across 8 epics, 30 stories.'
   - date: '2026-03-22'
     changes: 'Per-provider model selection: FR17 updated (settings defaults expanded with openaiModel, anthropicModel, geminiModel); FR27 updated (hosted providers prompt for model name with defaults); FR28 updated (hosted provider model editing with empty-string-resets-to-default); FR Coverage Map FR28 updated; Story 7.1 ACs updated with per-provider model fields and defaults; Story 7.4 ACs updated with model prompt on hosted provider selection; Story 7.5 ACs updated with model editing for hosted providers.'
   - date: '2026-03-21'
@@ -58,11 +60,11 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Question Language (free-text entry), and Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Question Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), and Welcome Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3" }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3", showWelcome: true }`.
 
 FR18: Every AI call (questions, motivational messages) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -90,6 +92,14 @@ FR29: If no provider is configured or the configured provider is unreachable, Pl
 
 FR30: All AI provider error messages are provider-specific: network errors identify the specific provider and suggest checking the connection; authentication errors include the specific environment variable name or auth mechanism; Ollama errors include the configured endpoint URL. The app remains running after any AI error and the user can navigate to Settings to reconfigure.
 
+FR31: On every launch where the `showWelcome` setting is `true` (default), a Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen. The Welcome Screen shows: the app emoji branding (`🧠🔨`), a gradient-colored ASCII art rendering of "Brain Break" (cyan-to-magenta row interpolation; bold cyan fallback on limited terminals), a tagline ("Train your brain, one question at a time!" in bold yellow), the current version number (dim white), and a gradient shadow bar. The user dismisses the screen by pressing Enter. Ctrl+C exits the app cleanly.
+
+FR32: The `showWelcome` setting is a boolean (default: `true`) stored in `~/.brain-break/settings.json`. When `false`, the Welcome Screen is skipped entirely on launch.
+
+FR33: The Settings screen includes a "🎬 Welcome screen" toggle (displayed as ON/OFF) that controls the `showWelcome` setting. Toggling it takes immediate effect in-memory and is persisted on Save.
+
+FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -100,7 +110,7 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard, welcome screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
 NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
@@ -162,6 +172,10 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR28 | Epic 7 | Settings screen — AI Provider selector + per-provider model config + Ollama config |
 | FR29 | Epic 7 | No-provider guard on Play action |
 | FR30 | Epic 7 | Per-provider AI error messages |
+| FR31 | Epic 8 | Welcome Screen — gradient ASCII art, tagline, version, press-enter dismiss |
+| FR32 | Epic 8 | `showWelcome` boolean setting (default: true) — skip welcome when false |
+| FR33 | Epic 8, Epic 5 | Settings screen — 🎬 Welcome screen toggle (ON/OFF) |
+| FR34 | Epic 8 | Static banner — `🧠🔨 Brain Break` + gradient shadow bar via `clearAndBanner()` |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -169,7 +183,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | NFR2 | Epic 3, Epic 7 | Graceful per-provider API/auth error → domain sub-menu |
 | NFR3 | Epic 2 | ENOENT → defaultDomainFile(); corrupted → warn + reset |
 | NFR4 | Epic 2 | ≤ 2s startup to home screen |
-| NFR5 | Story 1.6 | Full terminal reset (viewport + scroll-back buffer) before every screen render (cross-cutting) |
+| NFR5 | Story 1.6, Epic 8 | Full terminal reset (viewport + scroll-back buffer) + static banner via `clearAndBanner()` before every screen render (cross-cutting); Welcome/Provider Setup use `clearScreen()` only |
 | NFR6 | Epic 6 | ANSI 8/16-color baseline; interactive-only |
 
 ## Epic List
@@ -212,6 +226,13 @@ Users can select their preferred AI provider (GitHub Copilot, OpenAI, Anthropic,
 **FRs updated:** FR6 (Copilot-only → multi-provider), FR15 (4 tones → 7 tones + provider selector), FR17 (settings defaults expanded with provider fields)
 **NFRs covered:** NFR2 (per-provider error handling)
 **Additional requirements covered:** `ai/providers.ts` — `AiProvider` interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot), `createProvider()` factory, `validateProvider()` readiness checks; `ai/client.ts` refactored to provider-agnostic orchestration; `screens/provider-setup.ts` first-launch screen; `domain/schema.ts` expanded with `AiProviderType`; startup flow wired in `index.ts`/`router.ts`
+
+### Epic 8: Welcome Screen & Static Banner
+On every app launch (when enabled), a branded Welcome Screen greets the user with gradient-colored ASCII art, a tagline, and the app version — dismissible with Enter. Every screen in the app renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across all navigation states.
+**FRs covered:** FR31, FR32, FR33, FR34
+**FRs updated:** FR15 (Settings screen adds Welcome Screen toggle), FR17 (settings defaults expanded with `showWelcome: true`)
+**NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Provider Setup)
+**Additional requirements covered:** `screens/welcome.ts` — Welcome Screen with gradient ASCII art; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — gradient color utilities; `domain/schema.ts` — `showWelcome` boolean; startup flow wired in `index.ts`/`router.ts`
 ---
 
 ## Epic 1: Project Foundation & Developer Infrastructure
@@ -1327,3 +1348,138 @@ So that the first-launch flow is fully wired and subsequent launches skip setup 
 **Given** `router.test.ts` and `index.test.ts` are updated  
 **When** I run `npm test`  
 **Then** all tests pass, covering: null provider routes to provider setup then home, non-null provider routes directly to home, `showProviderSetup()` function exists and calls the provider setup screen  
+
+---
+
+## Epic 8: Welcome Screen & Static Banner
+
+On every app launch (when enabled), a branded Welcome Screen greets the user with gradient-colored ASCII art, a tagline, and the app version — dismissible with Enter. Every screen in the app renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across all navigation states.
+
+**FRs covered:** FR31, FR32, FR33, FR34
+**FRs updated:** FR15 (Settings screen adds Welcome Screen toggle), FR17 (settings defaults expanded with `showWelcome: true`)
+**NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Provider Setup)
+**Additional requirements covered:** `screens/welcome.ts` — Welcome Screen with gradient ASCII art, tagline, version, and press-enter dismiss; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — `lerpColor()`, `gradientShadow()`, `getGradientWidth()` gradient utilities; `domain/schema.ts` — `showWelcome` boolean in `SettingsFile`; `index.ts` — startup flow updated to check `showWelcome` setting; `router.ts` — `showWelcome()` route added
+
+### Story 8.1: Welcome Screen
+
+As a user,
+I want a branded splash screen shown on every app launch (when enabled) that displays the app name in gradient-colored ASCII art, a tagline, and the version number,
+So that I get a polished, recognizable first impression of the app and can confirm I'm running the expected version.
+
+**Acceptance Criteria:**
+
+**Given** `screens/welcome.ts` is implemented  
+**When** the app launches and `settings.showWelcome` is `true`  
+**Then** the Welcome Screen is displayed after Provider Setup (if shown) and before the home screen  
+
+**Given** `screens/welcome.ts` is implemented  
+**When** the Welcome Screen renders  
+**Then** the terminal is fully cleared via `clearScreen()` (not `clearAndBanner()`)  
+**And** the screen displays in order: the app emoji branding (`🧠🔨`), a 5-line ASCII art rendering of "Brain Break" with each row colored using a cyan-to-magenta gradient (`rgb(0,180,200)` → `rgb(200,0,120)`) via `lerpColor()`, a blank line, the tagline "Train your brain, one question at a time!" in bold yellow, the version string (e.g., `v1.2.0`) in dim white, and a gradient shadow bar spanning the terminal width (capped at 80 columns)  
+
+**Given** the Welcome Screen is displayed  
+**When** the user presses Enter (via a single `select` prompt with a "Press enter to continue..." choice)  
+**Then** the Welcome Screen is dismissed and the app proceeds to the home screen  
+
+**Given** the Welcome Screen is displayed  
+**When** the user presses Ctrl+C  
+**Then** the app exits cleanly with code 0  
+
+**Given** `settings.showWelcome` is `false`  
+**When** the app launches  
+**Then** the Welcome Screen is skipped entirely — the app proceeds directly from Provider Setup (if needed) to the home screen  
+
+**Given** the terminal has limited color support (`chalk.level < 3`)  
+**When** the Welcome Screen renders the ASCII art  
+**Then** the art renders in bold cyan as a fallback instead of true-color gradient  
+
+**Given** `domain/schema.ts` is updated  
+**When** I inspect `SettingsFileSchema`  
+**Then** it includes `showWelcome: z.boolean().default(true)`  
+**And** `defaultSettings()` returns `showWelcome: true`  
+
+**Given** the Settings screen is open  
+**When** I inspect the available options  
+**Then** a "🎬 Welcome screen: ON/OFF" toggle is present  
+**And** toggling it flips the `showWelcome` value in-memory  
+**And** saving persists the new value to `settings.json`  
+
+**Given** `index.ts` is updated  
+**When** the startup flow reaches the welcome check  
+**Then** it reads `settings.showWelcome` and conditionally calls `router.showWelcome()` before `router.showHome()`  
+
+**Given** `router.ts` is updated  
+**When** I inspect its exports  
+**Then** a `showWelcome()` function is exported that calls `screens/welcome.ts`'s `showWelcomeScreen()`  
+
+**Given** co-located tests exist in `screens/welcome.test.ts`, `index.test.ts`, and `router.test.ts`  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Welcome Screen renders when showWelcome is true, skipped when false, `clearScreen()` called (not `clearAndBanner()`), press-enter dismisses, Ctrl+C exits cleanly, gradient fallback on low chalk level, settings toggle persists showWelcome, startup flow conditionally routes to welcome  
+
+---
+
+### Story 8.2: Static Banner
+
+As a user,
+I want every screen in the app to display a consistent branded header at the top of the terminal,
+So that the app feels polished and I always know I'm in Brain Break regardless of which screen I'm on.
+
+**Acceptance Criteria:**
+
+**Given** `utils/screen.ts` exports `banner()` and `clearAndBanner()`  
+**When** `banner()` is called  
+**Then** it prints `🧠🔨 Brain Break` in bold text followed by a gradient shadow bar (cyan-to-magenta, spanning the terminal width capped at 80 columns) using `gradientShadow()` from `utils/format.ts`  
+
+**Given** `utils/screen.ts` exports `clearAndBanner()`  
+**When** `clearAndBanner()` is called  
+**Then** it calls `clearScreen()` followed by `banner()` — clearing the terminal and rendering the banner at the top  
+
+**Given** the home screen renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content — the banner is visible at the top  
+
+**Given** the domain sub-menu renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the quiz screen renders (question display or post-answer feedback)  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the history screen renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the stats dashboard renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the archived domains screen renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the settings screen renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the coffee supporter screen renders  
+**When** the screen is drawn  
+**Then** `clearAndBanner()` is called before any content  
+
+**Given** the Welcome Screen renders  
+**When** the screen is drawn  
+**Then** `clearScreen()` is called (not `clearAndBanner()`) — the Welcome Screen renders its own branded layout without the static banner  
+
+**Given** the Provider Setup screen renders  
+**When** the screen is drawn  
+**Then** `clearScreen()` is called (not `clearAndBanner()`) — the Provider Setup screen renders its own layout  
+
+**Given** `utils/format.ts` exports gradient utilities  
+**When** I import `lerpColor`, `gradientShadow`, and `getGradientWidth`  
+**Then** `lerpColor(t)` interpolates between cyan `rgb(0, 180, 200)` and magenta `rgb(200, 0, 120)` for `t` in `[0, 1]`  
+**And** `gradientShadow(width)` returns a string of `▀` characters with per-character gradient coloring (or empty string on `chalk.level < 3`)  
+**And** `getGradientWidth()` returns `Math.min(process.stdout.columns || 60, 80)`  
+
+**Given** co-located tests exist  
+**When** I run `npm test`  
+**Then** all tests pass, covering: `banner()` output contains "Brain Break", `clearAndBanner()` calls `clearScreen()` then `banner()`, all screen modules call `clearAndBanner()` on render (except Welcome and Provider Setup which call `clearScreen()`)  

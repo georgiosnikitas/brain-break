@@ -7,6 +7,7 @@ import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 // ---------------------------------------------------------------------------
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
+  Separator: vi.fn(),
 }))
 
 vi.mock('../domain/store.js', () => ({
@@ -17,7 +18,7 @@ vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
 }))
 
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // Imports after mocks
@@ -25,7 +26,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import {
   showStats,
   formatTotalTimePlayed,
@@ -253,7 +254,7 @@ describe('showStats — empty history', () => {
 
     const scoreCall = consoleSpy.mock.calls.find((c) => (c[0] as string).includes('Score:'))
     expect(scoreCall).toBeDefined()
-    expect(scoreCall![0]).toContain(' 0')
+    expect(scoreCall?.[0]).toContain(' 0')
     consoleSpy.mockRestore()
   })
 })
@@ -373,7 +374,7 @@ describe('showStats — clearScreen', () => {
 
     await showStats('typescript')
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalled()
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 })
 

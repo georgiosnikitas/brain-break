@@ -24,7 +24,7 @@ vi.mock('../domain/store.js', () => ({
 vi.mock('../router.js', () => ({
   showHome: vi.fn(),
 }))
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 vi.mock('../utils/format.js', () => ({
   menuTheme: { style: { highlight: (t: string) => t } },
   success: (t: string) => `[success]${t}`,
@@ -36,7 +36,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import * as router from '../router.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { defaultSettings } from '../domain/schema.js'
 
 const mockSelect = vi.mocked(select)
@@ -61,12 +61,12 @@ afterEach(() => {
 })
 
 describe('showSettingsScreen', () => {
-  it('calls clearScreen on entry', async () => {
+  it('calls clearAndBanner on entry', async () => {
     mockSelect.mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
-    expect(clearScreen).toHaveBeenCalledOnce()
+    expect(clearAndBanner).toHaveBeenCalledOnce()
   })
 
   it('calls readSettings() to load current values', async () => {
@@ -330,6 +330,33 @@ describe('showSettingsScreen', () => {
 
     expect(mockWriteSettings).not.toHaveBeenCalled()
     expect(router.showHome).toHaveBeenCalledOnce()
+  })
+
+  it('showWelcome toggle flips the value and shows enabled banner', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
+    mockSelect.mockResolvedValueOnce('showWelcome').mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Welcome screen enabled'))
+  })
+
+  it('showWelcome toggle shows disabled banner when turning off', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), showWelcome: true } })
+    mockSelect.mockResolvedValueOnce('showWelcome').mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Welcome screen disabled'))
+  })
+
+  it('Save after showWelcome toggle persists the toggled value', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), showWelcome: true } })
+    mockSelect.mockResolvedValueOnce('showWelcome').mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ showWelcome: false }))
   })
 })
 

@@ -61,3 +61,52 @@ export async function typewrite(text: string, delayMs = 30): Promise<void> {
   }
   process.stdout.write('\n')
 }
+
+// Gradient utilities for banner and welcome screen
+export const CYAN = { r: 0, g: 180, b: 200 }
+export const MAGENTA = { r: 200, g: 0, b: 120 }
+
+export function lerpColor(t: number): { r: number; g: number; b: number } {
+  return {
+    r: Math.round(CYAN.r + (MAGENTA.r - CYAN.r) * t),
+    g: Math.round(CYAN.g + (MAGENTA.g - CYAN.g) * t),
+    b: Math.round(CYAN.b + (MAGENTA.b - CYAN.b) * t),
+  }
+}
+
+export function getGradientWidth(): number {
+  return Math.min(process.stdout.columns || 60, 80)
+}
+
+export function gradientBg(text: string, width: number): string {
+  if (chalk.level < 3) {
+    const padded = text.padEnd(width)
+    return chalk.bgCyan(chalk.bold.white(padded))
+  }
+  // Smooth gradient across the full width.
+  // Text portion uses one chalk call (emoji-safe) at its visual midpoint color.
+  // Padding spaces get per-character gradient continuing from where text ends.
+  const textLen = [...text].length
+  const padCount = Math.max(0, width - textLen)
+  const denom = Math.max(1, width - 1)
+  const textMid = textLen > 0 ? (textLen - 1) / 2 / denom : 0
+  const textColor = lerpColor(textMid)
+  let result = chalk.bgRgb(textColor.r, textColor.g, textColor.b)(chalk.bold.white(text))
+  for (let i = 0; i < padCount; i++) {
+    const t = (textLen + i) / denom
+    const c = lerpColor(t)
+    result += chalk.bgRgb(c.r, c.g, c.b)(' ')
+  }
+  return result
+}
+
+export function gradientShadow(width: number): string {
+  if (chalk.level < 3) return ''
+  let result = ''
+  for (let i = 0; i < width; i++) {
+    const t = width <= 1 ? 0 : i / (width - 1)
+    const c = lerpColor(t)
+    result += chalk.rgb(c.r, c.g, c.b)('▀')
+  }
+  return result
+}

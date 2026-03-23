@@ -5,7 +5,7 @@ import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
-import { clearScreen } from '../utils/screen.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { promptForProviderSettings } from './provider-settings.js'
 import * as router from '../router.js'
 
@@ -23,7 +23,7 @@ const TONE_LABELS: Record<string, string> = Object.fromEntries(
   TONE_CHOICES.map(c => [c.value, c.name])
 )
 
-type SettingsAction = 'provider' | 'language' | 'tone' | 'save' | 'back'
+type SettingsAction = 'provider' | 'language' | 'tone' | 'showWelcome' | 'save' | 'back'
 
 export function getProviderLabel(provider: AiProviderType | null): string {
   return provider ? PROVIDER_LABELS[provider] : 'Not set'
@@ -90,13 +90,15 @@ async function selectSettingsAction(
   provider: AiProviderType | null,
   language: string,
   tone: ToneOfVoice,
+  showWelcome: boolean,
 ): Promise<SettingsAction> {
   return select<SettingsAction>({
-    message: 'Settings',
+    message: '⚙️  Settings',
     choices: [
-      { name: `AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
-      { name: `Language:      ${language}`, value: 'language' as const },
-      { name: `Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
+      { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
+      { name: `🌍 Language:      ${language}`, value: 'language' as const },
+      { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
+      { name: `🎬  Welcome screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
       new Separator(),
       { name: '💾  Save', value: 'save' as const },
       { name: '←  Back', value: 'back' as const },
@@ -117,17 +119,18 @@ export async function showSettingsScreen(): Promise<void> {
   let geminiModel = currentSettings.geminiModel
   let ollamaEndpoint = currentSettings.ollamaEndpoint
   let ollamaModel = currentSettings.ollamaModel
+  let showWelcome = currentSettings.showWelcome
   let banner = ''
 
   try {
     while (true) {
-      clearScreen()
+      clearAndBanner()
       if (banner) {
         console.log(banner + '\n')
         banner = ''
       }
       
-        const action = await selectSettingsAction(provider, language, tone)
+        const action = await selectSettingsAction(provider, language, tone, showWelcome)
 
       switch (action) {
         case 'provider': {
@@ -155,6 +158,10 @@ export async function showSettingsScreen(): Promise<void> {
         case 'tone':
           tone = await handleToneAction(tone)
           break
+        case 'showWelcome':
+          showWelcome = !showWelcome
+          banner = showWelcome ? success('Welcome screen enabled') : warn('Welcome screen disabled')
+          break
         case 'save':
           await handleSaveAction({
             ...currentSettings,
@@ -166,6 +173,7 @@ export async function showSettingsScreen(): Promise<void> {
             geminiModel,
             ollamaEndpoint,
             ollamaModel,
+            showWelcome,
           })
           return await router.showHome()
         case 'back':
