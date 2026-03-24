@@ -14,8 +14,10 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-22'
+lastEdited: '2026-03-25'
 editHistory:
+  - date: '2026-03-25'
+    changes: 'Feature 11 (Welcome Screen) updated: subtitle/tagline changed from plain bold-yellow text ("Train your brain, one question at a time!") to a styled line (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta. User Journeys — Onboarding updated. FR31 description updated in epics. Reflects GitHub issue #47 (implemented and closed).'
   - date: '2026-03-23'
     changes: 'Feature 11 (Welcome Screen) added: on launch, a branded splash screen shows gradient-colored ASCII art, tagline, and version — dismissible with Enter. Controllable via showWelcome setting (default: true). Feature 12 (Static Banner) added: every screen renders a persistent "🧠🔨 Brain Break" header with a cyan-to-magenta gradient shadow bar via clearAndBanner(). Feature 8 (Settings) updated: showWelcome toggle (🎬 Welcome screen: ON/OFF) added. FR31–FR34 added. Startup flow updated. FR Coverage Map updated. NFR5 updated (banner rendering on every screen transition). Settings defaults updated with showWelcome: true.'
   - date: '2026-03-22'
@@ -191,7 +193,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a tagline (*"Train your brain, one question at a time!"*), the current version number, and a "Press enter to continue" prompt. The welcome screen can be disabled in Settings. After dismissing the welcome screen, the home screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys. The app validates readiness (checks Copilot auth, env var presence, or Ollama endpoint reachability). If validation fails, the app displays what’s needed and proceeds to the home screen anyway — the user can explore all UI except Play. Once the provider is ready, the full experience works. On subsequent launches, the saved provider is used automatically. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup.
+**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a "Press enter to continue" prompt. The welcome screen can be disabled in Settings. After dismissing the welcome screen, the home screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys. The app validates readiness (checks Copilot auth, env var presence, or Ollama endpoint reachability). If validation fails, the app displays what’s needed and proceeds to the home screen anyway — the user can explore all UI except Play. Once the provider is ready, the full experience works. On subsequent launches, the saved provider is used automatically. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -480,7 +482,7 @@ All interactive menus throughout the application use full-row background highlig
 - The Welcome Screen renders the following content in order:
   1. The app emoji branding (`🧠🔨`)
   2. A gradient-colored ASCII art rendering of "Brain Break" — the text interpolates from cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan
-  3. A tagline: *"Train your brain, one question at a time!"* rendered in bold yellow
+  3. A styled subtitle line: `>` rendered in **cyan**, the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
   4. The current app version (e.g., `v1.2.0`) rendered in dim white
   5. A gradient shadow bar spanning the terminal width (same cyan-to-magenta gradient)
 - The user dismisses the Welcome Screen by pressing Enter (via a single "Press enter to continue..." prompt)

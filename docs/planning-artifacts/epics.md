@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-23'
+lastEdited: '2026-03-25'
 status: 'complete'
 editHistory:
+  - date: '2026-03-25'
+    changes: 'FR31 updated: welcome screen subtitle changed from bold-yellow tagline ("Train your brain, one question at a time!") to styled line (`> Train your brain, one question at a time_`) where `>` is cyan and `_` is magenta. Epic 8 story descriptions unaffected. Reflects GitHub issue #47 (implemented and closed).'
   - date: '2026-03-23'
     changes: 'Welcome Screen & Static Banner: FR31–FR34 added (Welcome Screen on launch, showWelcome setting, Welcome Screen settings toggle, Static Banner via clearAndBanner). FR15 updated (Settings screen adds Welcome Screen toggle). FR17 updated (settings defaults expanded with showWelcome: true). NFR5 updated (banner rendering after terminal reset on all screens except Welcome/Provider Setup). FR Coverage Map updated with FR31–FR34. Epic 8 (Welcome Screen & Static Banner) added with 2 stories (8.1–8.2). Final validation passed — 34/34 FRs + 6/6 NFRs covered across 8 epics, 30 stories.'
   - date: '2026-03-22'
@@ -92,7 +94,7 @@ FR29: If no provider is configured or the configured provider is unreachable, Pl
 
 FR30: All AI provider error messages are provider-specific: network errors identify the specific provider and suggest checking the connection; authentication errors include the specific environment variable name or auth mechanism; Ollama errors include the configured endpoint URL. The app remains running after any AI error and the user can navigate to Settings to reconfigure.
 
-FR31: On every launch where the `showWelcome` setting is `true` (default), a Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen. The Welcome Screen shows: the app emoji branding (`🧠🔨`), a gradient-colored ASCII art rendering of "Brain Break" (cyan-to-magenta row interpolation; bold cyan fallback on limited terminals), a tagline ("Train your brain, one question at a time!" in bold yellow), the current version number (dim white), and a gradient shadow bar. The user dismisses the screen by pressing Enter. Ctrl+C exits the app cleanly.
+FR31: On every launch where the `showWelcome` setting is `true` (default), a Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen. The Welcome Screen shows: the app emoji branding (`🧠🔨`), a gradient-colored ASCII art rendering of "Brain Break" (cyan-to-magenta row interpolation; bold cyan fallback on limited terminals), a styled subtitle (`> Train your brain, one question at a time_`) where `>` is rendered in cyan and `_` is rendered in magenta, the current version number (dim white), and a gradient shadow bar. The user dismisses the screen by pressing Enter. Ctrl+C exits the app cleanly.
 
 FR32: The `showWelcome` setting is a boolean (default: `true`) stored in `~/.brain-break/settings.json`. When `false`, the Welcome Screen is skipped entirely on launch.
 
