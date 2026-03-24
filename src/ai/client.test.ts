@@ -71,7 +71,7 @@ beforeEach(() => {
   // Default: provider creation succeeds
   mockCreateProvider.mockReturnValue({ ok: true, data: makeMockProvider() })
   // Default: real-ish random for non-deterministic tests
-  mockRandomInt.mockImplementation((max: number) => Math.floor(fix  * max))
+  mockRandomInt.mockImplementation((max: number) => Math.floor(0.5 * max))
 })
 
 // ---------------------------------------------------------------------------
