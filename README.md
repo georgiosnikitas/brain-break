@@ -15,7 +15,7 @@
   | |_) | | | (_| | | | | |  | |_) | | |  __/ (_| |   <
   |____/|_|  \__,_|_|_| |_|  |____/|_|  \___|\__,_|_|\_\
 
-  Train your brain, one question at a time!
+  > Train your brain, one question at a time_
 ```
 
 Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including GitHub Copilot, OpenAI, Anthropic, Google Gemini, and Ollama for local models.

@@ -40,7 +40,7 @@ describe('showWelcomeScreen', () => {
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n')
     expect(output).toContain('| __ )')
     expect(output).toContain('____')
-    expect(output).toContain('Train your brain, one question at a time!')
+    expect(output).toContain('Train your brain, one question at a time')
   })
 
   it('displays the version from package.json', async () => {

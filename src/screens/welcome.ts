@@ -29,7 +29,6 @@ export async function showWelcomeScreen(): Promise<void> {
   clearScreen()
 
   const width = getGradientWidth()
-  const tagline = 'Train your brain, one question at a time!'
   const versionText = `v${version}`
 
   const artLines = ASCII_ART.map((line, i) => gradientText(`  ${line}`, i, ASCII_ART.length))
@@ -40,7 +39,7 @@ export async function showWelcomeScreen(): Promise<void> {
     console.log(line)
   }
   console.log()
-  console.log(`  ${chalk.bold.yellow(tagline)}`)
+  console.log(`  ${chalk.bold.cyan('>')} ${chalk.bold.yellow('Train your brain, one question at a time')}${chalk.bold.magenta('_')}`)
   console.log(`  ${chalk.dim.white(versionText)}`)
   console.log()
   console.log(gradientShadow(width))
