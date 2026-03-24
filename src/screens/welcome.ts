@@ -39,7 +39,7 @@ export async function showWelcomeScreen(): Promise<void> {
     console.log(line)
   }
   console.log()
-  console.log(`  ${chalk.bold.cyan('>')} ${chalk.bold.yellow('Train your brain, one question at a time')}${chalk.bold.magenta('_')}`)
+  console.log(`  ${chalk.bold.cyan('>')} ${chalk.bold.yellow('Train your brain, one question at a time')}${chalk.reset.bold.magenta('_')}`)
   console.log(`  ${chalk.dim.white(versionText)}`)
   console.log()
   console.log(gradientShadow(width))
