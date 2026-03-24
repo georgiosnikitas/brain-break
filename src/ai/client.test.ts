@@ -38,6 +38,7 @@ function makeSettings(provider: SettingsFile['provider'] = 'openai'): SettingsFi
     geminiModel: 'gemini-2.0-flash',
     ollamaEndpoint: 'http://localhost:11434',
     ollamaModel: 'llama3',
+    showWelcome: true,
   }
 }
 
