@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { createProvider, AI_ERRORS } from './providers.js'
 import type { Result, SettingsFile } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
@@ -73,6 +74,28 @@ function parseAndValidate(raw: string): Result<Question> {
   return { ok: true, data: result.data }
 }
 
+function shuffleOptions(question: Question): Question {
+  const keys = ['A', 'B', 'C', 'D'] as const
+  const correctText = question.options[question.correctAnswer]
+
+  // Fisher-Yates shuffle
+  const indices = [0, 1, 2, 3]
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1)
+    ;[indices[i], indices[j]] = [indices[j], indices[i]]
+  }
+
+  const newOptions = {
+    A: question.options[keys[indices[0]]],
+    B: question.options[keys[indices[1]]],
+    C: question.options[keys[indices[2]]],
+    D: question.options[keys[indices[3]]],
+  }
+
+  const newCorrectAnswer = keys.find((k) => newOptions[k] === correctText) ?? question.correctAnswer
+  return { ...question, options: newOptions, correctAnswer: newCorrectAnswer }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -102,7 +125,7 @@ export async function generateQuestion(
 
     const hash = hashQuestion(firstResult.data.question)
     if (!existingHashes.has(hash)) {
-      return firstResult
+      return { ok: true, data: shuffleOptions(firstResult.data) }
     }
 
     // Duplicate — retry once
@@ -113,7 +136,9 @@ export async function generateQuestion(
       settings,
     )
     const retryRaw = await provider.generateCompletion(retryPrompt)
-    return parseAndValidate(retryRaw)
+    const retryResult = parseAndValidate(retryRaw)
+    if (!retryResult.ok) return retryResult
+    return { ok: true, data: shuffleOptions(retryResult.data) }
   } catch (err) {
     return { ok: false, error: classifyError(err, effectiveSettings) }
   }

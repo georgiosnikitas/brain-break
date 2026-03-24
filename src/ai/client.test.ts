@@ -7,6 +7,15 @@ import type { SettingsFile } from '../domain/schema.js'
 // Mock providers module — intercept createProvider, keep real AI_ERRORS
 // ---------------------------------------------------------------------------
 const mockGenerateCompletion = vi.fn<(prompt: string) => Promise<string>>()
+const mockRandomInt = vi.fn<(max: number) => number>()
+
+vi.mock('node:crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:crypto')>()
+  return {
+    ...actual,
+    randomInt: (...args: unknown[]) => mockRandomInt(args[0] as number),
+  }
+})
 
 vi.mock('./providers.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./providers.js')>()
@@ -58,8 +67,11 @@ function makeValidResponse(question = 'What is 2+2?') {
 beforeEach(() => {
   mockGenerateCompletion.mockReset()
   mockCreateProvider.mockReset()
+  mockRandomInt.mockReset()
   // Default: provider creation succeeds
   mockCreateProvider.mockReturnValue({ ok: true, data: makeMockProvider() })
+  // Default: real-ish random for non-deterministic tests
+  mockRandomInt.mockImplementation((max: number) => Math.floor(Math.random() * max))
 })
 
 // ---------------------------------------------------------------------------
@@ -76,8 +88,9 @@ describe('generateQuestion', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.question).toBe('What is 2+2?')
-    expect(result.data.options).toEqual({ A: '1', B: '2', C: '4', D: '8' })
-    expect(result.data.correctAnswer).toBe('C')
+    // Options are shuffled — verify all values are present and correctAnswer points to '4'
+    expect(Object.values(result.data.options).sort((a, b) => a.localeCompare(b))).toEqual(['1', '2', '4', '8'])
+    expect(result.data.options[result.data.correctAnswer]).toBe('4')
     expect(result.data.difficultyLevel).toBe(2)
     expect(result.data.speedThresholds.fastMs).toBe(8000)
   })
@@ -169,6 +182,8 @@ describe('generateQuestion', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.question).toBe(secondQ)
+    expect(Object.values(result.data.options).sort((a, b) => a.localeCompare(b))).toEqual(['1', '2', '4', '8'])
+    expect(result.data.options[result.data.correctAnswer]).toBe('4')
     expect(mockGenerateCompletion).toHaveBeenCalledTimes(2)
   })
 
@@ -401,5 +416,67 @@ describe('edge cases', () => {
     const { AI_ERRORS: clientErrors } = await import('./client.js')
     const { AI_ERRORS: providerErrors } = await import('./providers.js')
     expect(clientErrors).toBe(providerErrors)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// shuffleOptions (deterministic via randomInt mock)
+// ---------------------------------------------------------------------------
+describe('shuffleOptions', () => {
+  const settings = makeSettings('openai')
+
+  it('shuffles option positions while preserving correctAnswer mapping', async () => {
+    // Mock randomInt to always return 0:
+    // Fisher-Yates with indices [0,1,2,3]:
+    //   i=3: j=0 → swap(3,0) → [3,1,2,0]
+    //   i=2: j=0 → swap(2,0) → [2,1,3,0]
+    //   i=1: j=0 → swap(1,0) → [1,2,3,0]
+    // Result indices: [1,2,3,0] → A=B, B=C, C=D, D=A
+    mockRandomInt.mockReturnValue(0)
+
+    mockGenerateCompletion.mockResolvedValueOnce(JSON.stringify({
+      question: 'Capital of France?',
+      options: { A: 'Berlin', B: 'Paris', C: 'Rome', D: 'Madrid' },
+      correctAnswer: 'B',
+      difficultyLevel: 1,
+      speedThresholds: { fastMs: 8000, slowMs: 25000 },
+    }))
+
+    const result = await generateQuestion('geography', 1, new Set(), [], settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // With all-zero randomInt: indices become [1,2,3,0]
+    // A=options[keys[1]]=B(Paris), B=options[keys[2]]=C(Rome), C=options[keys[3]]=D(Madrid), D=options[keys[0]]=A(Berlin)
+    expect(result.data.options).toEqual({ A: 'Paris', B: 'Rome', C: 'Madrid', D: 'Berlin' })
+    expect(result.data.correctAnswer).toBe('A') // Paris moved from B to A
+    expect(result.data.options[result.data.correctAnswer]).toBe('Paris')
+  })
+
+  it('preserves all option values after shuffle', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
+
+    const result = await generateQuestion('math', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(Object.values(result.data.options).sort((a, b) => a.localeCompare(b))).toEqual(['1', '2', '4', '8'])
+    expect(['A', 'B', 'C', 'D']).toContain(result.data.correctAnswer)
+    expect(result.data.options[result.data.correctAnswer]).toBe('4')
+  })
+
+  it('identity shuffle when randomInt always returns max', async () => {
+    // When randomInt(max) returns max-1 (last valid index), every swap is self-swap → identity
+    mockRandomInt.mockImplementation((max: number) => max - 1)
+
+    mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
+
+    const result = await generateQuestion('math', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // Identity shuffle: positions unchanged
+    expect(result.data.options).toEqual({ A: '1', B: '2', C: '4', D: '8' })
+    expect(result.data.correctAnswer).toBe('C')
   })
 })

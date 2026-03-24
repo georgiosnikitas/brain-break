@@ -348,8 +348,10 @@ The Anthropic, Gemini, and Ollama adapters follow the same pattern — only the 
 `client.ts` no longer imports any provider SDK directly. It:
 1. Calls `createProvider(settings)` to get the active adapter
 2. Calls `provider.generateCompletion(prompt)` to get the raw response
-3. Validates with Zod and returns `Result<Question>`
-4. Classifies errors (auth/network/parse) and returns per-provider error messages
+3. Validates with Zod
+4. Shuffles answer options via Fisher-Yates (using `crypto.randomInt` for unbiased distribution) to mitigate LLM positional bias toward option B; remaps `correctAnswer` to the new position
+5. Returns `Result<Question>`
+6. Classifies errors (auth/network/parse) and returns per-provider error messages
 
 **Error Handling Strategy — No retry, fail-to-domain-menu**
 
@@ -814,7 +816,7 @@ screens/quiz.ts
     → ai/providers.ts.createProvider(settings)          [instantiates active provider adapter]
     → ai/prompts.ts (prompt + voice injection)
     → provider.generateCompletion(prompt)               [calls active AI provider API]
-    → ai/client.ts (strip fences + Zod parse)
+    → ai/client.ts (strip fences + Zod parse + shuffle options)
   → returns Result<Question>
   → domain/scoring.ts.applyAnswer(meta, isCorrect, timeTakenMs, thresholds)
   → returns { updatedMeta, scoreDelta, speedTier }
