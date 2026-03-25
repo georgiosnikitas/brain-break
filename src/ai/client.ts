@@ -1,5 +1,6 @@
 import { randomInt } from 'node:crypto'
 import { createProvider, AI_ERRORS } from './providers.js'
+import type { AiProvider } from './providers.js'
 import type { Result, SettingsFile, AnswerOption } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
