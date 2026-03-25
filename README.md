@@ -45,6 +45,19 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 
 ## 🚀 Installation
 
+### 🍺 Homebrew (macOS)
+
+```bash
+brew tap georgiosnikitas/brain-break
+brew install brain-break
+```
+
+Then run it from anywhere:
+
+```bash
+brain-break
+```
+
 ### 📦 From GitHub Packages
 
 ```bash
