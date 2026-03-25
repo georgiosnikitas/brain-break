@@ -33,6 +33,13 @@ async function askQuestion(
   }
 }
 
+function showAnswerOptions(question: Question, userAnswer: AnswerOption): void {
+  for (const key of ['A', 'B', 'C', 'D'] as const) {
+    const marker = key === userAnswer ? '►' : ' '
+    console.log(`  ${marker} ${key}) ${question.options[key]}`)
+  }
+}
+
 function showFeedback(
   isCorrect: boolean,
   question: Question,
@@ -181,7 +188,8 @@ export async function showQuiz(domainSlug: string): Promise<void> {
       console.warn(warn(`Failed to save progress: ${writeResult.error}`))
     }
 
-    clearAndBanner()
+    showAnswerOptions(question, userAnswer)
+    console.log()
     showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta, record.difficultyLevel)
 
     // Post-answer action: explain, next, or exit

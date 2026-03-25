@@ -10,6 +10,8 @@ completedAt: '2026-03-07'
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Same-screen quiz feedback (GitHub issue #50): post-answer feedback now renders inline on the same screen as the quiz question — no clearScreen() or clearAndBanner() between question display and feedback panel. Updated: Requirements Overview (NFR 5 exception), Cross-Cutting Concerns (terminal rendering note), Terminal UI Architecture (screen clearing pattern exception for quiz feedback), NFR 5 coverage in validation tables, Cross-Cutting Concern Mapping (terminal screen clearing row).'
+  - date: '2026-03-25'
     changes: 'Answer self-consistency verification: added verification bullet to Response Validation subsection documenting the two-call pattern (generate + verify), fail-open design, and VerificationResponseSchema. Updated Question Cycle Flow data-flow diagram to include verifyAnswer() step, verification prompt construction, mismatch-triggers-regeneration logic, and dedup-path verification.'
   - date: '2026-03-22'
     changes: 'Per-provider model selection: settings schema expanded with openaiModel, anthropicModel, geminiModel fields and defaults. Settings JSON example updated. defaultSettings() output updated. First-launch provider setup and settings screen descriptions updated to reflect hosted provider model prompts with defaults and empty-string-resets-to-default. File tree updated with provider-settings.ts.'
@@ -41,7 +43,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
 - Reliability: Graceful degradation on provider unavailability or auth failure with per-provider error messages; corrupted domain file recovery without crash
 - Data integrity: SHA-256 deduplication persisted across sessions; missing file treated as clean new domain
-- Terminal screen management: every state-changing navigation action clears the viewport before rendering new content — no residual output from the previous screen persists
+- Terminal screen management: every state-changing navigation action clears the viewport before rendering new content — no residual output from the previous screen persists. **Exception:** post-answer quiz feedback renders inline on the same screen as the question — no terminal clear between question display and feedback panel; a terminal reset occurs only on Next question or Exit quiz
 - Terminal color rendering: ANSI 8/16-color baseline for cross-terminal compatibility
 
 **Scale & Complexity:**
@@ -65,7 +67,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 5 supported backends (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine
 - **File I/O with integrity guarantees:** Read/write/permission enforcement is needed everywhere domain state is touched — must be centralized, not scattered
 - **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer and must be atomically persisted
-- **Terminal rendering:** All user-facing output (home screen, quiz, feedback, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output
+- **Terminal rendering:** All user-facing output (home screen, quiz, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output. **Exception:** the post-answer quiz feedback panel renders inline on the same screen as the question — `clearScreen()` is **not** called between the question display and the feedback panel. A terminal reset occurs only when the user selects Next question (loading a new question) or exits the quiz
 - **Deduplication:** SHA-256 lookup on every question generation — must be fast and correctly scoped per domain
 - **Global settings & AI voice injection:** Language, tone of voice, and AI provider selection stored in a global settings file; language + tone injected into every AI prompt — affects questions, answer options, and motivational messages; provider setting determines which AI backend is used; must be read before any AI call
 - **Semantic color system:** Post-answer feedback, speed tier badges, difficulty level badges, and menu highlighting all use a consistent color vocabulary defined in a single utility module
@@ -424,7 +426,7 @@ Each screen is a standalone `async` function that resolves when the user exits i
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
-Every screen entry point and every re-render cycle (e.g., post-answer feedback, history page navigation) calls `clearScreen()` as its **first** operation before any output:
+Every screen entry point and every re-render cycle (e.g., history page navigation) calls `clearScreen()` as its **first** operation before any output:
 
 ```typescript
 // ✅ Correct pattern — every screen, every render cycle
@@ -433,6 +435,20 @@ import { clearScreen } from '../utils/screen.js';
 export async function showHome(): Promise<void> {
   clearScreen();
   // ... render domain list
+}
+```
+
+**Exception — quiz post-answer feedback:** After the user answers a question, the feedback panel (correct/incorrect, correct answer reveal, time taken, speed tier, score delta) is rendered **inline on the same screen** as the question. `clearScreen()` is **not** called between the question display and the feedback panel — the user sees the original question, their chosen answer, and all feedback together. A terminal reset occurs only when the user selects Next question (triggering `clearScreen()` + rendering the next question) or exits the quiz.
+
+```typescript
+// ✅ Quiz feedback pattern — NO clearScreen between question and feedback
+// question is already displayed on screen
+const answer = await promptAnswer(options);  // user answers
+// feedback renders inline below the question — no clearScreen()
+console.log(formatFeedback(isCorrect, scoreDelta, speedTier));
+const action = await promptNextAction();  // Next / Explain / Exit
+if (action === 'next') {
+  clearScreen();  // ← clear only when loading the next question
 }
 ```
 
@@ -447,7 +463,7 @@ export function clearScreen(): void {
 
 Using `\x1Bc` (full terminal reset) over `\x1B[2J\x1B[H` (erase + cursor-home) ensures residual scroll-back content does not bleed into the visible viewport on all target platforms (macOS Terminal, iTerm2, Linux terminals, WSL).
 
-**Enforcement rule:** No screen may output content to the terminal without first calling `clearScreen()`. This is verifiable: every `screens/*.ts` file must have `clearScreen()` as its first side-effectful call in every code path that renders a new screen state.
+**Enforcement rule:** No screen may output content to the terminal without first calling `clearScreen()` — with one exception: the quiz post-answer feedback panel renders inline after the question without a terminal clear, so the user can see the original question alongside the feedback. This is verifiable: every `screens/*.ts` file must have `clearScreen()` as its first side-effectful call in every code path that renders a new screen state, except for post-answer feedback rendering in `screens/quiz.ts`.
 
 *Rationale:* Centralising the clear primitive in `utils/screen.ts` makes the contract testable (spy on `process.stdout.write` in unit tests), swap-able (one place to change if a different clear strategy is needed), and makes the enforcement rule auditable by grep.
 
@@ -803,7 +819,7 @@ brain-break/
 | Atomic file write | `domain/store.ts` → `writeDomain()`, `writeSettings()` |
 | AI error messages | `ai/client.ts` → `AI_ERRORS` constants (per-provider network + auth messages) |
 | Domain slug derivation | `utils/slugify.ts` exclusively |
-| Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path |
+| Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path; **exception:** post-answer quiz feedback renders inline on the question screen (no `clearScreen()` between question and feedback) |
 | Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
 | Provider abstraction | `ai/providers.ts` → `AiProvider` interface + 5 adapters (4 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter); `ai/client.ts` → `createProvider()` factory |
 | Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme` |
@@ -905,7 +921,7 @@ All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNex
 | NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state |
 | NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT |
 | NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
-| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path |
+| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer quiz feedback renders inline (no clear between question and feedback) |
 | NFR 6 — Terminal color rendering | ✅ | `utils/format.ts` → ANSI 8/16-color baseline; `chalk` handles terminal capability detection |
 
 ### Implementation Readiness Validation ✅

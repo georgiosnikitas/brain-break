@@ -4,6 +4,8 @@ lastEdited: '2026-03-25'
 status: 'complete'
 editHistory:
   - date: '2026-03-25'
+    changes: 'FR8 updated: post-answer feedback now renders on the same screen as the quiz question — no terminal clear between question and feedback. NFR5 updated to exclude post-answer feedback from full terminal reset list. Story 3.3 ACs updated (no clearAndBanner between question and feedback). Story 1.6 AC updated (quiz post-answer feedback renders inline). Reflects GitHub issue #50.'
+  - date: '2026-03-25'
     changes: 'FR35 added (Explain Answer): post-answer feedback now offers "Explain answer" option that calls AI to explain the correct answer. FR8 updated (post-answer prompt includes Explain option). FR18 updated (answer explanations included in language/tone injection). FR Coverage Map updated with FR35 → Epic 3. Story 3.4 (Answer Explanation) added to Epic 3. Reflects GitHub issue #48.'
   - date: '2026-03-25'
     changes: 'FR31 updated: welcome screen subtitle changed from bold-yellow tagline ("Train your brain, one question at a time!") to styled line (`> Train your brain, one question at a time_`) where `>` is cyan and `_` is magenta. Epic 8 story descriptions unaffected. Reflects GitHub issue #47 (implemented and closed).'
@@ -50,7 +52,7 @@ FR6: Questions are generated on demand via the user's configured AI provider (Gi
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at level 2. Difficulty and streak counter persist across sessions per domain.
 
-FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the user sees: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Exit quiz.
+FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Exit quiz.
 
 FR9: Score is per-domain, cumulative, and never resets. Score delta = base points × speed multiplier (rounded to nearest integer). Base points by difficulty: L1=10, L2=20, L3=30, L4=40, L5=50. Speed multipliers: Fast+Correct=×2, Normal+Correct=×1, Slow+Correct=×0.5, Fast+Incorrect=−1×, Normal+Incorrect=−1.5×, Slow+Incorrect=−2×.
 
@@ -116,7 +118,7 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, post-answer feedback, history navigation, stats dashboard, welcome screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
 NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
@@ -415,8 +417,10 @@ So that the app always feels like a persistent full-screen application and previ
 **Then** `clearScreen()` is called before rendering  
 
 **Given** a quiz question or post-answer feedback panel renders  
-**When** either screen is drawn  
-**Then** `clearScreen()` is called before the new content is displayed — no prior question or feedback output persists  
+**When** a new question is displayed  
+**Then** `clearScreen()` is called before rendering the question  
+**And** when the user answers the question, the post-answer feedback is rendered inline on the same screen — no `clearScreen()` or `clearAndBanner()` is called between the question and the feedback panel  
+**And** `clearScreen()` is called only when the user selects Next question (to display the next question) or exits the quiz  
 
 **Given** the history screen renders (on load or page navigation)  
 **When** any entry or page is displayed  
@@ -725,7 +729,9 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 **When** I choose one of the 4 answer options (A–D)  
 **Then** the silent timer stops and `timeTakenMs` is recorded  
 **And** `applyAnswer()` is called to compute `scoreDelta` and `updatedMeta`  
+**And** the feedback panel is rendered **on the same screen** as the question — no terminal clear or `clearAndBanner()` call occurs between the question and the feedback  
 **And** the feedback panel shows: correct/incorrect, the correct answer (if I was wrong), time taken (ms), speed tier (fast/normal/slow based on `speedThresholds`), and score delta  
+**And** the user can see the original question text, answer options, and their chosen answer above the feedback panel  
 
 **Given** an answer has been processed  
 **When** `writeDomain()` is called  

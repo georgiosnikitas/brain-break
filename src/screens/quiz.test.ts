@@ -319,14 +319,30 @@ describe('showQuiz', () => {
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
   })
 
-  it('calls clearScreen before showing feedback', async () => {
+  it('calls clearAndBanner only before rendering a question, not before feedback', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
 
-    // clearScreen is called once before question, once before feedback
-    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(2)
+    // clearAndBanner is called once before question only — feedback renders inline
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows all 4 answer options with user selection marker before feedback', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('B') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('A) A typed JS superset')
+    expect(logged).toContain('B) A framework')
+    expect(logged).toContain('C) A runtime')
+    expect(logged).toContain('D) A test tool')
+    expect(logged).toContain('► A)')
+    consoleSpy.mockRestore()
   })
 
   it('calls readSettings once per quiz session start', async () => {
