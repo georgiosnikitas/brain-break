@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-22'
+lastEdited: '2026-03-25'
 editHistory:
+  - date: '2026-03-25'
+    changes: 'Answer self-consistency verification: added verification bullet to Response Validation subsection documenting the two-call pattern (generate + verify), fail-open design, and VerificationResponseSchema. Updated Question Cycle Flow data-flow diagram to include verifyAnswer() step, verification prompt construction, mismatch-triggers-regeneration logic, and dedup-path verification.'
   - date: '2026-03-22'
     changes: 'Per-provider model selection: settings schema expanded with openaiModel, anthropicModel, geminiModel fields and defaults. Settings JSON example updated. defaultSettings() output updated. First-launch provider setup and settings screen descriptions updated to reflect hosted provider model prompts with defaults and empty-string-resets-to-default. File tree updated with provider-settings.ts.'
   - date: '2026-03-21'
@@ -342,6 +344,7 @@ The Anthropic, Gemini, and Ollama adapters follow the same pattern — only the 
 - All providers return raw text (Vercel AI SDK's `generateText()` returns `{ text }` directly; Copilot custom adapter returns raw content); `ai/client.ts` strips JSON fences and validates with the same Zod `QuestionResponseSchema`
 - Schema covers: `question` (string), `options` (A–D strings), `correctAnswer` (enum), `difficultyLevel` (1–5 int), `speedThresholds` (`{ fastMs: number, slowMs: number }`)
 - Provider-agnostic: if any provider returns malformed JSON, the same `AI_ERRORS.PARSE` path is taken
+- **Answer self-consistency verification:** After Zod validation and option shuffling, a separate verification prompt presents the same question and options to the AI **without revealing the original `correctAnswer`** and asks it to independently determine the correct answer. The verification response is validated against `VerificationResponseSchema` (Zod: `{ correctAnswer: AnswerOptionSchema }`). If the verification answer disagrees with the generated answer, the question is discarded and regenerated once. This applies to both the primary generation path and the deduplication regeneration path. The mechanism is **fail-open**: verification errors (network, JSON parse, schema mismatch) silently pass through — the original question is accepted. The verification prompt includes the active language/tone voice instruction when settings are provided.
 
 **`ai/client.ts` Role (Refactored)**
 
@@ -817,6 +820,15 @@ screens/quiz.ts
     → ai/prompts.ts (prompt + voice injection)
     → provider.generateCompletion(prompt)               [calls active AI provider API]
     → ai/client.ts (strip fences + Zod parse + shuffle options)
+    → ai/client.ts.verifyAnswer(question, provider, settings)  [2nd AI call]
+      → ai/prompts.ts.buildVerificationPrompt(question, settings)
+      → provider.generateCompletion(verificationPrompt)
+      → Zod parse VerificationResponseSchema
+      → compare verification.correctAnswer vs question.correctAnswer
+      → mismatch? → regenerate question once (repeat generate + parse + shuffle)
+      → verify error (network/parse/schema)? → silently accept original
+    → dedup check (hash ∈ hashes Set?)
+      → duplicate? → regenerate → verifyAnswer again → accept
   → returns Result<Question>
   → domain/scoring.ts.applyAnswer(meta, isCorrect, timeTakenMs, thresholds)
   → returns { updatedMeta, scoreDelta, speedTier }

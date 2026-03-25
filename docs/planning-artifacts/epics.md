@@ -795,6 +795,46 @@ So that I can learn from every question immediately instead of having to look it
 
 ---
 
+### Story 3.5: Answer Self-Consistency Verification
+
+As a user,
+I want the system to independently verify the AI's correct answer before presenting the question to me,
+So that I can trust the quiz results and not be penalized for choosing the right answer when the AI got it wrong.
+
+**Acceptance Criteria:**
+
+**Given** `ai/prompts.ts` exports `buildVerificationPrompt(question, settings?)`  
+**When** called with a generated question  
+**Then** it returns a structured prompt that presents the question text and all four options without revealing the original `correctAnswer`  
+**And** instructs the AI to independently determine which option is correct  
+**And** includes the active language and tone voice instruction when settings are provided  
+**And** `VerificationResponseSchema` (Zod) is exported and validates the response shape `{ correctAnswer: "A" | "B" | "C" | "D" }`  
+
+**Given** `ai/client.ts` implements `verifyAnswer(question, provider, settings?)`  
+**When** called after a question is generated  
+**Then** it sends the verification prompt to the same provider and compares the returned `correctAnswer` with the question's `correctAnswer`  
+**And** returns `true` if they agree (consistent) or `false` if they disagree (inconsistent)  
+
+**Given** the verification response is not valid JSON, does not match the schema, or the verification call throws a network/provider error  
+**When** `verifyAnswer()` encounters the failure  
+**Then** it returns `true` (fail-open) to avoid blocking the quiz experience  
+
+**Given** `generateQuestion()` receives a valid question from the AI  
+**When** `verifyAnswer()` returns `false` (inconsistent)  
+**Then** the question is discarded and regenerated once using the same prompt  
+**And** the regenerated question is returned without further verification (best effort, single retry)  
+
+**Given** a duplicate question triggers the deduplication retry path  
+**When** the dedup question is generated  
+**Then** it is also verified via `verifyAnswer()` before being returned  
+**And** if verification fails, the dedup question is discarded and regenerated once  
+
+**Given** `ai/client.test.ts` and `ai/prompts.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: verification agrees (proceeds normally), verification disagrees (regenerates), verification parse/schema/network failures (fail-open), verification prompt does not reveal correct answer, voice instruction injected into verification prompt, dedup path verification  
+
+---
+
 ## Epic 4: Learning Insights
 
 Users can review their complete question history for any domain (paginated) and view a stats dashboard with score, accuracy, trend, and return streak — giving them a genuine signal of knowledge growth over time.
