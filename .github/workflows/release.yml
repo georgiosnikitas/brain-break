@@ -50,3 +50,85 @@ jobs:
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute SHA256 of source tarball
+        id: sha
+        run: |
+          TARBALL_URL="https://github.com/georgiosnikitas/brain-break/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
+          SHA256=$(curl -sL "$TARBALL_URL" | shasum -a 256 | awk '{print $1}')
+          if [[ -z "$SHA256" || "$SHA256" == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]]; then
+            echo "ERROR: Could not compute SHA256 for ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout homebrew tap repo
+        uses: actions/checkout@v4
+        with:
+          repository: georgiosnikitas/homebrew-brain-break
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Update formula
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA256="${{ steps.sha.outputs.sha256 }}"
+          TAG="${GITHUB_REF_NAME}"
+
+          cat > Formula/brain-break.rb << 'FORMULA_EOF'
+          # Formula for georgiosnikitas/homebrew-brain-break
+          class BrainBreak < Formula
+            desc "An AI-powered terminal quiz app"
+            homepage "https://github.com/georgiosnikitas/brain-break"
+          FORMULA_EOF
+
+          # Append dynamic fields (outside heredoc to allow variable expansion)
+          cat >> Formula/brain-break.rb << FORMULA_EOF
+            url "https://github.com/georgiosnikitas/brain-break/archive/refs/tags/${TAG}.tar.gz"
+            sha256 "${SHA256}"
+          FORMULA_EOF
+
+          cat >> Formula/brain-break.rb << 'FORMULA_EOF'
+            license "MIT"
+            head "https://github.com/georgiosnikitas/brain-break.git", branch: "main"
+
+            depends_on "node"
+
+            def install
+              node_version = Utils.safe_popen_read(Formula["node"].opt_bin/"node", "--version").strip
+              odie "brain-break requires Node.js >= 25.8.0 (found #{node_version})" if Version.new(node_version.delete_prefix("v")) < Version.new("25.8.0")
+
+              system "npm", "install"
+              system "npm", "run", "build"
+
+              libexec.install "dist", "node_modules", "package.json"
+
+              (bin/"brain-break").write_env_script "#{libexec}/dist/index.js",
+                PATH: "#{Formula["node"].opt_bin}:$PATH"
+            end
+
+            test do
+              assert_match "brain-break", shell_output("#{bin}/brain-break 2>&1", 1)
+            end
+          end
+          FORMULA_EOF
+
+          # Remove leading whitespace from heredoc indentation
+          sed -i 's/^          //' Formula/brain-break.rb
+
+      - name: Commit and push
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/brain-break.rb
+          git commit -m "brain-break ${VERSION}"
+          git push
