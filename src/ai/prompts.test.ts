@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt } from './prompts.js'
 import { defaultSettings, type SettingsFile } from '../domain/schema.js'
 
 const englishNaturalSettings = defaultSettings()
@@ -140,5 +140,69 @@ describe('buildMotivationalPrompt', () => {
     const triggerIdx = prompt.indexOf('returned')
     expect(voiceIdx).toBeGreaterThanOrEqual(0)
     expect(triggerIdx).toBeGreaterThan(voiceIdx)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildExplanationPrompt
+// ---------------------------------------------------------------------------
+const sampleQuestion = {
+  question: 'What is TypeScript?',
+  options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
+  correctAnswer: 'A' as const,
+  difficultyLevel: 2,
+  speedThresholds: { fastMs: 8000, slowMs: 20000 },
+}
+
+describe('buildExplanationPrompt', () => {
+  it('includes question text, all options, correct answer, and user answer', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'B')
+    expect(prompt).toContain('What is TypeScript?')
+    expect(prompt).toContain('A) A typed JS superset')
+    expect(prompt).toContain('B) A framework')
+    expect(prompt).toContain('C) A runtime')
+    expect(prompt).toContain('D) A test tool')
+    expect(prompt).toContain('Correct answer: A')
+    expect(prompt).toContain("User's answer: B")
+  })
+
+  it('instructs model to reply with only plain text', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'A')
+    expect(prompt).toContain('Reply with ONLY the explanation')
+  })
+
+  it('instructs 2\u20134 sentence explanation', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'A')
+    expect(prompt).toContain('2\u20134 sentences')
+  })
+
+  it('no voice instruction when no settings provided', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'A')
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('no voice instruction for English/natural settings', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'A', englishNaturalSettings)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('injects voice instruction for non-default settings', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'A', greekPirateSettings)
+    expect(prompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('voice instruction appears before explanation instruction', () => {
+    const prompt = buildExplanationPrompt(sampleQuestion, 'A', greekPirateSettings)
+    const voiceIdx = prompt.indexOf('Respond in Greek')
+    const explainIdx = prompt.indexOf('Explain why')
+    expect(voiceIdx).toBeGreaterThanOrEqual(0)
+    expect(explainIdx).toBeGreaterThan(voiceIdx)
+  })
+
+  it('sanitizes newlines in question text', () => {
+    const q = { ...sampleQuestion, question: 'What is\nTypeScript?' }
+    const prompt = buildExplanationPrompt(q, 'A')
+    expect(prompt).toContain('What is TypeScript?')
+    expect(prompt).not.toContain('What is\nTypeScript?')
   })
 })

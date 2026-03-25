@@ -1,4 +1,6 @@
 
+# 🧠🔨 Brain Break
+
 [![CI](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml)
 [![Release](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_brain-break&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=georgiosnikitas_brain-break)
@@ -6,6 +8,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/georgiosnikitas)
 
+Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including GitHub Copilot, OpenAI, Anthropic, Google Gemini, and Ollama for local models.
 
 ```
   🧠🔨
@@ -18,13 +21,12 @@
   > Train your brain, one question at a time_
 ```
 
-Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including GitHub Copilot, OpenAI, Anthropic, Google Gemini, and Ollama for local models.
-
 ## ✨ Features
 
 - **Multiple AI providers** — GitHub Copilot, OpenAI, Anthropic, Google Gemini, and Ollama (local LLMs)
 - Domain-based quiz sessions — create any topic like `java-programming`, `greek-mythology`, or `thai-cuisine`
 - AI-generated multiple-choice questions with automatic deduplication
+- **Explain answer** — ask the AI to explain why the correct answer is right after any question
 - Adaptive scoring and difficulty progression based on correctness and response speed
 - **Configurable language and tone** — 7 tone options including humorous, sarcastic, and pirate
 - **Domain sub-menu** — play, history, stats, archive, and delete per domain

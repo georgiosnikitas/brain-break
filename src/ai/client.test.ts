@@ -26,7 +26,7 @@ vi.mock('./providers.js', async (importOriginal) => {
 })
 
 // Must import after mock setup
-const { generateQuestion, generateMotivationalMessage, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
+const { generateQuestion, generateMotivationalMessage, generateExplanation, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
 const { createProvider } = await import('./providers.js')
 const mockCreateProvider = vi.mocked(createProvider)
 
@@ -316,6 +316,103 @@ describe('generateMotivationalMessage', () => {
 
     const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
     expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// generateExplanation
+// ---------------------------------------------------------------------------
+describe('generateExplanation', () => {
+  const settings = makeSettings('openai')
+  const question = {
+    question: 'What is TypeScript?',
+    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
+    correctAnswer: 'A' as const,
+    difficultyLevel: 2,
+    speedThresholds: { fastMs: 8000, slowMs: 20000 },
+  }
+
+  it('returns ok:true with explanation string on success', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('TypeScript is a typed superset of JavaScript.')
+
+    const result = await generateExplanation(question, 'B', settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('TypeScript is a typed superset of JavaScript.')
+  })
+
+  it('trims whitespace from the returned explanation', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('  Explanation here.  \n')
+
+    const result = await generateExplanation(question, 'A', settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('Explanation here.')
+  })
+
+  it('returns NO_PROVIDER error when provider is not configured', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
+
+    const result = await generateExplanation(question, 'A', makeSettings(null))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+
+  it('returns provider-specific error on network error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
+
+    const result = await generateExplanation(question, 'A', makeSettings('gemini'))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_GEMINI)
+  })
+
+  it('returns provider-specific error on auth error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    const result = await generateExplanation(question, 'A', makeSettings('copilot'))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH_COPILOT)
+  })
+
+  it('passes settings to the prompt (voice instruction injected)', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Explanation in Greek!')
+    const settings = makeSettings('openai')
+    settings.language = 'Greek'
+    settings.tone = 'pirate'
+
+    await generateExplanation(question, 'B', settings)
+
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
+    expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('includes question context in prompt', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Explanation.')
+
+    await generateExplanation(question, 'B', settings)
+
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
+    expect(sentPrompt).toContain('What is TypeScript?')
+    expect(sentPrompt).toContain('Correct answer: A')
+    expect(sentPrompt).toContain("User's answer: B")
+  })
+
+  it('uses defaultSettings when no settings provided', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
+
+    const result = await generateExplanation(question, 'A')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
   })
 })
 

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-03-21
+last_updated: 2026-03-25
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -65,10 +65,11 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: AI-Powered Adaptive Quiz
-  epic-3: done
+  epic-3: in-progress
   3-1-copilot-sdk-integration-question-generation: done
   3-2-scoring-difficulty-progression-logic: done
   3-3-interactive-quiz-loop: done
+  3-4-answer-explanation: done
   epic-3-retrospective: optional
 
   # Epic 4: Learning Insights

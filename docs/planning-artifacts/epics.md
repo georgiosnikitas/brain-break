@@ -4,6 +4,8 @@ lastEdited: '2026-03-25'
 status: 'complete'
 editHistory:
   - date: '2026-03-25'
+    changes: 'FR35 added (Explain Answer): post-answer feedback now offers "Explain answer" option that calls AI to explain the correct answer. FR8 updated (post-answer prompt includes Explain option). FR18 updated (answer explanations included in language/tone injection). FR Coverage Map updated with FR35 → Epic 3. Story 3.4 (Answer Explanation) added to Epic 3. Reflects GitHub issue #48.'
+  - date: '2026-03-25'
     changes: 'FR31 updated: welcome screen subtitle changed from bold-yellow tagline ("Train your brain, one question at a time!") to styled line (`> Train your brain, one question at a time_`) where `>` is cyan and `_` is magenta. Epic 8 story descriptions unaffected. Reflects GitHub issue #47 (implemented and closed).'
   - date: '2026-03-23'
     changes: 'Welcome Screen & Static Banner: FR31–FR34 added (Welcome Screen on launch, showWelcome setting, Welcome Screen settings toggle, Static Banner via clearAndBanner). FR15 updated (Settings screen adds Welcome Screen toggle). FR17 updated (settings defaults expanded with showWelcome: true). NFR5 updated (banner rendering after terminal reset on all screens except Welcome/Provider Setup). FR Coverage Map updated with FR31–FR34. Epic 8 (Welcome Screen & Static Banner) added with 2 stories (8.1–8.2). Final validation passed — 34/34 FRs + 6/6 NFRs covered across 8 epics, 30 stories.'
@@ -48,7 +50,7 @@ FR6: Questions are generated on demand via the user's configured AI provider (Gi
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at level 2. Difficulty and streak counter persist across sessions per domain.
 
-FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the user sees: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta.
+FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the user sees: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Exit quiz.
 
 FR9: Score is per-domain, cumulative, and never resets. Score delta = base points × speed multiplier (rounded to nearest integer). Base points by difficulty: L1=10, L2=20, L3=30, L4=40, L5=50. Speed multipliers: Fast+Correct=×2, Normal+Correct=×1, Slow+Correct=×0.5, Fast+Incorrect=−1×, Normal+Incorrect=−1.5×, Slow+Incorrect=−2×.
 
@@ -68,7 +70,7 @@ FR16: Settings are global — they apply to all domains and all AI-generated con
 
 FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3", showWelcome: true }`.
 
-FR18: Every AI call (questions, motivational messages) injects the active language and tone from global settings — generated content renders in the configured language and voice.
+FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
 FR19: Settings screen provides Save (persist + return home) and Back (discard changes + return home) navigation.
 
@@ -101,6 +103,8 @@ FR32: The `showWelcome` setting is a boolean (default: `true`) stored in `~/.bra
 FR33: The Settings screen includes a "🎬 Welcome screen" toggle (displayed as ON/OFF) that controls the `showWelcome` setting. Toggling it takes immediate effect in-memory and is persisted on Save.
 
 FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
+
+FR35: After answering a quiz question and viewing the feedback panel, the user is presented with three options: Next question, Explain answer, and Exit quiz. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a two-option prompt: Next question and Exit quiz (explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Exit prompt without interrupting the quiz session.
 
 ### NonFunctional Requirements
 
@@ -178,6 +182,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR32 | Epic 8 | `showWelcome` boolean setting (default: true) — skip welcome when false |
 | FR33 | Epic 8, Epic 5 | Settings screen — 🎬 Welcome screen toggle (ON/OFF) |
 | FR34 | Epic 8 | Static banner — `🧠🔨 Brain Break` + gradient shadow bar via `clearAndBanner()` |
+| FR35 | Epic 3 | Post-answer "Explain answer" option — AI-generated explanation of the correct answer |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -202,8 +207,8 @@ Users can launch the app, see their domain list with scores, create a new domain
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
 ### Epic 3: AI-Powered Adaptive Quiz
-Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, and graceful error handling if the Copilot API is unavailable.
-**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11
+Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, graceful error handling if the Copilot API is unavailable, and an on-demand AI explanation of the correct answer after every question.
+**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11, FR35
 **NFRs covered:** NFR1 (≤ 5s generation + spinner), NFR2 (API error handling)
 
 ### Epic 4: Learning Insights
@@ -738,6 +743,55 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 **Given** I am in an active quiz session  
 **When** I choose "Exit quiz" (available after each answer)  
 **Then** all persisted data is preserved and I am returned to the domain sub-menu  
+
+---
+
+### Story 3.4: Answer Explanation
+
+As a user,
+I want an "Explain answer" option after each quiz question so the AI can explain why the correct answer is right,
+So that I can learn from every question immediately instead of having to look it up externally.
+
+**Acceptance Criteria:**
+
+**Given** I have answered a quiz question and the feedback panel is displayed  
+**When** I inspect the post-answer navigation options  
+**Then** three options are shown: "💡 Explain answer", "▶️  Next question", and "🚪 Exit quiz"  
+
+**Given** I select "💡 Explain answer"  
+**When** the action is triggered  
+**Then** an `ora` spinner starts with "Generating explanation..." while `generateExplanation()` is called  
+**And** the spinner stops and the explanation is displayed inline below the feedback panel  
+**And** the explanation is 2–4 sentences, covering why the correct answer is correct and optionally why common wrong choices are incorrect  
+**And** the explanation uses the active language and tone from global settings  
+
+**Given** the explanation has been displayed  
+**When** I inspect the post-explanation navigation options  
+**Then** two options are shown: "▶️  Next question" and "🚪 Exit quiz" — the "Explain answer" option is no longer available for this question  
+
+**Given** `ai/prompts.ts` is updated  
+**When** I call `buildExplanationPrompt(question, userAnswer, settings)`  
+**Then** it returns a structured prompt instructing the model to explain the correct answer for the given question, including the question text, all four options, the correct answer, and the user's chosen answer  
+**And** the prompt includes the active language and tone voice instruction  
+
+**Given** `ai/client.ts` exports `generateExplanation(question, userAnswer, settings)`  
+**When** called  
+**Then** it calls the active provider via `createProvider(settings).generateCompletion(prompt)` and returns `Result<string>`  
+**And** on success returns `{ ok: true, data: <explanation text> }`  
+**And** on failure returns `{ ok: false, error: <provider-specific error message> }`  
+
+**Given** the AI call for explanation fails (network error, auth error, or any other failure)  
+**When** `generateExplanation()` returns `{ ok: false }`  
+**Then** a warning message is displayed (e.g. "Could not generate explanation.") and the user is returned to the Next/Exit prompt  
+**And** the quiz session continues normally — the failure is non-critical  
+
+**Given** I press Ctrl+C on the explain/next/exit prompt  
+**When** the exit is detected  
+**Then** the app handles it gracefully and returns to the domain sub-menu  
+
+**Given** `ai/client.test.ts`, `ai/prompts.test.ts`, and `screens/quiz.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: explain option present in post-answer prompt, `generateExplanation()` success and failure paths, explanation displayed after selection, explain option removed after use, language/tone injected into explanation prompt, graceful degradation on API failure  
 
 ---
 

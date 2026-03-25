@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
-import { generateQuestion, type Question } from '../ai/client.js'
+import { generateQuestion, generateExplanation, type Question } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
@@ -52,7 +52,24 @@ function showFeedback(
   console.log(`Score: ${colorScoreDelta(scoreDelta)}`)
 }
 
-async function askNextAction(): Promise<'next' | 'exit' | null> {
+async function askPostAnswerAction(): Promise<'explain' | 'next' | 'exit' | null> {
+  try {
+    return await select<'explain' | 'next' | 'exit'>({
+      message: 'Next action:',
+      choices: [
+        { name: '💡 Explain answer', value: 'explain' as const },
+        { name: '▶️  Next question', value: 'next' as const },
+        { name: '🚪 Exit quiz', value: 'exit' as const },
+      ],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) return null
+    throw err
+  }
+}
+
+async function askNextOrExit(): Promise<'next' | 'exit' | null> {
   try {
     return await select<'next' | 'exit'>({
       message: 'Next action:',
@@ -66,6 +83,35 @@ async function askNextAction(): Promise<'next' | 'exit' | null> {
     if (err instanceof ExitPromptError) return null
     throw err
   }
+}
+
+async function showGenerationError(domainSlug: string, error: string): Promise<void> {
+  console.error(colorIncorrect(error))
+  try {
+    await select({
+      message: 'Something went wrong',
+      choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+      theme: menuTheme,
+    })
+  } catch {
+    // ExitPromptError (Ctrl+C) — fall through to navigate back
+  }
+  await router.showDomainMenu(domainSlug)
+}
+
+async function handleExplain(
+  question: Question,
+  userAnswer: AnswerOption,
+  settings: SettingsFile,
+): Promise<'next' | 'exit' | null> {
+  const explainSpinner = ora('Generating explanation...').start()
+  const explainResult = await generateExplanation(question, userAnswer, settings).finally(() => explainSpinner.stop())
+  if (explainResult.ok) {
+    console.log(`\n${explainResult.data}\n`)
+  } else {
+    console.warn(warn('Could not generate explanation.'))
+  }
+  return askNextOrExit()
 }
 
 export async function showQuiz(domainSlug: string): Promise<void> {
@@ -85,17 +131,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes, recentQuestions, settings).finally(() => spinner.stop())
 
     if (!questionResult.ok) {
-      console.error(colorIncorrect(questionResult.error))
-      try {
-        await select({
-          message: 'Something went wrong',
-          choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
-          theme: menuTheme,
-        })
-      } catch {
-        // ExitPromptError (Ctrl+C) — fall through to navigate back
-      }
-      await router.showDomainMenu(domainSlug)
+      await showGenerationError(domainSlug, questionResult.error)
       return
     }
 
@@ -148,8 +184,13 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     clearAndBanner()
     showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta, record.difficultyLevel)
 
-    // Exit option available after every answer
-    const nextAction = await askNextAction()
+    // Post-answer action: explain, next, or exit
+    let nextAction: 'explain' | 'next' | 'exit' | null = await askPostAnswerAction()
+
+    if (nextAction === 'explain') {
+      nextAction = await handleExplain(question, userAnswer, settings)
+    }
+
     if (nextAction === null || nextAction === 'exit') {
       await router.showDomainMenu(domainSlug)
       return

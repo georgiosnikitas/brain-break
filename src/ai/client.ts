@@ -1,9 +1,9 @@
 import { randomInt } from 'node:crypto'
 import { createProvider, AI_ERRORS } from './providers.js'
-import type { Result, SettingsFile } from '../domain/schema.js'
+import type { Result, SettingsFile, AnswerOption } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, QuestionResponseSchema } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, QuestionResponseSchema } from './prompts.js'
 import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
 
 // Re-export AI_ERRORS so downstream consumers keep working without import path changes
@@ -159,6 +159,27 @@ export async function generateMotivationalMessage(
     const prompt = buildMotivationalPrompt(trigger, settings)
     const message = (await provider.generateCompletion(prompt)).trim()
     return { ok: true, data: message }
+  } catch (err) {
+    return { ok: false, error: classifyError(err, effectiveSettings) }
+  }
+}
+
+export async function generateExplanation(
+  question: Question,
+  userAnswer: AnswerOption,
+  settings?: SettingsFile,
+): Promise<Result<string>> {
+  const effectiveSettings = settings ?? defaultSettings()
+  const providerResult = createProvider(effectiveSettings)
+  if (!providerResult.ok) {
+    return { ok: false, error: providerResult.error }
+  }
+  const provider = providerResult.data
+
+  try {
+    const prompt = buildExplanationPrompt(question, userAnswer, settings)
+    const explanation = (await provider.generateCompletion(prompt)).trim()
+    return { ok: true, data: explanation }
   } catch (err) {
     return { ok: false, error: classifyError(err, effectiveSettings) }
   }

@@ -31,6 +31,7 @@ vi.mock('../ai/client.js', async (importOriginal) => {
   return {
     ...actual,
     generateQuestion: vi.fn(),
+    generateExplanation: vi.fn(),
   }
 })
 
@@ -49,7 +50,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
-import { generateQuestion, AI_ERRORS } from '../ai/client.js'
+import { generateQuestion, generateExplanation, AI_ERRORS } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
@@ -57,6 +58,7 @@ import { clearAndBanner } from '../utils/screen.js'
 import { showQuiz } from './quiz.js'
 
 const mockGenerateQuestion = vi.mocked(generateQuestion)
+const mockGenerateExplanation = vi.mocked(generateExplanation)
 const mockReadDomain = vi.mocked(readDomain)
 const mockWriteDomain = vi.mocked(writeDomain)
 const mockReadSettings = vi.mocked(readSettings)
@@ -448,5 +450,131 @@ describe('showQuiz', () => {
       .mockRejectedValueOnce(boom)   // next-action select throws
 
     await expect(showQuiz('typescript')).rejects.toThrow('unexpected next-action select failure')
+  })
+
+  // -------------------------------------------------------------------------
+  // Explain answer flow
+  // -------------------------------------------------------------------------
+  it('shows three post-answer options including explain', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // The post-answer select call is the 2nd select call (1st = answer)
+    const postAnswerCall = mockSelect.mock.calls[1]
+    const choices = (postAnswerCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('explain')
+    expect(values).toContain('next')
+    expect(values).toContain('exit')
+  })
+
+  it('displays explanation when user selects explain and AI succeeds', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'TypeScript adds static typing.' })
+    mockSelect
+      .mockResolvedValueOnce('A')        // answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('exit')     // next/exit after explain
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('TypeScript adds static typing.')
+    expect(mockGenerateExplanation).toHaveBeenCalledOnce()
+    consoleSpy.mockRestore()
+  })
+
+  it('starts and stops explain spinner around generateExplanation call', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // mockStart is called for question spinner + explain spinner
+    expect(mockStart).toHaveBeenCalledTimes(2)
+    expect(mockStop).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows warning on explain failure and falls through to next/exit', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate explanation'))
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    warnSpy.mockRestore()
+  })
+
+  it('shows next/exit only (no explain) after explain is used', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')        // answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('exit')     // next/exit after explain
+
+    await showQuiz('typescript')
+
+    // 3rd select call is the post-explain prompt (next/exit only)
+    const postExplainCall = mockSelect.mock.calls[2]
+    const choices = (postExplainCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('next')
+    expect(values).toContain('exit')
+    expect(values).not.toContain('explain')
+  })
+
+  it('navigates home when ExitPromptError during explain/next/exit prompt', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-answer prompt
+
+    await showQuiz('typescript')
+
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+  })
+
+  it('navigates home when ExitPromptError during post-explain prompt', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-explain prompt
+
+    await showQuiz('typescript')
+
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+  })
+
+  it('continues to next question after explain then next', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')        // 1st answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('next')     // next after explain
+      .mockResolvedValueOnce('A')        // 2nd answer
+      .mockResolvedValueOnce('exit')     // exit
+
+    await showQuiz('typescript')
+
+    expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
+    expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 })

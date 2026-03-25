@@ -96,3 +96,24 @@ export function buildMotivationalPrompt(trigger: MotivationalTrigger, settings?:
 
 Reply with ONLY the motivational message — no JSON, no quotes, no extra text.`
 }
+
+export function buildExplanationPrompt(
+  question: QuestionResponse,
+  userAnswer: 'A' | 'B' | 'C' | 'D',
+  settings?: SettingsFile,
+): string {
+  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
+  const safeQuestion = sanitizeInput(question.question)
+  return `${voiceInstruction}The user just answered a multiple-choice quiz question. Explain why the correct answer is correct in 2–4 sentences. Optionally note why common wrong choices are incorrect.
+
+Question: "${safeQuestion}"
+Options:
+  A) ${sanitizeInput(question.options.A)}
+  B) ${sanitizeInput(question.options.B)}
+  C) ${sanitizeInput(question.options.C)}
+  D) ${sanitizeInput(question.options.D)}
+Correct answer: ${question.correctAnswer}
+User's answer: ${userAnswer}
+
+Reply with ONLY the explanation — no JSON, no quotes, no extra text.`
+}

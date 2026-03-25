@@ -4,7 +4,10 @@ status: complete
 inputDocuments: []
 date: 2026-03-01
 author: George
-lastEdited: '2026-03-17'
+lastEdited: '2026-03-25'
+editHistory:
+  - date: '2026-03-25'
+    changes: 'MVP Feature Summary: "Interactive terminal quiz" bullet updated to include post-answer AI explanation option. Reflects GitHub issue #48 (FR35).'
 ---
 
 # Product Brief: brain-break
@@ -104,7 +107,7 @@ The MVP delivers ten core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
-- **Interactive terminal quiz** — one question at a time, per-question response timer, and immediate correctness feedback with score delta
+- **Interactive terminal quiz** — one question at a time, per-question response timer, immediate correctness feedback with score delta, and an on-demand "Explain answer" option that asks the AI to explain why the correct answer is right
 - **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets
 - **Persistent question history** — every answered question stored locally with full detail (answer, timing, score delta, difficulty) per domain
 - **View history command** — single-question navigation with progress indicator for all past questions in the active domain

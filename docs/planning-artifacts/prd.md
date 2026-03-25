@@ -17,6 +17,8 @@ stepsCompleted:
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Feature 3 (Interactive Terminal Quiz) updated: after answering a question, the post-answer feedback now includes an "Explain answer" option alongside Next and Exit. Selecting it calls the AI provider to generate a concise explanation of why the correct answer is correct, displayed inline before returning to the Next/Exit prompt. FR35 added. FR Coverage Map updated. Reflects GitHub issue #48.'
+  - date: '2026-03-25'
     changes: 'Feature 11 (Welcome Screen) updated: subtitle/tagline changed from plain bold-yellow text ("Train your brain, one question at a time!") to a styled line (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta. User Journeys — Onboarding updated. FR31 description updated in epics. Reflects GitHub issue #47 (implemented and closed).'
   - date: '2026-03-23'
     changes: 'Feature 11 (Welcome Screen) added: on launch, a branded splash screen shows gradient-colored ASCII art, tagline, and version — dismissible with Enter. Controllable via showWelcome setting (default: true). Feature 12 (Static Banner) added: every screen renders a persistent "🧠🔨 Brain Break" header with a cyan-to-magenta gradient shadow bar via clearAndBanner(). Feature 8 (Settings) updated: showWelcome toggle (🎬 Welcome screen: ON/OFF) added. FR31–FR34 added. Startup flow updated. FR Coverage Map updated. NFR5 updated (banner rendering on every screen transition). Settings defaults updated with showWelcome: true.'
@@ -202,7 +204,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 - Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
 - History persists between sessions automatically
 
-**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They look it up. They come back and get it right next time. The score rises. *That feedback loop is the product.*
+**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. They come back and get it right next time. The score rises. *That feedback loop is the product.*
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
 
@@ -255,7 +257,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Provider abstraction:** All AI calls route through a unified provider interface. Each provider adapter translates the app’s prompt format to the provider’s API. Adding a new provider requires implementing the adapter interface — no changes to business logic
 - **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
-- **Language and tone injection:** Every AI prompt (questions, motivational messages) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the question generation instruction
+- **Language and tone injection:** Every AI prompt (questions, motivational messages, answer explanations) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the generation instruction
 - **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-4o-mini", "anthropicModel": "claude-sonnet-4-20250514", "geminiModel": "gemini-2.0-flash", "showWelcome": true }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`)
@@ -326,6 +328,10 @@ The following 10 features define the complete MVP capability set. Each feature i
 - A timer starts silently when the question is displayed and stops when the user submits their answer — no visible countdown is shown during the question
 - The response time is recorded for every question
 - After answering, the user sees: correct/incorrect, the right answer if wrong, time taken, speed tier (fast / normal / slow), and score delta
+- After the feedback panel, the user is presented with three options: **Next question**, **Explain answer**, and **Exit quiz**
+- Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect — displayed inline below the feedback panel using the active language and tone settings; a loading spinner is shown during generation
+- After the explanation is displayed, the user is returned to a two-option prompt: **Next question** and **Exit quiz** (explain is not offered again for the same question)
+- If the AI call for the explanation fails, a warning message is displayed (e.g. *"Could not generate explanation."*) and the user is returned to the Next/Exit prompt — the failure is non-critical and does not interrupt the quiz session
 
 ### Feature 4 — Scoring System
 
