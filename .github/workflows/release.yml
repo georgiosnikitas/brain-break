@@ -84,6 +84,8 @@ jobs:
           SHA256="${{ steps.sha.outputs.sha256 }}"
           TAG="${GITHUB_REF_NAME}"
 
+          mkdir -p Formula
+
           cat > Formula/brain-break.rb << 'FORMULA_EOF'
           # Formula for georgiosnikitas/homebrew-brain-break
           class BrainBreak < Formula
