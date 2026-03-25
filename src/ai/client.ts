@@ -3,7 +3,7 @@ import { createProvider, AI_ERRORS } from './providers.js'
 import type { Result, SettingsFile, AnswerOption } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, QuestionResponseSchema } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt, QuestionResponseSchema, VerificationResponseSchema } from './prompts.js'
 import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
 
 // Re-export AI_ERRORS so downstream consumers keep working without import path changes
@@ -96,6 +96,24 @@ function shuffleOptions(question: Question): Question {
   return { ...question, options: newOptions, correctAnswer: newCorrectAnswer }
 }
 
+async function verifyAnswer(question: Question, provider: AiProvider, settings?: SettingsFile): Promise<boolean> {
+  try {
+    const prompt = buildVerificationPrompt(question, settings)
+    const raw = await provider.generateCompletion(prompt)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(stripJsonFences(raw))
+    } catch {
+      return true // parsing failed — skip verification, don't block the quiz
+    }
+    const result = VerificationResponseSchema.safeParse(parsed)
+    if (!result.success) return true // schema mismatch — skip verification
+    return result.data.correctAnswer === question.correctAnswer
+  } catch {
+    return true // network/provider error — skip verification, don't block the quiz
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -123,6 +141,16 @@ export async function generateQuestion(
       return firstResult
     }
 
+    // Self-consistency check: ask the AI to independently verify the correct answer
+    const firstVerified = await verifyAnswer(firstResult.data, provider, settings)
+    if (!firstVerified) {
+      // Answer inconsistency — regenerate once (best effort, no further verification)
+      const retryRaw = await provider.generateCompletion(prompt)
+      const retryResult = parseAndValidate(retryRaw)
+      if (!retryResult.ok) return retryResult
+      return { ok: true, data: shuffleOptions(retryResult.data) }
+    }
+
     const hash = hashQuestion(firstResult.data.question)
     if (!existingHashes.has(hash)) {
       return { ok: true, data: shuffleOptions(firstResult.data) }
@@ -138,6 +166,16 @@ export async function generateQuestion(
     const retryRaw = await provider.generateCompletion(retryPrompt)
     const retryResult = parseAndValidate(retryRaw)
     if (!retryResult.ok) return retryResult
+
+    // Verify the dedup question; if inconsistent, regenerate once more
+    const dedupVerified = await verifyAnswer(retryResult.data, provider, settings)
+    if (!dedupVerified) {
+      const finalRaw = await provider.generateCompletion(retryPrompt)
+      const finalResult = parseAndValidate(finalRaw)
+      if (!finalResult.ok) return finalResult
+      return { ok: true, data: shuffleOptions(finalResult.data) }
+    }
+
     return { ok: true, data: shuffleOptions(retryResult.data) }
   } catch (err) {
     return { ok: false, error: classifyError(err, effectiveSettings) }

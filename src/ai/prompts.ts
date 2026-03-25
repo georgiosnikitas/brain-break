@@ -85,6 +85,38 @@ ${questionList}
 Generate a completely different question.`
 }
 
+// ---------------------------------------------------------------------------
+// Verification schema + prompt — self-consistency check for correctAnswer
+// ---------------------------------------------------------------------------
+export const VerificationResponseSchema = z.object({
+  correctAnswer: AnswerOptionSchema,
+})
+
+export type VerificationResponse = z.infer<typeof VerificationResponseSchema>
+
+export function buildVerificationPrompt(question: QuestionResponse, settings?: SettingsFile): string {
+  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
+  const safeQuestion = sanitizeInput(question.question)
+  return `${voiceInstruction}You are an answer-verification engine. Given the following multiple-choice question, determine which option is the correct answer.
+
+Question: "${safeQuestion}"
+Options:
+  A) ${sanitizeInput(question.options.A)}
+  B) ${sanitizeInput(question.options.B)}
+  C) ${sanitizeInput(question.options.C)}
+  D) ${sanitizeInput(question.options.D)}
+
+Respond with ONLY a JSON object in this exact shape — no markdown fences, no extra text:
+{
+  "correctAnswer": "<A, B, C, or D>"
+}
+
+Rules:
+- Think carefully and verify facts before answering.
+- correctAnswer must be exactly one of: "A", "B", "C", or "D".
+- Do NOT include any text outside the JSON object.`
+}
+
 export type MotivationalTrigger = 'returning' | 'trending'
 
 export function buildMotivationalPrompt(trigger: MotivationalTrigger, settings?: SettingsFile): string {

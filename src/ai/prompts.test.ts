@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt } from './prompts.js'
 import { defaultSettings, type SettingsFile } from '../domain/schema.js'
 
 const englishNaturalSettings = defaultSettings()
@@ -204,5 +204,64 @@ describe('buildExplanationPrompt', () => {
     const prompt = buildExplanationPrompt(q, 'A')
     expect(prompt).toContain('What is TypeScript?')
     expect(prompt).not.toContain('What is\nTypeScript?')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildVerificationPrompt
+// ---------------------------------------------------------------------------
+describe('buildVerificationPrompt', () => {
+  it('includes question text and all options', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion)
+    expect(prompt).toContain('What is TypeScript?')
+    expect(prompt).toContain('A) A typed JS superset')
+    expect(prompt).toContain('B) A framework')
+    expect(prompt).toContain('C) A runtime')
+    expect(prompt).toContain('D) A test tool')
+  })
+
+  it('does not reveal the original correct answer', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion)
+    expect(prompt).not.toContain('Correct answer:')
+  })
+
+  it('instructs model to reply with only JSON', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion)
+    expect(prompt).toContain('Respond with ONLY a JSON object')
+  })
+
+  it('instructs model to verify facts before answering', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion)
+    expect(prompt).toContain('Think carefully and verify facts')
+  })
+
+  it('sanitizes newlines in question text', () => {
+    const q = { ...sampleQuestion, question: 'What is\nTypeScript?' }
+    const prompt = buildVerificationPrompt(q)
+    expect(prompt).toContain('What is TypeScript?')
+    expect(prompt).not.toContain('What is\nTypeScript?')
+  })
+
+  it('no voice instruction when no settings provided', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('no voice instruction for English/natural settings', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion, englishNaturalSettings)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('injects voice instruction for non-default settings', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion, greekPirateSettings)
+    expect(prompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('voice instruction appears before verification instruction', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion, greekPirateSettings)
+    const voiceIdx = prompt.indexOf('Respond in Greek')
+    const verifyIdx = prompt.indexOf('answer-verification engine')
+    expect(voiceIdx).toBeGreaterThanOrEqual(0)
+    expect(verifyIdx).toBeGreaterThan(voiceIdx)
   })
 })
