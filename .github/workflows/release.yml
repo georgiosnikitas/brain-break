@@ -112,6 +112,8 @@ jobs:
               system "npm", "install"
               system "npm", "run", "build"
 
+              chmod 0755, "dist/index.js"
+
               libexec.install "dist", "node_modules", "package.json"
 
               (bin/"brain-break").write_env_script "#{libexec}/dist/index.js",
