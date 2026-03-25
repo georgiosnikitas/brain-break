@@ -4,6 +4,8 @@ lastEdited: '2026-03-25'
 status: 'complete'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Source code alignment pass: Story 3.1 rewritten — Copilot-only SDK integration replaced with provider-agnostic AI client using createProvider(settings). Story 3.3 ACs updated — per-provider error constants (AI_ERRORS.NETWORK_<PROVIDER>/AUTH_<PROVIDER>) replace flat NETWORK/AUTH errors; error returns user to domain sub-menu instead of exiting app. Story 4.1 rewritten — paginated 10-per-page history replaced with single-question navigation (Previous/Next/Back controls, progress indicator). Story 5.1 tone enum updated from 4 values (normal, enthusiastic, robot, pirate) to 7 (natural, expressive, calm, humorous, sarcastic, robot, pirate); default tone "normal" → "natural". Story 5.2 tone selector list updated to match 7 tones. Story 5.3 neutral case tone reference "normal" → "natural". FR27 and Stories 7.2/7.4 Gemini env var corrected from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY. Story 8.1 tagline styling corrected from bold yellow to styled line with bold cyan > / dim white typewriter text / bold cyan _ per FR31.'
+  - date: '2026-03-25'
     changes: 'FR13 updated: stats dashboard now includes starting difficulty level. Story 4.2 user story and ACs updated to display starting difficulty alongside current difficulty. Reflects GitHub issue #46.'
   - date: '2026-03-25'
     changes: 'FR2 updated: create-domain flow now includes a starting difficulty selection step (1–5, default level 2) after entering the domain name. Corrected to match implementation (prompt text is `New domain name:`, back via Save/Back nav menu). FR7 updated — new domains start at the user-selected level instead of always level 2. Domain Data Schema note updated (defaultDomainFile accepts optional startingDifficulty). Story 2.2 ACs updated with difficulty selection step and Save/Back navigation. Reflects GitHub issue #46.'
@@ -94,7 +96,7 @@ FR25: The home screen includes a "☕ Buy me a coffee" action positioned between
 
 FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow key navigation.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays what's needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays what's needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
 FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the default). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
@@ -653,42 +655,48 @@ So that I can remove domains I no longer need and keep my list clean.
 
 Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, and graceful error handling if the Copilot API is unavailable.
 
-### Story 3.1: Copilot SDK Integration & Question Generation
+### Story 3.1: AI Client & Question Generation
 
 As a developer,
-I want `ai/client.ts` and `ai/prompts.ts` to integrate with the GitHub Copilot SDK and return validated question objects via `Result<T>`,
+I want `ai/client.ts` and `ai/prompts.ts` to integrate with the provider abstraction layer and return validated question objects via `Result<T>`,
 So that any screen can request a question and always receive either a valid result or a clear error — never a crash.
 
 **Acceptance Criteria:**
 
 **Given** `ai/prompts.ts` is implemented  
-**When** I call `buildQuestionPrompt(domain, difficultyLevel)`  
+**When** I call `buildQuestionPrompt(domain, difficultyLevel, settings)`  
 **Then** it returns a structured prompt string instructing the model to return a JSON object with: `question`, `options` (A–D), `correctAnswer`, `difficultyLevel`, and `speedThresholds` (`{ fastMs, slowMs }`)  
+**And** the prompt includes the active language and tone voice instruction from `settings`  
 **And** `QuestionResponseSchema` (Zod) is exported and validates this exact shape  
 
 **Given** `ai/client.ts` is implemented  
-**When** I call `generateQuestion(domain, difficultyLevel, existingHashes)`  
-**Then** it calls the Copilot SDK with the prompt from `buildQuestionPrompt()`  
+**When** I call `generateQuestion(domain, difficultyLevel, existingHashes, previousQuestions, settings)`  
+**Then** it calls `createProvider(settings)` to get the active provider adapter  
+**And** calls `provider.generateCompletion(prompt)` with the prompt from `buildQuestionPrompt()`  
 **And** validates the response with `QuestionResponseSchema` before returning  
 **And** computes `hashQuestion()` on the returned question text and checks it against `existingHashes`  
-**And** if the hash already exists (duplicate), retries once with an explicit "do not repeat" instruction  
+**And** if the hash already exists (duplicate), retries with `buildDeduplicationPrompt()` including previous questions to avoid  
 **And** returns `{ ok: true, data: Question }` on success  
 
-**Given** the Copilot API is unreachable or returns a network error  
+**Given** `createProvider(settings)` returns `{ ok: false }` (no provider configured)  
 **When** `generateQuestion()` is called  
-**Then** it returns `{ ok: false, error: AI_ERRORS.NETWORK }`  
+**Then** it returns `{ ok: false, error: AI_ERRORS.NO_PROVIDER }`  
 
-**Given** the Copilot API returns an authentication failure  
+**Given** the configured AI provider is unreachable or returns a network error  
 **When** `generateQuestion()` is called  
-**Then** it returns `{ ok: false, error: AI_ERRORS.AUTH }`  
+**Then** it returns `{ ok: false, error: AI_ERRORS.NETWORK_<PROVIDER> }` with the provider-specific network error message  
 
-**Given** the Copilot API returns a response that fails Zod validation  
+**Given** the configured AI provider returns an authentication failure  
+**When** `generateQuestion()` is called  
+**Then** it returns `{ ok: false, error: AI_ERRORS.AUTH_<PROVIDER> }` with the provider-specific auth error message  
+
+**Given** the AI provider returns a response that fails Zod validation  
 **When** `generateQuestion()` is called  
 **Then** it returns `{ ok: false, error: AI_ERRORS.PARSE }`  
 
 **Given** `ai/client.test.ts` exists  
 **When** I run `npm test`  
-**Then** all tests pass, covering success path, network error, auth error, and parse error (SDK mocked)  
+**Then** all tests pass, covering success path, no-provider error, per-provider network error, per-provider auth error, parse error, and deduplication retry (provider mocked via `createProvider`)  
 
 ---
 
@@ -758,13 +766,10 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 **Then** the full updated domain state (meta, hashes + new hash appended, history + new record appended) is atomically persisted before the next question is shown  
 **And** every `QuestionRecord` field specified in FR11 is written (question, options, correctAnswer, userAnswer, isCorrect, answeredAt ISO8601, timeTakenMs, speedTier, scoreDelta, difficultyLevel)  
 
-**Given** `generateQuestion()` returns `{ ok: false, error: AI_ERRORS.NETWORK }`  
+**Given** `generateQuestion()` returns `{ ok: false }` with a provider-specific error (network, auth, no provider, or parse)  
 **When** the error is received in the quiz screen  
-**Then** the error message is displayed and the user is returned to the home screen without crashing  
-
-**Given** `generateQuestion()` returns `{ ok: false, error: AI_ERRORS.AUTH }`  
-**When** the error is received in the quiz screen  
-**Then** the auth error message is displayed and the process exits cleanly  
+**Then** the provider-specific error message is displayed and the user is returned to the domain sub-menu without crashing  
+**And** the app remains running — the user can navigate to Settings to reconfigure  
 
 **Given** I am in an active quiz session  
 **When** I choose "Exit quiz" (available after each answer)  
@@ -865,26 +870,28 @@ So that I can trust the quiz results and not be penalized for choosing the right
 
 Users can review their complete question history for any domain (paginated) and view a stats dashboard with score, accuracy, trend, and return streak — giving them a genuine signal of knowledge growth over time.
 
-### Story 4.1: Paginated Question History View
+### Story 4.1: Single-Question History Navigation
 
 As a user,
-I want to view my full question history for the active domain — paginated at 10 entries per page — with all recorded fields visible,
-So that I can review past questions, see where I went wrong, and track my learning in detail.
+I want to view my full question history for the active domain — one question at a time with Previous/Next navigation and a progress indicator,
+So that I can review past questions in detail, see where I went wrong, and track my learning.
 
 **Acceptance Criteria:**
 
 **Given** I am on the domain sub-menu and choose "View History"  
 **When** `screens/history.ts` loads  
-**Then** the history is read from the domain file and displayed 10 entries per page, most recent first  
+**Then** the history is read from the domain file and displayed one entry at a time, starting from the most recent question  
 **And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level  
 
-**Given** the domain has more than 10 history entries  
+**Given** the domain has more than 1 history entry  
 **When** viewing history  
-**Then** pagination controls are shown (Next / Previous / Back) and navigate correctly between pages  
+**Then** navigation controls are shown (Previous / Next / Back) and a progress indicator displays the current position (e.g., "Question 3 of 47")  
+**And** Previous navigates to the older question; Next navigates to the newer question  
+**And** at the first (most recent) entry, Previous is available and Next is not; at the last (oldest) entry, Next is available and Previous is not  
 
-**Given** the domain has 10 or fewer history entries  
+**Given** the domain has exactly 1 history entry  
 **When** viewing history  
-**Then** all entries are shown on a single page with no pagination controls, only a "Back" option  
+**Then** the single entry is shown with the progress indicator ("Question 1 of 1") and only a "Back" option — no Previous/Next controls  
 
 **Given** the domain has no history entries  
 **When** I navigate to View History  
@@ -941,8 +948,8 @@ So that all modules have a single, type-safe, tested source of truth for user se
 
 **Given** `domain/schema.ts` (or a new `settings/schema.ts`) is updated  
 **When** I import `SettingsFileSchema`  
-**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["normal", "enthusiastic", "robot", "pirate"]) }`  
-**And** `defaultSettings()` returns `{ language: "English", tone: "normal" }`  
+**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["natural", "expressive", "calm", "humorous", "sarcastic", "robot", "pirate"]) }`  
+**And** `defaultSettings()` returns `{ language: "English", tone: "natural" }`  
 
 **Given** `domain/store.ts` (or a new `settings/store.ts`) exports `readSettings()` and `writeSettings(settings)`  
 **When** I call `readSettings()` and `~/.brain-break/settings.json` exists and is valid  
@@ -990,7 +997,7 @@ So that I can personalise how questions and AI responses are delivered to me.
 
 **Given** the settings screen is open  
 **When** I navigate the Tone of Voice selector  
-**Then** I can choose from: Normal, Enthusiastic, Robot, Pirate — navigated with arrow keys  
+**Then** I can choose from: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate — navigated with arrow keys  
 
 **Given** I have made changes on the settings screen  
 **When** I select "Save"  
@@ -1018,7 +1025,7 @@ So that the quiz experience matches my personal preference from start to finish.
 **Given** `ai/prompts.ts` is updated  
 **When** I call `buildQuestionPrompt(domain, difficultyLevel, settings)`  
 **Then** the prompt includes a voice instruction prepended to the generation request — e.g. `"Respond in Greek using a pirate tone of voice."`  
-**And** when `settings.language` is `"English"` and `settings.tone` is `"normal"`, no voice instruction prefix is added (or a neutral one)  
+**And** when `settings.language` is `"English"` and `settings.tone` is `"natural"`, no voice instruction prefix is added (or a neutral one)  
 
 **Given** `ai/client.ts` is updated  
 **When** `generateQuestion(domain, difficultyLevel, existingHashes, settings)` is called  
@@ -1265,7 +1272,7 @@ So that all AI calls are routed through a unified interface and adding a new pro
 
 **Given** `validateProvider()` is called with `providerType = 'gemini'`  
 **When** the function runs  
-**Then** it checks for the `GOOGLE_API_KEY` environment variable  
+**Then** it checks for the `GOOGLE_GENERATIVE_AI_API_KEY` environment variable  
 
 **Given** `validateProvider()` is called with `providerType = 'ollama'`  
 **When** the function runs  
@@ -1360,7 +1367,7 @@ So that I can start using the app with my preferred provider without editing con
 
 **Given** I select "Google Gemini" from the provider list  
 **When** validation runs  
-**Then** it checks for `GOOGLE_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.0-flash`  
+**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.0-flash`  
 
 **Given** I select "GitHub Copilot" from the provider list  
 **When** validation runs  
@@ -1498,7 +1505,7 @@ So that I get a polished, recognizable first impression of the app and can confi
 **Given** `screens/welcome.ts` is implemented  
 **When** the Welcome Screen renders  
 **Then** the terminal is fully cleared via `clearScreen()` (not `clearAndBanner()`)  
-**And** the screen displays in order: the app emoji branding (`🧠🔨`), a 5-line ASCII art rendering of "Brain Break" with each row colored using a cyan-to-magenta gradient (`rgb(0,180,200)` → `rgb(200,0,120)`) via `lerpColor()`, a blank line, the tagline "Train your brain, one question at a time!" in bold yellow, the version string (e.g., `v1.2.0`) in dim white, and a gradient shadow bar spanning the terminal width (capped at 80 columns)  
+**And** the screen displays in order: the app emoji branding (`🧠🔨`), a 5-line ASCII art rendering of "Brain Break" with each row colored using a cyan-to-magenta gradient (`rgb(0,180,200)` → `rgb(200,0,120)`) via `lerpColor()`, a blank line, the styled tagline `> Train your brain, one question at a time_` where `>` is bold cyan, the body text is dim white rendered via typewriter effect, and `_` is bold cyan — matching FR31, the version string (e.g., `v1.2.0`) in dim white, and a gradient shadow bar spanning the terminal width (capped at 80 columns)  
 
 **Given** the Welcome Screen is displayed  
 **When** the user presses Enter (via a single `select` prompt with a "Press enter to continue..." choice)  

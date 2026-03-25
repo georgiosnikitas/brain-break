@@ -7,6 +7,8 @@ author: George
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'MVP Feature Summary updated from 10 to 12 core capabilities: added Welcome Screen (branded splash with gradient ASCII art, tagline, version — controllable via showWelcome setting) and Static Banner (persistent 🧠🔨 Brain Break header + gradient shadow bar on every screen except Welcome/Provider Setup). Aligns with PRD Features 11 and 12, Epic 8, and FR31–FR34.'
+  - date: '2026-03-25'
     changes: 'MVP Feature Summary: View stats command updated to include starting difficulty level alongside current difficulty. Reflects GitHub issue #46.'
   - date: '2026-03-25'
     changes: 'Out of Scope: removed "Manual difficulty override by the user" — issue #46 adds starting-difficulty selection at domain creation.'
@@ -107,7 +109,7 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 
 ## MVP Feature Summary
 
-The MVP delivers ten core capabilities:
+The MVP delivers twelve core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
@@ -119,6 +121,8 @@ The MVP delivers ten core capabilities:
 - **Global settings** — configurable AI provider, question language (free-text), and tone of voice; settings are global across all domains and persist between sessions
 - **Terminal UI highlighting & color system** — full-row menu highlight, semantic post-answer colors, speed tier badge colors, and difficulty level badge colors
 - **Coffee supporter screen** — dedicated screen with ASCII QR code linking to the creator's Buy Me a Coffee page
+- **Welcome screen** — on launch (when enabled), a branded splash screen displays gradient-colored ASCII art, a styled subtitle, and the app version — dismissible with Enter; controllable via a `showWelcome` setting (default: on)
+- **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar at the top of the terminal
 
 → Full feature specifications and acceptance criteria: [prd.md](prd.md)
 

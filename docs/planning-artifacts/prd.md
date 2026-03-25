@@ -17,6 +17,10 @@ stepsCompleted:
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Prose review pass: fixed one hyphenation issue ("fullstack" → "full-stack") and one contradictory phrase in Feature 2 ("factually wrong correct answer" → "factually incorrect answer marked as correct").'
+  - date: '2026-03-25'
+    changes: 'Source code alignment pass: (1) FR preamble corrected from 10 to 12 features. (2) Google Gemini env var corrected from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY (2 occurrences: Project-Type Requirements and Feature 8 First-Launch Provider Setup). (3) Runtime updated from "no minimum version — use current LTS" to Node.js v25.8.0 matching engines.node in package.json. (4) Feature 1 home screen action list updated — added "settings" between "view archived domains" and "buy me a coffee" to match implemented home screen menu order. (5) Feature 8 default tone corrected from Normal to Natural. (6) User Journeys Onboarding rewritten — eliminated confusing re-description of provider selection as occurring on the home screen; now accurately describes the sequential flow: Provider Setup → Welcome Screen → Home Screen with domain list. (7) Provider Setup validation updated — all providers now described as making a real one-shot API test call (testProviderConnection) rather than only checking env var presence.'
+  - date: '2026-03-25'
     changes: 'Feature 7 (View Stats) updated: starting difficulty level added to the stats dashboard — displayed alongside current difficulty to show progression. Reflects GitHub issue #46.'
   - date: '2026-03-25'
     changes: 'Feature 1 (Domain Management) and Feature 2 (Adaptive Difficulty) updated: when creating a domain, the user now selects a starting difficulty level (1–5) via arrow key navigation after entering the domain name, defaulting to level 2 (Elementary). FR2 updated with difficulty selection step and corrected to match implementation (prompt text is `New domain name:`, back via Save/Back nav menu not Ctrl+C hint). FR7 updated — new domains start at the user-selected level instead of always level 2. Create-domain flow in Feature 1 updated. Domain Data Schema note updated (defaultDomainFile accepts optional startingDifficulty). "Manual difficulty override" removed from Out of Scope. Reflects GitHub issue #46.'
@@ -155,7 +159,7 @@ The following are explicitly out of scope for the MVP:
 ### Primary Users
 
 #### Persona 1 — "Alex, the Developer"
-**Role:** Mid-level fullstack developer, 3–5 years experience  
+**Role:** Mid-level full-stack developer, 3–5 years experience  
 **Context:** Uses the terminal daily, has access to at least one supported AI provider
 
 **Motivation:** Wants to feel confident across the full stack. Suspects there are gaps in knowledge they haven't consciously identified yet. Values honest self-assessment over completion badges.
@@ -200,7 +204,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a "Press enter to continue" prompt. The welcome screen can be disabled in Settings. After dismissing the welcome screen, the home screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys. The app validates readiness (checks Copilot auth, env var presence, or Ollama endpoint reachability). If validation fails, the app displays what’s needed and proceeds to the home screen anyway — the user can explore all UI except Play. Once the provider is ready, the full experience works. On subsequent launches, the saved provider is used automatically. With no domains configured yet, the only available action is to create a new one — the user types any topic, hits enter, selects it, and the first question appears. No config file, no account, no signup.
+**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys, configures provider-specific settings (model name, endpoint), and the app makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and proceeds anyway — the user can explore all UI except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. The welcome screen can be disabled in Settings. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic, selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -243,13 +247,13 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Project-Type Requirements
 
-- **Runtime:** Node.js (no minimum version mandated for MVP — use current LTS)
+- **Runtime:** Node.js v25.8.0 (Current release — developer tool, single-user, no stability concern)
 - **Interface:** Terminal only — no web UI, no GUI, no browser-based components
 - **AI Integration:** The app supports 5 AI providers, selectable by the user at first launch or in Settings:
   - **GitHub Copilot SDK** — uses the user’s existing Copilot credentials (no API key required)
   - **OpenAI** — requires `OPENAI_API_KEY` environment variable
   - **Anthropic** — requires `ANTHROPIC_API_KEY` environment variable
-  - **Google Gemini** — requires `GOOGLE_API_KEY` environment variable
+  - **Google Gemini** — requires `GOOGLE_GENERATIVE_AI_API_KEY` environment variable
   - **Ollama** — local instance, no API key; requires endpoint URL and model name
 - All providers must produce the same structured JSON response schema; the app treats providers as interchangeable backends behind a unified interface
 - **Storage:** Local file system only — one JSON file per domain at `~/.brain-break/<domain-slug>.json`; no database server, no cloud sync
@@ -272,7 +276,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 10 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 12 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -284,7 +288,7 @@ The following 10 features define the complete MVP capability set. Each feature i
 - If no domains exist, the list is empty and the only available action is to create a new one
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate domain-specific questions for it
 - All state (history, score, time played) is domain-scoped and isolated
-- The home screen actions are: select a domain, create a new domain, view archived domains, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen
+- The home screen actions are: select a domain, create a new domain, view archived domains, settings, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen
 - Selecting "Create new domain" shows an input prompt (`New domain name:`); after entering a name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary); a Save/Back navigation prompt follows — selecting Save creates the domain, selecting Back returns to the home screen without creating a domain; pressing Ctrl+C at any prompt returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
@@ -326,7 +330,7 @@ The following 10 features define the complete MVP capability set. Each feature i
 | 4 | Advanced | Architecture decisions, performance trade-offs, complex debugging |
 | 5 | Expert | Deep internals, uncommon edge cases, cross-domain reasoning |
 
-- **Answer self-consistency verification:** After generating a question, the system independently asks the AI to verify the correct answer without revealing the original `correctAnswer`. If the verification disagrees, the question is discarded and regenerated once. Verification failures (network, parse) are non-blocking — the original question is accepted. This mitigates LLM hallucinations where the model returns a factually wrong correct answer
+- **Answer self-consistency verification:** After generating a question, the system independently asks the AI to verify the correct answer without revealing the original `correctAnswer`. If the verification disagrees, the question is discarded and regenerated once. Verification failures (network, parse) are non-blocking — the original question is accepted. This mitigates LLM hallucinations where the model returns a factually incorrect answer marked as correct
 - **API error handling:** If the configured AI provider is unreachable or authentication fails, the app fails gracefully without crashing — see NFR 2 for specified behavior.
 
 ### Feature 3 — Interactive Terminal Quiz
@@ -410,15 +414,15 @@ User can view a summary dashboard for the active domain:
 - Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Question Language**, **Tone of Voice**, and **Welcome Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
-- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Normal`, showWelcome = `true`
+- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, showWelcome = `true`
 
 **First-Launch Provider Setup**
 
 - On first launch (no `settings.json` exists), a one-time **Provider Setup** screen appears before the home screen
 - The user selects an AI provider from the fixed list using arrow key navigation: **GitHub Copilot**, **OpenAI**, **Anthropic**, **Google Gemini**, **Ollama**
-- After selection, the app validates provider readiness:
-  - **GitHub Copilot:** Checks Copilot authentication — if successful, proceed; if not, display: *"Copilot authentication not detected. Ensure you have an active GitHub Copilot subscription and are logged in."*
-  - **OpenAI / Anthropic / Google Gemini:** Checks for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) — if found, prompts the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini). The user can accept the default by pressing Enter, type a different model name, or enter an empty string to reset to the default. If the env var is missing, display: *"Set the `[VAR_NAME]` environment variable and restart the app."*
+- After selection, the app configures provider-specific settings and makes a real one-shot API test call to verify connectivity:
+  - **GitHub Copilot:** Tests Copilot authentication with a real API call — if successful, proceed; if not, display: *"Copilot authentication not detected. Ensure you have an active GitHub Copilot subscription and are logged in."*
+  - **OpenAI / Anthropic / Google Gemini:** Checks for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) — if found, prompts the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini). The user can accept the default by pressing Enter, type a different model name, or enter an empty string to reset to the default. After provider-specific configuration, the app makes a real one-shot API test call to verify connectivity. If the env var is missing, display: *"Set the `[VAR_NAME]` environment variable and restart the app."*
   - **Ollama:** Prompts for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3`) — tests connection; if unreachable, display: *"Could not reach Ollama at [endpoint]. Ensure Ollama is running."*
 - If validation fails, the app **proceeds to the home screen anyway** — the user can explore all features except Play; attempting Play shows: *"AI provider not ready. Go to Settings to configure."*
 - If validation succeeds, the app proceeds to the home screen with full functionality

@@ -10,6 +10,8 @@ completedAt: '2026-03-07'
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Architecture review sync with source code: added undocumented welcome screen module (screens/welcome.ts) and settings.showWelcome field; corrected Gemini env var from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY (5 occurrences); fixed router function count from 11 to 12; documented generateExplanation() in ai/client.ts, AI_ERRORS.QUOTA, testProviderConnection() in providers.ts, isAuthErrorMessage() in client.ts; added DomainListEntry discriminated union to Data Architecture; added gradient rendering utilities to format.ts docs; fixed project tree (added welcome.ts/welcome.test.ts, removed non-existent provider-settings.test.ts); documented PROVIDER_CHOICES, PROVIDER_LABELS, DEFAULT_* constants, and patch-package devDependency; updated startup flow, navigation diagram, feature mapping, cross-cutting concern mapping, validation tables, gap analysis, and coherence validation.'
+  - date: '2026-03-25'
     changes: 'Domain creation difficulty selection (GitHub issue #46): create-domain screen now includes a starting difficulty select step (1 — Beginner through 5 — Expert, default 2 — Elementary) between the name input and Save/Back navigation. `startingDifficulty` field added to DomainMeta schema (set once at creation, never mutated) and displayed in the stats dashboard alongside current difficulty. Updated: Requirements Overview (user-selected starting level), Domain File Schema (startingDifficulty field), create-domain.ts module comments (both directory trees), Gap Analysis (defaultDomainFile accepts optional startingDifficulty parameter).'
   - date: '2026-03-25'
     changes: 'Same-screen quiz feedback (GitHub issue #50): post-answer feedback now renders inline on the same screen as the quiz question — no clearScreen() or clearAndBanner() between question display and feedback panel. Updated: Requirements Overview (NFR 5 exception), Cross-Cutting Concerns (terminal rendering note), Terminal UI Architecture (screen clearing pattern exception for quiz feedback), NFR 5 coverage in validation tables, Cross-Cutting Concern Mapping (terminal screen clearing row).'
@@ -115,6 +117,10 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - `chalk` v5 — terminal color and styling, ESM-native
 - `qrcode-terminal` — ASCII QR code rendering for Coffee Supporter Screen (Feature 10)
 
+**Dependency Patching:**
+- `patch-package` (devDependency) — applies patches via `postinstall` script
+- `patches/vscode-jsonrpc+8.2.1.patch` — patches `vscode-jsonrpc` (transitive dependency of `@github/copilot-sdk`)
+
 **AI Provider SDKs (via Vercel AI SDK):**
 - `ai` — Vercel AI SDK core (`generateText()` unified interface)
 - `@ai-sdk/openai` — OpenAI provider adapter
@@ -162,7 +168,7 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 
 **Deferred Decisions (Post-MVP):**
 - Fuzzy/similarity-based deduplication (explicitly noted in PRD as future enhancement)
-- Startup optimisation (read only `meta` fields on home screen load)
+- Startup optimization (read only `meta` fields on home screen load)
 
 ---
 
@@ -203,7 +209,7 @@ Each domain file at `~/.brain-break/<domain-slug>.json` uses a two-section struc
 }
 ```
 
-*Rationale:* Separating `meta` from `history` supports a future optimisation where only `meta` is read on startup (home screen summary), without loading the full history array. Zero cost now, pays forward.
+*Rationale:* Separating `meta` from `history` supports a future optimization where only `meta` is read on startup (home screen summary), without loading the full history array. Zero cost now, pays forward.
 
 **Atomic Write Strategy — write-then-rename**
 
@@ -218,6 +224,18 @@ All domain file writes use a tmp-file-then-rename pattern:
 - `hashes` stored as a plain string array in JSON (serializable, no special format)
 - Loaded into a `Set<string>` at runtime for O(1) lookup per question generation cycle
 - No external dependency required
+
+**Domain List Representation — `DomainListEntry` discriminated union**
+
+`domain/store.ts` exports a `DomainListEntry` type used by `listDomains()`:
+
+```typescript
+export type DomainListEntry =
+  | { slug: string; meta: DomainMeta; corrupted: false }
+  | { slug: string; corrupted: true }
+```
+
+`listDomains()` returns `Result<DomainListEntry[]>`. Entries with `corrupted: true` represent domain files that exist on disk but fail Zod validation — screens can render these distinctly (e.g., marked as corrupted in the home screen list).
 
 ---
 
@@ -236,7 +254,8 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "anthropicModel": "claude-sonnet-4-20250514", // Anthropic — preferred model name
   "geminiModel": "gemini-2.0-flash",       // Gemini — preferred model name
   "ollamaEndpoint": "http://localhost:11434",  // Ollama only — endpoint URL
-  "ollamaModel": "llama3"       // Ollama only — model name
+  "ollamaModel": "llama3",      // Ollama only — model name
+  "showWelcome": true            // Boolean — show animated welcome screen on startup
 }
 ```
 
@@ -247,7 +266,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `copilot` | GitHub Copilot | Copilot SDK auth (existing Copilot credentials) |
 | `openai` | OpenAI | `OPENAI_API_KEY` env var |
 | `anthropic` | Anthropic | `ANTHROPIC_API_KEY` env var |
-| `gemini` | Google Gemini | `GOOGLE_API_KEY` env var |
+| `gemini` | Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` env var |
 | `ollama` | Ollama | Local endpoint (no API key) |
 
 **Tone of Voice Enum:**
@@ -262,7 +281,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`.
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-4o-mini'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-sonnet-4-20250514'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.0-flash'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama3'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true }`.
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -270,11 +289,11 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 **AI prompt injection:** `ai/prompts.ts` conditionally prepends a voice instruction to every prompt when language ≠ `"English"` or tone ≠ `"natural"` — e.g., `"Respond in Greek using a pirate tone of voice."`. The settings object is passed through from the screen layer to `ai/client.ts` to `ai/prompts.ts`.
 
-**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 5 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, prompts for a preferred model name with a sensible default; entering an empty string resets to the default), language (free-text input), and tone (select from 7 presets). For Ollama, the user can also edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
+**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 5 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, prompts for a preferred model name with a sensible default; entering an empty string resets to the default), language (free-text input), tone (select from 7 presets), and welcome screen toggle (ON/OFF). For Ollama, the user can also edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
 
 **First-launch provider setup:** `screens/provider-setup.ts` displays a one-time provider selection screen on first launch (when `provider` is `null`). The user selects a provider via arrow keys; the app validates readiness:
 - **Copilot:** checks Copilot authentication
-- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default)
+- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default)
 - **Ollama:** prompts for endpoint URL + model name, tests connection
 
 If validation fails, the app displays what’s needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
@@ -285,7 +304,7 @@ If validation fails, the app displays what’s needed and proceeds to the home s
 
 - **Provider auth — delegated, never stored:**
   - GitHub Copilot: auth fully delegated to the Copilot SDK — no token management in the app
-  - OpenAI / Anthropic / Gemini: API keys read from environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`) at runtime — never stored in `settings.json`, never prompted in-app
+  - OpenAI / Anthropic / Gemini: API keys read from environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) at runtime — never stored in `settings.json`, never prompted in-app
   - Ollama: local instance, no API key — endpoint URL and model name stored in settings
 - **Input validation:** All AI provider responses validated with Zod before use — treats AI output as an untrusted external boundary regardless of provider
 - **No user-facing auth:** Zero credentials handled directly by the app — env vars and SDK auth are the only mechanisms
@@ -307,6 +326,7 @@ export type AiProviderType = 'copilot' | 'openai' | 'anthropic' | 'gemini' | 'ol
 
 export function createProvider(settings: SettingsFile): Result<AiProvider>
 export async function validateProvider(providerType: AiProviderType, settings: SettingsFile): Promise<Result<void>>
+export async function testProviderConnection(providerType: AiProviderType, settings: SettingsFile): Promise<Result<string>>
 ```
 
 - `createProvider()` reads the `provider` field from settings, instantiates the corresponding adapter, and returns it wrapped in `Result<T>`. Returns an error if `provider` is `null`.
@@ -314,6 +334,7 @@ export async function validateProvider(providerType: AiProviderType, settings: S
 - The Copilot adapter remains a custom implementation using `@github/copilot-sdk` directly, as the Vercel AI SDK does not support the Copilot SDK.
 - All adapters share the same `AiProvider` interface — no provider-specific logic leaks into `client.ts` or screens.
 - `validateProvider()` checks provider readiness without generating a question: Copilot auth check, env var existence, or Ollama endpoint reachability.
+- `testProviderConnection()` validates provider readiness AND makes a real one-shot greeting API call. Classifies quota errors (`AI_ERRORS.QUOTA`), auth errors, and network errors independently.
 
 **Adapter Implementations (all in `ai/providers.ts`):**
 
@@ -322,7 +343,7 @@ export async function validateProvider(providerType: AiProviderType, settings: S
 | Copilot | `@github/copilot-sdk` — `CopilotClient` + `createSession` + `sendAndWait` (custom adapter) | Copilot SDK auth |
 | OpenAI | `ai` + `@ai-sdk/openai` — `generateText({ model: openai(modelId), prompt })` | `OPENAI_API_KEY` env var |
 | Anthropic | `ai` + `@ai-sdk/anthropic` — `generateText({ model: anthropic(modelId), prompt })` | `ANTHROPIC_API_KEY` env var |
-| Gemini | `ai` + `@ai-sdk/google` — `generateText({ model: google(modelId), prompt })` | `GOOGLE_API_KEY` env var |
+| Gemini | `ai` + `@ai-sdk/google` — `generateText({ model: google(modelId), prompt })` | `GOOGLE_GENERATIVE_AI_API_KEY` env var |
 | Ollama | Raw HTTP `fetch()` — `POST {endpoint}/api/generate` with `{ model, prompt, stream: false }` | Endpoint reachability |
 
 **Vercel AI SDK usage example (OpenAI adapter):**
@@ -359,11 +380,18 @@ The Anthropic, Gemini, and Ollama adapters follow the same pattern — only the 
 3. Validates with Zod
 4. Shuffles answer options via Fisher-Yates (using `crypto.randomInt` for unbiased distribution) to mitigate LLM positional bias toward option B; remaps `correctAnswer` to the new position
 5. Returns `Result<Question>`
-6. Classifies errors (auth/network/parse) and returns per-provider error messages
+6. Classifies errors (auth/network/parse/quota) and returns per-provider error messages
+
+**Public exports:**
+- `generateQuestion(domain, difficulty, hashes, prev, settings?)` — full generation + verification + dedup cycle
+- `generateMotivationalMessage(trigger, settings?)` — motivational one-liner for domain selection screen
+- `generateExplanation(question, userAnswer, settings?)` — explains why the correct answer is right and the user's answer (if wrong) is wrong; returns `Result<string>` (raw text)
+- `isAuthErrorMessage(error)` — returns `true` if the error string matches any `AI_ERRORS.AUTH_*` constant; allows callers to distinguish auth failures from network/parse errors without importing `AI_ERRORS` directly
+- `AI_ERRORS` — re-exported from `providers.ts` for downstream consumers
 
 **Error Handling Strategy — No retry, fail-to-domain-menu**
 
-| Error Type | Behaviour |
+| Error Type | Behavior |
 |---|---|
 | No provider configured | Display: *“AI provider not ready. Go to Settings to configure.”* — return to domain sub-menu |
 | Network/API unavailable | Display provider-specific network message — return to domain sub-menu |
@@ -388,8 +416,10 @@ export const AI_ERRORS = {
   AUTH_COPILOT: 'Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in.',
   AUTH_OPENAI: 'OpenAI API key is invalid or missing. Set the OPENAI_API_KEY environment variable with a valid key and restart the app.',
   AUTH_ANTHROPIC: 'Anthropic API key is invalid or missing. Set the ANTHROPIC_API_KEY environment variable with a valid key and restart the app.',
-  AUTH_GEMINI: 'Google API key is invalid or missing. Set the GOOGLE_API_KEY environment variable with a valid key and restart the app.',
+  AUTH_GEMINI: 'Google API key is invalid or missing. Set the GOOGLE_GENERATIVE_AI_API_KEY environment variable with a valid key and restart the app.',
   AUTH_OLLAMA: 'Could not connect to Ollama. Check that the endpoint and model are correct in Settings.',
+  // Quota errors
+  QUOTA: 'API quota exceeded. Check your plan and billing details with your provider.',
 } as const
 ```
 
@@ -406,8 +436,9 @@ No state machine framework. Navigation is explicit function calls dispatched fro
 
 ```
 startup → readSettings()
-  → provider === null         → router.showProviderSetup() → router.showHome()
-  → provider !== null         → router.showHome()
+  → provider === null         → router.showProviderSetup() → (fall through)
+  → settings.showWelcome      → router.showWelcome() → (fall through)
+  → router.showHome()
 
 router.showHome()
   → user creates domain     → router.showCreateDomain() → router.showHome()
@@ -425,7 +456,7 @@ router.showHome()
 
 Each screen is a standalone `async` function that resolves when the user exits it. `router.ts` is the only place that calls other screens — screens never call each other directly.
 
-*Rationale:* 10 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
+*Rationale:* 11 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
@@ -468,13 +499,13 @@ Using `\x1Bc` (full terminal reset) over `\x1B[2J\x1B[H` (erase + cursor-home) e
 
 **Enforcement rule:** No screen may output content to the terminal without first calling `clearScreen()` — with one exception: the quiz post-answer feedback panel renders inline after the question without a terminal clear, so the user can see the original question alongside the feedback. This is verifiable: every `screens/*.ts` file must have `clearScreen()` as its first side-effectful call in every code path that renders a new screen state, except for post-answer feedback rendering in `screens/quiz.ts`.
 
-*Rationale:* Centralising the clear primitive in `utils/screen.ts` makes the contract testable (spy on `process.stdout.write` in unit tests), swap-able (one place to change if a different clear strategy is needed), and makes the enforcement rule auditable by grep.
+*Rationale:* Centralizing the clear primitive in `utils/screen.ts` makes the contract testable (spy on `process.stdout.write` in unit tests), swappable (one place to change if a different clear strategy is needed), and makes the enforcement rule auditable by grep.
 
 ---
 
 ### Terminal UI Highlighting & Color System
 
-All semantic coloring logic is centralised in `utils/format.ts`. No screen module defines its own color values.
+All semantic coloring logic is centralized in `utils/format.ts`. No screen module defines its own color values.
 
 **Menu highlighting — `menuTheme`**
 
@@ -490,7 +521,7 @@ All semantic coloring logic is centralised in `utils/format.ts`. No screen modul
 | `colorSpeedTier(tier)` | Speed tier badge | Fast = green, Normal = yellow, Slow = red |
 | `colorDifficultyLevel(level)` | Difficulty badge | L1 = cyan, L2 = green, L3 = yellow, L4 = magenta, L5 = red |
 
-**Additional format utilities:** `success()`, `error()`, `warn()`, `dim()`, `bold()`, `header()` chalk wrappers; `formatDuration(ms)`, `formatAccuracy(correct, total)`, `typewrite(text, delayMs)` animation.
+**Additional format utilities:** `success()`, `error()`, `warn()`, `dim()`, `bold()`, `header()` chalk wrappers; `formatDuration(ms)`, `formatAccuracy(correct, total)`, `typewrite(text, delayMs)` animation; gradient rendering: `CYAN` / `MAGENTA` color constants, `lerpColor(t)` linear interpolation, `getGradientWidth()` terminal-width clamp, `gradientBg(text, width)` full-width gradient background bar, `gradientShadow(width)` half-block gradient divider.
 
 **ANSI compatibility:** All color output uses standard 8/16-color ANSI escape codes as baseline (NFR 6). Extended color codes may be used where supported. Non-TTY output is out of scope.
 
@@ -509,7 +540,7 @@ All semantic coloring logic is centralised in `utils/format.ts`. No screen modul
 ```
 src/
 ├── index.ts              # Entry point — bootstraps and calls router
-├── router.ts             # Navigation between screens — 11 exported functions
+├── router.ts             # Navigation between screens — 12 exported functions
 ├── screens/
 │   ├── home.ts           # F1: domain list + coffee screen (F10)
 │   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
@@ -519,9 +550,10 @@ src/
 │   ├── quiz.ts           # F3: question loop, timer, answer feedback
 │   ├── history.ts        # F6: single-question navigation history view
 │   ├── stats.ts          # F7: stats dashboard
-│   ├── settings.ts       # F8: language, tone & AI provider settings screen
+│   ├── settings.ts       # F8: language, tone, welcome toggle & AI provider settings screen
 │   ├── provider-settings.ts # F8: per-provider model/endpoint prompts with defaults
-│   └── provider-setup.ts # F8: first-launch provider selection + validation
+│   ├── provider-setup.ts # F8: first-launch provider selection + validation
+│   └── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline
 ├── ai/
 │   ├── client.ts         # F2: provider-agnostic AI client + error handling
 │   ├── providers.ts      # F2: AiProvider interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot)
@@ -534,7 +566,7 @@ src/
     ├── hash.ts           # SHA-256 hashing helpers
     ├── slugify.ts        # Domain name → file slug
     ├── screen.ts         # clearScreen() — viewport reset before every render
-    └── format.ts         # F9: semantic color helpers, menuTheme, formatting utilities
+    └── format.ts         # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities
 ```
 
 **Dependency Rules:**
@@ -729,8 +761,8 @@ brain-break/
 │   └── workflows/
 │       └── ci.yml                  # tsc --noEmit + vitest
 ├── src/
-│   ├── index.ts                    # Entry: bootstraps app, reads settings, routes to provider setup or home
-│   ├── router.ts                   # Navigation dispatcher — 11 exported functions, only file that calls screens
+│   ├── index.ts                    # Entry: bootstraps app, reads settings, routes to provider setup / welcome / home
+│   ├── router.ts                   # Navigation dispatcher — 12 exported functions, only file that calls screens
 │   ├── screens/
 │   │   ├── home.ts                 # F1/F10: domain list + coffee screen
 │   │   ├── home.test.ts
@@ -748,12 +780,13 @@ brain-break/
 │   │   ├── history.test.ts
 │   │   ├── stats.ts                # F7: stats dashboard
 │   │   ├── stats.test.ts
-│   │   ├── settings.ts             # F8: language, tone & AI provider settings screen
+│   │   ├── settings.ts             # F8: language, tone, welcome toggle & AI provider settings screen
 │   │   ├── settings.test.ts
 │   │   ├── provider-settings.ts     # F8: per-provider model/endpoint prompts with defaults
-│   │   ├── provider-settings.test.ts
 │   │   ├── provider-setup.ts       # F8: first-launch provider selection + validation
-│   │   └── provider-setup.test.ts
+│   │   ├── provider-setup.test.ts
+│   │   ├── welcome.ts              # F11: animated ASCII-art welcome screen with typewriter tagline
+│   │   └── welcome.test.ts
 │   ├── ai/
 │   │   ├── client.ts               # F2: provider-agnostic AI client + Result<T> error wrapping
 │   │   ├── client.test.ts
@@ -762,7 +795,7 @@ brain-break/
 │   │   ├── prompts.ts              # F2: prompt templates + Zod QuestionResponseSchema + voice injection
 │   │   └── prompts.test.ts
 │   ├── domain/
-│   │   ├── schema.ts               # F5/F8: DomainFile + SettingsFile + AiProviderType + ToneOfVoice types + Zod schemas
+│   │   ├── schema.ts               # F5/F8: DomainFile + SettingsFile + AiProviderType + ToneOfVoice types + Zod schemas + PROVIDER_CHOICES/LABELS + DEFAULT_* constants
 │   │   ├── schema.test.ts
 │   │   ├── store.ts                # F5/F8: read/write domain + settings files (atomic) + tone migration
 │   │   ├── store.test.ts
@@ -775,8 +808,10 @@ brain-break/
 │       ├── slugify.test.ts
 │       ├── screen.ts               # NFR 5: clearScreen() — ANSI viewport reset
 │       ├── screen.test.ts
-│       ├── format.ts               # F9: semantic color helpers, menuTheme, formatting utilities
+│       ├── format.ts               # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities
 │       └── format.test.ts
+├── patches/                            # patch-package patches for transitive dependencies
+│   └── vscode-jsonrpc+8.2.1.patch      # Patches vscode-jsonrpc (transitive dep of @github/copilot-sdk)
 └── dist/                           # Compiled output — gitignored
 ```
 
@@ -792,8 +827,10 @@ brain-break/
 
 **Internal Boundaries:**
 - `screens/` → may import from `domain/`, `ai/`, `utils/` — never the reverse
-- `router.ts` → imports from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)- `ai/client.ts` → imports from `ai/providers.ts` and `ai/prompts.ts` — never imports provider SDKs directly
-- `ai/providers.ts` → the only module that imports provider SDKs (Vercel AI SDK + Copilot SDK); exports the `AiProvider` interface- `domain/scoring.ts` → pure computation, no imports from `screens/` or `ai/`
+- `router.ts` → imports from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)
+- `ai/client.ts` → imports from `ai/providers.ts` and `ai/prompts.ts` — never imports provider SDKs directly
+- `ai/providers.ts` → the only module that imports provider SDKs (Vercel AI SDK + Copilot SDK); exports the `AiProvider` interface
+- `domain/scoring.ts` → pure computation, no imports from `screens/` or `ai/`
 - `utils/` → no imports from any other `src/` directory
 
 ### Feature to Structure Mapping
@@ -810,6 +847,7 @@ brain-break/
 | F8 — Global Settings | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts` (readSettings/writeSettings), `domain/schema.ts` (SettingsFile/AiProviderType/ToneOfVoice), `ai/prompts.ts` (voice injection), `ai/providers.ts` (provider validation) |
 | F9 — Color System | `utils/format.ts` (semantic color helpers, menuTheme) + all `screens/*.ts` (consumers) |
 | F10 — Coffee Screen | `screens/home.ts` (showCoffeeScreen) |
+| F11 — Welcome Screen | `screens/welcome.ts` (animated ASCII-art + typewriter tagline), `domain/schema.ts` (`showWelcome` setting) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 | NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
@@ -820,12 +858,12 @@ brain-break/
 | SHA-256 deduplication | `utils/hash.ts` (compute) + `domain/store.ts` (persist hashes) |
 | Adaptive difficulty | `domain/scoring.ts` → `applyAnswer()` |
 | Atomic file write | `domain/store.ts` → `writeDomain()`, `writeSettings()` |
-| AI error messages | `ai/client.ts` → `AI_ERRORS` constants (per-provider network + auth messages) |
+| AI error messages | `ai/providers.ts` → `AI_ERRORS` constants (per-provider network + auth + quota messages); re-exported from `ai/client.ts` |
 | Domain slug derivation | `utils/slugify.ts` exclusively |
 | Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path; **exception:** post-answer quiz feedback renders inline on the question screen (no `clearScreen()` between question and feedback) |
 | Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
 | Provider abstraction | `ai/providers.ts` → `AiProvider` interface + 5 adapters (4 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter); `ai/client.ts` → `createProvider()` factory |
-| Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme` |
+| Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme`, gradient rendering (`lerpColor`, `gradientBg`, `gradientShadow`) |
 | Settings tone migration | `domain/store.ts` → `migrateSettings()` — maps legacy tone values on read |
 
 ### Integration Points
@@ -863,9 +901,11 @@ index.ts
     → screens/provider-setup.ts
       → ai/providers.ts.validateProvider(type, settings) [checks auth/env var/endpoint]
       → domain/store.ts.writeSettings(updated)           [saves selected provider]
-    → router.showHome()
-  → settings.provider !== null
-    → router.showHome()
+  → settings.showWelcome === true
+    → router.showWelcome()                              [animated ASCII-art splash screen]
+    → screens/welcome.ts
+      → clearScreen() + ASCII art + typewriter tagline + press-to-continue
+  → router.showHome()
     → screens/home.ts
     → domain/store.ts.listDomains()                     [reads ~/.brain-break/]
     → renders domain list with scores
@@ -901,7 +941,7 @@ screens/settings.ts
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
+All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
 
 ### Requirements Coverage Validation ✅
 
@@ -915,8 +955,9 @@ All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNex
 | F6 — View History | ✅ | `screens/history.ts` |
 | F7 — View Stats | ✅ | `screens/stats.ts` |
 | F8 — Global Settings | ✅ | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts`, `domain/schema.ts`, `ai/prompts.ts`, `ai/providers.ts` |
-| F9 — Color System | ✅ | `utils/format.ts` (semantic helpers + menuTheme) |
+| F9 — Color System | ✅ | `utils/format.ts` (semantic helpers + menuTheme + gradient rendering) |
 | F10 — Coffee Screen | ✅ | `screens/home.ts` (showCoffeeScreen + qrcode-terminal) |
+| F11 — Welcome Screen | ✅ | `screens/welcome.ts` (ASCII-art + typewriter + gradient rendering) |
 
 | NFR | Status | Addressed By |
 |---|---|---|
@@ -939,15 +980,15 @@ All critical decisions are documented with explicit versions. Patterns are compr
 
 ### Gap Analysis Results
 
-**No critical gaps.** One important behaviour called out explicitly:
+**No critical gaps.** One important behavior called out explicitly:
 
 **Missing domain file = new domain (NFR 3):**
-`domain/store.ts.readDomain()` MUST return a default value (not an error) when the target file does not exist. This "missing = clean start" behaviour is required by NFR 3.
+`domain/store.ts.readDomain()` MUST return a default value (not an error) when the target file does not exist. This "missing = clean start" behavior is required by NFR 3.
 
 **Resolution:** `domain/schema.ts` exports a `defaultDomainFile(startingDifficulty?)` factory function returning a valid `DomainFile` at the specified starting difficulty level (defaults to level 2 — Elementary), score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller. `screens/create-domain.ts` calls `defaultDomainFile(selectedDifficulty)` when creating a new domain with the user's chosen starting difficulty.
 
 **Missing settings file = defaults (F8):**
-`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
+`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
 
 ### Architecture Completeness Checklist
 
@@ -990,7 +1031,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 
 **Areas for Future Enhancement (Post-MVP):**
 - Fuzzy/similarity deduplication (explicitly noted in PRD)
-- Startup optimisation: read only `meta` fields if history files grow large
+- Startup optimization: read only `meta` fields if history files grow large
 - Retry with backoff on AI provider APIs
 - Additional AI providers (e.g., Mistral, Groq)
 
