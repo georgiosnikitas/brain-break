@@ -1,6 +1,6 @@
 # homebrew-brain-break
 
-Homebrew tap for [brain-break](https://github.com/georgiosnikitas/brain-break) — an AI-powered terminal quiz CLI using the GitHub Copilot SDK.
+Homebrew tap for [brain-break](https://github.com/georgiosnikitas/brain-break) — an AI-powered terminal quiz app.
 
 ## Install
 
@@ -18,7 +18,10 @@ brain-break
 ## Requirements
 
 - Node.js >= 25.8.0 (installed automatically via Homebrew)
-- A supported AI provider token (GitHub Copilot, OpenAI, Anthropic, or Google Gemini)
+- At least one AI provider:
+  - **GitHub Copilot** — active Copilot subscription
+  - **OpenAI / Anthropic / Google Gemini** — API key
+  - **Ollama** — local instance running
 
 ## Update
 

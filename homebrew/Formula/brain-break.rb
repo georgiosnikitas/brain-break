@@ -2,7 +2,7 @@
 # Copy this file to the tap repo: https://github.com/georgiosnikitas/homebrew-brain-break
 
 class BrainBreak < Formula
-  desc "An AI-powered terminal quiz CLI using the GitHub Copilot SDK"
+  desc "An AI-powered terminal quiz app"
   homepage "https://github.com/georgiosnikitas/brain-break"
   url "https://github.com/georgiosnikitas/brain-break/archive/refs/tags/v1.6.0.tar.gz"
   # Run this to get the sha256:
