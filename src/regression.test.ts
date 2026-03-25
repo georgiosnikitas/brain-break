@@ -64,6 +64,7 @@ const SNAPSHOT_DOMAIN: DomainFile = {
   meta: {
     score: 10,
     difficultyLevel: 2,
+    startingDifficulty: 2,
     streakCount: 1,
     streakType: 'incorrect',
     totalTimePlayedMs: 30_000,

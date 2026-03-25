@@ -75,7 +75,8 @@ afterEach(async () => {
 describe('showCreateDomainScreen', () => {
   it('creates domain file when slug is new', async () => {
     mockInput.mockResolvedValueOnce('Spring Boot microservices')
-    mockSelect.mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
 
     await showCreateDomainScreen()
 
@@ -84,7 +85,22 @@ describe('showCreateDomainScreen', () => {
     if (!result.ok) return
     expect(result.data.meta.score).toBe(0)
     expect(result.data.meta.difficultyLevel).toBe(2)
+    expect(result.data.meta.startingDifficulty).toBe(2)
     expect(result.data.history).toEqual([])
+  })
+
+  it('creates domain with non-default starting difficulty', async () => {
+    mockInput.mockResolvedValueOnce('Advanced topic')
+    mockSelect.mockResolvedValueOnce(4)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
+
+    await showCreateDomainScreen()
+
+    const result = await readDomain('advanced-topic')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.meta.difficultyLevel).toBe(4)
+    expect(result.data.meta.startingDifficulty).toBe(4)
   })
 
   it('does not overwrite existing domain and warns when slug already exists', async () => {
@@ -93,7 +109,8 @@ describe('showCreateDomainScreen', () => {
     await writeDomain('my-topic', existing)
 
     mockInput.mockResolvedValueOnce('my-topic')
-    mockSelect.mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showCreateDomainScreen()
@@ -113,7 +130,8 @@ describe('showCreateDomainScreen', () => {
     await writeDomain('archived-topic', archived)
 
     mockInput.mockResolvedValueOnce('archived-topic')
-    mockSelect.mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showCreateDomainScreen()
@@ -135,7 +153,8 @@ describe('showCreateDomainScreen', () => {
     _setDataDir(fakePath)
 
     mockInput.mockResolvedValueOnce('new-topic')
-    mockSelect.mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await showCreateDomainScreen()
@@ -153,7 +172,8 @@ describe('showCreateDomainScreen', () => {
 
   it('Back: does not create domain and returns without error', async () => {
     mockInput.mockResolvedValueOnce('some-topic')
-    mockSelect.mockResolvedValueOnce('back')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('back') // nav
 
     await expect(showCreateDomainScreen()).resolves.toBeUndefined()
 
@@ -176,6 +196,7 @@ describe('showCreateDomainScreen', () => {
 
   it('returns silently when ExitPromptError is thrown from nav select', async () => {
     mockInput.mockResolvedValueOnce('some-topic')
+    mockSelect.mockResolvedValueOnce(2)
     mockSelect.mockRejectedValueOnce(new ExitPromptError())
 
     await expect(showCreateDomainScreen()).resolves.toBeUndefined()
@@ -188,7 +209,8 @@ describe('showCreateDomainScreen', () => {
 
   it('logs an error when writeDomain fails', async () => {
     mockInput.mockResolvedValueOnce('new-topic')
-    mockSelect.mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
     const { chmod } = await import('node:fs/promises')
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -205,7 +227,8 @@ describe('showCreateDomainScreen', () => {
 
   it('calls clearScreen before the input prompt', async () => {
     mockInput.mockResolvedValueOnce('new domain name')
-    mockSelect.mockResolvedValueOnce('save')
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
 
     await showCreateDomainScreen()
 

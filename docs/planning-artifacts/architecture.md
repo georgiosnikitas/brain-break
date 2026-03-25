@@ -10,6 +10,8 @@ completedAt: '2026-03-07'
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Domain creation difficulty selection (GitHub issue #46): create-domain screen now includes a starting difficulty select step (1 — Beginner through 5 — Expert, default 2 — Elementary) between the name input and Save/Back navigation. `startingDifficulty` field added to DomainMeta schema (set once at creation, never mutated) and displayed in the stats dashboard alongside current difficulty. Updated: Requirements Overview (user-selected starting level), Domain File Schema (startingDifficulty field), create-domain.ts module comments (both directory trees), Gap Analysis (defaultDomainFile accepts optional startingDifficulty parameter).'
+  - date: '2026-03-25'
     changes: 'Same-screen quiz feedback (GitHub issue #50): post-answer feedback now renders inline on the same screen as the quiz question — no clearScreen() or clearAndBanner() between question display and feedback panel. Updated: Requirements Overview (NFR 5 exception), Cross-Cutting Concerns (terminal rendering note), Terminal UI Architecture (screen clearing pattern exception for quiz feedback), NFR 5 coverage in validation tables, Cross-Cutting Concern Mapping (terminal screen clearing row).'
   - date: '2026-03-25'
     changes: 'Answer self-consistency verification: added verification bullet to Response Validation subsection documenting the two-call pattern (generate + verify), fail-open design, and VerificationResponseSchema. Updated Question Cycle Flow data-flow diagram to include verifyAnswer() step, verification prompt construction, mismatch-triggers-regeneration logic, and dedup-path verification.'
@@ -37,7 +39,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-10 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, streak-driven) and language/tone injection, interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice) with first-launch provider setup, terminal UI highlighting with semantic color system, and a coffee supporter screen.
+10 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice) with first-launch provider setup, terminal UI highlighting with semantic color system, and a coffee supporter screen.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -175,6 +177,7 @@ Each domain file at `~/.brain-break/<domain-slug>.json` uses a two-section struc
   "meta": {
     "score": 0,
     "difficultyLevel": 2,
+    "startingDifficulty": 2,
     "streakCount": 0,
     "streakType": "correct" | "incorrect" | "none",
     "totalTimePlayedMs": 0,
@@ -509,7 +512,7 @@ src/
 ├── router.ts             # Navigation between screens — 11 exported functions
 ├── screens/
 │   ├── home.ts           # F1: domain list + coffee screen (F10)
-│   ├── create-domain.ts  # F1: new domain input + validation + duplicate check
+│   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
 │   ├── domain-menu.ts    # F1: domain sub-menu (Play, History, Stats, Archive, Delete, Back)
 │   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
 │   ├── archived.ts       # F1: archived domain list + unarchive
@@ -731,7 +734,7 @@ brain-break/
 │   ├── screens/
 │   │   ├── home.ts                 # F1/F10: domain list + coffee screen
 │   │   ├── home.test.ts
-│   │   ├── create-domain.ts        # F1: new domain input + validation + duplicate check
+│   │   ├── create-domain.ts        # F1: new domain input + starting difficulty selection + validation + duplicate check
 │   │   ├── create-domain.test.ts
 │   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, History, Stats, Archive, Delete, Back)
 │   │   ├── domain-menu.test.ts
@@ -941,7 +944,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 **Missing domain file = new domain (NFR 3):**
 `domain/store.ts.readDomain()` MUST return a default value (not an error) when the target file does not exist. This "missing = clean start" behaviour is required by NFR 3.
 
-**Resolution:** `domain/schema.ts` exports a `defaultDomainFile()` factory function returning a valid `DomainFile` at difficulty level 2, score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller.
+**Resolution:** `domain/schema.ts` exports a `defaultDomainFile(startingDifficulty?)` factory function returning a valid `DomainFile` at the specified starting difficulty level (defaults to level 2 — Elementary), score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller. `screens/create-domain.ts` calls `defaultDomainFile(selectedDifficulty)` when creating a new domain with the user's chosen starting difficulty.
 
 **Missing settings file = defaults (F8):**
 `domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
@@ -999,7 +1002,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 - Respect module boundaries: `store.ts` owns all writes, `providers.ts` owns all SDK imports, `client.ts` orchestrates AI calls
 - Always return `Result<T>` from I/O functions, never throw to callers
 - Use `.js` extensions on all ESM imports
-- Call `defaultDomainFile()` from `domain/schema.ts` on ENOENT in `store.ts.readDomain()`
+- Call `defaultDomainFile(startingDifficulty?)` from `domain/schema.ts` on ENOENT in `store.ts.readDomain()` (no parameter → defaults to level 2); in `screens/create-domain.ts`, pass the user-selected difficulty
 - Use per-provider error messages from `AI_ERRORS` — never hardcode provider-specific strings outside `client.ts`
 - Never store API keys in `settings.json` — read from env vars only
 

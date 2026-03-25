@@ -7,6 +7,10 @@ author: George
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'MVP Feature Summary: View stats command updated to include starting difficulty level alongside current difficulty. Reflects GitHub issue #46.'
+  - date: '2026-03-25'
+    changes: 'Out of Scope: removed "Manual difficulty override by the user" — issue #46 adds starting-difficulty selection at domain creation.'
+  - date: '2026-03-25'
     changes: 'MVP Feature Summary: "Interactive terminal quiz" bullet updated to include post-answer AI explanation option. Reflects GitHub issue #48 (FR35).'
 ---
 
@@ -111,7 +115,7 @@ The MVP delivers ten core capabilities:
 - **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets
 - **Persistent question history** — every answered question stored locally with full detail (answer, timing, score delta, difficulty) per domain
 - **View history command** — single-question navigation with progress indicator for all past questions in the active domain
-- **View stats command** — summary dashboard showing score, accuracy, total time played, current difficulty level, score trend, and return streak
+- **View stats command** — summary dashboard showing score, accuracy, total time played, starting difficulty, current difficulty level, score trend, and return streak
 - **Global settings** — configurable AI provider, question language (free-text), and tone of voice; settings are global across all domains and persist between sessions
 - **Terminal UI highlighting & color system** — full-row menu highlight, semantic post-answer colors, speed tier badge colors, and difficulty level badge colors
 - **Coffee supporter screen** — dedicated screen with ASCII QR code linking to the creator's Buy Me a Coffee page
@@ -125,7 +129,6 @@ The MVP delivers ten core capabilities:
 - Multiple simultaneous domains in a single session
 - Score or history reset
 - Leaderboards or team comparison features
-- Manual difficulty override by the user
 - Web UI or any non-terminal interface
 - User accounts or cloud sync
 - Any feature not listed in this document

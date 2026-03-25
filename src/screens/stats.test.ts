@@ -104,7 +104,7 @@ describe('formatTotalTimePlayed', () => {
 describe('difficultyLabel', () => {
   it('returns correct label for each level', () => {
     expect(difficultyLabel(1)).toBe('1 — Beginner')
-    expect(difficultyLabel(2)).toBe('2 — Easy')
+    expect(difficultyLabel(2)).toBe('2 — Elementary')
     expect(difficultyLabel(3)).toBe('3 — Intermediate')
     expect(difficultyLabel(4)).toBe('4 — Advanced')
     expect(difficultyLabel(5)).toBe('5 — Expert')
@@ -301,8 +301,10 @@ describe('showStats — with history', () => {
     expect(logged).toContain('1h 2m 3s')
   })
 
-  it('displays difficulty label', async () => {
+  it('displays starting and current difficulty labels', async () => {
     const logged = await runStatsAndCapture([makeRecord()])
+    expect(logged).toContain('Starting difficulty: 2 — Elementary')
+    expect(logged).toContain('Current difficulty: 3 — Intermediate')
     expect(logged).toContain('3 — Intermediate')
   })
 

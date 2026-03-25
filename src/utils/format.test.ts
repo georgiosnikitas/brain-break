@@ -162,8 +162,8 @@ describe('colorDifficultyLevel', () => {
     expect(colorDifficultyLevel(1)).toContain('Beginner')
   })
 
-  it('returns string containing "Easy" for level 2', () => {
-    expect(colorDifficultyLevel(2)).toContain('Easy')
+  it('returns string containing "Elementary" for level 2', () => {
+    expect(colorDifficultyLevel(2)).toContain('Elementary')
   })
 
   it('returns string containing "Intermediate" for level 3', () => {

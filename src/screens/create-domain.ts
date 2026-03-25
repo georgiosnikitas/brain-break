@@ -21,6 +21,19 @@ export async function showCreateDomainScreen(): Promise<void> {
       validate: validateDomainName,
     })).trim()
 
+    const difficulty = await select<number>({
+      message: 'Starting difficulty:',
+      choices: [
+        { name: '1 — Beginner', value: 1 },
+        { name: '2 — Elementary', value: 2 },
+        { name: '3 — Intermediate', value: 3 },
+        { name: '4 — Advanced', value: 4 },
+        { name: '5 — Expert', value: 5 },
+      ],
+      default: 2,
+      theme: menuTheme,
+    })
+
     const nav = await select<'save' | 'back'>({
       message: 'Navigation',
       choices: [
@@ -46,7 +59,7 @@ export async function showCreateDomainScreen(): Promise<void> {
       return
     }
 
-    const writeResult = await writeDomain(slug, defaultDomainFile())
+    const writeResult = await writeDomain(slug, defaultDomainFile(difficulty))
     if (!writeResult.ok) {
       console.error(errorFmt(`Failed to create domain: ${writeResult.error}`))
       return

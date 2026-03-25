@@ -4,6 +4,10 @@ lastEdited: '2026-03-25'
 status: 'complete'
 editHistory:
   - date: '2026-03-25'
+    changes: 'FR13 updated: stats dashboard now includes starting difficulty level. Story 4.2 user story and ACs updated to display starting difficulty alongside current difficulty. Reflects GitHub issue #46.'
+  - date: '2026-03-25'
+    changes: 'FR2 updated: create-domain flow now includes a starting difficulty selection step (1–5, default level 2) after entering the domain name. Corrected to match implementation (prompt text is `New domain name:`, back via Save/Back nav menu). FR7 updated — new domains start at the user-selected level instead of always level 2. Domain Data Schema note updated (defaultDomainFile accepts optional startingDifficulty). Story 2.2 ACs updated with difficulty selection step and Save/Back navigation. Reflects GitHub issue #46.'
+  - date: '2026-03-25'
     changes: 'FR8 updated: post-answer feedback now renders on the same screen as the quiz question — no terminal clear between question and feedback. NFR5 updated to exclude post-answer feedback from full terminal reset list. Story 3.3 ACs updated (no clearAndBanner between question and feedback). Story 1.6 AC updated (quiz post-answer feedback renders inline). Reflects GitHub issue #50.'
   - date: '2026-03-25'
     changes: 'FR35 added (Explain Answer): post-answer feedback now offers "Explain answer" option that calls AI to explain the correct answer. FR8 updated (post-answer prompt includes Explain option). FR18 updated (answer explanations included in language/tone injection). FR Coverage Map updated with FR35 → Epic 3. Story 3.4 (Answer Explanation) added to Epic 3. Reflects GitHub issue #48.'
@@ -40,7 +44,7 @@ This document provides the complete epic and story breakdown for brain-break, de
 
 FR1: On every launch, the app displays a home screen listing all configured active domains, each showing current score and total questions answered. If no domains exist, the only available action is to create a new one. Selecting a domain opens a domain sub-menu (not the quiz directly).
 
-FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. The create-domain screen shows an input prompt; pressing Ctrl+C returns the user to the home screen without creating a domain.
+FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
 FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu.
 
@@ -50,7 +54,7 @@ FR5: The home screen includes a "View archived domains" action that opens the ar
 
 FR6: Questions are generated on demand via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama) as multiple-choice (4 options: A–D). The app sends identical prompt structures to all providers and expects the same JSON response schema — provider differences are abstracted behind a unified provider adapter layer. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
 
-FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at level 2. Difficulty and streak counter persist across sessions per domain.
+FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
 FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Exit quiz.
 
@@ -62,7 +66,7 @@ FR11: Every answered question is recorded with: question text, all answer option
 
 FR12: Users can view their full question history for the active domain using single-question navigation with Previous/Next controls and a progress indicator (e.g., "Question 3 of 47"), displaying all fields recorded per question.
 
-FR13: Users can view a stats dashboard for the active domain showing: current score, total questions answered, correct/incorrect count and accuracy %, total time played, current difficulty level, score trend over the last 30 days (growing/flat/declining), days since first session, and current return streak.
+FR13: Users can view a stats dashboard for the active domain showing: current score, total questions answered, correct/incorrect count and accuracy %, total time played, starting difficulty level, current difficulty level, score trend over the last 30 days (growing/flat/declining), days since first session, and current return streak.
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
@@ -136,7 +140,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 
 - **Atomic File Writes:** All domain writes use write-then-rename (`~/.brain-break/.tmp-<slug>.json` → target), exclusively in `domain/store.ts`.
 
-- **Domain Data Schema:** Split meta + history JSON. `hashes` array on disk, loaded as `Set<string>` at runtime for O(1) lookup. `defaultDomainFile()` factory called on `ENOENT` in `store.ts.readDomain()`.
+- **Domain Data Schema:** Split meta + history JSON. `hashes` array on disk, loaded as `Set<string>` at runtime for O(1) lookup. `defaultDomainFile(startingDifficulty?)` factory called on `ENOENT` in `store.ts.readDomain()` and during domain creation (with the user-selected difficulty level).
 
 - **Zod Validation:** All Copilot API responses validated with a Zod schema before any field is accessed. AI output is treated as an untrusted external boundary.
 
@@ -506,7 +510,7 @@ So that I can immediately start getting quiz questions on any topic I choose.
 
 **Given** I am on the home screen  
 **When** I select "Create new domain"  
-**Then** an input prompt is shown: `New domain name (Ctrl+C to go back):`  
+**Then** an input prompt is shown: `New domain name:`  
 
 **Given** I am on the create domain screen  
 **When** I press Ctrl+C  
@@ -514,9 +518,25 @@ So that I can immediately start getting quiz questions on any topic I choose.
 
 **Given** I am on the create domain screen  
 **When** I type a domain name (e.g. "Spring Boot microservices") and press Enter  
+**Then** a difficulty selection prompt appears with options: 1 (Beginner), 2 (Elementary), 3 (Intermediate), 4 (Advanced), 5 (Expert) — navigated via arrow keys, defaulting to level 2 (Elementary)  
+
+**Given** I have entered a domain name and the difficulty selection prompt is shown  
+**When** I select a difficulty level and press Enter  
+**Then** a Save/Back navigation prompt is shown  
+
+**Given** I am on the Save/Back navigation prompt  
+**When** I select "💾  Save"  
 **Then** the app calls `slugify()` to derive a file slug (e.g. `spring-boot-microservices`)  
-**And** a new domain file is created at `~/.brain-break/spring-boot-microservices.json` with `defaultDomainFile()` values  
+**And** a new domain file is created at `~/.brain-break/spring-boot-microservices.json` with `defaultDomainFile(selectedDifficulty)` values (the selected difficulty becomes `meta.difficultyLevel`)  
 **And** the home screen refreshes showing the new domain in the active list  
+
+**Given** I am on the Save/Back navigation prompt  
+**When** I select "←  Back"  
+**Then** I return to the home screen without creating a domain  
+
+**Given** I am on the difficulty selection prompt  
+**When** I press Ctrl+C  
+**Then** I return to the home screen without creating a domain  
 
 **Given** I type a domain name that slugifies to an already-existing slug  
 **When** I confirm creation  
@@ -879,7 +899,7 @@ So that I can review past questions, see where I went wrong, and track my learni
 ### Story 4.2: Stats Dashboard
 
 As a user,
-I want to view a stats dashboard for the active domain showing my score, accuracy, time played, difficulty level, score trend, and return streak,
+I want to view a stats dashboard for the active domain showing my score, accuracy, time played, starting difficulty, current difficulty level, score trend, and return streak,
 So that I have a clear, motivating picture of my progress and know whether my skills are genuinely growing.
 
 **Acceptance Criteria:**
@@ -891,6 +911,7 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 - Total questions answered
 - Correct answer count, incorrect answer count, and accuracy % (rounded to 1 decimal)
 - Total time played across all sessions (formatted as h/m/s)
+- Starting difficulty level (number + label, e.g. "2 — Elementary") — set at domain creation, never changes
 - Current difficulty level (number + label, e.g. "3 — Intermediate")
 - Score trend over the last 30 days: "Growing 📈", "Flat ➡️", or "Declining 📉" (derived from `answeredAt` timestamps and `scoreDelta` values in history)
 - Days since first session (derived from earliest `answeredAt`)

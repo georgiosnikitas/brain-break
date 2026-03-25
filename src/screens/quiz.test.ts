@@ -444,9 +444,9 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    // defaultDomainFile() starts at difficultyLevel 2 → label 'Easy'
+    // defaultDomainFile() starts at difficultyLevel 2 → label 'Elementary'
     const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(logged).toContain('Easy')
+    expect(logged).toContain('Elementary')
     consoleSpy.mockRestore()
   })
 

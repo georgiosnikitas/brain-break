@@ -17,6 +17,10 @@ stepsCompleted:
 lastEdited: '2026-03-25'
 editHistory:
   - date: '2026-03-25'
+    changes: 'Feature 7 (View Stats) updated: starting difficulty level added to the stats dashboard — displayed alongside current difficulty to show progression. Reflects GitHub issue #46.'
+  - date: '2026-03-25'
+    changes: 'Feature 1 (Domain Management) and Feature 2 (Adaptive Difficulty) updated: when creating a domain, the user now selects a starting difficulty level (1–5) via arrow key navigation after entering the domain name, defaulting to level 2 (Elementary). FR2 updated with difficulty selection step and corrected to match implementation (prompt text is `New domain name:`, back via Save/Back nav menu not Ctrl+C hint). FR7 updated — new domains start at the user-selected level instead of always level 2. Create-domain flow in Feature 1 updated. Domain Data Schema note updated (defaultDomainFile accepts optional startingDifficulty). "Manual difficulty override" removed from Out of Scope. Reflects GitHub issue #46.'
+  - date: '2026-03-25'
     changes: 'Feature 3 (Interactive Terminal Quiz) updated: post-answer feedback now renders on the same screen as the original question — no terminal clear between question display and feedback panel. The user sees the question, their chosen answer, and all feedback (correct/incorrect, correct answer reveal, time taken, speed tier, score delta) together. NFR5 updated to exclude the post-answer feedback transition from the full terminal reset list. Reflects GitHub issue #50.'
   - date: '2026-03-25'
     changes: 'Feature 3 (Interactive Terminal Quiz) updated: after answering a question, the post-answer feedback now includes an "Explain answer" option alongside Next and Exit. Selecting it calls the AI provider to generate a concise explanation of why the correct answer is correct, displayed inline before returning to the Next/Exit prompt. FR35 added. FR Coverage Map updated. Reflects GitHub issue #48.'
@@ -125,7 +129,6 @@ The following are explicitly out of scope for the MVP:
 - Multiple simultaneous domains in a single session
 - Score or history reset
 - Leaderboards or team comparison features
-- Manual difficulty override by the user
 - Web UI or any non-terminal interface
 - User accounts or cloud sync
 - Any feature not listed in this document
@@ -282,7 +285,7 @@ The following 10 features define the complete MVP capability set. Each feature i
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate domain-specific questions for it
 - All state (history, score, time played) is domain-scoped and isolated
 - The home screen actions are: select a domain, create a new domain, view archived domains, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen
-- Selecting "Create new domain" shows an input prompt (`New domain name (Ctrl+C to go back):`); pressing Ctrl+C returns the user to the home screen without creating a domain
+- Selecting "Create new domain" shows an input prompt (`New domain name:`); after entering a name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary); a Save/Back navigation prompt follows — selecting Save creates the domain, selecting Back returns to the home screen without creating a domain; pressing Ctrl+C at any prompt returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
 
@@ -312,7 +315,7 @@ The following 10 features define the complete MVP capability set. Each feature i
   - 3 consecutive correct answers → difficulty increases by 1 (max level 5)
   - 3 consecutive wrong answers → difficulty decreases by 1 (min level 1)
   - A correct answer breaks a wrong streak and vice versa — the streak counter resets
-  - New domains start at level 2 (Elementary)
+  - New domains start at the difficulty level selected during domain creation (default: level 2 — Elementary)
   - Difficulty and streak counter persist across sessions per domain
 
 | Level | Label | Focus |
@@ -396,6 +399,7 @@ User can view a summary dashboard for the active domain:
 - Total questions answered
 - Correct vs. incorrect count and accuracy %
 - Total time played across all sessions
+- Starting difficulty level (set at domain creation, never changes)
 - Current difficulty level
 - Score trend over the last 30 days (growing / flat / declining) — derived from local question history
 - Days since first session and current return streak — derived from local session timestamps

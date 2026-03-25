@@ -23,6 +23,7 @@ export type AnswerOption = z.infer<typeof AnswerOptionSchema>
 export const DomainMetaSchema = z.object({
   score: z.number().finite(),
   difficultyLevel: z.number().int().min(1).max(5),
+  startingDifficulty: z.number().int().min(1).max(5).default(2),
   streakCount: z.number().int().min(0),
   streakType: z.enum(['correct', 'incorrect', 'none']),
   totalTimePlayedMs: z.number().min(0).finite(),
@@ -68,11 +69,12 @@ export type DomainFile = z.infer<typeof DomainFileSchema>
 // ---------------------------------------------------------------------------
 // Factory — returns a clean new domain (used on ENOENT in store.ts)
 // ---------------------------------------------------------------------------
-export function defaultDomainFile(): DomainFile {
+export function defaultDomainFile(startingDifficulty: number = 2): DomainFile {
   return {
     meta: {
       score: 0,
-      difficultyLevel: 2,
+      difficultyLevel: startingDifficulty,
+      startingDifficulty,
       streakCount: 0,
       streakType: 'none',
       totalTimePlayedMs: 0,

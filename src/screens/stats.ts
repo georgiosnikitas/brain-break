@@ -21,7 +21,7 @@ export function formatTotalTimePlayed(ms: number): string {
 export function difficultyLabel(level: number): string {
   const labels: Record<number, string> = {
     1: '1 — Beginner',
-    2: '2 — Easy',
+    2: '2 — Elementary',
     3: '3 — Intermediate',
     4: '4 — Advanced',
     5: '5 — Expert',
@@ -97,7 +97,8 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log(bold('Correct / Incorrect:') + ' 0 / 0')
     console.log(bold('Accuracy:') + ' No data yet')
     console.log(bold('Total time played:') + ' No data yet')
-    console.log(bold('Difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
+    console.log(bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
+    console.log(bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
     console.log(bold('Score trend (30 days):') + ' No data yet')
     console.log(bold('Days since first session:') + ' No data yet')
     console.log(bold('Return streak:') + ' No data yet')
@@ -113,7 +114,8 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log(bold('Correct / Incorrect:') + ` ${correct} / ${incorrect}`)
     console.log(bold('Accuracy:') + ` ${formatAccuracy(correct, total)}`)
     console.log(bold('Total time played:') + ` ${formatTotalTimePlayed(meta.totalTimePlayedMs)}`)
-    console.log(bold('Difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
+    console.log(bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
+    console.log(bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
     console.log(bold('Score trend (30 days):') + ` ${trendLabel}`)
     console.log(bold('Days since first session:') + ` ${daySinceFirst!}`)
     console.log(

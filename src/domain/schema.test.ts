@@ -4,6 +4,7 @@ import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchem
 const validMeta = {
   score: 100,
   difficultyLevel: 3,
+  startingDifficulty: 3,
   streakCount: 2,
   streakType: 'correct' as const,
   totalTimePlayedMs: 45000,
@@ -110,6 +111,37 @@ describe('DomainFileSchema', () => {
     expect(result.success).toBe(false)
   })
 
+  it('rejects startingDifficulty below 1 in meta', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, startingDifficulty: 0 },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects startingDifficulty above 5 in meta', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: { ...validMeta, startingDifficulty: 6 },
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('defaults startingDifficulty to 2 when missing (backward compat)', () => {
+    const { startingDifficulty: _, ...metaWithoutStarting } = validMeta
+    const result = DomainFileSchema.safeParse({
+      meta: metaWithoutStarting,
+      hashes: [],
+      history: [],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.meta.startingDifficulty).toBe(2)
+    }
+  })
+
   it('rejects difficultyLevel below 1 in history entry', () => {
     const result = DomainFileSchema.safeParse({
       meta: validMeta,
@@ -203,6 +235,17 @@ describe('defaultDomainFile', () => {
 
   it('has difficultyLevel: 2', () => {
     expect(defaultDomainFile().meta.difficultyLevel).toBe(2)
+  })
+
+  it('has startingDifficulty: 2', () => {
+    expect(defaultDomainFile().meta.startingDifficulty).toBe(2)
+  })
+
+  it('accepts startingDifficulty parameter and sets both fields', () => {
+    const d = defaultDomainFile(4)
+    expect(d.meta.difficultyLevel).toBe(4)
+    expect(d.meta.startingDifficulty).toBe(4)
+    expect(() => DomainFileSchema.parse(d)).not.toThrow()
   })
 
   it('has streakCount: 0', () => {

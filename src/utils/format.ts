@@ -24,7 +24,7 @@ export function colorSpeedTier(tier: SpeedTier): string {
 export function colorDifficultyLevel(level: number): string {
   switch (level) {
     case 1: return chalk.cyan('Beginner')
-    case 2: return chalk.green('Easy')
+    case 2: return chalk.green('Elementary')
     case 3: return chalk.yellow('Intermediate')
     case 4: return chalk.magenta('Advanced')
     case 5: return chalk.red('Expert')
