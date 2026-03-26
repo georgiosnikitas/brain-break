@@ -5,8 +5,8 @@ import { generateQuestion, generateExplanation, type Question } from '../ai/clie
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
-import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SpeedTier, type SettingsFile } from '../domain/schema.js'
-import { formatDuration, colorCorrect, colorIncorrect, colorSpeedTier, colorScoreDelta, colorDifficultyLevel, warn, bold, menuTheme } from '../utils/format.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SettingsFile } from '../domain/schema.js'
+import { colorIncorrect, warn, menuTheme, renderQuestionDetail } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -31,32 +31,6 @@ async function askQuestion(
     if (err instanceof ExitPromptError) return null
     throw err
   }
-}
-
-function showAnswerOptions(question: Question, userAnswer: AnswerOption): void {
-  for (const key of ['A', 'B', 'C', 'D'] as const) {
-    const marker = key === userAnswer ? '►' : ' '
-    console.log(`  ${marker} ${key}) ${question.options[key]}`)
-  }
-}
-
-function showFeedback(
-  isCorrect: boolean,
-  question: Question,
-  timeTakenMs: number,
-  speedTier: SpeedTier,
-  scoreDelta: number,
-  difficultyLevel: number,
-): void {
-  if (isCorrect) {
-    console.log(colorCorrect('✓ Correct!'))
-  } else {
-    console.log(colorIncorrect('✗ Incorrect'))
-    const correctText = `${question.correctAnswer}) ${question.options[question.correctAnswer]}`
-    console.log(`Correct answer: ${colorCorrect(bold(correctText))}`)
-  }
-  console.log(`Time: ${formatDuration(timeTakenMs)} | Speed: ${colorSpeedTier(speedTier)} | Difficulty: ${colorDifficultyLevel(difficultyLevel)}`)
-  console.log(`Score: ${colorScoreDelta(scoreDelta)}`)
 }
 
 async function askPostAnswerAction(): Promise<'explain' | 'next' | 'exit' | null> {
@@ -100,8 +74,8 @@ async function showGenerationError(domainSlug: string, error: string): Promise<v
       choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
       theme: menuTheme,
     })
-  } catch {
-    // ExitPromptError (Ctrl+C) — fall through to navigate back
+  } catch (err) {
+    if (!(err instanceof ExitPromptError)) throw err
   }
   await router.showDomainMenu(domainSlug)
 }
@@ -188,9 +162,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
       console.warn(warn(`Failed to save progress: ${writeResult.error}`))
     }
 
-    showAnswerOptions(question, userAnswer)
-    console.log()
-    showFeedback(isCorrect, question, timeTakenMs, speedTier, scoreDelta, record.difficultyLevel)
+    renderQuestionDetail(record)
 
     // Post-answer action: explain, next, or exit
     let nextAction: 'explain' | 'next' | 'exit' | null = await askPostAnswerAction()

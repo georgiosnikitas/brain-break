@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import type { SpeedTier } from '../domain/schema.js'
+import type { SpeedTier, QuestionRecord } from '../domain/schema.js'
 
 // Basic chalk wrappers
 export const success = (s: string) => chalk.green(s)
@@ -109,4 +109,34 @@ export function gradientShadow(width: number): string {
     result += chalk.rgb(c.r, c.g, c.b)('▀')
   }
   return result
+}
+
+// ---------------------------------------------------------------------------
+// Question detail rendering (shared by quiz feedback and history views)
+// ---------------------------------------------------------------------------
+
+function formatTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString()
+}
+
+export function renderQuestionDetail(
+  record: QuestionRecord,
+  opts?: { showTimestamp?: boolean },
+): void {
+  for (const key of ['A', 'B', 'C', 'D'] as const) {
+    const marker = key === record.userAnswer ? '►' : ' '
+    console.log(`  ${marker} ${key}) ${record.options[key]}`)
+  }
+  console.log()
+  if (record.isCorrect) {
+    console.log(`${colorCorrect('✓ Correct!')} 😊 Score: ${colorScoreDelta(record.scoreDelta)}`)
+  } else {
+    console.log(`${colorIncorrect('✗ Incorrect')} 😞 Score: ${colorScoreDelta(record.scoreDelta)}`)
+    const correctText = `${record.correctAnswer}) ${record.options[record.correctAnswer]}`
+    console.log(`Correct answer: ${colorCorrect(bold(correctText))}`)
+  }
+  console.log(`Time: ${formatDuration(record.timeTakenMs)} | Speed: ${colorSpeedTier(record.speedTier)} | Difficulty: ${colorDifficultyLevel(record.difficultyLevel)}`)
+  if (opts?.showTimestamp) {
+    console.log(dim(`Answered: ${formatTimestamp(record.answeredAt)}`))
+  }
 }

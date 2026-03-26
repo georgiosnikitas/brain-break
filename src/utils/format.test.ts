@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import {
   success,
   error,
@@ -18,7 +18,9 @@ import {
   getGradientWidth,
   gradientBg,
   gradientShadow,
+  renderQuestionDetail,
 } from './format.js'
+import type { QuestionRecord } from '../domain/schema.js'
 
 // chalk can produce empty strings in test environments when colors are disabled.
 // We test that each helper returns a string containing the expected text content.
@@ -245,5 +247,77 @@ describe('gradientShadow', () => {
   it('returns a string when called', () => {
     const result = gradientShadow(10)
     expect(typeof result).toBe('string')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// renderQuestionDetail
+// ---------------------------------------------------------------------------
+
+function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
+  return {
+    question: 'What is TypeScript?',
+    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
+    correctAnswer: 'A',
+    userAnswer: 'A',
+    isCorrect: true,
+    answeredAt: '2026-03-26T10:00:00.000Z',
+    timeTakenMs: 5000,
+    speedTier: 'fast',
+    scoreDelta: 60,
+    difficultyLevel: 3,
+    ...overrides,
+  }
+}
+
+describe('renderQuestionDetail', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+  })
+
+  afterEach(() => {
+    consoleSpy.mockRestore()
+  })
+
+  it('correct path: ► on correct userAnswer, ✓ Correct!, no reveal, time/score lines', () => {
+    renderQuestionDetail(makeRecord({ userAnswer: 'A', correctAnswer: 'A', isCorrect: true }))
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('► A)')
+    expect(logged).toContain('A) A typed JS superset')
+    expect(logged).toContain('B) A framework')
+    expect(logged).toContain('C) A runtime')
+    expect(logged).toContain('D) A test tool')
+    expect(logged).toContain('✓ Correct!')
+    expect(logged).not.toContain('Correct answer:')
+    expect(logged).toContain('Time:')
+    expect(logged).toContain('Score:')
+  })
+
+  it('incorrect path: ✗ Incorrect, reveal line, ► on wrong userAnswer key', () => {
+    renderQuestionDetail(makeRecord({ userAnswer: 'B', correctAnswer: 'A', isCorrect: false }))
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('✗ Incorrect')
+    expect(logged).toContain('Correct answer:')
+    expect(logged).toContain('A) A typed JS superset')
+    expect(logged).toContain('► B)')
+    expect(logged).not.toContain('► A)')
+  })
+
+  it('showTimestamp: true appends Answered: line', () => {
+    renderQuestionDetail(makeRecord(), { showTimestamp: true })
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('Answered:')
+  })
+
+  it('showTimestamp omitted: no Answered: line', () => {
+    renderQuestionDetail(makeRecord())
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Answered:')
   })
 })

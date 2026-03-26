@@ -27,7 +27,7 @@ import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
 import { clearAndBanner } from '../utils/screen.js'
-import { showHistory, buildPageChoices, formatTimestamp } from './history.js'
+import { showHistory, buildPageChoices } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
@@ -99,17 +99,6 @@ describe('buildPageChoices', () => {
     expect(values).toContain('prev')
     expect(values).toContain('next')
     expect(values).toContain('back')
-  })
-})
-
-// ---------------------------------------------------------------------------
-// formatTimestamp
-// ---------------------------------------------------------------------------
-describe('formatTimestamp', () => {
-  it('returns a non-empty string for a valid ISO date', () => {
-    const result = formatTimestamp('2026-03-12T10:00:00.000Z')
-    expect(typeof result).toBe('string')
-    expect(result.length).toBeGreaterThan(0)
   })
 })
 
@@ -210,11 +199,9 @@ describe('showHistory — single question', () => {
 
     await showHistory('typescript')
 
-    // Most recent is Question 3. The entry header format is "#1 — Question 3"
-    const loggedLines = consoleSpy.mock.calls.map((c) => String(c[0]))
-    const firstEntryLine = loggedLines.find((l) => l.includes('#1 —'))
-    expect(firstEntryLine).toBeDefined()
-    expect(firstEntryLine).toContain('Question 3')
+    // Most recent is Question 3. The plain question text is logged.
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('Question 3')
     consoleSpy.mockRestore()
   })
 
@@ -238,9 +225,10 @@ describe('showHistory — single question', () => {
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('What is Zod?')
-    expect(allLogs).toContain('Your answer:')
-    expect(allLogs).toContain('Correct:')
-    expect(allLogs).toContain('Advanced')
+    expect(allLogs).toContain('► B)')        // user answer marker
+    expect(allLogs).toContain('✗ Incorrect') // isCorrect: false
+    expect(allLogs).toContain('Advanced')    // difficultyLevel: 4
+    expect(allLogs).toContain('Answered:')   // showTimestamp: true in displayEntry
     consoleSpy.mockRestore()
   })
 
@@ -335,9 +323,9 @@ describe('showHistory — navigation', () => {
 
     // Only Question 3 (most recent, index 0) should appear; Question 2 and 1 must not
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('#1 — Question 3')
-    expect(allLogs).not.toContain('#2 —')
-    expect(allLogs).not.toContain('#3 —')
+    expect(allLogs).toContain('Question 3')
+    expect(allLogs).not.toContain('Question 2')
+    expect(allLogs).not.toContain('Question 1')
     consoleSpy.mockRestore()
   })
 })

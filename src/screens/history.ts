@@ -4,25 +4,15 @@ import { readDomain } from '../domain/store.js'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
 import {
   warn,
-  bold,
   dim,
   header,
-  colorCorrect,
-  colorIncorrect,
-  colorSpeedTier,
-  colorScoreDelta,
-  colorDifficultyLevel,
-  formatDuration,
   menuTheme,
+  renderQuestionDetail,
 } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
 type NavAction = 'next' | 'prev' | 'back'
-
-export function formatTimestamp(iso: string): string {
-  return new Date(iso).toLocaleString()
-}
 
 export function buildPageChoices(
   currentIndex: number,
@@ -36,15 +26,9 @@ export function buildPageChoices(
   return choices
 }
 
-function displayEntry(record: QuestionRecord, globalIndex: number): void {
-  console.log(bold(`\n#${globalIndex + 1} — ${record.question}`))
-  console.log(dim(`  A) ${record.options.A}`))
-  console.log(dim(`  B) ${record.options.B}`))
-  console.log(dim(`  C) ${record.options.C}`))
-  console.log(dim(`  D) ${record.options.D}`))
-  console.log(`  Your answer: ${bold(record.userAnswer)}  |  Correct: ${bold(record.correctAnswer)}  |  ${record.isCorrect ? colorCorrect('✓ Correct') : colorIncorrect('✗ Wrong')}`)
-  console.log(`  Time: ${formatDuration(record.timeTakenMs)}  |  Speed: ${colorSpeedTier(record.speedTier)}  |  Score: ${colorScoreDelta(record.scoreDelta)}  |  Difficulty: ${colorDifficultyLevel(record.difficultyLevel)}`)
-  console.log(dim(`  Answered: ${formatTimestamp(record.answeredAt)}`))
+function displayEntry(record: QuestionRecord): void {
+  console.log(`\n${record.question}`)
+  renderQuestionDetail(record, { showTimestamp: true })
 }
 
 async function navigateHistory(history: QuestionRecord[], domainSlug: string): Promise<void> {
@@ -54,7 +38,7 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
   while (true) {
     clearAndBanner()
     console.log(header(`📜 Question History — ${domainSlug}`))
-    displayEntry(history[index], index)
+    displayEntry(history[index])
 
     const choices = buildPageChoices(index, totalItems)
     let nav: NavAction
