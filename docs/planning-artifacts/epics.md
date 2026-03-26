@@ -1,6 +1,6 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-25'
+lastEdited: '2026-03-26'
 status: 'complete'
 editHistory:
   - date: '2026-03-25'
@@ -9,6 +9,8 @@ editHistory:
     changes: 'FR13 updated: stats dashboard now includes starting difficulty level. Story 4.2 user story and ACs updated to display starting difficulty alongside current difficulty. Reflects GitHub issue #46.'
   - date: '2026-03-25'
     changes: 'FR2 updated: create-domain flow now includes a starting difficulty selection step (1–5, default level 2) after entering the domain name. Corrected to match implementation (prompt text is `New domain name:`, back via Save/Back nav menu). FR7 updated — new domains start at the user-selected level instead of always level 2. Domain Data Schema note updated (defaultDomainFile accepts optional startingDifficulty). Story 2.2 ACs updated with difficulty selection step and Save/Back navigation. Reflects GitHub issue #46.'
+  - date: '2026-03-26'
+    changes: 'FR36 added (Unified Question Detail Rendering): a shared renderQuestionDetail() function in utils/format.ts becomes the sole renderer for the quiz post-answer feedback options/result block and the history question detail block. History display updated to match quiz feedback layout. showTimestamp option added for history-only timestamp rendering. Story 3.7 (Unified Question Detail Rendering) added to Epic 3. FR Coverage Map updated FR36 → Epic 3. Reflects GitHub issue #52.'
   - date: '2026-03-25'
     changes: 'FR8 updated: post-answer feedback now renders on the same screen as the quiz question — no terminal clear between question and feedback. NFR5 updated to exclude post-answer feedback from full terminal reset list. Story 3.3 ACs updated (no clearAndBanner between question and feedback). Story 1.6 AC updated (quiz post-answer feedback renders inline). Reflects GitHub issue #50.'
   - date: '2026-03-25'
@@ -114,6 +116,8 @@ FR34: Every screen in the app (except the Welcome Screen and Provider Setup scre
 
 FR35: After answering a quiz question and viewing the feedback panel, the user is presented with three options: Next question, Explain answer, and Exit quiz. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a two-option prompt: Next question and Exit quiz (explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Exit prompt without interrupting the quiz session.
 
+FR36: The post-answer options/result block in the quiz session and the question detail block in the history screen are rendered by a single shared function `renderQuestionDetail(record: QuestionRecord, opts?: { showTimestamp?: boolean })` exported from `utils/format.ts`. The function renders in order: all four answer options (A–D) with `►` marking the user's answer, a blank separator line, correct/incorrect status, the correct answer reveal when the user was wrong (highlighted in green), a compound time/speed/difficulty line, and a score delta line. When `opts.showTimestamp` is `true`, an answered-at timestamp line is appended (used by history only). The quiz post-answer screen calls `renderQuestionDetail(record)` without a timestamp. The history detail view prints the question text as a plain (non-bold, non-numbered) line and calls `renderQuestionDetail(record, { showTimestamp: true })`. The private `showAnswerOptions()` and `showFeedback()` functions in `screens/quiz.ts` and the body of `displayEntry()` options/result block in `screens/history.ts` are replaced by calls to this shared function. The `globalIndex` parameter is removed from `displayEntry()` since numbered headers are no longer rendered.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -191,6 +195,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR33 | Epic 8, Epic 5 | Settings screen — 🎬 Welcome screen toggle (ON/OFF) |
 | FR34 | Epic 8 | Static banner — `🧠🔨 Brain Break` + gradient shadow bar via `clearAndBanner()` |
 | FR35 | Epic 3 | Post-answer "Explain answer" option — AI-generated explanation of the correct answer |
+| FR36 | Epic 3 | Unified question detail rendering — shared `renderQuestionDetail()` used in quiz feedback and history detail view |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -863,6 +868,61 @@ So that I can trust the quiz results and not be penalized for choosing the right
 **Given** `ai/client.test.ts` and `ai/prompts.test.ts` are updated  
 **When** I run `npm test`  
 **Then** all tests pass, covering: verification agrees (proceeds normally), verification disagrees (regenerates), verification parse/schema/network failures (fail-open), verification prompt does not reveal correct answer, voice instruction injected into verification prompt, dedup path verification  
+
+---
+
+### Story 3.7: Unified Question Detail Rendering
+
+As a user,
+I want the post-answer feedback layout in the quiz to be replicated exactly in the question detail view in my history,
+So that the experience is consistent and I recognise the same layout whether I just answered a question or I'm reviewing it later.
+
+**Acceptance Criteria:**
+
+**Given** `utils/format.ts` exports `renderQuestionDetail(record: QuestionRecord, opts?: { showTimestamp?: boolean }): void`  
+**When** called with a `QuestionRecord` where `isCorrect` is `true`  
+**Then** all 4 answer options (A–D) are rendered with `►` prefixing `record.userAnswer` and a single space prefix on all others  
+**And** a blank separator line is printed after the options  
+**And** `colorCorrect('✓ Correct!')` is rendered  
+**And** no correct-answer-reveal line is rendered  
+**And** a compound line is rendered: `Time: ${formatDuration(timeTakenMs)} | Speed: ${colorSpeedTier(speedTier)} | Difficulty: ${colorDifficultyLevel(difficultyLevel)}`  
+**And** a score line is rendered: `Score: ${colorScoreDelta(scoreDelta)}`  
+
+**Given** `renderQuestionDetail` is called with a `QuestionRecord` where `isCorrect` is `false`  
+**When** the function renders  
+**Then** `colorIncorrect('✗ Incorrect')` is rendered  
+**And** a correct-answer reveal line is rendered: `Correct answer: colorCorrect(bold('<key>) <text>'))`  
+**And** `►` is prefixed on the wrong user-answer key, not on the correct answer key  
+
+**Given** `renderQuestionDetail` is called with `opts.showTimestamp === true`  
+**When** the function renders  
+**Then** a `dim` timestamp line (`Answered: <formatted date>`) is appended as the last line  
+
+**Given** `renderQuestionDetail` is called without `opts` or with `opts.showTimestamp` omitted  
+**When** the function renders  
+**Then** no timestamp line is output  
+
+**Given** `screens/quiz.ts` is updated  
+**When** a user answers a question and the feedback is rendered  
+**Then** the private `showAnswerOptions()` and `showFeedback()` functions are removed  
+**And** a single call to `renderQuestionDetail(record)` (without timestamp) replaces the `showAnswerOptions(question, userAnswer)` + `console.log()` + `showFeedback(...)` call site  
+**And** the post-answer actions — 💡 Explain answer / ▶️ Next question / 🚪 Exit quiz — are fully preserved and render immediately after `renderQuestionDetail(record)`, unchanged  
+
+**Given** `screens/history.ts` is updated  
+**When** a history entry is displayed  
+**Then** the `📜 Question History — {domainSlug}` header rendered by `navigateHistory` is unchanged  
+**And** `displayEntry()` prints the question text as a plain (non-bold, non-numbered) line — matching the visual style of the quiz answer screen — then calls `renderQuestionDetail(record, { showTimestamp: true })`  
+**And** the `globalIndex` parameter is removed from `displayEntry()` since the `#N` prefix is no longer rendered  
+**And** the `formatTimestamp` export in `history.ts` is removed — timestamp formatting moves to `utils/format.ts` as a non-exported helper used by `renderQuestionDetail`  
+
+**Given** the same `QuestionRecord` is rendered in quiz feedback and in history detail  
+**When** the output of both screens is compared  
+**Then** the options block, correct/incorrect status, time/speed/difficulty line, score line, and color semantics are pixel-identical  
+**And** the only difference is that history appends the answered-at timestamp line and quiz does not  
+
+**Given** `utils/format.test.ts`, `screens/quiz.test.ts`, and `screens/history.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: `renderQuestionDetail` correct path (all 4 options, `►` on correct key, `✓ Correct!` present, no reveal, time/speed/difficulty and score lines), incorrect path (`✗ Incorrect`, reveal line, `►` on wrong key), `showTimestamp: true` appends timestamp, omitted `showTimestamp` produces no timestamp line, all existing quiz and history tests pass with no behavioral regressions  
 
 ---
 
