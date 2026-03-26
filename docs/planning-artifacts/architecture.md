@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-25'
+lastEdited: '2026-03-26'
 editHistory:
+  - date: '2026-03-26'
+    changes: 'Unified question detail rendering (GitHub issue #52): utils/format.ts gains renderQuestionDetail() — a shared rendering function producing the options + feedback block consumed by both screens/quiz.ts and screens/history.ts. Updated: format.ts module description (both directory trees), dependency rules (utils/format.ts type-only imports from domain/schema.ts clarified), internal boundary rule (utils/ type-only import allowance), F3 and F6 feature-to-structure mapping (added utils/format.ts), cross-cutting concern table (new question detail rendering row).'
   - date: '2026-03-25'
     changes: 'Architecture review sync with source code: added undocumented welcome screen module (screens/welcome.ts) and settings.showWelcome field; corrected Gemini env var from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY (5 occurrences); fixed router function count from 11 to 12; documented generateExplanation() in ai/client.ts, AI_ERRORS.QUOTA, testProviderConnection() in providers.ts, isAuthErrorMessage() in client.ts; added DomainListEntry discriminated union to Data Architecture; added gradient rendering utilities to format.ts docs; fixed project tree (added welcome.ts/welcome.test.ts, removed non-existent provider-settings.test.ts); documented PROVIDER_CHOICES, PROVIDER_LABELS, DEFAULT_* constants, and patch-package devDependency; updated startup flow, navigation diagram, feature mapping, cross-cutting concern mapping, validation tables, gap analysis, and coherence validation.'
   - date: '2026-03-25'
@@ -566,7 +568,7 @@ src/
     ├── hash.ts           # SHA-256 hashing helpers
     ├── slugify.ts        # Domain name → file slug
     ├── screen.ts         # clearScreen() — viewport reset before every render
-    └── format.ts         # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities
+    └── format.ts         # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz and history screens
 ```
 
 **Dependency Rules:**
@@ -575,6 +577,7 @@ src/
 - `domain/store.ts` is the **only** module that writes to disk (domain files and settings)
 - `ai/providers.ts` is the **only** module that imports provider SDKs (`@github/copilot-sdk`, `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`) and makes raw HTTP calls (Ollama via `fetch()`)
 - `ai/client.ts` is the **only** module that calls `createProvider()` and orchestrates AI completions — screens never call providers directly
+- `utils/format.ts` may use **type-only** imports from `domain/schema.ts` (e.g. `QuestionRecord`, `SpeedTier`) — no runtime imports from other `src/` directories
 
 ### Decision Impact Analysis
 
@@ -808,7 +811,7 @@ brain-break/
 │       ├── slugify.test.ts
 │       ├── screen.ts               # NFR 5: clearScreen() — ANSI viewport reset
 │       ├── screen.test.ts
-│       ├── format.ts               # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities
+│       ├── format.ts               # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz and history screens
 │       └── format.test.ts
 ├── patches/                            # patch-package patches for transitive dependencies
 │   └── vscode-jsonrpc+8.2.1.patch      # Patches vscode-jsonrpc (transitive dep of @github/copilot-sdk)
@@ -831,7 +834,7 @@ brain-break/
 - `ai/client.ts` → imports from `ai/providers.ts` and `ai/prompts.ts` — never imports provider SDKs directly
 - `ai/providers.ts` → the only module that imports provider SDKs (Vercel AI SDK + Copilot SDK); exports the `AiProvider` interface
 - `domain/scoring.ts` → pure computation, no imports from `screens/` or `ai/`
-- `utils/` → no imports from any other `src/` directory
+- `utils/` → no runtime imports from any other `src/` directory; `utils/format.ts` uses **type-only** imports from `domain/schema.ts` (`QuestionRecord`, `SpeedTier`)
 
 ### Feature to Structure Mapping
 
@@ -839,10 +842,10 @@ brain-break/
 |---|---|
 | F1 — Domain Management | `screens/home.ts`, `screens/create-domain.ts`, `screens/domain-menu.ts`, `screens/select-domain.ts`, `screens/archived.ts`, `domain/store.ts`, `utils/slugify.ts` |
 | F2 — AI Question Generation | `ai/client.ts`, `ai/providers.ts`, `ai/prompts.ts`, `domain/scoring.ts` (difficulty input) |
-| F3 — Interactive Quiz | `screens/quiz.ts`, `ai/client.ts`, `domain/store.ts`, `domain/scoring.ts` |
+| F3 — Interactive Quiz | `screens/quiz.ts`, `ai/client.ts`, `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F4 — Scoring System | `domain/scoring.ts` (pure logic), `domain/store.ts` (persist) |
 | F5 — Persistent History | `domain/store.ts`, `domain/schema.ts` |
-| F6 — View History | `screens/history.ts`, `domain/store.ts` |
+| F6 — View History | `screens/history.ts`, `domain/store.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F7 — View Stats | `screens/stats.ts`, `domain/store.ts` |
 | F8 — Global Settings | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts` (readSettings/writeSettings), `domain/schema.ts` (SettingsFile/AiProviderType/ToneOfVoice), `ai/prompts.ts` (voice injection), `ai/providers.ts` (provider validation) |
 | F9 — Color System | `utils/format.ts` (semantic color helpers, menuTheme) + all `screens/*.ts` (consumers) |
@@ -864,6 +867,7 @@ brain-break/
 | Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
 | Provider abstraction | `ai/providers.ts` → `AiProvider` interface + 5 adapters (4 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter); `ai/client.ts` → `createProvider()` factory |
 | Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme`, gradient rendering (`lerpColor`, `gradientBg`, `gradientShadow`) |
+| Question detail rendering | `utils/format.ts` → `renderQuestionDetail()` — unified options + feedback block (markers, correct/incorrect status, time/speed/difficulty, score delta, optional timestamp) consumed by `screens/quiz.ts` and `screens/history.ts` |
 | Settings tone migration | `domain/store.ts` → `migrateSettings()` — maps legacy tone values on read |
 
 ### Integration Points
