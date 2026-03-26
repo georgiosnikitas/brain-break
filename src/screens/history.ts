@@ -27,7 +27,7 @@ export function buildPageChoices(
 }
 
 function displayEntry(record: QuestionRecord): void {
-  console.log(`\n${record.question}`)
+  console.log(record.question)
   renderQuestionDetail(record, { showTimestamp: true })
 }
 

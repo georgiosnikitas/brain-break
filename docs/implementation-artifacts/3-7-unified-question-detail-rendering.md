@@ -1,7 +1,7 @@
 ---
 Story: 3.7
 Title: Unified Question Detail Rendering
-Status: review
+Status: completed
 Epic: 3 — AI-Powered Adaptive Quiz
 Created: 2026-03-26
 GitHub-Issue: 52

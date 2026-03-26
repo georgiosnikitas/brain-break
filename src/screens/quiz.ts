@@ -6,7 +6,7 @@ import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
 import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SettingsFile } from '../domain/schema.js'
-import { colorIncorrect, warn, menuTheme, renderQuestionDetail } from '../utils/format.js'
+import { colorIncorrect, warn, header, menuTheme, renderQuestionDetail } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -119,6 +119,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     const question = questionResult.data
 
     clearAndBanner()
+    console.log(header(`📝 Quiz — ${domainSlug}`))
     const answered = await askQuestion(question)
     if (answered === null) {
       await router.showDomainMenu(domainSlug)

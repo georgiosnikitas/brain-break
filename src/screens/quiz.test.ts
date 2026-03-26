@@ -329,6 +329,18 @@ describe('showQuiz', () => {
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
   })
 
+  it('displays domain header after clearAndBanner', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('📝 Quiz — typescript')
+    consoleSpy.mockRestore()
+  })
+
   it('shows all 4 answer options with user selection marker before feedback', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('B') })
