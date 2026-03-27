@@ -1,7 +1,7 @@
 {
   "name": "@georgiosnikitas/brain-break",
-  "version": "1.6.7",
-  "description": "An AI-powered terminal quiz app using the GitHub Copilot SDK.",
+  "version": "1.6.8",
+  "description": "An AI-powered terminal quiz app",
   "type": "module",
   "repository": {
     "type": "git",

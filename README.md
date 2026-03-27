@@ -52,10 +52,10 @@ brew tap georgiosnikitas/brain-break
 brew install brain-break
 ```
 
-Then run it from anywhere:
+### 📦 From npm
 
 ```bash
-brain-break
+npm install -g @georgiosnikitas/brain-break
 ```
 
 ### 📦 From GitHub Packages
@@ -64,17 +64,17 @@ brain-break
 npm install -g @georgiosnikitas/brain-break --registry=https://npm.pkg.github.com
 ```
 
-Then run it from anywhere:
-
-```bash
-brain-break
-```
-
 > **Note:** GitHub Packages requires authentication even for public packages. Add a [personal access token](https://github.com/settings/tokens) with `read:packages` scope to your `~/.npmrc`:
 >
 > ```
 > //npm.pkg.github.com/:_authToken=YOUR_TOKEN
 > ```
+
+After installing via Homebrew, npm, or GitHub Packages, run it from anywhere:
+
+```bash
+brain-break
+```
 
 ### 🛠️ From Source
 
