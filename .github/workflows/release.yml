@@ -137,3 +137,37 @@ jobs:
           git add Formula/brain-break.rb
           git commit -m "brain-break ${VERSION}"
           git push
+
+  npm:
+    needs: homebrew
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '25'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @georgiosnikitas/brain-break@${VERSION} --registry=https://registry.npmjs.org 2>/dev/null; then
+            echo "Version ${VERSION} already published to npm, skipping"
+          else
+            npm publish --access public --registry=https://registry.npmjs.org --provenance
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
