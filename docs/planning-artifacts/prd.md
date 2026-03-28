@@ -63,6 +63,8 @@ editHistory:
     changes: 'Cross-cutting terminal rendering statement added to Functional Requirements preamble; NFR 5 (Terminal Screen Management) added'
   - date: '2026-03-28'
     changes: 'Feature 6 (View History) updated: history navigation now includes an "Explain answer" option alongside Previous/Next/Back. Selecting it calls the AI provider to generate a concise explanation of the correct answer — same flow as Feature 3 quiz explain — displayed inline on the same screen as the question detail. After explanation is shown, the menu reduces to Previous/Next/Back (no redundant Explain while explanation is visible); navigating away and returning to the same question makes Explain available again. User Journeys Long-term updated to reference explain-from-history as an active learning tool.'
+  - date: '2026-03-28'
+    changes: 'Feature 13 (Explanation Drill-Down) added: after viewing an AI-generated explanation (in both quiz and history contexts), the user can select \"Teach me more\" to receive a concise micro-lesson on the underlying concept. Feature 3 and Feature 6 updated with Teach me more option in post-explanation navigation. Feature 3 \"Exit quiz\" renamed to \"Back\" throughout. Product Scope updated from 12 to 13 capabilities. FR preamble updated. User Journeys Aha Moment and Long-term updated to reference the drill-down learning loop.'
 ---
 
 # Product Requirements Document: brain-break
@@ -116,7 +118,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 12 capabilities define the complete MVP:
+The following 13 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -130,6 +132,7 @@ The following 12 capabilities define the complete MVP:
 10. Coffee Supporter Screen
 11. Welcome Screen
 12. Static Banner
+13. Explanation Drill-Down
 
 ### Out of Scope
 
@@ -218,11 +221,11 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 - Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
 - History persists between sessions automatically
 
-**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. They come back and get it right next time. The score rises. *That feedback loop is the product.*
+**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. Intrigued, they hit "Teach me more" and get a one-minute micro-lesson on the concept — connecting the question to deeper principles they hadn't considered. They come back and get it right next time. The score rises. *That feedback loop is the product.*
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions and hit "Explain answer" to reinforce understanding — turning history from a passive record into an active learning tool. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -281,7 +284,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 12 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 13 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -344,10 +347,10 @@ The following 12 features define the complete MVP capability set. Each feature i
 - A timer starts silently when the question is displayed and stops when the user submits their answer — no visible countdown is shown during the question
 - The response time is recorded for every question
 - After answering, the post-answer feedback is rendered **on the same screen** as the original question — no terminal clear or screen transition occurs between the question display and the feedback panel. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if wrong, time taken, speed tier (fast / normal / slow), and score delta
-- After the feedback panel, the user is presented with three options: **Next question**, **Explain answer**, and **Exit quiz**
+- After the feedback panel, the user is presented with three options: **Next question**, **Explain answer**, and **Back**
 - Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect — displayed inline below the feedback panel using the active language and tone settings; a loading spinner is shown during generation
-- After the explanation is displayed, the user is returned to a two-option prompt: **Next question** and **Exit quiz** (explain is not offered again for the same question)
-- If the AI call for the explanation fails, a warning message is displayed (e.g. *"Could not generate explanation."*) and the user is returned to the Next/Exit prompt — the failure is non-critical and does not interrupt the quiz session
+- After the explanation is displayed, the user is presented with three options: **Teach me more**, **Next question**, and **Back** (Explain is not offered again for the same question)
+- If the AI call for the explanation fails, a warning message is displayed (e.g. *"Could not generate explanation."*) and the user is returned to the Next/Back prompt — the failure is non-critical and does not interrupt the quiz session
 
 ### Feature 4 — Scoring System
 
@@ -402,7 +405,7 @@ Every answered question is recorded with:
 - Each entry displays all fields recorded per question (see Feature 5 — Persistent History)
 - Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as Feature 3 (Interactive Terminal Quiz) with the active language and tone settings; a loading spinner is shown during generation
 - The explanation is displayed inline on the same screen as the question detail — no terminal clear or screen transition occurs; the user sees the question, their answer, all recorded fields, and the explanation together
-- After the explanation is displayed, the navigation menu re-appears with Previous, Next, and Back (Explain is not shown while the explanation is already visible on screen). If the user navigates away and returns to the same question, Explain answer is available again
+- After the explanation is displayed, the navigation menu re-appears with Teach me more, Previous, Next, and Back (Explain is not shown while the explanation is already visible on screen). If the user navigates away and returns to the same question, Explain answer is available again
 - If the AI call for the explanation fails, a warning message is displayed (e.g., *"Could not generate explanation."*) and the user is returned to the navigation menu — the failure is non-critical and does not interrupt history browsing
 
 ### Feature 7 — View Stats Command
@@ -528,6 +531,15 @@ All interactive menus throughout the application use full-row background highlig
 - The banner is rendered via a shared `clearAndBanner()` utility in `utils/screen.ts` that calls `clearScreen()` followed by `banner()`
 - The banner applies to: home screen, domain sub-menu, quiz question display, post-answer feedback, history navigation, stats dashboard, archived domains list, settings screen, and coffee supporter screen
 - The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) — they render their own branded header layout
+
+### Feature 13 — Explanation Drill-Down
+
+- After an AI-generated explanation is displayed — in both the quiz post-answer flow (Feature 3) and history navigation (Feature 6) — the user is presented with a **Teach me more** option alongside the existing navigation controls
+- Selecting **Teach me more** calls the AI provider to generate a concise micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept behind the question — going deeper than the initial explanation to cover foundational principles, related concepts, and practical context
+- The micro-lesson is displayed inline below the explanation on the same screen — no terminal clear or screen transition occurs; the user sees the question, feedback, explanation, and micro-lesson together; a loading spinner is shown during generation; the micro-lesson uses the active language and tone settings
+- After the micro-lesson is displayed, the **Teach me more** option is removed — the user sees only the remaining navigation controls (Next question / Back in the quiz context; Previous / Next / Back in the history context). Teach me more is not offered again for the same question while the micro-lesson is visible
+- If the user navigates away and returns to the same question, **Teach me more** is available again only after selecting **Explain answer** again — micro-lesson availability follows explanation availability
+- If the AI call for the micro-lesson fails, a warning message is displayed (e.g., *"Could not generate micro-lesson."*) and the user is returned to the navigation controls — the failure is non-critical and does not interrupt the session
 
 ---
 

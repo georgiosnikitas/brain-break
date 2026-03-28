@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt, buildMicroLessonPrompt } from './prompts.js'
 import { defaultSettings, type SettingsFile } from '../domain/schema.js'
 
 const englishNaturalSettings = defaultSettings()
@@ -263,5 +263,77 @@ describe('buildVerificationPrompt', () => {
     const verifyIdx = prompt.indexOf('answer-verification engine')
     expect(voiceIdx).toBeGreaterThanOrEqual(0)
     expect(verifyIdx).toBeGreaterThan(voiceIdx)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildMicroLessonPrompt
+// ---------------------------------------------------------------------------
+describe('buildMicroLessonPrompt', () => {
+  const explanation = 'TypeScript is a typed superset of JavaScript.'
+
+  it('includes question text, all options, correct answer, and explanation', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation)
+    expect(prompt).toContain('What is TypeScript?')
+    expect(prompt).toContain('A) A typed JS superset')
+    expect(prompt).toContain('B) A framework')
+    expect(prompt).toContain('C) A runtime')
+    expect(prompt).toContain('D) A test tool')
+    expect(prompt).toContain('Correct answer: A')
+    expect(prompt).toContain('TypeScript is a typed superset of JavaScript.')
+  })
+
+  it('instructs model to reply with only the micro-lesson', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation)
+    expect(prompt).toContain('Reply with ONLY the micro-lesson')
+  })
+
+  it('instructs 3–5 paragraphs covering foundational principles', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation)
+    expect(prompt).toContain('3–5 paragraphs')
+    expect(prompt).toContain('foundational principles')
+    expect(prompt).toContain('related concepts')
+    expect(prompt).toContain('practical context')
+  })
+
+  it('instructs to go beyond the explanation already provided', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation)
+    expect(prompt).toContain('Go beyond the explanation already provided')
+  })
+
+  it('no voice instruction when no settings provided', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('no voice instruction for English/natural settings', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation, englishNaturalSettings)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('injects voice instruction for non-default settings', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation, greekPirateSettings)
+    expect(prompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('voice instruction appears before micro-lesson instruction', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, explanation, greekPirateSettings)
+    const voiceIdx = prompt.indexOf('Respond in Greek')
+    const lessonIdx = prompt.indexOf('micro-lesson')
+    expect(voiceIdx).toBeGreaterThanOrEqual(0)
+    expect(lessonIdx).toBeGreaterThan(voiceIdx)
+  })
+
+  it('sanitizes newlines in question text', () => {
+    const q = { ...sampleQuestion, question: 'What is\nTypeScript?' }
+    const prompt = buildMicroLessonPrompt(q, explanation)
+    expect(prompt).toContain('What is TypeScript?')
+    expect(prompt).not.toContain('What is\nTypeScript?')
+  })
+
+  it('sanitizes newlines in explanation text', () => {
+    const prompt = buildMicroLessonPrompt(sampleQuestion, 'Line one\nLine two')
+    expect(prompt).toContain('Line one Line two')
+    expect(prompt).not.toContain('Line one\nLine two')
   })
 })

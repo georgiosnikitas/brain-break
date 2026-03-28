@@ -32,6 +32,7 @@ vi.mock('../ai/client.js', async (importOriginal) => {
     ...actual,
     generateQuestion: vi.fn(),
     generateExplanation: vi.fn(),
+    generateMicroLesson: vi.fn(),
   }
 })
 
@@ -50,7 +51,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
-import { generateQuestion, generateExplanation, AI_ERRORS } from '../ai/client.js'
+import { generateQuestion, generateExplanation, generateMicroLesson, AI_ERRORS } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
@@ -59,6 +60,7 @@ import { showQuiz } from './quiz.js'
 
 const mockGenerateQuestion = vi.mocked(generateQuestion)
 const mockGenerateExplanation = vi.mocked(generateExplanation)
+const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 const mockReadDomain = vi.mocked(readDomain)
 const mockWriteDomain = vi.mocked(writeDomain)
 const mockReadSettings = vi.mocked(readSettings)
@@ -546,20 +548,21 @@ describe('showQuiz', () => {
     warnSpy.mockRestore()
   })
 
-  it('shows next/exit only (no explain) after explain is used', async () => {
+  it('shows teach/next/exit after explain is used (post-explain action)', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
     mockSelect
       .mockResolvedValueOnce('A')        // answer
       .mockResolvedValueOnce('explain')  // explain
-      .mockResolvedValueOnce('exit')     // next/exit after explain
+      .mockResolvedValueOnce('exit')     // post-explain (teach/next/exit)
 
     await showQuiz('typescript')
 
-    // 3rd select call is the post-explain prompt (next/exit only)
+    // 3rd select call is the post-explain prompt (teach/next/exit)
     const postExplainCall = mockSelect.mock.calls[2]
     const choices = (postExplainCall[0] as any).choices
     const values = choices.map((c: any) => c.value)
+    expect(values).toContain('teach')
     expect(values).toContain('next')
     expect(values).toContain('exit')
     expect(values).not.toContain('explain')
@@ -595,7 +598,7 @@ describe('showQuiz', () => {
     mockSelect
       .mockResolvedValueOnce('A')        // 1st answer
       .mockResolvedValueOnce('explain')  // explain
-      .mockResolvedValueOnce('next')     // next after explain
+      .mockResolvedValueOnce('next')     // next after explain (post-explain action)
       .mockResolvedValueOnce('A')        // 2nd answer
       .mockResolvedValueOnce('exit')     // exit
 
@@ -603,6 +606,186 @@ describe('showQuiz', () => {
 
     expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
     expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+  })
+
+  // -------------------------------------------------------------------------
+  // Teach me more flow
+  // -------------------------------------------------------------------------
+  it('displays micro-lesson when user selects teach after explain', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation text.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Deep dive into TypeScript type system...' })
+    mockSelect
+      .mockResolvedValueOnce('A')        // answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('teach')    // teach me more
+      .mockResolvedValueOnce('exit')     // next/exit after teach
+
+    await showQuiz('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('Deep dive into TypeScript type system...')
+    expect(mockGenerateMicroLesson).toHaveBeenCalledOnce()
+    consoleSpy.mockRestore()
+  })
+
+  it('calls generateMicroLesson with correct arguments', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'The explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('B')        // answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('teach')    // teach
+      .mockResolvedValueOnce('exit')     // exit
+
+    await showQuiz('typescript')
+
+    const [question, explanation, settings] = mockGenerateMicroLesson.mock.calls[0]
+    expect(question.question).toBe('What is TypeScript?')
+    expect(explanation).toBe('The explanation.')
+    expect(settings).toBeDefined()
+  })
+
+  it('starts and stops teach spinner around generateMicroLesson call', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // mockStart called for: question spinner + explain spinner + teach spinner
+    expect(mockStart).toHaveBeenCalledTimes(3)
+    expect(mockStop).toHaveBeenCalledTimes(3)
+  })
+
+  it('shows warning on teach failure and falls through to next/exit', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate micro-lesson'))
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    warnSpy.mockRestore()
+  })
+
+  it('shows next/exit only (no teach) after micro-lesson is displayed', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')        // answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('teach')    // teach
+      .mockResolvedValueOnce('exit')     // next/exit after teach
+
+    await showQuiz('typescript')
+
+    // 4th select call is the post-teach prompt (next/exit only)
+    const postTeachCall = mockSelect.mock.calls[3]
+    const choices = (postTeachCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('next')
+    expect(values).toContain('exit')
+    expect(values).not.toContain('teach')
+    expect(values).not.toContain('explain')
+  })
+
+  it('navigates home when ExitPromptError during post-explain teach/next/exit prompt', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-explain prompt
+
+    await showQuiz('typescript')
+
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+  })
+
+  it('continues to next question after explain → teach → next', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')        // 1st answer
+      .mockResolvedValueOnce('explain')  // explain
+      .mockResolvedValueOnce('teach')    // teach
+      .mockResolvedValueOnce('next')     // next after teach
+      .mockResolvedValueOnce('A')        // 2nd answer
+      .mockResolvedValueOnce('exit')     // exit
+
+    await showQuiz('typescript')
+
+    expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
+    expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+  })
+
+  it('shows next/exit after explain failure (no teach option)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('exit')     // next/exit after explain failure
+
+    await showQuiz('typescript')
+
+    // 3rd select call is the post-explain-failure prompt (next/exit only, no teach)
+    const postFailCall = mockSelect.mock.calls[2]
+    const choices = (postFailCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('next')
+    expect(values).toContain('exit')
+    expect(values).not.toContain('teach')
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    warnSpy.mockRestore()
+  })
+
+  it('skips teach option and goes to next/exit when AI returns empty explanation', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: '' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('exit')     // next/exit prompt (no teach offered)
+
+    await showQuiz('typescript')
+
+    // 3rd select call must not include teach
+    const postEmptyCall = mockSelect.mock.calls[2]
+    const choices = (postEmptyCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('next')
+    expect(values).toContain('exit')
+    expect(values).not.toContain('teach')
+    expect(mockGenerateMicroLesson).not.toHaveBeenCalled()
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 })

@@ -149,3 +149,25 @@ User's answer: ${userAnswer}
 
 Reply with ONLY the explanation — no JSON, no quotes, no extra text.`
 }
+
+export function buildMicroLessonPrompt(
+  question: QuestionResponse,
+  explanation: string,
+  settings?: SettingsFile,
+): string {
+  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
+  const safeQuestion = sanitizeInput(question.question)
+  const safeExplanation = sanitizeInput(explanation)
+  return `${voiceInstruction}The user answered a quiz question and has already seen an explanation. Now generate a deeper micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept. Cover foundational principles, related concepts, and practical context. Go beyond the explanation already provided.
+
+Question: "${safeQuestion}"
+Options:
+  A) ${sanitizeInput(question.options.A)}
+  B) ${sanitizeInput(question.options.B)}
+  C) ${sanitizeInput(question.options.C)}
+  D) ${sanitizeInput(question.options.D)}
+Correct answer: ${question.correctAnswer}
+Explanation already provided: "${safeExplanation}"
+
+Reply with ONLY the micro-lesson — no JSON, no quotes, no extra text.`
+}

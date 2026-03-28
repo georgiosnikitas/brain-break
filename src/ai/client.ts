@@ -4,7 +4,7 @@ import type { AiProvider } from './providers.js'
 import type { Result, SettingsFile, AnswerOption } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt, QuestionResponseSchema, VerificationResponseSchema } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildMicroLessonPrompt, buildVerificationPrompt, QuestionResponseSchema, VerificationResponseSchema } from './prompts.js'
 import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
 
 // Re-export AI_ERRORS so downstream consumers keep working without import path changes
@@ -219,6 +219,27 @@ export async function generateExplanation(
     const prompt = buildExplanationPrompt(question, userAnswer, settings)
     const explanation = (await provider.generateCompletion(prompt)).trim()
     return { ok: true, data: explanation }
+  } catch (err) {
+    return { ok: false, error: classifyError(err, effectiveSettings) }
+  }
+}
+
+export async function generateMicroLesson(
+  question: Question,
+  explanation: string,
+  settings?: SettingsFile,
+): Promise<Result<string>> {
+  const effectiveSettings = settings ?? defaultSettings()
+  const providerResult = createProvider(effectiveSettings)
+  if (!providerResult.ok) {
+    return { ok: false, error: providerResult.error }
+  }
+  const provider = providerResult.data
+
+  try {
+    const prompt = buildMicroLessonPrompt(question, explanation, settings)
+    const lesson = (await provider.generateCompletion(prompt)).trim()
+    return { ok: true, data: lesson }
   } catch (err) {
     return { ok: false, error: classifyError(err, effectiveSettings) }
   }

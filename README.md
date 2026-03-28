@@ -27,6 +27,7 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 - Domain-based quiz sessions — create any topic like `java-programming`, `greek-mythology`, or `thai-cuisine`
 - AI-generated multiple-choice questions with automatic deduplication
 - **Explain answer** — ask the AI to explain why the correct answer is right after any question
+- **Teach me more** — drill deeper with AI-generated micro-lessons after viewing an explanation
 - Adaptive scoring and difficulty progression based on correctness and response speed
 - **Configurable language and tone** — 7 tone options including humorous, sarcastic, and pirate
 - **Domain sub-menu** — play, history, stats, archive, and delete per domain

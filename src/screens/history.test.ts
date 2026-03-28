@@ -21,6 +21,7 @@ vi.mock('../router.js', () => ({
 
 vi.mock('../ai/client.js', () => ({
   generateExplanation: vi.fn(),
+  generateMicroLesson: vi.fn(),
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
@@ -32,7 +33,7 @@ import { readDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
 import { clearAndBanner } from '../utils/screen.js'
-import { generateExplanation } from '../ai/client.js'
+import { generateExplanation, generateMicroLesson } from '../ai/client.js'
 import { showHistory, buildPageChoices } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
@@ -40,6 +41,7 @@ const mockReadSettings = vi.mocked(readSettings)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 const mockGenerateExplanation = vi.mocked(generateExplanation)
+const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +77,7 @@ beforeEach(() => {
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockReadSettings.mockResolvedValue({ ok: true, data: { provider: null, language: 'English', tone: 'natural' as const, openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true } })
   mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Test explanation text' })
+  mockGenerateMicroLesson.mockResolvedValue({ ok: true, data: 'Test micro-lesson text' })
 })
 
 // ---------------------------------------------------------------------------
@@ -126,10 +129,28 @@ describe('buildPageChoices', () => {
     expect(values).toContain('back')
   })
 
-  it('shows only Back when explainVisible is true and single question', () => {
-    const choices = buildPageChoices(0, 1, true) as Array<{ name: string; value: string }>
+  it('shows Teach me more (not Explain) when explainVisible is true and teachVisible is false', () => {
+    const choices = buildPageChoices(0, 1, true, false) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('teach')
+    expect(values).not.toContain('explain')
+    expect(values).toContain('back')
+  })
+
+  it('shows only Back when explainVisible true and teachVisible true (micro-lesson shown, single question)', () => {
+    const choices = buildPageChoices(0, 1, true, true) as Array<{ name: string; value: string }>
     const values = choices.map((c) => c.value).filter(Boolean)
     expect(values).toEqual(['back'])
+  })
+
+  it('hides Teach me more when teachVisible is true on multi-question view', () => {
+    const choices = buildPageChoices(1, 3, true, true) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).not.toContain('teach')
+    expect(values).not.toContain('explain')
+    expect(values).toContain('prev')
+    expect(values).toContain('next')
+    expect(values).toContain('back')
   })
 })
 
@@ -557,5 +578,159 @@ describe('showHistory — ExitPromptError', () => {
     vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await expect(showHistory('typescript')).rejects.toThrow('empty history select failure')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showHistory — teach me more
+// ---------------------------------------------------------------------------
+describe('showHistory — teach me more', () => {
+  it('"Teach me more" appears in choices after explanation is shown', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    // explain → then back
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const secondValues = secondChoices.map((c) => c.value).filter(Boolean)
+    expect(secondValues).toContain('teach')
+    expect(secondValues).not.toContain('explain')
+  })
+
+  it('calls generateMicroLesson with correct arguments', async () => {
+    const record = makeRecord({ question: 'What is TS?', userAnswer: 'B', correctAnswer: 'A', difficultyLevel: 3 })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Explanation of TS.' })
+    // explain → teach → back
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(mockGenerateMicroLesson).toHaveBeenCalledOnce()
+    const [question, explanationText, settings] = mockGenerateMicroLesson.mock.calls[0]
+    expect(question.question).toBe('What is TS?')
+    expect(question.correctAnswer).toBe('A')
+    expect(explanationText).toBe('Explanation of TS.')
+    expect(settings).toBeDefined()
+  })
+
+  it('renders micro-lesson inline after Teach me more is selected', async () => {
+    mockGenerateMicroLesson.mockResolvedValue({ ok: true, data: 'Deep dive into TypeScript generics.' })
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('Deep dive into TypeScript generics.')
+    consoleSpy.mockRestore()
+  })
+
+  it('"Teach me more" is removed from choices after micro-lesson is displayed', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // Call 2 (after teach): no teach option
+    const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
+    const thirdValues = thirdChoices.map((c) => c.value).filter(Boolean)
+    expect(thirdValues).not.toContain('teach')
+    expect(thirdValues).not.toContain('explain')
+  })
+
+  it('"Teach me more" available again after navigating away, back, and re-explaining', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    // explain → teach → next → prev → explain → back
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('next')
+      .mockResolvedValueOnce('prev')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // Call 5 (after second explain): teach should be available
+    const call5Choices = mockSelect.mock.calls[5][0].choices as unknown as Array<{ name: string; value: string }>
+    const call5Values = call5Choices.map((c) => c.value).filter(Boolean)
+    expect(call5Values).toContain('teach')
+    expect(call5Values).not.toContain('explain')
+  })
+
+  it('shows warning and keeps "Teach me more" available when AI call fails', async () => {
+    mockGenerateMicroLesson.mockResolvedValue({ ok: false, error: 'Network error' })
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate micro-lesson'))
+    // Third call: teach still available after failure
+    const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
+    const thirdValues = thirdChoices.map((c) => c.value).filter(Boolean)
+    expect(thirdValues).toContain('teach')
+    // Warning must survive on screen — clearAndBanner only called once (initial render)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+    warnSpy.mockRestore()
+  })
+
+  it('single-entry history shows only Back after micro-lesson is displayed', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // Third call: only Back (no next/prev/teach/explain)
+    const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
+    const thirdValues = thirdChoices.map((c) => c.value).filter(Boolean)
+    expect(thirdValues).toEqual(['back'])
+  })
+
+  it('does not call clearAndBanner when rendering micro-lesson inline', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // clearAndBanner only called once for initial render, not after teach
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
   })
 })

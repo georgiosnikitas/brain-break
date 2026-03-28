@@ -1,6 +1,6 @@
 {
   "name": "@georgiosnikitas/brain-break",
-  "version": "1.6.10",
+  "version": "1.6.11",
   "description": "An AI-powered terminal quiz app",
   "type": "module",
   "repository": {

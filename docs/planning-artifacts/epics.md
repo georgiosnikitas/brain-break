@@ -4,6 +4,8 @@ lastEdited: '2026-03-28'
 status: 'complete'
 editHistory:
   - date: '2026-03-28'
+    changes: 'FR38 added (Explanation Drill-Down): after viewing an AI explanation in both quiz and history, user can select \"Teach me more\" to get a micro-lesson on the underlying concept. FR8 updated (\"Exit quiz\" → \"Back\"). FR35 updated (post-explanation prompt expanded to Teach me more/Next/Back; \"Exit quiz\" → \"Back\"). FR37 updated (post-explanation navigation expanded to include Teach me more). FR Coverage Map updated with FR38 → Epic 3, Epic 4. Epic 3 and Epic 4 FRs covered updated. Story 3.4 and Story 4.3 ACs updated with Teach me more and Back references. Story 3.8 (Explanation Drill-Down — Quiz) added to Epic 3. Story 4.4 (Explanation Drill-Down — History) added to Epic 4. Reflects PRD Feature 13 (2026-03-28).'
+  - date: '2026-03-28'
     changes: 'FR37 added (Explain Answer from History): history navigation includes an Explain answer option that uses the same AI explain flow as Feature 3. FR12 updated (navigation expanded to Previous/Next/Explain answer/Back). FR Coverage Map updated with FR37 → Epic 4. Epic 4 description and FRs covered updated. Story 4.3 (Explain Answer from History) added to Epic 4. Reflects PRD Feature 6 update (2026-03-28).'
   - date: '2026-03-25'
     changes: 'Source code alignment pass: Story 3.1 rewritten — Copilot-only SDK integration replaced with provider-agnostic AI client using createProvider(settings). Story 3.3 ACs updated — per-provider error constants (AI_ERRORS.NETWORK_<PROVIDER>/AUTH_<PROVIDER>) replace flat NETWORK/AUTH errors; error returns user to domain sub-menu instead of exiting app. Story 4.1 rewritten — paginated 10-per-page history replaced with single-question navigation (Previous/Next/Back controls, progress indicator). Story 5.1 tone enum updated from 4 values (normal, enthusiastic, robot, pirate) to 7 (natural, expressive, calm, humorous, sarcastic, robot, pirate); default tone "normal" → "natural". Story 5.2 tone selector list updated to match 7 tones. Story 5.3 neutral case tone reference "normal" → "natural". FR27 and Stories 7.2/7.4 Gemini env var corrected from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY. Story 8.1 tagline styling corrected from bold yellow to styled line with bold cyan > / dim white typewriter text / bold cyan _ per FR31.'
@@ -62,7 +64,7 @@ FR6: Questions are generated on demand via the user's configured AI provider (Gi
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
-FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Exit quiz.
+FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Back.
 
 FR9: Score is per-domain, cumulative, and never resets. Score delta = base points × speed multiplier (rounded to nearest integer). Base points by difficulty: L1=10, L2=20, L3=30, L4=40, L5=50. Speed multipliers: Fast+Correct=×2, Normal+Correct=×1, Slow+Correct=×0.5, Fast+Incorrect=−1×, Normal+Incorrect=−1.5×, Slow+Incorrect=−2×.
 
@@ -116,11 +118,13 @@ FR33: The Settings screen includes a "🎬 Welcome screen" toggle (displayed as 
 
 FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
 
-FR35: After answering a quiz question and viewing the feedback panel, the user is presented with three options: Next question, Explain answer, and Exit quiz. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a two-option prompt: Next question and Exit quiz (explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Exit prompt without interrupting the quiz session.
-
-FR37: The history navigation screen includes an "Explain answer" option that calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as the quiz (Feature 3) with the active language and tone settings. The explanation is displayed inline on the same screen as the question detail. While the explanation is visible, the navigation menu shows Previous/Next/Back only (Explain is hidden). If the user navigates away and returns to the same question, Explain answer is available again. If the AI call fails, a non-critical warning is displayed and the user returns to the navigation menu.
+FR35: After answering a quiz question and viewing the feedback panel, the user is presented with three options: Next question, Explain answer, and Back. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a three-option prompt: Teach me more, Next question, and Back (Explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Back prompt without interrupting the quiz session.
 
 FR36: The post-answer options/result block in the quiz session and the question detail block in the history screen are rendered by a single shared function `renderQuestionDetail(record: QuestionRecord, opts?: { showTimestamp?: boolean })` exported from `utils/format.ts`. The function renders in order: all four answer options (A–D) with `►` marking the user's answer, a blank separator line, correct/incorrect status, the correct answer reveal when the user was wrong (highlighted in green), a compound time/speed/difficulty line, and a score delta line. When `opts.showTimestamp` is `true`, an answered-at timestamp line is appended (used by history only). The quiz post-answer screen calls `renderQuestionDetail(record)` without a timestamp. The history detail view prints the question text as a plain (non-bold, non-numbered) line and calls `renderQuestionDetail(record, { showTimestamp: true })`. The private `showAnswerOptions()` and `showFeedback()` functions in `screens/quiz.ts` and the body of `displayEntry()` options/result block in `screens/history.ts` are replaced by calls to this shared function. The `globalIndex` parameter is removed from `displayEntry()` since numbered headers are no longer rendered.
+
+FR37: The history navigation screen includes an "Explain answer" option that calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as the quiz (Feature 3) with the active language and tone settings. The explanation is displayed inline on the same screen as the question detail. While the explanation is visible, the navigation menu shows Teach me more, Previous, Next, and Back (Explain is hidden). If the user navigates away and returns to the same question, Explain answer is available again. If the AI call fails, a non-critical warning is displayed and the user returns to the navigation menu.
+
+FR38: After an AI-generated explanation is displayed — in both the quiz post-answer flow (Feature 3) and history navigation (Feature 6) — the user is presented with a "Teach me more" option alongside the existing navigation controls. Selecting "Teach me more" calls the AI provider to generate a concise micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept behind the question — going deeper than the initial explanation to cover foundational principles, related concepts, and practical context. The micro-lesson is displayed inline below the explanation on the same screen using the active language and tone settings, with a loading spinner during generation. After the micro-lesson is displayed, "Teach me more" is removed from the navigation controls. If the user navigates away and returns to the same question, "Teach me more" is available again only after selecting "Explain answer" again — micro-lesson availability follows explanation availability. If the AI call fails, a non-critical warning is displayed and the user is returned to the navigation controls.
 
 ### NonFunctional Requirements
 
@@ -201,6 +205,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR35 | Epic 3 | Post-answer "Explain answer" option — AI-generated explanation of the correct answer |
 | FR36 | Epic 3 | Unified question detail rendering — shared `renderQuestionDetail()` used in quiz feedback and history detail view |
 | FR37 | Epic 4 | Explain answer from history — AI-generated explanation available in View History navigation |
+| FR38 | Epic 3, Epic 4 | Explanation Drill-Down — "Teach me more" micro-lesson after AI explanation in quiz and history |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -226,12 +231,12 @@ Users can launch the app, see their domain list with scores, create a new domain
 
 ### Epic 3: AI-Powered Adaptive Quiz
 Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, graceful error handling if the Copilot API is unavailable, and an on-demand AI explanation of the correct answer after every question.
-**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11, FR35
+**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11, FR35, FR38
 **NFRs covered:** NFR1 (≤ 5s generation + spinner), NFR2 (API error handling)
 
 ### Epic 4: Learning Insights
 Users can review their complete question history for any domain (single-question navigation with all recorded fields), request an AI-generated explanation for any past question, and view a stats dashboard showing score, accuracy, difficulty level, time played, score trend, and return streak — giving them a genuine signal of their knowledge growth over time and turning history from a passive record into an active learning tool.
-**FRs covered:** FR12, FR13, FR37
+**FRs covered:** FR12, FR13, FR37, FR38
 ### Epic 5: Global Settings
 Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
 **FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19
@@ -797,7 +802,7 @@ So that I can learn from every question immediately instead of having to look it
 
 **Given** I have answered a quiz question and the feedback panel is displayed  
 **When** I inspect the post-answer navigation options  
-**Then** three options are shown: "💡 Explain answer", "▶️  Next question", and "🚪 Exit quiz"  
+**Then** three options are shown: "💡 Explain answer", "▶️  Next question", and "🚪 Back"  
 
 **Given** I select "💡 Explain answer"  
 **When** the action is triggered  
@@ -808,7 +813,7 @@ So that I can learn from every question immediately instead of having to look it
 
 **Given** the explanation has been displayed  
 **When** I inspect the post-explanation navigation options  
-**Then** two options are shown: "▶️  Next question" and "🚪 Exit quiz" — the "Explain answer" option is no longer available for this question  
+**Then** three options are shown: "📚 Teach me more", "▶️  Next question", and "🚪 Back" — the "Explain answer" option is no longer available for this question  
 
 **Given** `ai/prompts.ts` is updated  
 **When** I call `buildExplanationPrompt(question, userAnswer, settings)`  
@@ -823,16 +828,16 @@ So that I can learn from every question immediately instead of having to look it
 
 **Given** the AI call for explanation fails (network error, auth error, or any other failure)  
 **When** `generateExplanation()` returns `{ ok: false }`  
-**Then** a warning message is displayed (e.g. "Could not generate explanation.") and the user is returned to the Next/Exit prompt  
+**Then** a warning message is displayed (e.g. "Could not generate explanation.") and the user is returned to the Next/Back prompt  
 **And** the quiz session continues normally — the failure is non-critical  
 
-**Given** I press Ctrl+C on the explain/next/exit prompt  
+**Given** I press Ctrl+C on the explain/next/back prompt  
 **When** the exit is detected  
 **Then** the app handles it gracefully and returns to the domain sub-menu  
 
 **Given** `ai/client.test.ts`, `ai/prompts.test.ts`, and `screens/quiz.test.ts` are updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: explain option present in post-answer prompt, `generateExplanation()` success and failure paths, explanation displayed after selection, explain option removed after use, language/tone injected into explanation prompt, graceful degradation on API failure  
+**Then** all tests pass, covering: explain option present in post-answer prompt, `generateExplanation()` success and failure paths, explanation displayed after selection, explain option removed after use, Teach me more option shown after explanation, language/tone injected into explanation prompt, graceful degradation on API failure  
 
 ---
 
@@ -911,7 +916,7 @@ So that the experience is consistent and I recognise the same layout whether I j
 **When** a user answers a question and the feedback is rendered  
 **Then** the private `showAnswerOptions()` and `showFeedback()` functions are removed  
 **And** a single call to `renderQuestionDetail(record)` (without timestamp) replaces the `showAnswerOptions(question, userAnswer)` + `console.log()` + `showFeedback(...)` call site  
-**And** the post-answer actions — 💡 Explain answer / ▶️ Next question / 🚪 Exit quiz — are fully preserved and render immediately after `renderQuestionDetail(record)`, unchanged  
+**And** the post-answer actions — 💡 Explain answer / ▶️ Next question / 🚪 Back — are fully preserved and render immediately after `renderQuestionDetail(record)`, unchanged  
 
 **Given** `screens/history.ts` is updated  
 **When** a history entry is displayed  
@@ -928,6 +933,55 @@ So that the experience is consistent and I recognise the same layout whether I j
 **Given** `utils/format.test.ts`, `screens/quiz.test.ts`, and `screens/history.test.ts` are updated  
 **When** I run `npm test`  
 **Then** all tests pass, covering: `renderQuestionDetail` correct path (all 4 options, `►` on correct key, `✓ Correct!` present, no reveal, time/speed/difficulty and score lines), incorrect path (`✗ Incorrect`, reveal line, `►` on wrong key), `showTimestamp: true` appends timestamp, omitted `showTimestamp` produces no timestamp line, all existing quiz and history tests pass with no behavioral regressions  
+
+---
+
+### Story 3.8: Explanation Drill-Down (Quiz)
+
+As a user,
+I want a "Teach me more" option after viewing an AI-generated explanation so the AI generates a deeper micro-lesson on the underlying concept,
+So that I can go beyond the immediate answer and understand the foundational principles behind the question.
+
+**Acceptance Criteria:**
+
+**Given** an AI-generated explanation has been displayed for the current quiz question  
+**When** I inspect the post-explanation navigation options  
+**Then** three options are shown: "📚 Teach me more", "▶️  Next question", and "🚪 Back"  
+
+**Given** I select "📚 Teach me more"  
+**When** the action is triggered  
+**Then** an `ora` spinner starts with "Generating micro-lesson..." while `generateMicroLesson()` is called  
+**And** the spinner stops and the micro-lesson is displayed inline below the explanation on the same screen — no terminal clear or screen transition occurs  
+**And** the micro-lesson is ~1-minute read (3–5 paragraphs), covering foundational principles, related concepts, and practical context behind the question  
+**And** the micro-lesson uses the active language and tone from global settings  
+
+**Given** the micro-lesson has been displayed  
+**When** I inspect the post-micro-lesson navigation options  
+**Then** two options are shown: "▶️  Next question" and "🚪 Back" — "Teach me more" is no longer available for this question  
+
+**Given** `ai/prompts.ts` is updated  
+**When** I call `buildMicroLessonPrompt(question, explanation, settings)`  
+**Then** it returns a structured prompt instructing the model to generate a concise micro-lesson on the underlying concept, including the question text, all four options, the correct answer, the explanation already provided, and context instructions for depth  
+**And** the prompt includes the active language and tone voice instruction  
+
+**Given** `ai/client.ts` exports `generateMicroLesson(question, explanation, settings)`  
+**When** called  
+**Then** it calls the active provider via `createProvider(settings).generateCompletion(prompt)` and returns `Result<string>`  
+**And** on success returns `{ ok: true, data: <micro-lesson text> }`  
+**And** on failure returns `{ ok: false, error: <provider-specific error message> }`  
+
+**Given** the AI call for the micro-lesson fails (network error, auth error, or any other failure)  
+**When** `generateMicroLesson()` returns `{ ok: false }`  
+**Then** a warning message is displayed (e.g. "Could not generate micro-lesson.") and the user is returned to the Next/Back prompt  
+**And** the quiz session continues normally — the failure is non-critical  
+
+**Given** I press Ctrl+C on the teach-me-more/next/back prompt  
+**When** the exit is detected  
+**Then** the app handles it gracefully and returns to the domain sub-menu  
+
+**Given** `ai/client.test.ts`, `ai/prompts.test.ts`, and `screens/quiz.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Teach me more option present after explanation is displayed, `generateMicroLesson()` success and failure paths, micro-lesson displayed inline after selection, Teach me more option removed after use, language/tone injected into micro-lesson prompt, graceful degradation on API failure  
 
 ---
 
@@ -1019,7 +1073,7 @@ So that I can reinforce understanding of past questions and turn my history into
 
 **Given** the explanation is already displayed on the screen  
 **When** the navigation menu re-appears  
-**Then** the options are Previous, Next, and Back — Explain answer is hidden while the explanation is visible  
+**Then** the options are Teach me more, Previous, Next, and Back — Explain answer is hidden while the explanation is visible  
 
 **Given** the explanation was previously displayed for a question  
 **When** I navigate away (Previous or Next) and then navigate back to the same question  
@@ -1031,11 +1085,50 @@ So that I can reinforce understanding of past questions and turn my history into
 
 **Given** the domain has exactly 1 history entry  
 **When** I view the entry and select "Explain answer"  
-**Then** the explanation is displayed inline and the navigation menu shows only Explain answer (before explaining) or Back (after explaining) — Previous and Next are not shown for single-entry history  
+**Then** the explanation is displayed inline and the navigation menu shows only Explain answer (before explaining) or Teach me more and Back (after explaining) — Previous and Next are not shown for single-entry history  
 
 **Given** `screens/history.test.ts` is updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: Explain answer option present in navigation, `generateExplanation()` called with correct arguments, explanation rendered inline, Explain hidden after explanation displayed, Explain available again after navigating away and back, AI failure handled gracefully with warning message  
+**Then** all tests pass, covering: Explain answer option present in navigation, `generateExplanation()` called with correct arguments, explanation rendered inline, Explain hidden after explanation displayed, Teach me more option shown after explanation, Explain available again after navigating away and back, AI failure handled gracefully with warning message  
+
+---
+
+### Story 4.4: Explanation Drill-Down (History)
+
+As a user,
+I want a "Teach me more" option after viewing an AI-generated explanation in the history screen so the AI generates a deeper micro-lesson on the underlying concept,
+So that I can turn my question history into a genuine learning resource by exploring concepts in depth.
+
+**Acceptance Criteria:**
+
+**Given** an AI-generated explanation has been displayed for the current history question  
+**When** the navigation menu re-appears  
+**Then** the options include Teach me more, Previous, Next, and Back — Explain answer is hidden  
+
+**Given** I select "Teach me more"  
+**When** the action is triggered  
+**Then** a loading spinner is displayed while `generateMicroLesson()` is called with the question context, the explanation, and the active language/tone settings  
+**And** the micro-lesson (~1-minute read, 3–5 paragraphs) is displayed inline on the same screen below the explanation — no terminal clear or screen transition occurs  
+
+**Given** the micro-lesson has been displayed  
+**When** the navigation menu re-appears  
+**Then** the options are Previous, Next, and Back — Teach me more is no longer available for this question  
+
+**Given** the micro-lesson was previously displayed for a question  
+**When** I navigate away (Previous or Next) and then navigate back to the same question  
+**Then** Teach me more is available again only after selecting Explain answer again — micro-lesson availability follows explanation availability  
+
+**Given** I select "Teach me more" and the AI call fails (network error, auth error, parse error)  
+**When** the error is caught  
+**Then** a warning message is displayed (e.g., "Could not generate micro-lesson.") and I am returned to the navigation menu (Teach me more/Previous/Next/Back) — the failure is non-critical and does not interrupt history browsing  
+
+**Given** the domain has exactly 1 history entry and an explanation has been displayed  
+**When** I select "Teach me more"  
+**Then** the micro-lesson is displayed inline and the navigation menu shows only Back — Previous and Next are not shown for single-entry history  
+
+**Given** `screens/history.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Teach me more option present after explanation, `generateMicroLesson()` called with correct arguments, micro-lesson rendered inline, Teach me more removed after micro-lesson displayed, micro-lesson availability follows explanation availability after navigation, AI failure handled gracefully with warning message  
 
 ---
 

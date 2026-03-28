@@ -170,13 +170,9 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### 5. Explanation Drill-Down / "Teach Me More"
+### ~~5. Explanation Drill-Down / "Teach Me More"~~ ✅ Promoted
 
-**Description:** After "Explain answer," offer a follow-up: "Want to go deeper?" — AI generates a 1-minute micro-lesson on the underlying concept. Extends the quiz into a true learning loop.
-
-**KPIs targeted:** Score growth rate, Knowledge reinforcement
-
-**Complexity:** Small
+**Status:** Promoted to PRD Feature 13 (2026-03-28)
 
 ---
 

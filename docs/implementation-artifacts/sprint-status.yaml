@@ -71,6 +71,9 @@ development_status:
   3-2-scoring-difficulty-progression-logic: done
   3-3-interactive-quiz-loop: done
   3-4-answer-explanation: done
+  3-6-same-screen-quiz-feedback: done
+  3-7-unified-question-detail-rendering: done
+  3-8-explanation-drill-down: done
   epic-3-retrospective: optional
 
   # Epic 4: Learning Insights
@@ -79,6 +82,7 @@ development_status:
   4-2-stats-dashboard: done
   4-3-single-question-history-navigation: done
   4-4-explain-answer-from-history: done
+  4-4-explanation-drill-down-history: done
   epic-4-retrospective: optional
 
   # Epic 5: Global Settings

@@ -14,6 +14,8 @@ editHistory:
     changes: 'Out of Scope: removed "Manual difficulty override by the user" — issue #46 adds starting-difficulty selection at domain creation.'
   - date: '2026-03-25'
     changes: 'MVP Feature Summary: "Interactive terminal quiz" bullet updated to include post-answer AI explanation option. Reflects GitHub issue #48 (FR35).'
+  - date: '2026-03-28'
+    changes: 'MVP Feature Summary updated from 12 to 13 core capabilities: added Explanation Drill-Down ("Teach me more" follow-up after AI explanation in both quiz and history contexts — AI generates a micro-lesson on the underlying concept). Aligns with PRD Feature 13.'
 ---
 
 # Product Brief: brain-break
@@ -109,11 +111,11 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 
 ## MVP Feature Summary
 
-The MVP delivers twelve core capabilities:
+The MVP delivers thirteen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
-- **Interactive terminal quiz** — one question at a time, per-question response timer, immediate correctness feedback with score delta, and an on-demand "Explain answer" option that asks the AI to explain why the correct answer is right
+- **Interactive terminal quiz** — one question at a time, per-question response timer, immediate correctness feedback with score delta, an on-demand "Explain answer" option that asks the AI to explain why the correct answer is right, and a "Teach me more" follow-up that generates a micro-lesson on the underlying concept
 - **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets
 - **Persistent question history** — every answered question stored locally with full detail (answer, timing, score delta, difficulty) per domain
 - **View history command** — single-question navigation with progress indicator for all past questions in the active domain
@@ -123,6 +125,7 @@ The MVP delivers twelve core capabilities:
 - **Coffee supporter screen** — dedicated screen with ASCII QR code linking to the creator's Buy Me a Coffee page
 - **Welcome screen** — on launch (when enabled), a branded splash screen displays gradient-colored ASCII art, a styled subtitle, and the app version — dismissible with Enter; controllable via a `showWelcome` setting (default: on)
 - **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar at the top of the terminal
+- **Explanation drill-down** — after viewing an AI-generated explanation (in both quiz and history), a "Teach me more" option calls the AI to generate a concise micro-lesson on the underlying concept, extending the quiz into a true learning loop
 
 → Full feature specifications and acceptance criteria: [prd.md](prd.md)
 

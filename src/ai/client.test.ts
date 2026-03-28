@@ -26,7 +26,7 @@ vi.mock('./providers.js', async (importOriginal) => {
 })
 
 // Must import after mock setup
-const { generateQuestion, generateMotivationalMessage, generateExplanation, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
+const { generateQuestion, generateMotivationalMessage, generateExplanation, generateMicroLesson, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
 const { createProvider } = await import('./providers.js')
 const mockCreateProvider = vi.mocked(createProvider)
 
@@ -422,6 +422,104 @@ describe('generateExplanation', () => {
     mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
     const result = await generateExplanation(question, 'A')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// generateMicroLesson
+// ---------------------------------------------------------------------------
+describe('generateMicroLesson', () => {
+  const settings = makeSettings('openai')
+  const question = {
+    question: 'What is TypeScript?',
+    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
+    correctAnswer: 'A' as const,
+    difficultyLevel: 2,
+    speedThresholds: { fastMs: 8000, slowMs: 20000 },
+  }
+  const explanation = 'TypeScript is a typed superset of JavaScript.'
+
+  it('returns ok:true with micro-lesson string on success', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('TypeScript builds on JavaScript by adding static types...')
+
+    const result = await generateMicroLesson(question, explanation, settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('TypeScript builds on JavaScript by adding static types...')
+  })
+
+  it('trims whitespace from the returned micro-lesson', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('  Micro-lesson content.  \n')
+
+    const result = await generateMicroLesson(question, explanation, settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('Micro-lesson content.')
+  })
+
+  it('returns NO_PROVIDER error when provider is not configured', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
+
+    const result = await generateMicroLesson(question, explanation, makeSettings(null))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+
+  it('returns provider-specific error on network error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
+
+    const result = await generateMicroLesson(question, explanation, makeSettings('gemini'))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_GEMINI)
+  })
+
+  it('returns provider-specific error on auth error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    const result = await generateMicroLesson(question, explanation, makeSettings('copilot'))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH_COPILOT)
+  })
+
+  it('passes settings to the prompt (voice instruction injected)', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Micro-lesson in Greek!')
+    const settings = makeSettings('openai')
+    settings.language = 'Greek'
+    settings.tone = 'pirate'
+
+    await generateMicroLesson(question, explanation, settings)
+
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
+    expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('includes question and explanation context in prompt', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Lesson.')
+
+    await generateMicroLesson(question, explanation, settings)
+
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
+    expect(sentPrompt).toContain('What is TypeScript?')
+    expect(sentPrompt).toContain('Correct answer: A')
+    expect(sentPrompt).toContain('TypeScript is a typed superset of JavaScript.')
+  })
+
+  it('uses defaultSettings when no settings provided', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
+
+    const result = await generateMicroLesson(question, explanation)
 
     expect(result.ok).toBe(false)
     if (result.ok) return

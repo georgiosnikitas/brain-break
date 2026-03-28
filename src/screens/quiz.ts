@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
-import { generateQuestion, generateExplanation, type Question } from '../ai/client.js'
+import { generateQuestion, generateExplanation, generateMicroLesson, type Question } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
@@ -9,6 +9,9 @@ import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFil
 import { colorIncorrect, warn, header, menuTheme, renderQuestionDetail } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
+
+type NavResult = 'next' | 'exit' | null
+type PostAnswerAction = 'explain' | NavResult
 
 async function askQuestion(
   question: Question,
@@ -51,11 +54,29 @@ async function askPostAnswerAction(): Promise<'explain' | 'next' | 'exit' | null
   }
 }
 
-async function askNextOrExit(): Promise<'next' | 'exit' | null> {
+async function askNextOrExit(): Promise<NavResult> {
   try {
     return await select<'next' | 'exit'>({
       message: 'Next action:',
       choices: [
+        { name: '▶️  Next question', value: 'next' as const },
+        new Separator(),
+        { name: '←  Back', value: 'exit' as const },
+      ],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) return null
+    throw err
+  }
+}
+
+async function askPostExplainAction(): Promise<'teach' | 'next' | 'exit' | null> {
+  try {
+    return await select<'teach' | 'next' | 'exit'>({
+      message: 'Next action:',
+      choices: [
+        { name: '📚 Teach me more', value: 'teach' as const },
         { name: '▶️  Next question', value: 'next' as const },
         new Separator(),
         { name: '←  Back', value: 'exit' as const },
@@ -82,18 +103,40 @@ async function showGenerationError(domainSlug: string, error: string): Promise<v
   await router.showDomainMenu(domainSlug)
 }
 
+async function handleTeachMeMore(
+  question: Question,
+  explanation: string,
+  settings: SettingsFile,
+): Promise<NavResult> {
+  const teachSpinner = ora('Generating micro-lesson...').start()
+  const result = await generateMicroLesson(question, explanation, settings).finally(() => teachSpinner.stop())
+  if (result.ok) {
+    console.log(`\n${result.data}\n`)
+  } else {
+    console.warn(warn('Could not generate micro-lesson.'))
+  }
+  return askNextOrExit()
+}
+
 async function handleExplain(
   question: Question,
   userAnswer: AnswerOption,
   settings: SettingsFile,
-): Promise<'next' | 'exit' | null> {
+): Promise<NavResult> {
   const explainSpinner = ora('Generating explanation...').start()
   const explainResult = await generateExplanation(question, userAnswer, settings).finally(() => explainSpinner.stop())
   if (explainResult.ok) {
     console.log(`\n${explainResult.data}\n`)
-  } else {
-    console.warn(warn('Could not generate explanation.'))
+    if (!explainResult.data) {
+      return askNextOrExit()
+    }
+    const postAction = await askPostExplainAction()
+    if (postAction === 'teach') {
+      return handleTeachMeMore(question, explainResult.data, settings)
+    }
+    return postAction
   }
+  console.warn(warn('Could not generate explanation.'))
   return askNextOrExit()
 }
 
@@ -168,7 +211,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     renderQuestionDetail(record)
 
     // Post-answer action: explain, next, or exit
-    let nextAction: 'explain' | 'next' | 'exit' | null = await askPostAnswerAction()
+    let nextAction: PostAnswerAction = await askPostAnswerAction()
 
     if (nextAction === 'explain') {
       nextAction = await handleExplain(question, userAnswer, settings)
