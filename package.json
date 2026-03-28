@@ -1,5 +1,5 @@
 {
-  "name": "brain-break",
+  "name": "@georgiosnikitas/brain-break",
   "version": "1.6.12",
   "description": "An AI-powered terminal quiz app",
   "type": "module",
