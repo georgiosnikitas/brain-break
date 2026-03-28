@@ -56,7 +56,7 @@ brew install brain-break
 ### 📦 From npm
 
 ```bash
-npm install -g @georgiosnikitas/brain-break
+npm install -g brain-break
 ```
 
 ### 📦 From GitHub Packages
