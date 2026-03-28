@@ -8,7 +8,7 @@
     "url": "https://github.com/georgiosnikitas/brain-break"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org"
+    "registry": "https://npm.pkg.github.com"
   },
   "bin": {
     "brain-break": "dist/index.js"
