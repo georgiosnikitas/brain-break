@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-26'
+lastEdited: '2026-03-28'
 status: 'complete'
 editHistory:
+  - date: '2026-03-28'
+    changes: 'FR37 added (Explain Answer from History): history navigation includes an Explain answer option that uses the same AI explain flow as Feature 3. FR12 updated (navigation expanded to Previous/Next/Explain answer/Back). FR Coverage Map updated with FR37 → Epic 4. Epic 4 description and FRs covered updated. Story 4.3 (Explain Answer from History) added to Epic 4. Reflects PRD Feature 6 update (2026-03-28).'
   - date: '2026-03-25'
     changes: 'Source code alignment pass: Story 3.1 rewritten — Copilot-only SDK integration replaced with provider-agnostic AI client using createProvider(settings). Story 3.3 ACs updated — per-provider error constants (AI_ERRORS.NETWORK_<PROVIDER>/AUTH_<PROVIDER>) replace flat NETWORK/AUTH errors; error returns user to domain sub-menu instead of exiting app. Story 4.1 rewritten — paginated 10-per-page history replaced with single-question navigation (Previous/Next/Back controls, progress indicator). Story 5.1 tone enum updated from 4 values (normal, enthusiastic, robot, pirate) to 7 (natural, expressive, calm, humorous, sarcastic, robot, pirate); default tone "normal" → "natural". Story 5.2 tone selector list updated to match 7 tones. Story 5.3 neutral case tone reference "normal" → "natural". FR27 and Stories 7.2/7.4 Gemini env var corrected from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY. Story 8.1 tagline styling corrected from bold yellow to styled line with bold cyan > / dim white typewriter text / bold cyan _ per FR31.'
   - date: '2026-03-25'
@@ -68,7 +70,7 @@ FR10: All domain data (score, difficulty level, streak, total time played, compl
 
 FR11: Every answered question is recorded with: question text, all answer options, the user's chosen answer, correct answer, whether it was correct, timestamp (ISO 8601), time taken (ms), speed tier, score delta, and difficulty level.
 
-FR12: Users can view their full question history for the active domain using single-question navigation with Previous/Next controls and a progress indicator (e.g., "Question 3 of 47"), displaying all fields recorded per question.
+FR12: Users can view their full question history for the active domain using single-question navigation with Previous/Next/Explain answer controls and a progress indicator (e.g., "Question 3 of 47"), displaying all fields recorded per question.
 
 FR13: Users can view a stats dashboard for the active domain showing: current score, total questions answered, correct/incorrect count and accuracy %, total time played, starting difficulty level, current difficulty level, score trend over the last 30 days (growing/flat/declining), days since first session, and current return streak.
 
@@ -115,6 +117,8 @@ FR33: The Settings screen includes a "🎬 Welcome screen" toggle (displayed as 
 FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
 
 FR35: After answering a quiz question and viewing the feedback panel, the user is presented with three options: Next question, Explain answer, and Exit quiz. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a two-option prompt: Next question and Exit quiz (explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Exit prompt without interrupting the quiz session.
+
+FR37: The history navigation screen includes an "Explain answer" option that calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as the quiz (Feature 3) with the active language and tone settings. The explanation is displayed inline on the same screen as the question detail. While the explanation is visible, the navigation menu shows Previous/Next/Back only (Explain is hidden). If the user navigates away and returns to the same question, Explain answer is available again. If the AI call fails, a non-critical warning is displayed and the user returns to the navigation menu.
 
 FR36: The post-answer options/result block in the quiz session and the question detail block in the history screen are rendered by a single shared function `renderQuestionDetail(record: QuestionRecord, opts?: { showTimestamp?: boolean })` exported from `utils/format.ts`. The function renders in order: all four answer options (A–D) with `►` marking the user's answer, a blank separator line, correct/incorrect status, the correct answer reveal when the user was wrong (highlighted in green), a compound time/speed/difficulty line, and a score delta line. When `opts.showTimestamp` is `true`, an answered-at timestamp line is appended (used by history only). The quiz post-answer screen calls `renderQuestionDetail(record)` without a timestamp. The history detail view prints the question text as a plain (non-bold, non-numbered) line and calls `renderQuestionDetail(record, { showTimestamp: true })`. The private `showAnswerOptions()` and `showFeedback()` functions in `screens/quiz.ts` and the body of `displayEntry()` options/result block in `screens/history.ts` are replaced by calls to this shared function. The `globalIndex` parameter is removed from `displayEntry()` since numbered headers are no longer rendered.
 
@@ -171,7 +175,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR9 | Epic 3 | Scoring system — base points × speed multiplier |
 | FR10 | Epic 3 | Full domain state persistence (score, difficulty, streak, history) |
 | FR11 | Epic 3 | Per-question record written after every answer |
-| FR12 | Epic 4 | Single-question navigation history view |
+| FR12 | Epic 4 | Single-question navigation history view (Previous/Next/Explain answer/Back) |
 | FR13 | Epic 4 | Stats dashboard (score, accuracy, trend, streak, time) |
 | FR14 | Epic 5 | Settings action on home screen menu |
 | FR15 | Epic 5, Epic 7 | Settings screen — AI provider (5 options) + language (free-text) + tone (7 presets) |
@@ -196,6 +200,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR34 | Epic 8 | Static banner — `🧠🔨 Brain Break` + gradient shadow bar via `clearAndBanner()` |
 | FR35 | Epic 3 | Post-answer "Explain answer" option — AI-generated explanation of the correct answer |
 | FR36 | Epic 3 | Unified question detail rendering — shared `renderQuestionDetail()` used in quiz feedback and history detail view |
+| FR37 | Epic 4 | Explain answer from history — AI-generated explanation available in View History navigation |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -225,8 +230,8 @@ Users can take an AI-generated, never-repeating, multiple-choice quiz session in
 **NFRs covered:** NFR1 (≤ 5s generation + spinner), NFR2 (API error handling)
 
 ### Epic 4: Learning Insights
-Users can review their complete question history for any domain (paginated, all recorded fields) and view a stats dashboard showing score, accuracy, difficulty level, time played, score trend, and return streak — giving them a genuine signal of their knowledge growth over time.
-**FRs covered:** FR12, FR13
+Users can review their complete question history for any domain (single-question navigation with all recorded fields), request an AI-generated explanation for any past question, and view a stats dashboard showing score, accuracy, difficulty level, time played, score trend, and return streak — giving them a genuine signal of their knowledge growth over time and turning history from a passive record into an active learning tool.
+**FRs covered:** FR12, FR13, FR37
 ### Epic 5: Global Settings
 Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
 **FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19
@@ -928,7 +933,7 @@ So that the experience is consistent and I recognise the same layout whether I j
 
 ## Epic 4: Learning Insights
 
-Users can review their complete question history for any domain (paginated) and view a stats dashboard with score, accuracy, trend, and return streak — giving them a genuine signal of knowledge growth over time.
+Users can review their complete question history for any domain (single-question navigation), request an AI-generated explanation for any past question, and view a stats dashboard with score, accuracy, trend, and return streak — giving them a genuine signal of knowledge growth over time.
 
 ### Story 4.1: Single-Question History Navigation
 
@@ -991,6 +996,46 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 **Given** I am on the stats screen  
 **When** I select "Back"  
 **Then** I return to the domain sub-menu  
+
+---
+
+### Story 4.3: Explain Answer from History
+
+As a user,
+I want to select "Explain answer" while browsing my question history so the AI explains why the correct answer is correct,
+So that I can reinforce understanding of past questions and turn my history into an active learning tool.
+
+**Acceptance Criteria:**
+
+**Given** I am viewing a question in the history screen  
+**When** the navigation controls are displayed  
+**Then** the options include Previous, Next, Explain answer, and Back (alongside the progress indicator)  
+
+**Given** I am viewing a question in the history screen  
+**When** I select "Explain answer"  
+**Then** a loading spinner is displayed while the AI generates an explanation  
+**And** `generateExplanation()` is called with the question context (question text, all options, correct answer, and the user's chosen answer) and the active language/tone settings  
+**And** the explanation (2–4 sentences) is displayed inline on the same screen below the question detail — no terminal clear or screen transition occurs  
+
+**Given** the explanation is already displayed on the screen  
+**When** the navigation menu re-appears  
+**Then** the options are Previous, Next, and Back — Explain answer is hidden while the explanation is visible  
+
+**Given** the explanation was previously displayed for a question  
+**When** I navigate away (Previous or Next) and then navigate back to the same question  
+**Then** Explain answer is available again in the navigation controls  
+
+**Given** I select "Explain answer" and the AI call fails (network error, auth error, parse error)  
+**When** the error is caught  
+**Then** a warning message is displayed (e.g., "Could not generate explanation.") and I am returned to the full navigation menu (Previous/Next/Explain answer/Back) — the failure is non-critical and does not interrupt history browsing  
+
+**Given** the domain has exactly 1 history entry  
+**When** I view the entry and select "Explain answer"  
+**Then** the explanation is displayed inline and the navigation menu shows only Explain answer (before explaining) or Back (after explaining) — Previous and Next are not shown for single-entry history  
+
+**Given** `screens/history.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Explain answer option present in navigation, `generateExplanation()` called with correct arguments, explanation rendered inline, Explain hidden after explanation displayed, Explain available again after navigating away and back, AI failure handled gracefully with warning message  
 
 ---
 

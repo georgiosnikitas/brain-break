@@ -40,7 +40,8 @@ async function askPostAnswerAction(): Promise<'explain' | 'next' | 'exit' | null
       choices: [
         { name: '💡 Explain answer', value: 'explain' as const },
         { name: '▶️  Next question', value: 'next' as const },
-        { name: '🚪 Exit quiz', value: 'exit' as const },
+        new Separator(),
+        { name: '←  Back', value: 'exit' as const },
       ],
       theme: menuTheme,
     })
@@ -56,7 +57,8 @@ async function askNextOrExit(): Promise<'next' | 'exit' | null> {
       message: 'Next action:',
       choices: [
         { name: '▶️  Next question', value: 'next' as const },
-        { name: '🚪 Exit quiz', value: 'exit' as const },
+        new Separator(),
+        { name: '←  Back', value: 'exit' as const },
       ],
       theme: menuTheme,
     })

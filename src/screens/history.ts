@@ -1,7 +1,8 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { readDomain } from '../domain/store.js'
-import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
+import ora from 'ora'
+import { readDomain, readSettings } from '../domain/store.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord, type SettingsFile } from '../domain/schema.js'
 import {
   warn,
   dim,
@@ -10,17 +11,20 @@ import {
   renderQuestionDetail,
 } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
+import { generateExplanation, type Question } from '../ai/client.js'
 import * as router from '../router.js'
 
-type NavAction = 'next' | 'prev' | 'back'
+type NavAction = 'next' | 'prev' | 'back' | 'explain'
 
 export function buildPageChoices(
   currentIndex: number,
   totalItems: number,
+  explainVisible?: boolean,
 ): Array<{ name: string; value: NavAction } | Separator> {
   const choices: Array<{ name: string; value: NavAction } | Separator> = []
-  if (currentIndex > 0) choices.push({ name: '⬅️  Previous', value: 'prev' })
-  if (currentIndex < totalItems - 1) choices.push({ name: '➡️  Next', value: 'next' })
+  if (!explainVisible) choices.push({ name: '💡 Explain answer', value: 'explain' })
+  if (currentIndex < totalItems - 1) choices.push({ name: '➡️  Next question', value: 'next' })
+  if (currentIndex > 0) choices.push({ name: '⬅️  Previous question', value: 'prev' })
   if (choices.length > 0) choices.push(new Separator())
   choices.push({ name: '←  Back', value: 'back' })
   return choices
@@ -31,16 +35,45 @@ function displayEntry(record: QuestionRecord): void {
   renderQuestionDetail(record, { showTimestamp: true })
 }
 
+async function handleExplain(
+  record: QuestionRecord,
+  settings: SettingsFile,
+): Promise<{ visible: boolean; skipClear: boolean }> {
+  const question: Question = {
+    question: record.question,
+    options: record.options,
+    correctAnswer: record.correctAnswer,
+    difficultyLevel: record.difficultyLevel,
+    speedThresholds: { fastMs: 10000, slowMs: 30000 },
+  }
+  const spinner = ora('Generating explanation...').start()
+  const result = await generateExplanation(question, record.userAnswer, settings)
+    .finally(() => spinner.stop())
+  if (result.ok) {
+    console.log(`\n${result.data}\n`)
+    return { visible: true, skipClear: false }
+  }
+  console.warn(warn('Could not generate explanation.'))
+  return { visible: false, skipClear: true }
+}
+
 async function navigateHistory(history: QuestionRecord[], domainSlug: string): Promise<void> {
+  const settingsResult = await readSettings()
+  const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
   const totalItems = history.length
   let index = 0
+  let explainVisible = false
+  let skipClear = false
 
   while (true) {
-    clearAndBanner()
-    console.log(header(`📜 Question History — ${domainSlug}`))
-    displayEntry(history[index])
+    if (!explainVisible && !skipClear) {
+      clearAndBanner()
+      console.log(header(`📜 Question History — ${domainSlug}`))
+      displayEntry(history[index])
+    }
+    skipClear = false
 
-    const choices = buildPageChoices(index, totalItems)
+    const choices = buildPageChoices(index, totalItems, explainVisible)
     let nav: NavAction
     try {
       nav = await select<NavAction>({
@@ -56,10 +89,16 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
       throw err
     }
 
-    if (nav === 'next') {
+    if (nav === 'explain') {
+      const explainResult = await handleExplain(history[index], settings)
+      explainVisible = explainResult.visible
+      skipClear = explainResult.skipClear
+    } else if (nav === 'next') {
       index++
+      explainVisible = false
     } else if (nav === 'prev') {
       index--
+      explainVisible = false
     } else {
       await router.showDomainMenu(domainSlug)
       return

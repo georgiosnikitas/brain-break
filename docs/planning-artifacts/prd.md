@@ -14,7 +14,10 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-25'
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+lastEdited: '2026-03-28'
 editHistory:
   - date: '2026-03-25'
     changes: 'Prose review pass: fixed one hyphenation issue ("fullstack" → "full-stack") and one contradictory phrase in Feature 2 ("factually wrong correct answer" → "factually incorrect answer marked as correct").'
@@ -58,6 +61,8 @@ editHistory:
     changes: 'Feature 1: create-domain screen input prompt updated with Ctrl+C back hint — pressing Ctrl+C returns to home without creating a domain (2-step flow: home → input)'
   - date: '2026-03-14'
     changes: 'Cross-cutting terminal rendering statement added to Functional Requirements preamble; NFR 5 (Terminal Screen Management) added'
+  - date: '2026-03-28'
+    changes: 'Feature 6 (View History) updated: history navigation now includes an "Explain answer" option alongside Previous/Next/Back. Selecting it calls the AI provider to generate a concise explanation of the correct answer — same flow as Feature 3 quiz explain — displayed inline on the same screen as the question detail. After explanation is shown, the menu reduces to Previous/Next/Back (no redundant Explain while explanation is visible); navigating away and returning to the same question makes Explain available again. User Journeys Long-term updated to reference explain-from-history as an active learning tool.'
 ---
 
 # Product Requirements Document: brain-break
@@ -217,7 +222,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions and hit "Explain answer" to reinforce understanding — turning history from a passive record into an active learning tool. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -393,8 +398,12 @@ Every answered question is recorded with:
 ### Feature 6 — View History Command
 
 - User can view their full question history for the active domain
-- Questions are displayed one at a time; the user navigates with Previous and Next controls; a progress indicator shows the user's current position (e.g., "Question 3 of 47")
+- Questions are displayed one at a time; the user navigates with Previous, Next, Explain answer, and Back controls; a progress indicator shows the user's current position (e.g., "Question 3 of 47")
 - Each entry displays all fields recorded per question (see Feature 5 — Persistent History)
+- Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as Feature 3 (Interactive Terminal Quiz) with the active language and tone settings; a loading spinner is shown during generation
+- The explanation is displayed inline on the same screen as the question detail — no terminal clear or screen transition occurs; the user sees the question, their answer, all recorded fields, and the explanation together
+- After the explanation is displayed, the navigation menu re-appears with Previous, Next, and Back (Explain is not shown while the explanation is already visible on screen). If the user navigates away and returns to the same question, Explain answer is available again
+- If the AI call for the explanation fails, a warning message is displayed (e.g., *"Could not generate explanation."*) and the user is returned to the navigation menu — the failure is non-critical and does not interrupt history browsing
 
 ### Feature 7 — View Stats Command
 

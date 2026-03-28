@@ -12,10 +12,15 @@ vi.mock('@inquirer/prompts', () => ({
 
 vi.mock('../domain/store.js', () => ({
   readDomain: vi.fn(),
+  readSettings: vi.fn(),
 }))
 
 vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
+}))
+
+vi.mock('../ai/client.js', () => ({
+  generateExplanation: vi.fn(),
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
@@ -23,15 +28,18 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
-import { readDomain } from '../domain/store.js'
+import { readDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
 import { clearAndBanner } from '../utils/screen.js'
+import { generateExplanation } from '../ai/client.js'
 import { showHistory, buildPageChoices } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
+const mockReadSettings = vi.mocked(readSettings)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
+const mockGenerateExplanation = vi.mocked(generateExplanation)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -65,40 +73,63 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockShowDomainMenu.mockResolvedValue(undefined)
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+  mockReadSettings.mockResolvedValue({ ok: true, data: { provider: null, language: 'English', tone: 'natural' as const, openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true } })
+  mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Test explanation text' })
 })
 
 // ---------------------------------------------------------------------------
 // buildPageChoices
 // ---------------------------------------------------------------------------
 describe('buildPageChoices', () => {
-  it('returns only Back when there is exactly one question', () => {
+  it('returns Explain + Back when there is exactly one question', () => {
     const choices = buildPageChoices(0, 1) as Array<{ name: string; value: string }>
-    expect(choices).toHaveLength(1)
-    expect(choices[0].value).toBe('back')
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('explain')
+    expect(values).toContain('back')
+    expect(values).not.toContain('next')
+    expect(values).not.toContain('prev')
   })
 
-  it('returns Next + Back on first question of multi-question history', () => {
+  it('returns Next + Explain + Back on first question of multi-question history', () => {
     const choices = buildPageChoices(0, 3) as Array<{ name: string; value: string }>
-    const values = choices.map((c) => c.value)
+    const values = choices.map((c) => c.value).filter(Boolean)
     expect(values).toContain('next')
+    expect(values).toContain('explain')
     expect(values).toContain('back')
     expect(values).not.toContain('prev')
   })
 
-  it('returns Previous + Back on last question', () => {
+  it('returns Previous + Explain + Back on last question', () => {
     const choices = buildPageChoices(2, 3) as Array<{ name: string; value: string }>
-    const values = choices.map((c) => c.value)
+    const values = choices.map((c) => c.value).filter(Boolean)
     expect(values).toContain('prev')
+    expect(values).toContain('explain')
     expect(values).toContain('back')
     expect(values).not.toContain('next')
   })
 
-  it('returns Previous + Next + Back on a middle question', () => {
+  it('returns Previous + Next + Explain + Back on a middle question', () => {
     const choices = buildPageChoices(1, 3) as Array<{ name: string; value: string }>
-    const values = choices.map((c) => c.value)
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('prev')
+    expect(values).toContain('next')
+    expect(values).toContain('explain')
+    expect(values).toContain('back')
+  })
+
+  it('hides Explain when explainVisible is true', () => {
+    const choices = buildPageChoices(1, 3, true) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).not.toContain('explain')
     expect(values).toContain('prev')
     expect(values).toContain('next')
     expect(values).toContain('back')
+  })
+
+  it('shows only Back when explainVisible is true and single question', () => {
+    const choices = buildPageChoices(0, 1, true) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toEqual(['back'])
   })
 })
 
@@ -151,7 +182,7 @@ describe('showHistory — single question', () => {
     consoleSpy.mockRestore()
   })
 
-  it('shows only Back when there is exactly one question', async () => {
+  it('shows Explain + Back when there is exactly one question', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
@@ -160,9 +191,10 @@ describe('showHistory — single question', () => {
     await showHistory('typescript')
 
     const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name: string; value: string }>
-    const values = choices.map((c) => c.value)
+    const values = choices.map((c) => c.value).filter(Boolean)
     expect(values).not.toContain('next')
     expect(values).not.toContain('prev')
+    expect(values).toContain('explain')
     expect(values).toContain('back')
   })
 
@@ -250,7 +282,7 @@ describe('showHistory — single question', () => {
 // showHistory — navigation
 // ---------------------------------------------------------------------------
 describe('showHistory — navigation', () => {
-  it('first question shows Next + Back, no Previous', async () => {
+  it('first question shows Next + Explain + Back, no Previous', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(15) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
@@ -259,8 +291,9 @@ describe('showHistory — navigation', () => {
     await showHistory('typescript')
 
     const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name: string; value: string }>
-    const values = choices.map((c) => c.value)
+    const values = choices.map((c) => c.value).filter(Boolean)
     expect(values).toContain('next')
+    expect(values).toContain('explain')
     expect(values).toContain('back')
     expect(values).not.toContain('prev')
   })
@@ -278,7 +311,7 @@ describe('showHistory — navigation', () => {
     consoleSpy.mockRestore()
   })
 
-  it('second question shows Previous + Back, no Next (when total is 2)', async () => {
+  it('second question shows Previous + Explain + Back, no Next (when total is 2)', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(2) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
@@ -287,8 +320,9 @@ describe('showHistory — navigation', () => {
     await showHistory('typescript')
 
     const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
-    const secondValues = secondChoices.map((c) => c.value)
+    const secondValues = secondChoices.map((c) => c.value).filter(Boolean)
     expect(secondValues).toContain('prev')
+    expect(secondValues).toContain('explain')
     expect(secondValues).toContain('back')
     expect(secondValues).not.toContain('next')
   })
@@ -304,11 +338,12 @@ describe('showHistory — navigation', () => {
 
     await showHistory('typescript')
 
-    // After next → prev, back at index 0: no Previous, has Next
+    // After next → prev, back at index 0: no Previous, has Next + Explain
     const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
-    const values = thirdChoices.map((c) => c.value)
+    const values = thirdChoices.map((c) => c.value).filter(Boolean)
     expect(values).not.toContain('prev')
     expect(values).toContain('next')
+    expect(values).toContain('explain')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     consoleSpy.mockRestore()
   })
@@ -327,6 +362,114 @@ describe('showHistory — navigation', () => {
     expect(allLogs).not.toContain('Question 2')
     expect(allLogs).not.toContain('Question 1')
     consoleSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showHistory — explain answer
+// ---------------------------------------------------------------------------
+describe('showHistory — explain answer', () => {
+  it('calls generateExplanation with correct arguments when Explain is selected', async () => {
+    const record = makeRecord({ question: 'What is TS?', userAnswer: 'B', correctAnswer: 'A', difficultyLevel: 3 })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(mockGenerateExplanation).toHaveBeenCalledOnce()
+    const [question, userAnswer, settings] = mockGenerateExplanation.mock.calls[0]
+    expect(question.question).toBe('What is TS?')
+    expect(question.options).toEqual(record.options)
+    expect(question.correctAnswer).toBe('A')
+    expect(userAnswer).toBe('B')
+    expect(settings).toBeDefined()
+  })
+
+  it('renders explanation text inline after Explain is selected', async () => {
+    mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Because A is the correct answer.' })
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('Because A is the correct answer.')
+    consoleSpy.mockRestore()
+  })
+
+  it('hides Explain after explanation is displayed', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // First call: has explain. Second call (after explain): no explain
+    const firstChoices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name: string; value: string }>
+    const firstValues = firstChoices.map((c) => c.value).filter(Boolean)
+    expect(firstValues).toContain('explain')
+
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const secondValues = secondChoices.map((c) => c.value).filter(Boolean)
+    expect(secondValues).not.toContain('explain')
+  })
+
+  it('Explain is available again after navigating away and back', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    // explain → next → prev → back
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('next')
+      .mockResolvedValueOnce('prev')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // Call 0: has explain (before explain). Call 1: no explain (after explain).
+    // Call 2: next question, has explain. Call 3: prev (back to original), has explain again.
+    const call3Choices = mockSelect.mock.calls[3][0].choices as unknown as Array<{ name: string; value: string }>
+    const call3Values = call3Choices.map((c) => c.value).filter(Boolean)
+    expect(call3Values).toContain('explain')
+  })
+
+  it('shows warning and keeps Explain available when AI call fails', async () => {
+    mockGenerateExplanation.mockResolvedValue({ ok: false, error: 'Network error' })
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate explanation'))
+    // Second call should still have explain (failure didn't hide it)
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const secondValues = secondChoices.map((c) => c.value).filter(Boolean)
+    expect(secondValues).toContain('explain')
+    // Warning must survive on screen — clearAndBanner only called once (initial render)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+    warnSpy.mockRestore()
+  })
+
+  it('does not call clearAndBanner when rendering explanation inline', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    const mockClearAndBanner = vi.mocked(clearAndBanner)
+
+    await showHistory('typescript')
+
+    // clearAndBanner called once for initial render, NOT called again after explain
+    expect(mockClearAndBanner).toHaveBeenCalledTimes(1)
   })
 })
 

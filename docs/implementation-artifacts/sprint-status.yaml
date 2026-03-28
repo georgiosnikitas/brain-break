@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-03-25
+last_updated: 2026-03-28
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -74,10 +74,11 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Learning Insights
-  epic-4: done
+  epic-4: in-progress
   4-1-paginated-question-history-view: done
   4-2-stats-dashboard: done
   4-3-single-question-history-navigation: done
+  4-4-explain-answer-from-history: done
   epic-4-retrospective: optional
 
   # Epic 5: Global Settings
