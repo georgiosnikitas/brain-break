@@ -194,7 +194,7 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ### 11. Exit Message
 
-**Description:** When the user exits the application (via the 🚪 Exit action on the home screen, or via Ctrl+C from any screen), display a friendly farewell message before the process terminates. The message can include a motivational note, a quick recap of the session (e.g., questions answered), or a simple goodbye.
+**Description:** When the user exits the application (via the 🚪 Exit action on the home screen, or via Ctrl+C from any screen), display a styled farewell screen — similar to the welcome screen — before the process terminates. The screen should include the Brain Break ASCII art with the same gradient rendering, a short farewell tagline printed with the typewriter effect, and optionally a quick recap of the session (e.g., questions answered). No interaction required — the screen displays and the process exits.
 
 **KPIs targeted:** Perceived value, User satisfaction
 
