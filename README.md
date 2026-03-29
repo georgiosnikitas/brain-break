@@ -5,8 +5,8 @@
 [![CI](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml)
 [![Release](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml)
 [![npm](https://img.shields.io/npm/v/brain-break)](https://www.npmjs.com/package/brain-break)
-[![License](https://img.shields.io/github/license/georgiosnikitas/brain-break)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/github/license/georgiosnikitas/brain-break)](LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/georgiosnikitas)
 
 Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including GitHub Copilot, OpenAI, Anthropic, Google Gemini, and Ollama for local models.
