@@ -37,7 +37,7 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 
 ## 📋 Requirements
 
-- Node.js `>= 25.8.0`
+- Node.js `>= 22.0.0`
 - An AI provider configured through the in-app settings:
   - **Anthropic** — `ANTHROPIC_API_KEY` environment variable and a model name configured in setup/settings (default: `claude-sonnet-4-20250514`)
   - **OpenAI** — `OPENAI_API_KEY` environment variable and a model name configured in setup/settings (default: `gpt-4o-mini`)

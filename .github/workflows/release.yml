@@ -18,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '25'
+          node-version: '22'
           cache: 'npm'
           registry-url: 'https://npm.pkg.github.com'
 
@@ -107,7 +107,7 @@ jobs:
 
             def install
               node_version = Utils.safe_popen_read(Formula["node"].opt_bin/"node", "--version").strip
-              odie "brain-break requires Node.js >= 25.8.0 (found #{node_version})" if Version.new(node_version.delete_prefix("v")) < Version.new("25.8.0")
+              odie "brain-break requires Node.js >= 22.0.0 (found #{node_version})" if Version.new(node_version.delete_prefix("v")) < Version.new("22.0.0")
 
               system "npm", "install"
               system "npm", "run", "build"
@@ -151,7 +151,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '25'
+          node-version: '22'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 

@@ -61,7 +61,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Technical Constraints & Dependencies
 
-- Runtime: Node.js v25.8.0
+- Runtime: Node.js v22.0.0
 - Interface: Terminal only — no web UI, no GUI
 - AI: 5 interchangeable providers — OpenAI (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`), Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK (`ai`), Ollama via raw HTTP fetch, plus GitHub Copilot SDK (`@github/copilot-sdk`) as a custom adapter wrapping the `AiProvider` interface. All providers receive identical prompts and must return the same JSON schema (question text, options A–D, correct answer, difficulty, speed tier thresholds). API keys read from environment variables at runtime — never stored in settings
 - Storage: `~/.brain-break/<domain-slug>.json` — one file per domain; `~/.brain-break/settings.json` — global settings (includes provider selection)
@@ -110,7 +110,7 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 **Language & Runtime:**
 - TypeScript (strict mode), ESM (`"type": "module"` in package.json)
 - Module resolution: NodeNext
-- Target: Node.js v25.8.0 (Current release — developer tool, single-user, no stability concern)
+- Target: Node.js v22.0.0 (LTS release — stable, long-term support until April 2027)
 - `tsx` for development execution; `tsc` for production build to `dist/`
 
 **Interactive Terminal:**
@@ -132,7 +132,7 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 
 **CLI Entry & Distribution:**
 - `bin` field in `package.json` pointing to compiled `dist/index.js`
-- `engines.node` field set to `">=25.8.0"` (reflects actual dev environment)
+- `engines.node` field set to `">=22.0.0"` (LTS baseline — supports Node 22+)
 - `npx`-compatible out of the box
 
 **Testing Framework:**
@@ -945,7 +945,7 @@ screens/settings.ts
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v25.8.0, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
+All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
 
 ### Requirements Coverage Validation ✅
 
