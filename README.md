@@ -4,6 +4,7 @@
 [![CI](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml/badge.svg)](https://github.com/georgiosnikitas/brain-break/actions/workflows/ci.yml)
 [![Release](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/georgiosnikitas/brain-break/actions/workflows/release.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=georgiosnikitas_brain-break&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=georgiosnikitas_brain-break)
+[![npm](https://img.shields.io/npm/v/brain-break)](https://www.npmjs.com/package/brain-break)
 [![License](https://img.shields.io/github/license/georgiosnikitas/brain-break)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/georgiosnikitas)
