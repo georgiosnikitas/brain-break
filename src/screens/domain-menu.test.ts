@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile } from '../domain/schema.js'
 
+const { mockColorDifficultyLevel } = vi.hoisted(() => ({
+  mockColorDifficultyLevel: vi.fn((level: number) => `LEVEL_${level}`),
+}))
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -16,6 +20,14 @@ vi.mock('@inquirer/prompts', () => ({
 vi.mock('../domain/store.js', () => ({
   readDomain: vi.fn(),
 }))
+
+vi.mock('../utils/format.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/format.js')>()
+  return {
+    ...actual,
+    colorDifficultyLevel: mockColorDifficultyLevel,
+  }
+})
 
 vi.mock('../router.js', () => ({
   showQuiz: vi.fn(),
@@ -35,7 +47,7 @@ import { select, confirm } from '@inquirer/prompts'
 import { readDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { buildDomainMenuChoices, showDomainMenuScreen, type DomainMenuAction } from './domain-menu.js'
+import { buildDomainMenuChoices, showDomainMenuScreen, renderSessionSummary, type DomainMenuAction } from './domain-menu.js'
 
 const mockSelect = vi.mocked(select)
 const mockConfirm = vi.mocked(confirm)
@@ -47,7 +59,7 @@ const mockReadDomain = vi.mocked(readDomain)
 beforeEach(() => {
   vi.clearAllMocks()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
-  vi.mocked(router.showQuiz).mockResolvedValue(undefined)
+  vi.mocked(router.showQuiz).mockResolvedValue(null)
   vi.mocked(router.showHistory).mockResolvedValue(undefined)
   vi.mocked(router.showStats).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
@@ -170,7 +182,8 @@ describe('showDomainMenuScreen — readDomain failure', () => {
 })
 
 describe('showDomainMenuScreen — message', () => {
-  it('message includes slug, score, and question count', async () => {
+  it('prints the domain header before the action prompt', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
     const domain = {
       ...defaultDomainFile(),
       meta: { ...defaultDomainFile().meta, score: 250 },
@@ -192,10 +205,14 @@ describe('showDomainMenuScreen — message', () => {
 
     await showDomainMenuScreen('typescript')
 
+    const headerLine = String(consoleSpy.mock.calls[0][0])
+    expect(headerLine).toContain('typescript')
+    expect(headerLine).toContain('250')
+    expect(headerLine).toContain('15')
+
     const callArgs = mockSelect.mock.calls[0][0] as { message: string }
-    expect(callArgs.message).toContain('typescript')
-    expect(callArgs.message).toContain('250')
-    expect(callArgs.message).toContain('15')
+    expect(callArgs.message).toBe('Choose an action:')
+    consoleSpy.mockRestore()
   })
 })
 
@@ -254,5 +271,233 @@ describe('showDomainMenuScreen — non-ExitPromptError re-throw', () => {
     mockSelect.mockRejectedValueOnce(boom)
 
     await expect(showDomainMenuScreen('typescript')).rejects.toThrow('unexpected select failure')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// renderSessionSummary
+// ---------------------------------------------------------------------------
+function makeSessionRecord(overrides: Partial<{
+  answeredAt: string
+  isCorrect: boolean
+  scoreDelta: number
+  timeTakenMs: number
+  difficultyLevel: number
+}> = {}) {
+  return {
+    question: 'Q',
+    options: { A: 'a', B: 'b', C: 'c', D: 'd' },
+    correctAnswer: 'A' as const,
+    userAnswer: overrides.isCorrect === false ? ('B' as const) : ('A' as const),
+    isCorrect: overrides.isCorrect ?? true,
+    answeredAt: overrides.answeredAt ?? '2026-03-29T10:00:05.000Z',
+    timeTakenMs: overrides.timeTakenMs ?? 5000,
+    speedTier: 'normal' as const,
+    scoreDelta: overrides.scoreDelta ?? 10,
+    difficultyLevel: overrides.difficultyLevel ?? 2,
+  }
+}
+
+describe('renderSessionSummary', () => {
+  it('prints all 8 fields with dim dividers', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    const records = [
+      makeSessionRecord({ isCorrect: true, scoreDelta: 15, timeTakenMs: 3000, answeredAt: '2026-03-29T10:00:03.000Z' }),
+      makeSessionRecord({ isCorrect: false, scoreDelta: -5, timeTakenMs: 12000, answeredAt: '2026-03-29T10:00:17.000Z' }),
+      makeSessionRecord({ isCorrect: true, scoreDelta: 10, timeTakenMs: 3000, answeredAt: '2026-03-29T10:00:22.000Z' }),
+    ]
+    renderSessionSummary({ records, startingDifficulty: 2 }, 3)
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+
+    // Dividers
+    expect(logged).toContain('Last Session')
+    // Score delta (+20)
+    expect(logged).toContain('Score delta:')
+    expect(logged).toContain('+20')
+    // Questions answered
+    expect(logged).toContain('Questions answered:')
+    expect(logged).toContain('3')
+    // Correct / Incorrect
+    expect(logged).toContain('Correct / Incorrect:')
+    expect(logged).toContain('2 / 1')
+    // Accuracy
+    expect(logged).toContain('Accuracy:')
+    expect(logged).toContain('66.7%')
+    // Fastest answer
+    expect(logged).toContain('Fastest answer:')
+    expect(logged).toContain('3.0s')
+    // Slowest answer
+    expect(logged).toContain('Slowest answer:')
+    expect(logged).toContain('12.0s')
+    // Session duration
+    expect(logged).toContain('Session duration:')
+    expect(logged).toContain('22s')
+    // Difficulty with ▲ indicator
+    expect(logged).toContain('Difficulty:')
+    expect(logged).toContain('2 — LEVEL_2')
+    expect(logged).toContain('3 — LEVEL_3')
+    expect(logged).toContain('▲')
+    expect(mockColorDifficultyLevel).toHaveBeenNthCalledWith(1, 2)
+    expect(mockColorDifficultyLevel).toHaveBeenNthCalledWith(2, 3)
+
+    consoleSpy.mockRestore()
+  })
+
+  it('shows ▼ indicator when difficulty decreased', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      { records: [makeSessionRecord()], startingDifficulty: 3 },
+      2,
+    )
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('▼')
+    consoleSpy.mockRestore()
+  })
+
+  it('omits a trailing indicator when difficulty is unchanged', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      { records: [makeSessionRecord()], startingDifficulty: 2 },
+      2,
+    )
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('Difficulty:')
+    expect(logged).toContain('2 — LEVEL_2 → 2 — LEVEL_2')
+    expect(logged).not.toContain('2 — LEVEL_2 → 2 — LEVEL_2 —')
+    consoleSpy.mockRestore()
+  })
+
+  it('uses negative delta formatting when score is negative', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      { records: [makeSessionRecord({ scoreDelta: -8 })], startingDifficulty: 2 },
+      2,
+    )
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('-8')
+    consoleSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showDomainMenuScreen — session summary integration
+// ---------------------------------------------------------------------------
+describe('showDomainMenuScreen — session summary', () => {
+  it('displays the session summary after the domain header and before the action prompt', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    const sessionData = {
+      records: [makeSessionRecord({ scoreDelta: 10, timeTakenMs: 5000 })],
+      startingDifficulty: 2,
+    }
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript', sessionData)
+
+    const logCalls = consoleSpy.mock.calls.map((c) => String(c[0]))
+    expect(logCalls[0]).toContain('typescript')
+    const summaryIndex = logCalls.findIndex((message) => message.includes('Last Session'))
+    expect(summaryIndex).toBeGreaterThan(0)
+
+    const callArgs = mockSelect.mock.calls[0][0] as { message: string }
+    expect(callArgs.message).toBe('Choose an action:')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not display session summary when sessionData is null', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript', null)
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Last Session')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not display session summary when sessionData is undefined', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Last Session')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not display session summary when sessionData has empty records', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript', { records: [], startingDifficulty: 2 })
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Last Session')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not display session summary on second loop iteration', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    const sessionData = {
+      records: [makeSessionRecord()],
+      startingDifficulty: 2,
+    }
+    // First iteration: history (returns to loop), second iteration: back (exits)
+    mockSelect
+      .mockResolvedValueOnce({ action: 'history' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript', sessionData)
+
+    // Session summary should appear only once (first iteration)
+    const logCalls = consoleSpy.mock.calls.map((c) => String(c[0]))
+    const summaryCount = logCalls.filter((m) => m.includes('Last Session')).length
+    expect(summaryCount).toBe(1)
+    consoleSpy.mockRestore()
+  })
+
+  it('displays session summary after quiz returns SessionData via play', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    const sessionData = {
+      records: [makeSessionRecord({ scoreDelta: 20, timeTakenMs: 4000 })],
+      startingDifficulty: 2,
+    }
+    vi.mocked(router.showQuiz).mockResolvedValueOnce(sessionData)
+
+    // First select: play (triggers quiz, returns sessionData)
+    // Second select: the domain menu re-renders with summary, user selects back
+    mockSelect
+      .mockResolvedValueOnce({ action: 'play' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('Last Session')
+    expect(logged).toContain('Score delta:')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not display a session summary after play when quiz returns null', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    vi.mocked(router.showQuiz).mockResolvedValueOnce(null)
+
+    mockSelect
+      .mockResolvedValueOnce({ action: 'play' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Last Session')
+    consoleSpy.mockRestore()
   })
 })

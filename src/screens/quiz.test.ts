@@ -42,10 +42,6 @@ vi.mock('../domain/store.js', () => ({
   readSettings: vi.fn(),
 }))
 
-vi.mock('../router.js', () => ({
-  showDomainMenu: vi.fn(),
-}))
-
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
 // ---------------------------------------------------------------------------
@@ -53,7 +49,6 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.
 // ---------------------------------------------------------------------------
 import { generateQuestion, generateExplanation, generateMicroLesson, AI_ERRORS } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
-import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
 import { clearAndBanner } from '../utils/screen.js'
 import { showQuiz } from './quiz.js'
@@ -64,7 +59,6 @@ const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 const mockReadDomain = vi.mocked(readDomain)
 const mockWriteDomain = vi.mocked(writeDomain)
 const mockReadSettings = vi.mocked(readSettings)
-const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 
 // ---------------------------------------------------------------------------
@@ -94,7 +88,6 @@ beforeEach(() => {
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
   mockReadSettings.mockResolvedValue({ ok: true, data: defaultSettings() })
-  mockShowDomainMenu.mockResolvedValue(undefined)
 })
 
 // ---------------------------------------------------------------------------
@@ -111,50 +104,50 @@ describe('showQuiz', () => {
     expect(mockStop).toHaveBeenCalled()
   })
 
-  it('displays error and navigates home on NETWORK error', async () => {
+  it('displays error and returns null on NETWORK error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
     mockSelect.mockResolvedValueOnce(true as any)
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI API'))
     expect(mockSelect).toHaveBeenCalledOnce()
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).toBeNull()
     consoleSpy.mockRestore()
   })
 
-  it('displays error and navigates to domain menu on AUTH error', async () => {
+  it('displays error and returns null on AUTH error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.AUTH_COPILOT })
     mockSelect.mockResolvedValueOnce(true as any)
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('authentication'))
     expect(mockSelect).toHaveBeenCalledOnce()
-    expect(mockShowDomainMenu).toHaveBeenCalledWith('typescript')
+    expect(result).toBeNull()
     consoleSpy.mockRestore()
   })
 
-  it('displays error and navigates home on PARSE error', async () => {
+  it('displays error and returns null on PARSE error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.PARSE })
     mockSelect.mockResolvedValueOnce(true as any)
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('unexpected response'))
     expect(mockSelect).toHaveBeenCalledOnce()
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).toBeNull()
     consoleSpy.mockRestore()
   })
 
-  it('persists domain with correct record and returns home after correct answer + exit', async () => {
+  it('persists domain with correct record and returns SessionData after correct answer + exit', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
     expect(mockWriteDomain).toHaveBeenCalledOnce()
     const [slug, domain] = mockWriteDomain.mock.calls[0]
@@ -163,7 +156,9 @@ describe('showQuiz', () => {
     expect(domain.history[0].isCorrect).toBe(true)
     expect(domain.history[0].userAnswer).toBe('A')
     expect(domain.hashes).toHaveLength(1)
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
+    expect(result?.startingDifficulty).toBe(2)
   })
 
   it('includes all FR11 fields in the QuestionRecord', async () => {
@@ -229,11 +224,30 @@ describe('showQuiz', () => {
       .mockResolvedValueOnce('A')     // second answer
       .mockResolvedValueOnce('exit')  // exit
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
     expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
     expect(mockWriteDomain).toHaveBeenCalledTimes(2)
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(2)
+  })
+
+  it('returns null when the next question generation fails after earlier answers', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    mockGenerateQuestion
+      .mockResolvedValueOnce({ ok: true, data: makeQuestion('A') })
+      .mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('next')
+      .mockResolvedValueOnce(true as any)
+
+    const result = await showQuiz('typescript')
+
+    expect(mockWriteDomain).toHaveBeenCalledOnce()
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI API'))
+    expect(result).toBeNull()
+    consoleSpy.mockRestore()
   })
 
   it('accumulates history across loop iterations', async () => {
@@ -257,31 +271,32 @@ describe('showQuiz', () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('disk full'))
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
     consoleSpy.mockRestore()
   })
 
-  it('navigates home when ExitPromptError is thrown during answer selection', async () => {
+  it('returns null when ExitPromptError is thrown during answer selection', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect.mockRejectedValueOnce(new ExitPromptError())
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).toBeNull()
   })
 
-  it('navigates home when ExitPromptError is thrown during next-action selection', async () => {
+  it('returns SessionData when ExitPromptError is thrown during next-action selection', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect
       .mockResolvedValueOnce('A')
       .mockRejectedValueOnce(new ExitPromptError())
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
   })
 
   it('updates meta.lastSessionAt when persisting after each answer', async () => {
@@ -544,7 +559,6 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate explanation'))
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     warnSpy.mockRestore()
   })
 
@@ -568,18 +582,19 @@ describe('showQuiz', () => {
     expect(values).not.toContain('explain')
   })
 
-  it('navigates home when ExitPromptError during explain/next/exit prompt', async () => {
+  it('returns SessionData when ExitPromptError during explain/next/exit prompt', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect
       .mockResolvedValueOnce('A')
       .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-answer prompt
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
   })
 
-  it('navigates home when ExitPromptError during post-explain prompt', async () => {
+  it('returns SessionData when ExitPromptError during post-explain prompt', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
     mockSelect
@@ -587,9 +602,10 @@ describe('showQuiz', () => {
       .mockResolvedValueOnce('explain')
       .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-explain prompt
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
   })
 
   it('continues to next question after explain then next', async () => {
@@ -606,7 +622,6 @@ describe('showQuiz', () => {
 
     expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
     expect(mockWriteDomain).toHaveBeenCalledTimes(2)
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   // -------------------------------------------------------------------------
@@ -683,7 +698,6 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate micro-lesson'))
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     warnSpy.mockRestore()
   })
 
@@ -710,7 +724,7 @@ describe('showQuiz', () => {
     expect(values).not.toContain('explain')
   })
 
-  it('navigates home when ExitPromptError during post-explain teach/next/exit prompt', async () => {
+  it('returns SessionData when ExitPromptError during post-explain teach/next/exit prompt', async () => {
     vi.spyOn(console, 'log').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
@@ -719,9 +733,10 @@ describe('showQuiz', () => {
       .mockResolvedValueOnce('explain')
       .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-explain prompt
 
-    await showQuiz('typescript')
+    const result = await showQuiz('typescript')
 
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
   })
 
   it('continues to next question after explain → teach → next', async () => {
@@ -741,7 +756,6 @@ describe('showQuiz', () => {
 
     expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
     expect(mockWriteDomain).toHaveBeenCalledTimes(2)
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('shows next/exit after explain failure (no teach option)', async () => {
@@ -763,7 +777,6 @@ describe('showQuiz', () => {
     expect(values).toContain('next')
     expect(values).toContain('exit')
     expect(values).not.toContain('teach')
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     warnSpy.mockRestore()
   })
 
@@ -786,6 +799,5 @@ describe('showQuiz', () => {
     expect(values).toContain('exit')
     expect(values).not.toContain('teach')
     expect(mockGenerateMicroLesson).not.toHaveBeenCalled()
-    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 })

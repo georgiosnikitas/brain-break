@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-03-28
+last_updated: 2026-03-29
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -109,3 +109,8 @@ development_status:
   7-5-settings-screen-provider-configuration: done
   7-6-router-startup-flow-provider-setup-wiring: done
   epic-7-retrospective: optional
+
+  # Epic 9: Session Summary
+  epic-9: done
+  9-1-session-summary-display: done
+  epic-9-retrospective: optional

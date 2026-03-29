@@ -159,7 +159,13 @@ describe('showStats', () => {
 describe('showDomainMenu', () => {
   it('delegates to showDomainMenuScreen with the slug', async () => {
     await showDomainMenu('menu-slug')
-    expect(showDomainMenuScreen).toHaveBeenCalledWith('menu-slug')
+    expect(showDomainMenuScreen).toHaveBeenCalledWith('menu-slug', undefined)
+  })
+
+  it('delegates to showDomainMenuScreen with sessionData when provided', async () => {
+    const sessionData = { records: [], startingDifficulty: 2 }
+    await showDomainMenu('menu-slug', sessionData)
+    expect(showDomainMenuScreen).toHaveBeenCalledWith('menu-slug', sessionData)
   })
 })
 

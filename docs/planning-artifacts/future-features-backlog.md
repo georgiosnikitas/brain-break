@@ -148,13 +148,9 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### 3. Session Summary / Post-Session Report
+### ~~3. Session Summary / Post-Session Report~~ ✅ Promoted
 
-**Description:** After exiting a quiz, display a compact summary: questions attempted, accuracy %, score delta, difficulty change, fastest/slowest answer. Turns every session into a tangible artifact.
-
-**KPIs targeted:** Session completion rate, Perceived value
-
-**Complexity:** Small
+**Status:** Promoted to PRD Feature 14 (2026-03-29)
 
 ---
 

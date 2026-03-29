@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-28'
+lastEdited: '2026-03-29'
 status: 'complete'
 editHistory:
+  - date: '2026-03-29'
+    changes: 'FR39 added (Session Summary): after a quiz session ends, the domain sub-menu renders a one-time ephemeral session summary block between the domain header and the action menu — displaying score delta, questions answered, correct/incorrect split, accuracy, fastest/slowest answer times, session duration, and difficulty change. FR3 updated (post-quiz return now includes session summary reference). FR Coverage Map updated with FR39 → Epic 9. Epic 9 (Session Summary) added with 1 story (9.1: Session Summary Display). Reflects PRD Feature 14 (2026-03-29).'
   - date: '2026-03-28'
     changes: 'FR38 added (Explanation Drill-Down): after viewing an AI explanation in both quiz and history, user can select \"Teach me more\" to get a micro-lesson on the underlying concept. FR8 updated (\"Exit quiz\" → \"Back\"). FR35 updated (post-explanation prompt expanded to Teach me more/Next/Back; \"Exit quiz\" → \"Back\"). FR37 updated (post-explanation navigation expanded to include Teach me more). FR Coverage Map updated with FR38 → Epic 3, Epic 4. Epic 3 and Epic 4 FRs covered updated. Story 3.4 and Story 4.3 ACs updated with Teach me more and Back references. Story 3.8 (Explanation Drill-Down — Quiz) added to Epic 3. Story 4.4 (Explanation Drill-Down — History) added to Epic 4. Reflects PRD Feature 13 (2026-03-28).'
   - date: '2026-03-28'
@@ -54,7 +56,7 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39).
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
@@ -125,6 +127,8 @@ FR36: The post-answer options/result block in the quiz session and the question 
 FR37: The history navigation screen includes an "Explain answer" option that calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as the quiz (Feature 3) with the active language and tone settings. The explanation is displayed inline on the same screen as the question detail. While the explanation is visible, the navigation menu shows Teach me more, Previous, Next, and Back (Explain is hidden). If the user navigates away and returns to the same question, Explain answer is available again. If the AI call fails, a non-critical warning is displayed and the user returns to the navigation menu.
 
 FR38: After an AI-generated explanation is displayed — in both the quiz post-answer flow (Feature 3) and history navigation (Feature 6) — the user is presented with a "Teach me more" option alongside the existing navigation controls. Selecting "Teach me more" calls the AI provider to generate a concise micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept behind the question — going deeper than the initial explanation to cover foundational principles, related concepts, and practical context. The micro-lesson is displayed inline below the explanation on the same screen using the active language and tone settings, with a loading spinner during generation. After the micro-lesson is displayed, "Teach me more" is removed from the navigation controls. If the user navigates away and returns to the same question, "Teach me more" is available again only after selecting "Explain answer" again — micro-lesson availability follows explanation availability. If the AI call fails, a non-critical warning is displayed and the user is returned to the navigation controls.
+
+FR39: After a quiz session ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu. The summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to View History, View Stats, or any other screen and returning does not re-display it; re-entering the domain from the home screen does not re-display it. A session is defined as the period from selecting Play to selecting Back — every session with at least one answered question produces a summary. The summary displays: score delta (green if positive, red if negative), questions answered, correct/incorrect split, accuracy %, fastest answer time (green), slowest answer time (red), session duration (using the same `formatTotalTimePlayed` format as the stats dashboard), and difficulty change (starting → ending level with ▲/▼/— indicator using `colorDifficultyLevel`). The summary block is framed by dim horizontal divider lines and renders on the domain sub-menu screen using the standard `clearAndBanner()` flow.
 
 ### NonFunctional Requirements
 
@@ -206,6 +210,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR36 | Epic 3 | Unified question detail rendering — shared `renderQuestionDetail()` used in quiz feedback and history detail view |
 | FR37 | Epic 4 | Explain answer from history — AI-generated explanation available in View History navigation |
 | FR38 | Epic 3, Epic 4 | Explanation Drill-Down — "Teach me more" micro-lesson after AI explanation in quiz and history |
+| FR39 | Epic 9 | Session Summary — ephemeral post-quiz summary on domain sub-menu |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -1811,3 +1816,72 @@ So that the app feels polished and I always know I'm in Brain Break regardless o
 **Given** co-located tests exist  
 **When** I run `npm test`  
 **Then** all tests pass, covering: `banner()` output contains "Brain Break", `clearAndBanner()` calls `clearScreen()` then `banner()`, all screen modules call `clearAndBanner()` on render (except Welcome and Provider Setup which call `clearScreen()`)  
+
+---
+
+## Epic 9: Session Summary
+
+After completing a quiz session, the domain sub-menu displays a one-time ephemeral session summary block between the domain header and the action menu — giving every session a tangible result before the user decides what to do next.
+
+**FRs covered:** FR39
+**FRs updated:** FR3 (post-quiz domain sub-menu return includes session summary)
+**NFRs covered:** NFR5 (session summary renders within the domain sub-menu's standard `clearAndBanner()` flow)
+**Additional requirements covered:** `screens/domain-menu.ts` — session summary rendering and ephemeral state management; `utils/format.ts` — `formatTotalTimePlayed`, `formatAccuracy`, `colorDifficultyLevel`, `colorCorrect`, `colorIncorrect` reused from Stats Dashboard; `screens/quiz.ts` — session data collection (start difficulty, question records) passed back to domain menu
+
+### Story 9.1: Session Summary Display
+
+As a user,
+I want to see a compact summary of my quiz session on the domain sub-menu immediately after finishing a quiz,
+So that I get instant feedback on how the session went — score change, accuracy, speed, and difficulty progression — without navigating to a separate screen.
+
+**Acceptance Criteria:**
+
+**Given** I have completed a quiz session (answered at least 1 question and selected Back)  
+**When** the domain sub-menu renders for the first time after the quiz  
+**Then** a session summary block is displayed between the domain header and the action menu  
+
+**Given** the session summary is displayed  
+**When** I inspect its contents  
+**Then** the following fields are shown in order, using the same `bold('Label:') + ' value'` format as the Stats Dashboard (Feature 7):  
+1. **Score delta:** net score change for the session — displayed in green (positive) using `colorCorrect` or red (negative) using `colorIncorrect`  
+2. **Questions answered:** count of questions answered in the session  
+3. **Correct / Incorrect:** correct count and incorrect count (e.g., `5 / 2`)  
+4. **Accuracy:** percentage of correct answers (e.g., `71.4%`) — formatted using `formatAccuracy`  
+5. **Fastest answer:** shortest response time in the session (e.g., `3.2s`) — displayed in green  
+6. **Slowest answer:** longest response time in the session (e.g., `12.8s`) — displayed in red  
+7. **Session duration:** total time from first question displayed to last answer submitted — formatted using `formatTotalTimePlayed`  
+8. **Difficulty:** starting difficulty level → ending difficulty level with directional indicator (e.g., `2 — Elementary → 3 — Intermediate ▲`) — difficulty labels use `colorDifficultyLevel`; ▲ displayed in green, ▼ displayed in red, — displayed in yellow when difficulty is unchanged  
+
+**Given** the session summary is displayed  
+**When** I inspect the summary block framing  
+**Then** it is framed by dim horizontal divider lines (e.g., `── Last Session ──────`) rendered using `dim()`  
+
+**Given** the session summary was displayed on the first domain sub-menu render after a quiz  
+**When** I navigate to View History, View Stats, or any other screen and return to the domain sub-menu  
+**Then** the session summary is no longer displayed — only the standard domain header and action menu are shown  
+
+**Given** the session summary was displayed on the first domain sub-menu render after a quiz  
+**When** I exit to the home screen and re-select the same domain  
+**Then** the session summary is no longer displayed  
+
+**Given** I started a quiz session but answered 0 questions (selected Back immediately on the first question via Ctrl+C)  
+**When** the domain sub-menu renders  
+**Then** no session summary is displayed  
+
+**Given** `screens/quiz.ts` is updated  
+**When** `showQuiz()` returns  
+**Then** session data is available to the caller: the list of `QuestionRecord` entries created during the session, and the difficulty level at the start of the session  
+**And** this data is passed to `showDomainMenuScreen()` so it can render the session summary  
+
+**Given** `screens/domain-menu.ts` is updated  
+**When** `showDomainMenuScreen(slug, sessionData?)` is called with session data  
+**Then** on the first render, the session summary is printed after `clearAndBanner()` and the domain header but before the `select()` prompt  
+**And** on subsequent loop iterations (after navigating to History/Stats/Archive and back), the session data is cleared and the summary is not re-rendered  
+
+**Given** `screens/domain-menu.ts` is updated  
+**When** `showDomainMenuScreen(slug)` is called without session data (e.g., from home screen selection)  
+**Then** no session summary is displayed — the domain sub-menu renders normally  
+
+**Given** `screens/domain-menu.test.ts`, `screens/quiz.test.ts`, and `utils/format.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: session summary displayed after quiz with ≥1 answer, summary not displayed after quiz with 0 answers, summary not displayed on subsequent domain sub-menu renders, summary not displayed when entering domain from home screen, all 8 fields rendered with correct values and colors, dim divider lines present, `formatTotalTimePlayed` and `formatAccuracy` reused from stats, `colorDifficultyLevel` used for difficulty labels, difficulty ▲/▼/— indicator colored correctly, session data passed from quiz to domain menu  

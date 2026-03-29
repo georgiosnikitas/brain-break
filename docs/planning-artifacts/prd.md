@@ -17,8 +17,10 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-28'
+lastEdited: '2026-03-29'
 editHistory:
+  - date: '2026-03-29'
+    changes: 'Feature 14 (Session Summary) added: after a quiz session ends, the domain sub-menu renders a one-time session summary block between the domain header and the action menu — displaying score delta, questions answered, correct/incorrect split, accuracy, fastest/slowest answer times, session duration, and difficulty change. The summary is ephemeral: it appears only on the first render of the domain sub-menu after a quiz and is not shown on subsequent re-renders. Product Scope updated from 13 to 14 capabilities. FR preamble updated. Feature 1 domain sub-menu updated with session summary cross-reference. User Journeys Core Usage updated. NFR 5 updated with session summary rendering note.'
   - date: '2026-03-25'
     changes: 'Prose review pass: fixed one hyphenation issue ("fullstack" → "full-stack") and one contradictory phrase in Feature 2 ("factually wrong correct answer" → "factually incorrect answer marked as correct").'
   - date: '2026-03-25'
@@ -118,7 +120,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 13 capabilities define the complete MVP:
+The following 14 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -133,6 +135,7 @@ The following 13 capabilities define the complete MVP:
 11. Welcome Screen
 12. Static Banner
 13. Explanation Drill-Down
+14. Session Summary
 
 ### Out of Scope
 
@@ -219,6 +222,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 - Sessions are 2–10 minutes; 3–10 questions per session
 - Navigates menus with arrow keys (↑↓); the focused option is highlighted with a full-row background; confirms selection with Enter
 - Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
+- On exiting the quiz, the domain sub-menu displays a one-time session summary — score delta, accuracy, speed stats, and difficulty change — giving every session a tangible result before the user decides what to do next
 - History persists between sessions automatically
 
 **"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. Intrigued, they hit "Teach me more" and get a one-minute micro-lesson on the concept — connecting the question to deeper principles they hadn't considered. They come back and get it right next time. The score rises. *That feedback loop is the product.*
@@ -284,7 +288,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 13 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 14 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -304,7 +308,7 @@ The following 13 features define the complete MVP capability set. Each feature i
 - Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
 - The domain sub-menu provides the following actions: **Play**, **View History**, **View Stats**, **Archive**, **Delete**, and **Back**
 - Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — the message is AI-generated using the active language and tone of voice settings, then the quiz begins
-- After a quiz session ends, the user is returned to the domain sub-menu (not the home screen)
+- After a quiz session ends, the user is returned to the domain sub-menu (not the home screen); on this first re-render, a session summary block is displayed between the domain header and the action menu (see Feature 14 — Session Summary)
 - Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
 - Selecting **Delete** prompts the user with a blocking confirmation dialog (*"Delete '[domain]' permanently? This cannot be undone."*) — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu
 - Selecting **Back** returns the user to the home screen
@@ -541,6 +545,23 @@ All interactive menus throughout the application use full-row background highlig
 - If the user navigates away and returns to the same question, **Teach me more** is available again only after selecting **Explain answer** again — micro-lesson availability follows explanation availability
 - If the AI call for the micro-lesson fails, a warning message is displayed (e.g., *"Could not generate micro-lesson."*) and the user is returned to the navigation controls — the failure is non-critical and does not interrupt the session
 
+### Feature 14 — Session Summary
+
+- After a quiz session ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu
+- The session summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to View History, View Stats, or any other screen and returning to the domain sub-menu does not re-display it; re-entering the domain from the home screen does not re-display it
+- A session is defined as the period from selecting Play to selecting Back — every session that includes at least one answered question produces a summary
+- The session summary displays the following fields in order, using the same `bold('Label:') + ' value'` format as the Stats Dashboard (Feature 7):
+  1. **Score delta:** Net score change for the session (positive or negative) — displayed in green (positive) or red (negative) using `colorCorrect` / `colorIncorrect`
+  2. **Questions answered:** Count of questions answered in the session
+  3. **Correct / Incorrect:** Correct count and incorrect count (e.g., `5 / 2`)
+  4. **Accuracy:** Percentage of correct answers (e.g., `71.4%`) — formatted using `formatAccuracy`
+  5. **Fastest answer:** Shortest response time in the session (e.g., `3.2s`) — displayed in green
+  6. **Slowest answer:** Longest response time in the session (e.g., `12.8s`) — displayed in red
+  7. **Session duration:** Total time from first question displayed to last answer submitted — formatted using the same `formatTotalTimePlayed` function as the Stats Dashboard
+  8. **Difficulty:** Starting difficulty level → ending difficulty level with directional indicator (e.g., `2 — Elementary → 3 — Intermediate ▲`) — difficulty labels use `colorDifficultyLevel`; ▲ displayed in green, ▼ displayed in red, — displayed in yellow when difficulty is unchanged
+- The summary block is framed by dim horizontal divider lines (e.g., `── Last Session ──────`) rendered using `dim()`
+- The summary renders on the domain sub-menu screen using the standard `clearAndBanner()` flow — no additional terminal reset is triggered; it is content between the banner and the action menu
+
 ---
 
 ## Non-Functional Requirements
@@ -568,7 +589,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
+All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.

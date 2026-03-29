@@ -1,5 +1,5 @@
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
-import { defaultDomainFile, defaultSettings, type QuestionRecord } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord, type SessionData } from '../domain/schema.js'
 import { warn, success, typewrite } from '../utils/format.js'
 import { generateMotivationalMessage } from '../ai/client.js'
 import ora from 'ora'
@@ -20,7 +20,7 @@ export function isScoreTrendingUp(history: QuestionRecord[]): boolean {
   return secondHalf > firstHalf
 }
 
-export async function showSelectDomainScreen(slug: string): Promise<void> {
+export async function showSelectDomainScreen(slug: string): Promise<SessionData | null> {
   const settingsResult = await readSettings()
   const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
 
@@ -47,5 +47,5 @@ export async function showSelectDomainScreen(slug: string): Promise<void> {
     }
   }
 
-  await showQuiz(slug)
+  return await showQuiz(slug)
 }

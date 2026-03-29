@@ -5,10 +5,9 @@ import { generateQuestion, generateExplanation, generateMicroLesson, type Questi
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
 import { applyAnswer } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
-import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SettingsFile } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SettingsFile, type SessionData } from '../domain/schema.js'
 import { colorIncorrect, warn, header, menuTheme, renderQuestionDetail } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import * as router from '../router.js'
 
 type NavResult = 'next' | 'exit' | null
 type PostAnswerAction = 'explain' | NavResult
@@ -89,7 +88,7 @@ async function askPostExplainAction(): Promise<'teach' | 'next' | 'exit' | null>
   }
 }
 
-async function showGenerationError(domainSlug: string, error: string): Promise<void> {
+async function showGenerationError(error: string): Promise<void> {
   console.error(colorIncorrect(error))
   try {
     await select({
@@ -100,7 +99,6 @@ async function showGenerationError(domainSlug: string, error: string): Promise<v
   } catch (err) {
     if (!(err instanceof ExitPromptError)) throw err
   }
-  await router.showDomainMenu(domainSlug)
 }
 
 async function handleTeachMeMore(
@@ -140,7 +138,11 @@ async function handleExplain(
   return askNextOrExit()
 }
 
-export async function showQuiz(domainSlug: string): Promise<void> {
+function buildSessionResult(sessionRecords: QuestionRecord[], startingDifficulty: number): SessionData | null {
+  return sessionRecords.length > 0 ? { records: sessionRecords, startingDifficulty } : null
+}
+
+export async function showQuiz(domainSlug: string): Promise<SessionData | null> {
   const settingsResult = await readSettings()
   const settings: SettingsFile = settingsResult.ok ? settingsResult.data : defaultSettings()
 
@@ -149,6 +151,8 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     console.warn(warn(readResult.error))
   }
   let domain: DomainFile = readResult.ok ? readResult.data : defaultDomainFile()
+  const startingDifficulty = domain.meta.difficultyLevel
+  const sessionRecords: QuestionRecord[] = []
 
   while (true) {
     const hashes = new Set(domain.hashes)
@@ -157,8 +161,8 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     const questionResult = await generateQuestion(domainSlug, domain.meta.difficultyLevel, hashes, recentQuestions, settings).finally(() => spinner.stop())
 
     if (!questionResult.ok) {
-      await showGenerationError(domainSlug, questionResult.error)
-      return
+      await showGenerationError(questionResult.error)
+      return null
     }
 
     const question = questionResult.data
@@ -167,8 +171,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     console.log(header(`📝 Quiz — ${domainSlug}`))
     const answered = await askQuestion(question)
     if (answered === null) {
-      await router.showDomainMenu(domainSlug)
-      return
+      return buildSessionResult(sessionRecords, startingDifficulty)
     }
     const { userAnswer, timeTakenMs } = answered
 
@@ -202,6 +205,8 @@ export async function showQuiz(domainSlug: string): Promise<void> {
       history: [...domain.history, record],
     }
 
+    sessionRecords.push(record)
+
     // Atomic persist before showing feedback or the next question
     const writeResult = await writeDomain(domainSlug, domain)
     if (!writeResult.ok) {
@@ -218,8 +223,7 @@ export async function showQuiz(domainSlug: string): Promise<void> {
     }
 
     if (nextAction === null || nextAction === 'exit') {
-      await router.showDomainMenu(domainSlug)
-      return
+      return buildSessionResult(sessionRecords, startingDifficulty)
     }
   }
 }

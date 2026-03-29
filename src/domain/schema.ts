@@ -67,6 +67,14 @@ export const DomainFileSchema = z.object({
 export type DomainFile = z.infer<typeof DomainFileSchema>
 
 // ---------------------------------------------------------------------------
+// Session data — ephemeral quiz session results passed to domain menu
+// ---------------------------------------------------------------------------
+export interface SessionData {
+  records: QuestionRecord[]
+  startingDifficulty: number
+}
+
+// ---------------------------------------------------------------------------
 // Factory — returns a clean new domain (used on ENOENT in store.ts)
 // ---------------------------------------------------------------------------
 export function defaultDomainFile(startingDifficulty: number = 2): DomainFile {

@@ -10,14 +10,14 @@ import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
 import { readDomain, writeDomain, deleteDomain as deleteDomainStore } from './domain/store.js'
 import { warn, error as errorFmt } from './utils/format.js'
-import type { SettingsFile } from './domain/schema.js'
+import type { SettingsFile, SessionData } from './domain/schema.js'
 
 export async function showHome(): Promise<void> {
   await showHomeScreen()
 }
 
-export async function showQuiz(slug: string): Promise<void> {
-  await showSelectDomainScreen(slug)
+export async function showQuiz(slug: string): Promise<SessionData | null> {
+  return await showSelectDomainScreen(slug)
 }
 
 export async function showCreateDomain(): Promise<void> {
@@ -56,8 +56,8 @@ export async function deleteDomain(slug: string): Promise<void> {
   }
 }
 
-export async function showDomainMenu(slug: string): Promise<void> {
-  await showDomainMenuScreen(slug)
+export async function showDomainMenu(slug: string, sessionData?: SessionData | null): Promise<void> {
+  await showDomainMenuScreen(slug, sessionData)
 }
 
 export async function showSettings(): Promise<void> {

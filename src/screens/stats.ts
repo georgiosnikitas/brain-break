@@ -92,16 +92,16 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   console.log(header(`📊 Stats Dashboard — ${domainSlug}`))
 
   if (total === 0) {
-    console.log(bold('Score:') + ` ${meta.score}`)
-    console.log(bold('Questions answered:') + ' 0')
-    console.log(bold('Correct / Incorrect:') + ' 0 / 0')
-    console.log(bold('Accuracy:') + ' No data yet')
-    console.log(bold('Total time played:') + ' No data yet')
-    console.log(bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
-    console.log(bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
+    console.log('🏆 ' + bold('Score:') + ` ${meta.score}`)
+    console.log('📝 ' + bold('Questions answered:') + ' 0')
+    console.log('✅ ' + bold('Correct / Incorrect:') + ' 0 / 0')
+    console.log('🎯 ' + bold('Accuracy:') + ' No data yet')
+    console.log('⏱️  ' + bold('Total time played:') + ' No data yet')
+    console.log('📈 ' + bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
+    console.log('📈 ' + bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
     console.log(bold('Score trend (30 days):') + ' No data yet')
-    console.log(bold('Days since first session:') + ' No data yet')
-    console.log(bold('Return streak:') + ' No data yet')
+    console.log('📅 ' + bold('Days since first session:') + ' No data yet')
+    console.log('🔥 ' + bold('Return streak:') + ' No data yet')
   } else {
     const trend = computeScoreTrend(history)
     const trendLabels = { growing: 'Growing 📈', declining: 'Declining 📉', flat: 'Flat ➡️' }
@@ -109,17 +109,17 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     const daySinceFirst = daysSinceFirstSession(history)
     const streak = computeReturnStreak(history, nowMs)
 
-    console.log(bold('Score:') + ` ${meta.score}`)
-    console.log(bold('Questions answered:') + ` ${total}`)
-    console.log(bold('Correct / Incorrect:') + ` ${correct} / ${incorrect}`)
-    console.log(bold('Accuracy:') + ` ${formatAccuracy(correct, total)}`)
-    console.log(bold('Total time played:') + ` ${formatTotalTimePlayed(meta.totalTimePlayedMs)}`)
-    console.log(bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
-    console.log(bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
+    console.log('🏆 ' + bold('Score:') + ` ${meta.score}`)
+    console.log('📝 ' + bold('Questions answered:') + ` ${total}`)
+    console.log('✅ ' + bold('Correct / Incorrect:') + ` ${correct} / ${incorrect}`)
+    console.log('🎯 ' + bold('Accuracy:') + ` ${formatAccuracy(correct, total)}`)
+    console.log('⏱️  ' + bold('Total time played:') + ` ${formatTotalTimePlayed(meta.totalTimePlayedMs)}`)
+    console.log('📈 ' + bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
+    console.log('📈 ' + bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
     console.log(bold('Score trend (30 days):') + ` ${trendLabel}`)
-    console.log(bold('Days since first session:') + ` ${daySinceFirst!}`)
+    console.log('📅 ' + bold('Days since first session:') + ` ${daySinceFirst!}`)
     console.log(
-      bold('Return streak:') + ` ${streak} day${streak === 1 ? '' : 's'}`,
+      '🔥 ' + bold('Return streak:') + ` ${streak} day${streak === 1 ? '' : 's'}`,
     )
   }
 
