@@ -10,7 +10,7 @@ exports[`stats screen — full output snapshot > renders the empty-history place
   "⏱️  Total time played: No data yet",
   "📈 Starting difficulty: 2 — Elementary",
   "📈 Current difficulty: 2 — Elementary",
-  "Score trend (30 days): No data yet",
+  "🔄 Score trend (30 days): No data yet",
   "📅 Days since first session: No data yet",
   "🔥 Return streak: No data yet",
 ]
@@ -26,7 +26,7 @@ exports[`stats screen — full output snapshot > renders the populated stats das
   "⏱️  Total time played: 30s",
   "📈 Starting difficulty: 2 — Elementary",
   "📈 Current difficulty: 2 — Elementary",
-  "Score trend (30 days): Growing 📈",
+  "🔄 Score trend (30 days): Growing 📈",
   "📅 Days since first session: 1",
   "🔥 Return streak: 2 days",
 ]

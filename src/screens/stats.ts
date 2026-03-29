@@ -99,7 +99,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log('⏱️  ' + bold('Total time played:') + ' No data yet')
     console.log('📈 ' + bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
     console.log('📈 ' + bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
-    console.log(bold('Score trend (30 days):') + ' No data yet')
+    console.log('🔄 ' + bold('Score trend (30 days):') + ' No data yet')
     console.log('📅 ' + bold('Days since first session:') + ' No data yet')
     console.log('🔥 ' + bold('Return streak:') + ' No data yet')
   } else {
@@ -116,7 +116,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log('⏱️  ' + bold('Total time played:') + ` ${formatTotalTimePlayed(meta.totalTimePlayedMs)}`)
     console.log('📈 ' + bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
     console.log('📈 ' + bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
-    console.log(bold('Score trend (30 days):') + ` ${trendLabel}`)
+    console.log('🔄 ' + bold('Score trend (30 days):') + ` ${trendLabel}`)
     console.log('📅 ' + bold('Days since first session:') + ` ${daySinceFirst!}`)
     console.log(
       '🔥 ' + bold('Return streak:') + ` ${streak} day${streak === 1 ? '' : 's'}`,
