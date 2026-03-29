@@ -1,7 +1,7 @@
 ---
 Story: 3.3
 Title: Interactive Quiz Loop
-Status: complete
+Status: done
 Epic: 3 — AI-Powered Adaptive Quiz
 Created: 2026-03-12
 ---

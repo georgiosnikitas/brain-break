@@ -1,7 +1,7 @@
 ---
 Story: 3.1
 Title: Copilot SDK Integration & Question Generation
-Status: complete
+Status: done
 Epic: 3 — AI-Powered Adaptive Quiz
 Created: 2026-03-07
 ---

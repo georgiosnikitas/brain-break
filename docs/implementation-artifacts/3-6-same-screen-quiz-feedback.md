@@ -1,7 +1,7 @@
 ---
 Story: 3.6
 Title: Same-Screen Quiz Feedback
-Status: review
+Status: done
 Epic: 3 — AI-Powered Adaptive Quiz
 Created: 2026-03-25
 GitHub-Issue: 50

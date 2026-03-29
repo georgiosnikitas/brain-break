@@ -1,7 +1,7 @@
 ---
 Story: 3.4
 Title: Answer Explanation
-Status: complete
+Status: done
 Epic: 3 — AI-Powered Adaptive Quiz
 Created: 2026-03-25
 ---

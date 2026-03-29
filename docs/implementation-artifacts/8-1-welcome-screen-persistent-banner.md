@@ -2,7 +2,7 @@
 title: 'Welcome Screen & Persistent Banner'
 slug: 'welcome-screen-persistent-banner'
 created: '2026-03-23'
-status: 'complete'
+status: 'done'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['TypeScript (ES2022, ESM)', 'chalk ^5.0.0 (bgRgb, rgb for gradients)', '@inquirer/prompts 7.10.1 (select for dismissal)', 'zod (settings schema validation)', 'vitest (testing)', 'node:module createRequire (for package.json version read)']
 files_to_modify: ['src/utils/screen.ts', 'src/utils/format.ts', 'src/domain/schema.ts', 'src/screens/welcome.ts (new)', 'src/screens/home.ts', 'src/screens/quiz.ts', 'src/screens/history.ts', 'src/screens/stats.ts', 'src/screens/domain-menu.ts', 'src/screens/archived.ts', 'src/screens/provider-setup.ts', 'src/screens/settings.ts', 'src/screens/create-domain.ts', 'src/index.ts', 'src/router.ts']
