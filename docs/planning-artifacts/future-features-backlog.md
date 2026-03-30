@@ -154,13 +154,15 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### 3. Question Bookmarking / Favorites
+### ~~3. Question Bookmarking / Favorites~~ ✅ Promoted to MVP
 
-**Description:** Let users flag questions they want to revisit. "Star this question" adds it to a bookmarked list accessible from the domain sub-menu.
+> **Promoted:** 2026-03-30 — added as PRD Feature 16, Epic 10, FR41–FR43.
 
-**KPIs targeted:** Session completion rate, Knowledge reinforcement
+~~**Description:** Let users flag questions they want to revisit. "Star this question" adds it to a bookmarked list accessible from the domain sub-menu.~~
 
-**Complexity:** Small
+~~**KPIs targeted:** Session completion rate, Knowledge reinforcement~~
+
+~~**Complexity:** Small~~
 
 ---
 

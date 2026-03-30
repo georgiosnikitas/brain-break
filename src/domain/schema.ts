@@ -53,6 +53,7 @@ export const QuestionRecordSchema = z.object({
   speedTier: SpeedTierSchema,
   scoreDelta: z.number().finite(),
   difficultyLevel: z.number().int().min(1).max(5),
+  bookmarked: z.boolean().default(false),
 })
 export type QuestionRecord = z.infer<typeof QuestionRecordSchema>
 

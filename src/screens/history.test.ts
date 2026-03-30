@@ -13,6 +13,7 @@ vi.mock('@inquirer/prompts', () => ({
 vi.mock('../domain/store.js', () => ({
   readDomain: vi.fn(),
   readSettings: vi.fn(),
+  writeDomain: vi.fn(),
 }))
 
 vi.mock('../router.js', () => ({
@@ -29,7 +30,7 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
-import { readDomain, readSettings } from '../domain/store.js'
+import { readDomain, readSettings, writeDomain } from '../domain/store.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
 import { clearAndBanner } from '../utils/screen.js'
@@ -38,6 +39,7 @@ import { showHistory, buildPageChoices } from './history.js'
 
 const mockReadDomain = vi.mocked(readDomain)
 const mockReadSettings = vi.mocked(readSettings)
+const mockWriteDomain = vi.mocked(writeDomain)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
 const mockGenerateExplanation = vi.mocked(generateExplanation)
@@ -58,6 +60,7 @@ function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
     speedTier: 'fast',
     scoreDelta: 60,
     difficultyLevel: 3,
+    bookmarked: false,
     ...overrides,
   }
 }
@@ -74,6 +77,7 @@ function makeHistory(count: number): QuestionRecord[] {
 beforeEach(() => {
   vi.clearAllMocks()
   mockShowDomainMenu.mockResolvedValue(undefined)
+  mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockReadSettings.mockResolvedValue({ ok: true, data: { provider: null, language: 'English', tone: 'natural' as const, openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true } })
   mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Test explanation text' })
@@ -137,10 +141,10 @@ describe('buildPageChoices', () => {
     expect(values).toContain('back')
   })
 
-  it('shows only Back when explainVisible true and teachVisible true (micro-lesson shown, single question)', () => {
+  it('shows only bookmark + Back when explainVisible true and teachVisible true (micro-lesson shown, single question)', () => {
     const choices = buildPageChoices(0, 1, true, true) as Array<{ name: string; value: string }>
     const values = choices.map((c) => c.value).filter(Boolean)
-    expect(values).toEqual(['back'])
+    expect(values).toEqual(['bookmark', 'back'])
   })
 
   it('hides Teach me more when teachVisible is true on multi-question view', () => {
@@ -713,10 +717,10 @@ describe('showHistory — teach me more', () => {
 
     await showHistory('typescript')
 
-    // Third call: only Back (no next/prev/teach/explain)
+    // Third call: bookmark + Back (no next/prev/teach/explain)
     const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
     const thirdValues = thirdChoices.map((c) => c.value).filter(Boolean)
-    expect(thirdValues).toEqual(['back'])
+    expect(thirdValues).toEqual(['bookmark', 'back'])
   })
 
   it('does not call clearAndBanner when rendering micro-lesson inline', async () => {
@@ -734,3 +738,275 @@ describe('showHistory — teach me more', () => {
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
   })
 })
+
+// ---------------------------------------------------------------------------
+// buildPageChoices — bookmark
+// ---------------------------------------------------------------------------
+describe('buildPageChoices — bookmark', () => {
+  it('includes bookmark in default state (no explain, no teach)', () => {
+    const choices = buildPageChoices(0, 1) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('bookmark')
+  })
+
+  it('includes bookmark when explainVisible is true', () => {
+    const choices = buildPageChoices(0, 1, true) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('bookmark')
+  })
+
+  it('includes bookmark when explainVisible and teachVisible are both true', () => {
+    const choices = buildPageChoices(0, 1, true, true) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('bookmark')
+  })
+
+  it('shows "💫 Bookmark" label when bookmarked is false', () => {
+    const choices = buildPageChoices(0, 1, false, false, false) as Array<{ name: string; value: string }>
+    const bookmark = choices.find((c) => c.value === 'bookmark')
+    expect(bookmark?.name).toBe('💫 Bookmark')
+  })
+
+  it('shows "⭐ Remove bookmark" label when bookmarked is true', () => {
+    const choices = buildPageChoices(0, 1, false, false, true) as Array<{ name: string; value: string }>
+    const bookmark = choices.find((c) => c.value === 'bookmark')
+    expect(bookmark?.name).toBe('⭐ Remove bookmark')
+  })
+
+  it('defaults to "💫 Bookmark" when bookmarked param is omitted', () => {
+    const choices = buildPageChoices(0, 1) as Array<{ name: string; value: string }>
+    const bookmark = choices.find((c) => c.value === 'bookmark')
+    expect(bookmark?.name).toBe('💫 Bookmark')
+  })
+
+  it('bookmark is positioned after explain and before next/prev', () => {
+    const choices = buildPageChoices(0, 3) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    const explainIdx = values.indexOf('explain')
+    const bookmarkIdx = values.indexOf('bookmark')
+    const nextIdx = values.indexOf('next')
+    expect(explainIdx).toBeLessThan(bookmarkIdx)
+    expect(bookmarkIdx).toBeLessThan(nextIdx)
+  })
+
+  it('bookmark is positioned after teach (when explain visible, teach not yet shown)', () => {
+    const choices = buildPageChoices(0, 1, true, false) as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    const teachIdx = values.indexOf('teach')
+    const bookmarkIdx = values.indexOf('bookmark')
+    expect(teachIdx).toBeLessThan(bookmarkIdx)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showHistory — bookmark toggle
+// ---------------------------------------------------------------------------
+describe('showHistory — bookmark toggle', () => {
+  it('selecting Bookmark calls writeDomain once', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(mockWriteDomain).toHaveBeenCalledOnce()
+    expect(mockWriteDomain).toHaveBeenCalledWith('typescript', expect.any(Object))
+  })
+
+  it('selecting Bookmark toggles bookmarked from false to true', async () => {
+    const record = makeRecord({ bookmarked: false })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const [, writtenDomain] = mockWriteDomain.mock.calls[0]
+    expect((writtenDomain as typeof domain).history[0].bookmarked).toBe(true)
+  })
+
+  it('after bookmarking, choices show "⭐ Remove bookmark"', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const bookmark = secondChoices.find((c) => c.value === 'bookmark')
+    expect(bookmark?.name).toBe('⭐ Remove bookmark')
+  })
+
+  it('selecting Remove bookmark toggles bookmarked from true to false', async () => {
+    const record = makeRecord({ bookmarked: true })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const [, writtenDomain] = mockWriteDomain.mock.calls[0]
+    expect((writtenDomain as typeof domain).history[0].bookmarked).toBe(false)
+  })
+
+  it('after removing bookmark, choices show "💫 Bookmark"', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: true })] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const bookmark = secondChoices.find((c) => c.value === 'bookmark')
+    expect(bookmark?.name).toBe('💫 Bookmark')
+  })
+
+  it('bookmark toggle twice restores original state (false→true→false)', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    const [, secondDomain] = mockWriteDomain.mock.calls[1]
+    expect((secondDomain as typeof domain).history[0].bookmarked).toBe(false)
+  })
+
+  it('bookmark choice is present in default state choices on first render', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord()] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name: string; value: string }>
+    const values = choices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('bookmark')
+  })
+
+  it('bookmark choice persists after explanation is shown', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord()] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const secondChoices = mockSelect.mock.calls[1][0].choices as unknown as Array<{ name: string; value: string }>
+    const values = secondChoices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('bookmark')
+  })
+
+  it('bookmark choice persists after micro-lesson is shown', async () => {
+    const domain = { ...defaultDomainFile(), history: [makeRecord()] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const thirdChoices = mockSelect.mock.calls[2][0].choices as unknown as Array<{ name: string; value: string }>
+    const values = thirdChoices.map((c) => c.value).filter(Boolean)
+    expect(values).toContain('bookmark')
+  })
+
+  it('bookmark does not call writeDomain when not selected', async () => {
+    const domain = { ...defaultDomainFile(), history: makeHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(mockWriteDomain).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// showHistory — question display
+// ---------------------------------------------------------------------------
+describe('showHistory — question display', () => {
+  it('shows question text when record is bookmarked', async () => {
+    const record = makeRecord({ question: 'What is TypeScript?', bookmarked: true })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('What is TypeScript?')
+    expect(allLogs).not.toContain('⭐ What is TypeScript?')
+    consoleSpy.mockRestore()
+  })
+
+  it('shows question text when record is not bookmarked', async () => {
+    const record = makeRecord({ question: 'What is TypeScript?', bookmarked: false })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('What is TypeScript?')
+    consoleSpy.mockRestore()
+  })
+
+  it('bookmark toggle does not trigger screen re-render (clearAndBanner called once)', async () => {
+    const record = makeRecord({ question: 'What is TypeScript?', bookmarked: false })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // clearAndBanner called once: initial render only (no re-render on bookmark toggle)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+  })
+
+  it('remove bookmark does not trigger screen re-render (clearAndBanner called once)', async () => {
+    const record = makeRecord({ question: 'What is TypeScript?', bookmarked: true })
+    const domain = { ...defaultDomainFile(), history: [record] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    // clearAndBanner called once: initial render only (no re-render on bookmark toggle)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows warning when writeDomain fails on bookmark', async () => {
+    mockWriteDomain.mockResolvedValue({ ok: false, error: 'Disk full' })
+    const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to save bookmark'))
+    warnSpy.mockRestore()
+  })
+})
+

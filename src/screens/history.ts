@@ -1,8 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import ora from 'ora'
 import { readDomain, readSettings } from '../domain/store.js'
-import { defaultDomainFile, defaultSettings, type QuestionRecord, type SettingsFile } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile } from '../domain/schema.js'
 import {
   warn,
   dim,
@@ -11,20 +10,22 @@ import {
   renderQuestionDetail,
 } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { generateExplanation, generateMicroLesson, type Question } from '../ai/client.js'
+import { handleExplainAnswer, handleTeachMeMoreAnswer, toggleBookmark } from './question-nav.js'
 import * as router from '../router.js'
 
-type NavAction = 'next' | 'prev' | 'back' | 'explain' | 'teach'
+type NavAction = 'next' | 'prev' | 'back' | 'explain' | 'teach' | 'bookmark'
 
 export function buildPageChoices(
   currentIndex: number,
   totalItems: number,
   explainVisible?: boolean,
   teachVisible?: boolean,
+  bookmarked?: boolean,
 ): Array<{ name: string; value: NavAction } | Separator> {
   const choices: Array<{ name: string; value: NavAction } | Separator> = []
   if (!explainVisible) choices.push({ name: '💡 Explain answer', value: 'explain' })
   if (explainVisible && !teachVisible) choices.push({ name: '📚 Teach me more', value: 'teach' })
+  choices.push({ name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' })
   if (currentIndex < totalItems - 1) choices.push({ name: '➡️  Next question', value: 'next' })
   if (currentIndex > 0) choices.push({ name: '⬅️  Previous question', value: 'prev' })
   if (choices.length > 0) choices.push(new Separator())
@@ -35,49 +36,6 @@ export function buildPageChoices(
 function displayEntry(record: QuestionRecord): void {
   console.log(record.question)
   renderQuestionDetail(record, { showTimestamp: true })
-}
-
-function toQuestion(record: QuestionRecord): Question {
-  return {
-    question: record.question,
-    options: record.options,
-    correctAnswer: record.correctAnswer,
-    difficultyLevel: record.difficultyLevel,
-    speedThresholds: { fastMs: 10000, slowMs: 30000 },
-  }
-}
-
-async function handleExplain(
-  record: QuestionRecord,
-  settings: SettingsFile,
-): Promise<{ visible: boolean; skipClear: boolean; explanationText: string | null }> {
-  const question = toQuestion(record)
-  const spinner = ora('Generating explanation...').start()
-  const result = await generateExplanation(question, record.userAnswer, settings)
-    .finally(() => spinner.stop())
-  if (result.ok) {
-    console.log(`\n${result.data}\n`)
-    return { visible: true, skipClear: false, explanationText: result.data }
-  }
-  console.warn(warn('Could not generate explanation.'))
-  return { visible: false, skipClear: true, explanationText: null }
-}
-
-async function handleTeachMeMore(
-  record: QuestionRecord,
-  explanationText: string,
-  settings: SettingsFile,
-): Promise<{ teachShown: boolean; skipClear: boolean }> {
-  const question = toQuestion(record)
-  const spinner = ora('Generating micro-lesson...').start()
-  const result = await generateMicroLesson(question, explanationText, settings)
-    .finally(() => spinner.stop())
-  if (result.ok) {
-    console.log(`\n${result.data}\n`)
-    return { teachShown: true, skipClear: false }
-  }
-  console.warn(warn('Could not generate micro-lesson.'))
-  return { teachShown: false, skipClear: true }
 }
 
 async function selectNavAction(
@@ -92,7 +50,7 @@ async function selectNavAction(
   }
 }
 
-async function navigateHistory(history: QuestionRecord[], domainSlug: string): Promise<void> {
+async function navigateHistory(history: QuestionRecord[], domain: DomainFile, domainSlug: string): Promise<void> {
   const settingsResult = await readSettings()
   const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
   const totalItems = history.length
@@ -110,7 +68,7 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
     }
     skipClear = false
 
-    const choices = buildPageChoices(index, totalItems, explainVisible, teachVisible)
+    const choices = buildPageChoices(index, totalItems, explainVisible, teachVisible, history[index].bookmarked)
     const nav = await selectNavAction(`Question ${index + 1} of ${totalItems}`, choices)
     if (nav === null) {
       await router.showDomainMenu(domainSlug)
@@ -118,15 +76,18 @@ async function navigateHistory(history: QuestionRecord[], domainSlug: string): P
     }
 
     if (nav === 'explain') {
-      const explainResult = await handleExplain(history[index], settings)
+      const explainResult = await handleExplainAnswer(history[index], settings)
       explainVisible = explainResult.visible
       skipClear = explainResult.skipClear
       explanationText = explainResult.explanationText
       teachVisible = false
     } else if (nav === 'teach') {
-      const teachResult = await handleTeachMeMore(history[index], explanationText!, settings)
+      const teachResult = await handleTeachMeMoreAnswer(history[index], explanationText!, settings)
       teachVisible = teachResult.teachShown
       skipClear = teachResult.skipClear
+    } else if (nav === 'bookmark') {
+      await toggleBookmark(history[index], domainSlug, domain)
+      skipClear = true
     } else if (nav === 'next') {
       index++
       explainVisible = false
@@ -169,5 +130,5 @@ export async function showHistory(domainSlug: string): Promise<void> {
     return
   }
 
-  await navigateHistory(history, domainSlug)
+  await navigateHistory(history, domain, domainSlug)
 }

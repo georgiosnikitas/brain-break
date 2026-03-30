@@ -266,6 +266,7 @@ function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
     speedTier: 'fast',
     scoreDelta: 60,
     difficultyLevel: 3,
+    bookmarked: false,
     ...overrides,
   }
 }

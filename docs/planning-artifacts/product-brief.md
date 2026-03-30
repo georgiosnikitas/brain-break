@@ -5,8 +5,8 @@ inputDocuments: []
 date: 2026-03-01
 author: George
 lastEdited: '2026-03-25'
-editHistory:
-  - date: '2026-03-25'
+editHistory:  - date: '2026-03-30'
+    changes: 'MVP Feature Summary updated from 13 to 14 core capabilities: added Question Bookmarking (bookmark any answered question from quiz or history, View Bookmarks screen in domain sub-menu with navigation identical to View History, per-domain storage, no cap). Aligns with PRD Feature 16, Epic 10, and FR41–FR43.'  - date: '2026-03-25'
     changes: 'MVP Feature Summary updated from 10 to 12 core capabilities: added Welcome Screen (branded splash with gradient ASCII art, tagline, version — controllable via showWelcome setting) and Static Banner (persistent 🧠🔨 Brain Break header + gradient shadow bar on every screen except Welcome/Provider Setup). Aligns with PRD Features 11 and 12, Epic 8, and FR31–FR34.'
   - date: '2026-03-25'
     changes: 'MVP Feature Summary: View stats command updated to include starting difficulty level alongside current difficulty. Reflects GitHub issue #46.'
@@ -111,7 +111,7 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 
 ## MVP Feature Summary
 
-The MVP delivers thirteen core capabilities:
+The MVP delivers fourteen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
@@ -126,6 +126,7 @@ The MVP delivers thirteen core capabilities:
 - **Welcome screen** — on launch (when enabled), a branded splash screen displays gradient-colored ASCII art, a styled subtitle, and the app version — dismissible with Enter; controllable via a `showWelcome` setting (default: on)
 - **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar at the top of the terminal
 - **Explanation drill-down** — after viewing an AI-generated explanation (in both quiz and history), a "Teach me more" option calls the AI to generate a concise micro-lesson on the underlying concept, extending the quiz into a true learning loop
+- **Question bookmarking** — users can bookmark any answered question from the quiz post-answer screen or history navigation for later revisiting; bookmarked questions are accessible via a dedicated View Bookmarks screen in the domain sub-menu with navigation identical to View History; bookmarks are per-domain with no cap
 
 → Full feature specifications and acceptance criteria: [prd.md](prd.md)
 
@@ -137,5 +138,5 @@ The MVP delivers thirteen core capabilities:
 - Score or history reset
 - Leaderboards or team comparison features
 - Web UI or any non-terminal interface
-- User accounts or cloud sync
+- User accounts 
 - Any feature not listed in this document

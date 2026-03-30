@@ -160,6 +160,42 @@ describe('DomainFileSchema', () => {
     expect(result.success).toBe(false)
   })
 
+  it('defaults bookmarked to false when field is missing (backward compat)', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [validHistory[0]],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.history[0].bookmarked).toBe(false)
+    }
+  })
+
+  it('accepts bookmarked: true on history entry', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], bookmarked: true }],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.history[0].bookmarked).toBe(true)
+    }
+  })
+
+  it('accepts bookmarked: false on history entry', () => {
+    const result = DomainFileSchema.safeParse({
+      meta: validMeta,
+      hashes: [],
+      history: [{ ...validHistory[0], bookmarked: false }],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.history[0].bookmarked).toBe(false)
+    }
+  })
+
   it('rejects empty question string', () => {
     const result = DomainFileSchema.safeParse({
       meta: validMeta,

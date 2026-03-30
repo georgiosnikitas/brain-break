@@ -3,6 +3,7 @@ import { showCreateDomainScreen } from './screens/create-domain.js'
 import { showSelectDomainScreen } from './screens/select-domain.js'
 import { showArchivedScreen } from './screens/archived.js'
 import { showHistory as showHistoryScreen } from './screens/history.js'
+import { showBookmarks as showBookmarksScreen } from './screens/bookmarks.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSettingsScreen } from './screens/settings.js'
@@ -44,6 +45,10 @@ export async function archiveDomain(slug: string): Promise<void> {
 
 export async function showHistory(slug: string): Promise<void> {
   await showHistoryScreen(slug)
+}
+
+export async function showBookmarks(slug: string): Promise<void> {
+  await showBookmarksScreen(slug)
 }
 
 export async function showStats(slug: string): Promise<void> {

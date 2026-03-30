@@ -7,8 +7,12 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-26'
+lastEdited: '2026-03-30'
 editHistory:
+  - date: '2026-03-30'
+    changes: 'Exit screen, welcome screen timer, welcome toggle rename: Requirements Overview updated (11→12 features, exit screen added, welcome screen description expanded with 3s auto-proceed timer). Estimated components updated (13–15→14–16). Settings screen description updated (welcome screen toggle → Welcome & Exit screen toggle ON/OFF). Settings JSON schema showWelcome comment updated (controls both welcome + exit). defaultSettings() description updated. Cross-cutting concern updated (showWelcome controls startup + exit, read before exit routing). New Welcome Screen section added (3s cancellableSleep auto-proceed behavior). New Exit Screen section added (showExitScreen, getExitMessage, dynamic messages by totalQuestions, 3s auto-exit timer, total questions aggregation from active + archived domains). Navigation flow updated (exit action branches on showWelcome ON/OFF, welcome annotated with auto-proceed). Screen count updated (11→13). Module Architecture src/ tree updated (exit.ts added, welcome.ts comment expanded, settings.ts comment renamed, router count 13→14). Complete Project Directory Structure updated (exit.ts + exit.test.ts added, settings.ts comment renamed, welcome.ts comment expanded, router count 13→14). Feature to Structure Mapping updated (F11 expanded with timer, F13 row added). Requirements Coverage Validation updated (F11 expanded, F13 row added). Data Flow Startup updated (welcome timer behavior). Data Flow Exit added (full exit routing flow). All changes additive — no architectural decisions changed.'
+  - date: '2026-03-30'
+    changes: 'Question Bookmarking (PRD Feature 16, Epic 10, FR41–FR43): Requirements Overview updated (10→11 features, bookmarking added to feature list). Estimated components updated (12–14→13–15). Domain File Schema updated (bookmarked: false field added to QuestionRecord). State management cross-cutting concern updated (bookmark toggle persistence). Navigation pattern updated (View Bookmarks route added to Level 2 domain sub-menu). Router function count updated (12→13). Module Architecture src/ tree updated (bookmarks.ts added, domain-menu.ts comment updated, format.ts consumer list updated). Complete Project Directory Structure updated (bookmarks.ts + bookmarks.test.ts added). Feature to Structure Mapping updated (F12 row added). Cross-Cutting Concern Mapping updated (question detail rendering consumers expanded). Requirements Coverage Validation updated (F12 row added, NFR 5 updated). All changes additive — no architectural decisions changed.'
   - date: '2026-03-26'
     changes: 'Unified question detail rendering (GitHub issue #52): utils/format.ts gains renderQuestionDetail() — a shared rendering function producing the options + feedback block consumed by both screens/quiz.ts and screens/history.ts. Updated: format.ts module description (both directory trees), dependency rules (utils/format.ts type-only imports from domain/schema.ts clarified), internal boundary rule (utils/ type-only import allowance), F3 and F6 feature-to-structure mapping (added utils/format.ts), cross-cutting concern table (new question detail rendering row).'
   - date: '2026-03-25'
@@ -43,7 +47,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-10 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice) with first-launch provider setup, terminal UI highlighting with semantic color system, and a coffee supporter screen.
+12 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, and an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -57,7 +61,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Primary domain: CLI / terminal application (Unix-like: macOS, Linux, WSL)
 - Complexity level: Low-Medium
 - External dependencies: 5 AI provider adapters via Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for OpenAI, Anthropic, Gemini, and Ollama; GitHub Copilot SDK as a custom adapter — one provider active at runtime, user-selected
-- Estimated architectural components: 12–14 focused modules
+- Estimated architectural components: 14–16 focused modules
 
 ### Technical Constraints & Dependencies
 
@@ -72,10 +76,10 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 5 supported backends (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine
 - **File I/O with integrity guarantees:** Read/write/permission enforcement is needed everywhere domain state is touched — must be centralized, not scattered
-- **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer and must be atomically persisted
+- **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer; bookmark status can be toggled from post-answer, history, and bookmark screens — all must be atomically persisted
 - **Terminal rendering:** All user-facing output (home screen, quiz, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output. **Exception:** the post-answer quiz feedback panel renders inline on the same screen as the question — `clearScreen()` is **not** called between the question display and the feedback panel. A terminal reset occurs only when the user selects Next question (loading a new question) or exits the quiz
 - **Deduplication:** SHA-256 lookup on every question generation — must be fast and correctly scoped per domain
-- **Global settings & AI voice injection:** Language, tone of voice, and AI provider selection stored in a global settings file; language + tone injected into every AI prompt — affects questions, answer options, and motivational messages; provider setting determines which AI backend is used; must be read before any AI call
+- **Global settings & AI voice injection:** Language, tone of voice, and AI provider selection stored in a global settings file; language + tone injected into every AI prompt — affects questions, answer options, and motivational messages; provider setting determines which AI backend is used; `showWelcome` setting controls both the startup welcome screen and the exit screen; must be read before any AI call and before exit routing
 - **Semantic color system:** Post-answer feedback, speed tier badges, difficulty level badges, and menu highlighting all use a consistent color vocabulary defined in a single utility module
 
 ## Starter Template Evaluation
@@ -205,7 +209,8 @@ Each domain file at `~/.brain-break/<domain-slug>.json` uses a two-section struc
       "timeTakenMs": number,
       "speedTier": "fast" | "normal" | "slow",
       "scoreDelta": number,
-      "difficultyLevel": number
+      "difficultyLevel": number,
+      "bookmarked": false
     }
   ]
 }
@@ -257,7 +262,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "geminiModel": "gemini-2.0-flash",       // Gemini — preferred model name
   "ollamaEndpoint": "http://localhost:11434",  // Ollama only — endpoint URL
   "ollamaModel": "llama3",      // Ollama only — model name
-  "showWelcome": true            // Boolean — show animated welcome screen on startup
+  "showWelcome": true            // Boolean — show animated welcome screen on startup and exit screen on quit
 }
 ```
 
@@ -283,7 +288,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-4o-mini'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-sonnet-4-20250514'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.0-flash'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama3'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true }`.
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-4o-mini'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-sonnet-4-20250514'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.0-flash'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama3'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit.
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -291,7 +296,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 **AI prompt injection:** `ai/prompts.ts` conditionally prepends a voice instruction to every prompt when language ≠ `"English"` or tone ≠ `"natural"` — e.g., `"Respond in Greek using a pirate tone of voice."`. The settings object is passed through from the screen layer to `ai/client.ts` to `ai/prompts.ts`.
 
-**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 5 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, prompts for a preferred model name with a sensible default; entering an empty string resets to the default), language (free-text input), tone (select from 7 presets), and welcome screen toggle (ON/OFF). For Ollama, the user can also edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
+**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 5 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, prompts for a preferred model name with a sensible default; entering an empty string resets to the default), language (free-text input), tone (select from 7 presets), and Welcome & Exit screen toggle (ON/OFF — controls both the startup welcome screen and the exit screen). For Ollama, the user can also edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
 
 **First-launch provider setup:** `screens/provider-setup.ts` displays a one-time provider selection screen on first launch (when `provider` is `null`). The user selects a provider via arrow keys; the app validates readiness:
 - **Copilot:** checks Copilot authentication
@@ -434,12 +439,12 @@ export const AI_ERRORS = {
 No state machine framework. Navigation is explicit function calls dispatched from a `router.ts` module. The app uses a two-level menu model:
 
 - **Level 1 — Home screen:** Lists active domains (with score/count) + actions: create domain, view archived, settings, buy me a coffee, exit
-- **Level 2 — Domain sub-menu:** Selected from home; shows Play, View History, View Stats, Archive, Delete, Back
+- **Level 2 — Domain sub-menu:** Selected from home; shows Play, View History, View Bookmarks, View Stats, Archive, Delete, Back
 
 ```
 startup → readSettings()
   → provider === null         → router.showProviderSetup() → (fall through)
-  → settings.showWelcome      → router.showWelcome() → (fall through)
+  → settings.showWelcome      → router.showWelcome() → (auto-proceed after 3s or Enter)
   → router.showHome()
 
 router.showHome()
@@ -447,18 +452,21 @@ router.showHome()
   → user selects domain      → router.showDomainMenu(slug)
     → Play                   → router.showQuiz(slug) → router.showDomainMenu(slug)
     → View History            → router.showHistory(slug) → router.showDomainMenu(slug)
+    → View Bookmarks          → router.showBookmarks(slug) → router.showDomainMenu(slug)
     → View Stats              → router.showStats(slug) → router.showDomainMenu(slug)
     → Archive                 → router.archiveDomain(slug) → router.showHome()
     → Delete                  → router.deleteDomain(slug) → router.showHome()
     → Back                    → router.showHome()
   → user views archived      → router.showArchived() → router.showHome()
   → user opens settings      → router.showSettings() → router.showHome()
-  → user exits               → process.exit(0)
+  → user exits
+    → showWelcome ON          → router.showExit(totalQuestions) → (auto-exit after 3s or Enter) → process.exit(0)
+    → showWelcome OFF         → process.exit(0)
 ```
 
 Each screen is a standalone `async` function that resolves when the user exits it. `router.ts` is the only place that calls other screens — screens never call each other directly.
 
-*Rationale:* 11 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
+*Rationale:* 13 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
@@ -523,7 +531,7 @@ All semantic coloring logic is centralized in `utils/format.ts`. No screen modul
 | `colorSpeedTier(tier)` | Speed tier badge | Fast = green, Normal = yellow, Slow = red |
 | `colorDifficultyLevel(level)` | Difficulty badge | L1 = cyan, L2 = green, L3 = yellow, L4 = magenta, L5 = red |
 
-**Additional format utilities:** `success()`, `error()`, `warn()`, `dim()`, `bold()`, `header()` chalk wrappers; `formatDuration(ms)`, `formatAccuracy(correct, total)`, `typewrite(text, delayMs)` animation; gradient rendering: `CYAN` / `MAGENTA` color constants, `lerpColor(t)` linear interpolation, `getGradientWidth()` terminal-width clamp, `gradientBg(text, width)` full-width gradient background bar, `gradientShadow(width)` half-block gradient divider.
+**Additional format utilities:** `success()`, `error()`, `warn()`, `dim()`, `bold()`, `header()` chalk wrappers; `formatDuration(ms)`, `formatAccuracy(correct, total)`, `typewriterPrint(text)` typewriter animation, `cancellableSleep(ms)` interruptible timer (returns `{ promise, cancel }`); `ASCII_ART` constant (shared logo lines used by welcome + exit screens); gradient rendering: `CYAN` / `MAGENTA` color constants, `lerpColor(t)` linear interpolation, `getGradientWidth()` terminal-width clamp, `gradientBg(text, width)` full-width gradient background bar, `gradientShadow(width)` half-block gradient divider, `gradientText(text, index, total)` per-line gradient coloring.
 
 **ANSI compatibility:** All color output uses standard 8/16-color ANSI escape codes as baseline (NFR 6). Extended color codes may be used where supported. Non-TTY output is out of scope.
 
@@ -535,6 +543,41 @@ All semantic coloring logic is centralized in `utils/format.ts`. No screen modul
 
 ---
 
+### Welcome Screen — 3-Second Auto-Proceed Timer
+
+`screens/welcome.ts` exports `showWelcomeScreen()`. Shown on startup when `settings.showWelcome` is `true` (after the first-launch provider setup, before the home screen). The screen renders:
+1. ASCII-art logo with gradient text
+2. Typewriter-animated tagline (`"Train your brain, one question at a time"`)
+3. App version
+4. Gradient shadow divider
+5. A "Press enter to continue..." prompt
+
+**Auto-proceed behavior:** A 3-second `cancellableSleep(3000)` races against the Enter-key prompt (`Promise.race`). If the user does nothing for 3 seconds, the screen auto-proceeds to the home screen. If the user presses Enter before the timer expires, the timer is cancelled and the screen proceeds immediately. Ctrl+C exits the process.
+
+---
+
+### Exit Screen — 3-Second Auto-Exit Timer
+
+`screens/exit.ts` exports `showExitScreen(totalQuestions: number)`. Shown when the user selects Exit from the home screen, **only if `settings.showWelcome` is `true`** (the same setting controls both welcome and exit screens). The screen renders:
+1. ASCII-art logo with gradient text (same `ASCII_ART` as the welcome screen)
+2. Typewriter-animated dynamic exit message based on `totalQuestions` (across all domains, including archived)
+3. App version
+4. Gradient shadow divider
+5. A "Press enter to exit now..." prompt
+
+**Dynamic exit messages** (`getExitMessage(totalQuestions)` — pure, exported for testing):
+- 0 questions: `"Break's over, see you next round"`
+- 1–9: `"N question(s) smashed, not bad for a break"`
+- 10–49: `"N questions? Your brain's showing off"`
+- 50–99: `"N questions deep, absolute brain breaker"`
+- 100+: `"N questions mastered, certified brain breaker"`
+
+**Auto-exit behavior:** A 3-second `cancellableSleep(3000)` races against the Enter-key prompt (`Promise.race`). If the user does nothing for 3 seconds, `process.exit(0)` is called automatically. If the user presses Enter before the timer expires, the timer is cancelled and the process exits immediately. Ctrl+C also exits.
+
+**Total questions calculation:** The home screen aggregates `history.length` from all active domain files, plus `history.length` from all archived domain files, and passes the total to `showExitScreen(totalQuestions)`.
+
+---
+
 ### Module Architecture
 
 **`src/` Directory Structure**
@@ -542,20 +585,22 @@ All semantic coloring logic is centralized in `utils/format.ts`. No screen modul
 ```
 src/
 ├── index.ts              # Entry point — bootstraps and calls router
-├── router.ts             # Navigation between screens — 12 exported functions
+├── router.ts             # Navigation between screens — 14 exported functions
 ├── screens/
 │   ├── home.ts           # F1: domain list + coffee screen (F10)
 │   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
-│   ├── domain-menu.ts    # F1: domain sub-menu (Play, History, Stats, Archive, Delete, Back)
+│   ├── domain-menu.ts    # F1: domain sub-menu (Play, History, Bookmarks, Stats, Archive, Delete, Back)
 │   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
 │   ├── archived.ts       # F1: archived domain list + unarchive
 │   ├── quiz.ts           # F3: question loop, timer, answer feedback
 │   ├── history.ts        # F6: single-question navigation history view
+│   ├── bookmarks.ts      # F12: single-question bookmark navigation view
 │   ├── stats.ts          # F7: stats dashboard
-│   ├── settings.ts       # F8: language, tone, welcome toggle & AI provider settings screen
+│   ├── settings.ts       # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
 │   ├── provider-settings.ts # F8: per-provider model/endpoint prompts with defaults
 │   ├── provider-setup.ts # F8: first-launch provider selection + validation
-│   └── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline
+│   ├── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
+│   └── exit.ts           # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 ├── ai/
 │   ├── client.ts         # F2: provider-agnostic AI client + error handling
 │   ├── providers.ts      # F2: AiProvider interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot)
@@ -568,7 +613,7 @@ src/
     ├── hash.ts           # SHA-256 hashing helpers
     ├── slugify.ts        # Domain name → file slug
     ├── screen.ts         # clearScreen() — viewport reset before every render
-    └── format.ts         # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz and history screens
+    └── format.ts         # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz, history, and bookmarks screens
 ```
 
 **Dependency Rules:**
@@ -765,13 +810,13 @@ brain-break/
 │       └── ci.yml                  # tsc --noEmit + vitest
 ├── src/
 │   ├── index.ts                    # Entry: bootstraps app, reads settings, routes to provider setup / welcome / home
-│   ├── router.ts                   # Navigation dispatcher — 12 exported functions, only file that calls screens
+│   ├── router.ts                   # Navigation dispatcher — 14 exported functions, only file that calls screens
 │   ├── screens/
 │   │   ├── home.ts                 # F1/F10: domain list + coffee screen
 │   │   ├── home.test.ts
 │   │   ├── create-domain.ts        # F1: new domain input + starting difficulty selection + validation + duplicate check
 │   │   ├── create-domain.test.ts
-│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, History, Stats, Archive, Delete, Back)
+│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, History, Bookmarks, Stats, Archive, Delete, Back)
 │   │   ├── domain-menu.test.ts
 │   │   ├── select-domain.ts        # F1/F2: motivational message + quiz transition
 │   │   ├── select-domain.test.ts
@@ -781,15 +826,19 @@ brain-break/
 │   │   ├── quiz.test.ts
 │   │   ├── history.ts              # F6: single-question navigation history view
 │   │   ├── history.test.ts
+│   │   ├── bookmarks.ts            # F12: single-question bookmark navigation view
+│   │   ├── bookmarks.test.ts
 │   │   ├── stats.ts                # F7: stats dashboard
 │   │   ├── stats.test.ts
-│   │   ├── settings.ts             # F8: language, tone, welcome toggle & AI provider settings screen
+│   │   ├── settings.ts             # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
 │   │   ├── settings.test.ts
 │   │   ├── provider-settings.ts     # F8: per-provider model/endpoint prompts with defaults
 │   │   ├── provider-setup.ts       # F8: first-launch provider selection + validation
 │   │   ├── provider-setup.test.ts
-│   │   ├── welcome.ts              # F11: animated ASCII-art welcome screen with typewriter tagline
-│   │   └── welcome.test.ts
+│   │   ├── welcome.ts              # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
+│   │   ├── welcome.test.ts
+│   │   ├── exit.ts                 # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
+│   │   └── exit.test.ts
 │   ├── ai/
 │   │   ├── client.ts               # F2: provider-agnostic AI client + Result<T> error wrapping
 │   │   ├── client.test.ts
@@ -811,7 +860,7 @@ brain-break/
 │       ├── slugify.test.ts
 │       ├── screen.ts               # NFR 5: clearScreen() — ANSI viewport reset
 │       ├── screen.test.ts
-│       ├── format.ts               # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz and history screens
+│       ├── format.ts               # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz, history, and bookmarks screens
 │       └── format.test.ts
 ├── patches/                            # patch-package patches for transitive dependencies
 │   └── vscode-jsonrpc+8.2.1.patch      # Patches vscode-jsonrpc (transitive dep of @github/copilot-sdk)
@@ -850,7 +899,9 @@ brain-break/
 | F8 — Global Settings | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts` (readSettings/writeSettings), `domain/schema.ts` (SettingsFile/AiProviderType/ToneOfVoice), `ai/prompts.ts` (voice injection), `ai/providers.ts` (provider validation) |
 | F9 — Color System | `utils/format.ts` (semantic color helpers, menuTheme) + all `screens/*.ts` (consumers) |
 | F10 — Coffee Screen | `screens/home.ts` (showCoffeeScreen) |
-| F11 — Welcome Screen | `screens/welcome.ts` (animated ASCII-art + typewriter tagline), `domain/schema.ts` (`showWelcome` setting) |
+| F11 — Welcome Screen | `screens/welcome.ts` (animated ASCII-art + typewriter tagline + 3s auto-proceed timer), `domain/schema.ts` (`showWelcome` setting) |
+| F12 — Question Bookmarks | `screens/bookmarks.ts`, `screens/quiz.ts` (bookmark toggle post-answer), `screens/history.ts` (bookmark toggle), `screens/domain-menu.ts` (View Bookmarks action), `domain/store.ts`, `utils/format.ts` (`renderQuestionDetail`) |
+| F13 — Exit Screen | `screens/exit.ts` (dynamic session message + typewriter animation + 3s auto-exit timer), `screens/home.ts` (total questions aggregation + conditional exit routing), `domain/schema.ts` (`showWelcome` setting) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 | NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
@@ -867,7 +918,7 @@ brain-break/
 | Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
 | Provider abstraction | `ai/providers.ts` → `AiProvider` interface + 5 adapters (4 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter); `ai/client.ts` → `createProvider()` factory |
 | Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme`, gradient rendering (`lerpColor`, `gradientBg`, `gradientShadow`) |
-| Question detail rendering | `utils/format.ts` → `renderQuestionDetail()` — unified options + feedback block (markers, correct/incorrect status, time/speed/difficulty, score delta, optional timestamp) consumed by `screens/quiz.ts` and `screens/history.ts` |
+| Question detail rendering | `utils/format.ts` → `renderQuestionDetail()` — unified options + feedback block (markers, correct/incorrect status, time/speed/difficulty, score delta, optional timestamp) consumed by `screens/quiz.ts`, `screens/history.ts`, and `screens/bookmarks.ts` |
 | Settings tone migration | `domain/store.ts` → `migrateSettings()` — maps legacy tone values on read |
 
 ### Integration Points
@@ -909,10 +960,27 @@ index.ts
     → router.showWelcome()                              [animated ASCII-art splash screen]
     → screens/welcome.ts
       → clearScreen() + ASCII art + typewriter tagline + press-to-continue
+      → 3-second cancellableSleep races against Enter-key prompt
+      → auto-proceeds on timer expiry or user Enter press
   → router.showHome()
     → screens/home.ts
     → domain/store.ts.listDomains()                     [reads ~/.brain-break/]
     → renders domain list with scores
+```
+
+**Data Flow — Exit:**
+```
+screens/home.ts (user selects Exit)
+  → domain/store.ts.readSettings()                      [reads ~/.brain-break/settings.json]
+  → settings.showWelcome === true
+    → aggregates totalQuestions from all domains          [active + archived history.length]
+    → router.showExit(totalQuestions)
+    → screens/exit.ts
+      → clearScreen() + ASCII art + typewriter exit message + press-to-exit
+      → 3-second cancellableSleep races against Enter-key prompt
+      → process.exit(0) on timer expiry or user Enter press
+  → settings.showWelcome === false
+    → process.exit(0) immediately
 ```
 
 **Data Flow — Settings Change:**
@@ -961,7 +1029,9 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | F8 — Global Settings | ✅ | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts`, `domain/schema.ts`, `ai/prompts.ts`, `ai/providers.ts` |
 | F9 — Color System | ✅ | `utils/format.ts` (semantic helpers + menuTheme + gradient rendering) |
 | F10 — Coffee Screen | ✅ | `screens/home.ts` (showCoffeeScreen + qrcode-terminal) |
-| F11 — Welcome Screen | ✅ | `screens/welcome.ts` (ASCII-art + typewriter + gradient rendering) |
+| F11 — Welcome Screen | ✅ | `screens/welcome.ts` (ASCII-art + typewriter + gradient rendering + 3s auto-proceed timer) |
+| F12 — Question Bookmarks | ✅ | `screens/bookmarks.ts`, `screens/quiz.ts` (bookmark toggle post-answer), `screens/history.ts` (bookmark toggle), `screens/domain-menu.ts` (View Bookmarks action), `domain/store.ts` |
+| F13 — Exit Screen | ✅ | `screens/exit.ts` (dynamic session message + typewriter + gradient rendering + 3s auto-exit timer), `screens/home.ts` (total questions aggregation) |
 
 | NFR | Status | Addressed By |
 |---|---|---|
@@ -969,7 +1039,7 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state |
 | NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT |
 | NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
-| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer quiz feedback renders inline (no clear between question and feedback) |
+| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer quiz feedback renders inline (no clear between question and feedback); bookmarks screen follows standard clearScreen pattern |
 | NFR 6 — Terminal color rendering | ✅ | `utils/format.ts` → ANSI 8/16-color baseline; `chalk` handles terminal capability detection |
 
 ### Implementation Readiness Validation ✅

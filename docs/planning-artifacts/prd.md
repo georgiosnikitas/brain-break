@@ -17,8 +17,13 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
 lastEdited: '2026-03-30'
 editHistory:
+  - date: '2026-03-30'
+    changes: 'Feature 16 (Question Bookmarking) added: users can bookmark any answered question for later revisiting via ⭐ indicator. Bookmark/Remove bookmark available in quiz post-answer (Feature 3), View History (Feature 6), and new View Bookmarks screen. View Bookmarks added to domain sub-menu after View History — navigation identical to View History (single-question nav with Previous/Next/Explain/Remove bookmark/Back). Bookmarked flag stored as boolean on each question record in domain JSON (Feature 5). Per-domain only, no cap. Product Scope updated from 15 to 16 capabilities. FR preamble updated. Feature 1 domain sub-menu updated. User Journeys Aha Moment and Long-term updated. NFR 5 updated with bookmarks navigation.'
   - date: '2026-03-30'
     changes: 'Settings toggle behavior updated: the settings label is now "🎬 Welcome & Exit screen" (renamed from "Welcome screen") and controls both branded screens. When enabled, the Welcome Screen is shown on launch and the Exit Message is shown on explicit home-screen Exit. When disabled, both screens are skipped. Feature 8, Feature 11, Feature 15, onboarding journey, and Feature 1 exit action wording were aligned to this rule.'
   - date: '2026-03-30'
@@ -124,7 +129,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 15 capabilities define the complete MVP:
+The following 16 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -141,6 +146,7 @@ The following 15 capabilities define the complete MVP:
 13. Explanation Drill-Down
 14. Session Summary
 15. Exit Message
+16. Question Bookmarking
 
 ### Out of Scope
 
@@ -231,11 +237,11 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 - When the user is done, selecting Exit from the home screen shows a branded farewell screen (Feature 15), then the app terminates cleanly
 - History persists between sessions automatically
 
-**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. Intrigued, they hit "Teach me more" and get a one-minute micro-lesson on the concept — connecting the question to deeper principles they hadn't considered. They come back and get it right next time. The score rises. *That feedback loop is the product.*
+**"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. Intrigued, they hit "Teach me more" and get a one-minute micro-lesson on the concept — connecting the question to deeper principles they hadn't considered. They bookmark the question to revisit it later. They come back and get it right next time. The score rises. *That feedback loop is the product.*
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via View Bookmarks for targeted review. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -294,7 +300,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 15 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 16 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -312,13 +318,13 @@ The following 15 features define the complete MVP capability set. Each feature i
 **Domain sub-menu (Level 2)**
 
 - Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
-- The domain sub-menu provides the following actions: **Play**, **View History**, **View Stats**, **Archive**, **Delete**, and **Back**
+- The domain sub-menu provides the following actions: **Play**, **View History**, **View Bookmarks**, **View Stats**, **Archive**, **Delete**, and **Back**
 - Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — the message is AI-generated using the active language and tone of voice settings, then the quiz begins
 - After a quiz session ends, the user is returned to the domain sub-menu (not the home screen); on this first re-render, a session summary block is displayed between the domain header and the action menu (see Feature 14 — Session Summary)
 - Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
 - Selecting **Delete** prompts the user with a blocking confirmation dialog (*"Delete '[domain]' permanently? This cannot be undone."*) — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu
 - Selecting **Back** returns the user to the home screen
-- Selecting **View History** or **View Stats** opens the respective screen; selecting Back from either returns the user to the domain sub-menu
+- Selecting **View History**, **View Bookmarks**, or **View Stats** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
 
 **Archived domains**
 
@@ -357,9 +363,10 @@ The following 15 features define the complete MVP capability set. Each feature i
 - A timer starts silently when the question is displayed and stops when the user submits their answer — no visible countdown is shown during the question
 - The response time is recorded for every question
 - After answering, the post-answer feedback is rendered **on the same screen** as the original question — no terminal clear or screen transition occurs between the question display and the feedback panel. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if wrong, time taken, speed tier (fast / normal / slow), and score delta
-- After the feedback panel, the user is presented with three options: **Next question**, **Explain answer**, and **Back**
+- After the feedback panel, the user is presented with four options: **Next question**, **Explain answer**, **Bookmark** (or **Remove bookmark** if the question is already bookmarked), and **Back**
+- A bookmarked question displays a ⭐ indicator next to the question text throughout the post-answer screen
 - Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect — displayed inline below the feedback panel using the active language and tone settings; a loading spinner is shown during generation
-- After the explanation is displayed, the user is presented with three options: **Teach me more**, **Next question**, and **Back** (Explain is not offered again for the same question)
+- After the explanation is displayed, the user is presented with four options: **Teach me more**, **Next question**, **Bookmark** (or **Remove bookmark** if already bookmarked), and **Back** (Explain is not offered again for the same question)
 - If the AI call for the explanation fails, a warning message is displayed (e.g. *"Could not generate explanation."*) and the user is returned to the Next/Back prompt — the failure is non-critical and does not interrupt the quiz session
 
 ### Feature 4 — Scoring System
@@ -407,15 +414,16 @@ Every answered question is recorded with:
 - Speed tier classification (fast / normal / slow)
 - Score delta for that question
 - Difficulty level assigned to the question
+- Whether the question is bookmarked (boolean, default: false)
 
 ### Feature 6 — View History Command
 
 - User can view their full question history for the active domain
-- Questions are displayed one at a time; the user navigates with Previous, Next, Explain answer, and Back controls; a progress indicator shows the user's current position (e.g., "Question 3 of 47")
-- Each entry displays all fields recorded per question (see Feature 5 — Persistent History)
+- Questions are displayed one at a time; the user navigates with Previous, Next, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back controls; a progress indicator shows the user's current position (e.g., "Question 3 of 47")
+- Each entry displays all fields recorded per question (see Feature 5 — Persistent History); bookmarked questions display a ⭐ indicator next to the question text
 - Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as Feature 3 (Interactive Terminal Quiz) with the active language and tone settings; a loading spinner is shown during generation
 - The explanation is displayed inline on the same screen as the question detail — no terminal clear or screen transition occurs; the user sees the question, their answer, all recorded fields, and the explanation together
-- After the explanation is displayed, the navigation menu re-appears with Teach me more, Previous, Next, and Back (Explain is not shown while the explanation is already visible on screen). If the user navigates away and returns to the same question, Explain answer is available again
+- After the explanation is displayed, the navigation menu re-appears with Teach me more, Previous, Next, Bookmark (or Remove bookmark), and Back (Explain is not shown while the explanation is already visible on screen). If the user navigates away and returns to the same question, Explain answer is available again
 - If the AI call for the explanation fails, a warning message is displayed (e.g., *"Could not generate explanation."*) and the user is returned to the navigation menu — the failure is non-critical and does not interrupt history browsing
 
 ### Feature 7 — View Stats Command
@@ -586,6 +594,26 @@ All interactive menus throughout the application use full-row background highlig
   - Pressing Ctrl+C on the Exit Message screen exits immediately with process exit code 0
 - The Exit Message appears only for the explicit Exit action on the home screen; it is not required for error-driven termination paths
 
+### Feature 16 — Question Bookmarking
+
+- Users can bookmark any answered question to flag it for later revisiting — bookmarks are per-domain with no cap on the number of bookmarked questions
+- A bookmarked question displays a ⭐ indicator next to the question text wherever it appears (quiz post-answer screen, history view, bookmarks list)
+- Bookmarking and unbookmarking are available in three contexts:
+  - **Quiz post-answer screen (Feature 3):** After answering a question, **Bookmark** appears in the navigation options (after Explain answer); if the question is already bookmarked, **Remove bookmark** is shown instead. The option persists through explanation and micro-lesson states
+  - **View History (Feature 6):** Each question in history navigation includes **Bookmark** (or **Remove bookmark** if already bookmarked) in the navigation controls. The option persists through explanation and micro-lesson states
+  - **View Bookmarks (this feature):** Each bookmarked question includes **Remove bookmark** in the navigation controls
+- Toggling a bookmark updates the `bookmarked` field on the question record in the domain JSON file immediately — the change persists across sessions
+- The domain sub-menu includes a **View Bookmarks** action positioned after View History: Play, View History, **View Bookmarks**, View Stats, Archive, Delete, Back
+
+**View Bookmarks screen**
+
+- Accessed from the domain sub-menu — displays only bookmarked questions for the active domain
+- Navigation is identical to View History (Feature 6): questions displayed one at a time with Previous, Next, Explain answer, Remove bookmark, and Back controls; a progress indicator shows the user's current position (e.g., "Bookmark 2 of 8")
+- Each entry displays all fields recorded per question (see Feature 5 — Persistent History) with the ⭐ indicator
+- Selecting **Explain answer** follows the same flow as Feature 6: AI-generated explanation displayed inline, followed by Teach me more option — identical behavior and error handling
+- Selecting **Remove bookmark** removes the ⭐ flag from the question, updates the domain file, and navigates to the next bookmarked question (or the previous one if it was the last); if no bookmarks remain, the user is returned to the domain sub-menu with a message: *"No bookmarked questions."*
+- If the domain has no bookmarked questions when View Bookmarks is selected, the screen displays *"No bookmarked questions."* with a Back action that returns the user to the domain sub-menu
+
 ---
 
 ## Non-Functional Requirements
@@ -613,7 +641,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, exit message screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
+All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, welcome screen, exit message screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.

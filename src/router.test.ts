@@ -9,6 +9,7 @@ import {
   showCreateDomain,
   showArchived,
   showHistory,
+  showBookmarks,
   showStats,
   deleteDomain,
   showDomainMenu,
@@ -28,6 +29,7 @@ vi.mock('./screens/create-domain.js', () => ({ showCreateDomainScreen: vi.fn() }
 vi.mock('./screens/select-domain.js', () => ({ showSelectDomainScreen: vi.fn() }))
 vi.mock('./screens/archived.js', () => ({ showArchivedScreen: vi.fn() }))
 vi.mock('./screens/history.js', () => ({ showHistory: vi.fn() }))
+vi.mock('./screens/bookmarks.js', () => ({ showBookmarks: vi.fn() }))
 vi.mock('./screens/stats.js', () => ({ showStats: vi.fn() }))
 vi.mock('./screens/domain-menu.js', () => ({ showDomainMenuScreen: vi.fn() }))
 vi.mock('./screens/settings.js', () => ({ showSettingsScreen: vi.fn() }))
@@ -110,6 +112,7 @@ import { showCreateDomainScreen } from './screens/create-domain.js'
 import { showSelectDomainScreen } from './screens/select-domain.js'
 import { showArchivedScreen } from './screens/archived.js'
 import { showHistory as showHistoryScreen } from './screens/history.js'
+import { showBookmarks as showBookmarksScreen } from './screens/bookmarks.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSettingsScreen } from './screens/settings.js'
@@ -149,6 +152,13 @@ describe('showHistory', () => {
   it('delegates to showHistoryScreen with the slug', async () => {
     await showHistory('history-slug')
     expect(showHistoryScreen).toHaveBeenCalledWith('history-slug')
+  })
+})
+
+describe('showBookmarks', () => {
+  it('delegates to showBookmarksScreen with the slug', async () => {
+    await showBookmarks('bookmarks-slug')
+    expect(showBookmarksScreen).toHaveBeenCalledWith('bookmarks-slug')
   })
 })
 

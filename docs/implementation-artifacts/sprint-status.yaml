@@ -115,6 +115,12 @@ development_status:
   9-1-session-summary-display: done
   epic-9-retrospective: optional
 
+  # Epic 10: Bookmarking
+  epic-10: in-progress
+  10-1-question-record-bookmarked-field: done
+  10-2-bookmark-toggle-quiz: done
+  10-3-bookmark-toggle-history: done
+
   # Epic 8: Welcome & Exit Screens + Static Banner
   epic-8: done
   8-1-welcome-screen-persistent-banner: done

@@ -32,6 +32,7 @@ vi.mock('../utils/format.js', async (importOriginal) => {
 vi.mock('../router.js', () => ({
   showQuiz: vi.fn(),
   showHistory: vi.fn(),
+  showBookmarks: vi.fn(),
   showStats: vi.fn(),
   archiveDomain: vi.fn(),
   deleteDomain: vi.fn(),
@@ -61,6 +62,7 @@ beforeEach(() => {
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   vi.mocked(router.showQuiz).mockResolvedValue(null)
   vi.mocked(router.showHistory).mockResolvedValue(undefined)
+  vi.mocked(router.showBookmarks).mockResolvedValue(undefined)
   vi.mocked(router.showStats).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.deleteDomain).mockResolvedValue(undefined)
@@ -71,29 +73,31 @@ beforeEach(() => {
 // buildDomainMenuChoices
 // ---------------------------------------------------------------------------
 describe('buildDomainMenuChoices', () => {
-  it('returns 7 items with a Separator before Back', () => {
+  it('returns 8 items with a Separator before Back', () => {
     const choices = buildDomainMenuChoices()
-    expect(choices).toHaveLength(7)
+    expect(choices).toHaveLength(8)
   })
 
-  it('names contain Play, History, Stats, Archive, Delete, Back in order', () => {
+  it('names contain Play, History, Bookmarks, Stats, Archive, Delete, Back in order', () => {
     const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].name).toContain('Play')
     expect(choices[1].name).toContain('History')
-    expect(choices[2].name).toContain('Stats')
-    expect(choices[3].name).toContain('Archive')
-    expect(choices[4].name).toContain('Delete')
-    expect(choices[6].name).toContain('Back')
+    expect(choices[2].name).toContain('Bookmarks')
+    expect(choices[3].name).toContain('Stats')
+    expect(choices[4].name).toContain('Archive')
+    expect(choices[5].name).toContain('Delete')
+    expect(choices[7].name).toContain('Back')
   })
 
-  it('action values are play, history, stats, archive, delete, back in order', () => {
+  it('action values are play, history, bookmarks, stats, archive, delete, back in order', () => {
     const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].value).toEqual({ action: 'play' })
     expect(choices[1].value).toEqual({ action: 'history' })
-    expect(choices[2].value).toEqual({ action: 'stats' })
-    expect(choices[3].value).toEqual({ action: 'archive' })
-    expect(choices[4].value).toEqual({ action: 'delete' })
-    expect(choices[6].value).toEqual({ action: 'back' })
+    expect(choices[2].value).toEqual({ action: 'bookmarks' })
+    expect(choices[3].value).toEqual({ action: 'stats' })
+    expect(choices[4].value).toEqual({ action: 'archive' })
+    expect(choices[5].value).toEqual({ action: 'delete' })
+    expect(choices[7].value).toEqual({ action: 'back' })
   })
 })
 
@@ -121,6 +125,18 @@ describe('showDomainMenuScreen — History', () => {
     await showDomainMenuScreen('typescript')
 
     expect(vi.mocked(router.showHistory)).toHaveBeenCalledWith('typescript')
+  })
+})
+
+describe('showDomainMenuScreen — Bookmarks', () => {
+  it('calls router.showBookmarks with the correct slug on bookmarks', async () => {
+    mockSelect
+      .mockResolvedValueOnce({ action: 'bookmarks' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    expect(vi.mocked(router.showBookmarks)).toHaveBeenCalledWith('typescript')
   })
 })
 
@@ -198,6 +214,7 @@ describe('showDomainMenuScreen — message', () => {
         speedTier: 'fast' as const,
         scoreDelta: 10,
         difficultyLevel: 2,
+        bookmarked: false,
       })),
     }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
@@ -295,6 +312,7 @@ function makeSessionRecord(overrides: Partial<{
     speedTier: 'normal' as const,
     scoreDelta: overrides.scoreDelta ?? 10,
     difficultyLevel: overrides.difficultyLevel ?? 2,
+    bookmarked: false,
   }
 }
 

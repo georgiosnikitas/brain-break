@@ -184,6 +184,7 @@ describe('showQuiz', () => {
       speedTier: expect.stringMatching(/^(fast|normal|slow)$/),
       scoreDelta: expect.any(Number),
       difficultyLevel: expect.any(Number),
+      bookmarked: false,
     })
   })
 
@@ -500,7 +501,7 @@ describe('showQuiz', () => {
   // -------------------------------------------------------------------------
   // Explain answer flow
   // -------------------------------------------------------------------------
-  it('shows three post-answer options including explain', async () => {
+  it('shows four post-answer options including explain and bookmark', async () => {
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
@@ -511,6 +512,7 @@ describe('showQuiz', () => {
     const choices = (postAnswerCall[0] as any).choices
     const values = choices.map((c: any) => c.value)
     expect(values).toContain('explain')
+    expect(values).toContain('bookmark')
     expect(values).toContain('next')
     expect(values).toContain('exit')
   })
@@ -799,5 +801,271 @@ describe('showQuiz', () => {
     expect(values).toContain('exit')
     expect(values).not.toContain('teach')
     expect(mockGenerateMicroLesson).not.toHaveBeenCalled()
+  })
+
+  // -------------------------------------------------------------------------
+  // Bookmark toggle — post-answer (AC #1, #2, #3)
+  // -------------------------------------------------------------------------
+  it('post-answer: ⭐ Bookmark option is present in post-answer choices', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const postAnswerCall = mockSelect.mock.calls[1]
+    const choices = (postAnswerCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('bookmark')
+  })
+
+  it('post-answer: selecting bookmark toggles bookmarked, calls writeDomain', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // writeDomain called twice: initial write + bookmark toggle write
+    expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    // clearAndBanner called once: pre-question only (no re-render on bookmark)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+  })
+
+  it('post-answer: bookmark toggles record.bookmarked to true in persisted domain', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const secondWrite = mockWriteDomain.mock.calls[1]
+    expect(secondWrite[1].history[0].bookmarked).toBe(true)
+  })
+
+  it('post-answer: second bookmark toggle removes bookmark (back to false)', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('bookmark')  // set bookmark
+      .mockResolvedValueOnce('bookmark')  // remove bookmark
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const thirdWrite = mockWriteDomain.mock.calls[2]
+    expect(thirdWrite[1].history[0].bookmarked).toBe(false)
+  })
+
+  it('post-answer: shows "⭐ Remove bookmark" label after bookmark is set', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // The 3rd select call (after bookmark toggle re-render) shows "Remove bookmark"
+    const afterBookmarkCall = mockSelect.mock.calls[2]
+    const choices = (afterBookmarkCall[0] as any).choices
+    const bookmarkChoice = choices.find((c: any) => c.value === 'bookmark')
+    expect(bookmarkChoice?.name).toContain('Remove bookmark')
+  })
+
+  it('post-answer: bookmark then next proceeds to second question', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('next')
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('exit')
+
+    const result = await showQuiz('typescript')
+
+    expect(mockGenerateQuestion).toHaveBeenCalledTimes(2)
+    expect(result?.records).toHaveLength(2)
+  })
+
+  it('post-answer: bookmarked state is reflected in SessionData records', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    const result = await showQuiz('typescript')
+
+    expect(result?.records[0].bookmarked).toBe(true)
+  })
+
+  // -------------------------------------------------------------------------
+  // Bookmark toggle — post-explain (AC #4)
+  // -------------------------------------------------------------------------
+  it('post-explain: ⭐ Bookmark option is present in post-explain choices', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const postExplainCall = mockSelect.mock.calls[2]
+    const choices = (postExplainCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('bookmark')
+  })
+
+  it('post-explain: selecting bookmark toggles bookmarked, calls writeDomain', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // writeDomain: initial write + bookmark toggle
+    expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    // clearAndBanner: pre-question only (no re-render on bookmark)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+  })
+
+  it('post-explain: bookmark toggles record.bookmarked to true in persisted domain', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const secondWrite = mockWriteDomain.mock.calls[1]
+    expect(secondWrite[1].history[0].bookmarked).toBe(true)
+  })
+
+  it('post-explain: after bookmark toggle, loops back to post-explain menu (shows teach option)', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // 4th select call is the re-shown post-explain prompt (should have teach)
+    const reShownExplainCall = mockSelect.mock.calls[3]
+    const choices = (reShownExplainCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('teach')
+  })
+
+  it('post-explain: ExitPromptError during bookmark select returns SessionData', async () => {
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockRejectedValueOnce(new ExitPromptError())
+
+    const result = await showQuiz('typescript')
+
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
+  })
+
+  // -------------------------------------------------------------------------
+  // Bookmark toggle — post-teach (AC #5)
+  // -------------------------------------------------------------------------
+  it('post-teach: ⭐ Bookmark option is present in post-teach choices (no teach option)', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const postTeachCall = mockSelect.mock.calls[3]
+    const choices = (postTeachCall[0] as any).choices
+    const values = choices.map((c: any) => c.value)
+    expect(values).toContain('bookmark')
+    expect(values).not.toContain('teach')
+    expect(values).not.toContain('explain')
+  })
+
+  it('post-teach: selecting bookmark toggles bookmarked, calls writeDomain', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    // writeDomain: initial write + bookmark toggle
+    expect(mockWriteDomain).toHaveBeenCalledTimes(2)
+    // clearAndBanner: pre-question only (no re-render on bookmark)
+    expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
+  })
+
+  it('post-teach: bookmark toggles record.bookmarked to true in persisted domain', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('bookmark')
+      .mockResolvedValueOnce('exit')
+
+    await showQuiz('typescript')
+
+    const secondWrite = mockWriteDomain.mock.calls[1]
+    expect(secondWrite[1].history[0].bookmarked).toBe(true)
+  })
+
+  it('post-teach: ExitPromptError during bookmark select returns SessionData', async () => {
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    mockSelect
+      .mockResolvedValueOnce('A')
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockRejectedValueOnce(new ExitPromptError())
+
+    const result = await showQuiz('typescript')
+
+    expect(result).not.toBeNull()
+    expect(result?.records).toHaveLength(1)
   })
 })

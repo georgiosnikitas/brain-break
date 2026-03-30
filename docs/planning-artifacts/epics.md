@@ -4,6 +4,8 @@ lastEdited: '2026-03-30'
 status: 'complete'
 editHistory:
   - date: '2026-03-30'
+    changes: 'FR41-FR43 added (Question Bookmarking): FR41 — bookmarked boolean field on question records, toggleable from quiz/history/bookmarks. FR42 — Bookmark/Remove bookmark option in quiz post-answer and history navigation with ⭐ indicator. FR43 — View Bookmarks screen in domain sub-menu with navigation identical to View History. FR3 updated (View Bookmarks added to sub-menu actions). FR8 updated (4 post-answer options including Bookmark). FR11 updated (bookmarked field). FR12 updated (Bookmark in history navigation + ⭐ indicator). FR35 updated (Bookmark in post-explanation quiz nav). FR37 updated (Bookmark in post-explanation history nav). NFR5 updated (bookmarks navigation in screen list). FR Coverage Map updated (FR41 → Epic 10/3/4, FR42 → Epic 3/4/10, FR43 → Epic 10). Epic 2 description and Story 2.5 updated with View Bookmarks. Epic 3 FRs updated (FR41, FR42 added). Epic 4 FRs updated (FR42 added). Stories 3.3, 3.4, 3.8, 4.3, 4.4 ACs updated with Bookmark navigation. Epic 10 (Question Bookmarking) added with 4 stories (10.1-10.4).'
+  - date: '2026-03-30'
     changes: 'PRD sync for Exit Message and settings toggle rename: FR40 added (Exit Message screen shown on explicit home Exit when showWelcome=true; skipped when false). FR3 updated with conditional Exit behavior. FR15 and FR33 updated to rename settings label to "🎬 Welcome & Exit screen". FR32 updated so showWelcome=false skips both welcome and exit branded screens. NFR5 updated to include Exit Message screen and clearScreen() exception list (Welcome/Exit/Provider Setup). FR and NFR Coverage Maps updated (FR40 → Epic 8). Epic 8 updated and Story 8.3 (Exit Message) added.'
   - date: '2026-03-29'
     changes: 'FR39 added (Session Summary): after a quiz session ends, the domain sub-menu renders a one-time ephemeral session summary block between the domain header and the action menu — displaying score delta, questions answered, correct/incorrect split, accuracy, fastest/slowest answer times, session duration, and difficulty change. FR3 updated (post-quiz return now includes session summary reference). FR Coverage Map updated with FR39 → Epic 9. Epic 9 (Session Summary) added with 1 story (9.1: Session Summary Display). Reflects PRD Feature 14 (2026-03-29).'
@@ -58,7 +60,7 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Bookmarks, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
@@ -68,15 +70,15 @@ FR6: Questions are generated on demand via the user's configured AI provider (Gi
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
-FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers three options: Next question, Explain answer, and Back.
+FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers four options: Next question, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back.
 
 FR9: Score is per-domain, cumulative, and never resets. Score delta = base points × speed multiplier (rounded to nearest integer). Base points by difficulty: L1=10, L2=20, L3=30, L4=40, L5=50. Speed multipliers: Fast+Correct=×2, Normal+Correct=×1, Slow+Correct=×0.5, Fast+Incorrect=−1×, Normal+Incorrect=−1.5×, Slow+Incorrect=−2×.
 
 FR10: All domain data (score, difficulty level, streak, total time played, complete question history) persists locally in ~/.brain-break/<domain-slug>.json across sessions. Each domain's state is fully isolated.
 
-FR11: Every answered question is recorded with: question text, all answer options, the user's chosen answer, correct answer, whether it was correct, timestamp (ISO 8601), time taken (ms), speed tier, score delta, and difficulty level.
+FR11: Every answered question is recorded with: question text, all answer options, the user's chosen answer, correct answer, whether it was correct, timestamp (ISO 8601), time taken (ms), speed tier, score delta, difficulty level, and bookmarked status (boolean, default: false).
 
-FR12: Users can view their full question history for the active domain using single-question navigation with Previous/Next/Explain answer controls and a progress indicator (e.g., "Question 3 of 47"), displaying all fields recorded per question.
+FR12: Users can view their full question history for the active domain using single-question navigation with Previous/Next/Explain answer/Bookmark (or Remove bookmark)/Back controls and a progress indicator (e.g., "Question 3 of 47"), displaying all fields recorded per question. Bookmarked questions display a ⭐ indicator next to the question text.
 
 FR13: Users can view a stats dashboard for the active domain showing: current score, total questions answered, correct/incorrect count and accuracy %, total time played, starting difficulty level, current difficulty level, score trend over the last 30 days (growing/flat/declining), days since first session, and current return streak.
 
@@ -122,17 +124,23 @@ FR33: The Settings screen includes a "🎬 Welcome & Exit screen" toggle (displa
 
 FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
 
-FR35: After answering a quiz question and viewing the feedback panel, the user is presented with three options: Next question, Explain answer, and Back. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a three-option prompt: Teach me more, Next question, and Back (Explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Back prompt without interrupting the quiz session.
+FR35: After answering a quiz question and viewing the feedback panel, the user is presented with four options: Next question, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a four-option prompt: Teach me more, Next question, Bookmark (or Remove bookmark), and Back (Explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Bookmark/Back prompt without interrupting the quiz session.
 
 FR36: The post-answer options/result block in the quiz session and the question detail block in the history screen are rendered by a single shared function `renderQuestionDetail(record: QuestionRecord, opts?: { showTimestamp?: boolean })` exported from `utils/format.ts`. The function renders in order: all four answer options (A–D) with `►` marking the user's answer, a blank separator line, correct/incorrect status, the correct answer reveal when the user was wrong (highlighted in green), a compound time/speed/difficulty line, and a score delta line. When `opts.showTimestamp` is `true`, an answered-at timestamp line is appended (used by history only). The quiz post-answer screen calls `renderQuestionDetail(record)` without a timestamp. The history detail view prints the question text as a plain (non-bold, non-numbered) line and calls `renderQuestionDetail(record, { showTimestamp: true })`. The private `showAnswerOptions()` and `showFeedback()` functions in `screens/quiz.ts` and the body of `displayEntry()` options/result block in `screens/history.ts` are replaced by calls to this shared function. The `globalIndex` parameter is removed from `displayEntry()` since numbered headers are no longer rendered.
 
-FR37: The history navigation screen includes an "Explain answer" option that calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as the quiz (Feature 3) with the active language and tone settings. The explanation is displayed inline on the same screen as the question detail. While the explanation is visible, the navigation menu shows Teach me more, Previous, Next, and Back (Explain is hidden). If the user navigates away and returns to the same question, Explain answer is available again. If the AI call fails, a non-critical warning is displayed and the user returns to the navigation menu.
+FR37: The history navigation screen includes an "Explain answer" option that calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — using the same explain flow as the quiz (Feature 3) with the active language and tone settings. The explanation is displayed inline on the same screen as the question detail. While the explanation is visible, the navigation menu shows Teach me more, Previous, Next, Bookmark (or Remove bookmark), and Back (Explain is hidden). If the user navigates away and returns to the same question, Explain answer is available again. If the AI call fails, a non-critical warning is displayed and the user returns to the navigation menu.
 
 FR38: After an AI-generated explanation is displayed — in both the quiz post-answer flow (Feature 3) and history navigation (Feature 6) — the user is presented with a "Teach me more" option alongside the existing navigation controls. Selecting "Teach me more" calls the AI provider to generate a concise micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept behind the question — going deeper than the initial explanation to cover foundational principles, related concepts, and practical context. The micro-lesson is displayed inline below the explanation on the same screen using the active language and tone settings, with a loading spinner during generation. After the micro-lesson is displayed, "Teach me more" is removed from the navigation controls. If the user navigates away and returns to the same question, "Teach me more" is available again only after selecting "Explain answer" again — micro-lesson availability follows explanation availability. If the AI call fails, a non-critical warning is displayed and the user is returned to the navigation controls.
 
 FR39: After a quiz session ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu. The summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to View History, View Stats, or any other screen and returning does not re-display it; re-entering the domain from the home screen does not re-display it. A session is defined as the period from selecting Play to selecting Back — every session with at least one answered question produces a summary. The summary displays: score delta (green if positive, red if negative), questions answered, correct/incorrect split, accuracy %, fastest answer time (green), slowest answer time (red), session duration (using the same `formatTotalTimePlayed` format as the stats dashboard), and difficulty change (starting → ending level with ▲/▼/— indicator using `colorDifficultyLevel`). The summary block is framed by dim horizontal divider lines and renders on the domain sub-menu screen using the standard `clearAndBanner()` flow.
 
 FR40: The app has a branded Exit Message screen shown only on explicit home-screen Exit when `showWelcome` is `true`. The screen uses `clearScreen()` (not `clearAndBanner()`) and renders the same visual language as the Welcome Screen: app emoji branding, gradient ASCII art "Brain Break" (cyan→magenta with bold-cyan fallback on limited terminals), styled subtitle `> Train your brain, one question at a time_`, version in dim white, and gradient shadow bar. Interaction model: auto-exit after 3 seconds with exit code 0; Enter exits immediately; Ctrl+C exits immediately. When `showWelcome` is `false`, explicit Exit terminates immediately without showing this screen.
+
+FR41: Every answered question record includes a `bookmarked` boolean field (default: `false`). Users can toggle this field from the quiz post-answer screen, the history navigation screen, and the bookmarks navigation screen. Toggling a bookmark updates the question record in the domain JSON file immediately and persists across sessions.
+
+FR42: The quiz post-answer screen and post-explanation navigation include a **Bookmark** option (or **Remove bookmark** if the question is already bookmarked), placed after the Explain answer option. A bookmarked question displays a ⭐ indicator next to the question text on the post-answer screen. The bookmark toggle is available in both the pre-explanation state (Next/Explain/Bookmark/Back) and the post-explanation state (Teach me more/Next/Bookmark/Back). The history navigation screen includes the same Bookmark/Remove bookmark toggle in its navigation controls, with the ⭐ indicator on bookmarked questions.
+
+FR43: The domain sub-menu includes a **View Bookmarks** action positioned after View History. Selecting it opens a bookmarks navigation screen that displays only bookmarked questions for the active domain. Navigation is identical to View History (Feature 6): single-question display with Previous/Next/Explain answer/Remove bookmark/Back controls and a progress indicator (e.g., "Bookmark 2 of 8"). Explain answer and Teach me more follow the same flow as View History. Selecting Remove bookmark removes the flag, updates the domain file, and navigates to the next bookmarked question (or previous if it was the last); if no bookmarks remain, the user is returned to the domain sub-menu with a message: "No bookmarked questions." If the domain has no bookmarked questions when View Bookmarks is selected, the screen displays "No bookmarked questions." with a Back action.
 
 ### NonFunctional Requirements
 
@@ -144,7 +152,7 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
 NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
@@ -216,6 +224,9 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR38 | Epic 3, Epic 4 | Explanation Drill-Down — "Teach me more" micro-lesson after AI explanation in quiz and history |
 | FR39 | Epic 9 | Session Summary — ephemeral post-quiz summary on domain sub-menu |
 | FR40 | Epic 8 | Exit Message — branded farewell screen on explicit Exit when showWelcome is enabled |
+| FR41 | Epic 10, Epic 3, Epic 4 | Bookmarked boolean field on question records — toggle from quiz, history, and bookmarks screens |
+| FR42 | Epic 3, Epic 4, Epic 10 | Bookmark/Remove bookmark option in quiz post-answer and history navigation + ⭐ indicator |
+| FR43 | Epic 10 | View Bookmarks screen — domain sub-menu action, per-domain bookmarked question navigation |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -241,12 +252,12 @@ Users can launch the app, see their domain list with scores, create a new domain
 
 ### Epic 3: AI-Powered Adaptive Quiz
 Users can take an AI-generated, never-repeating, multiple-choice quiz session in their chosen domain — with a silent response timer, adaptive difficulty that tracks streaks across sessions, cumulative domain-scoped scoring with speed multipliers, graceful error handling if the Copilot API is unavailable, and an on-demand AI explanation of the correct answer after every question.
-**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11, FR35, FR38
+**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11, FR35, FR38, FR41, FR42
 **NFRs covered:** NFR1 (≤ 5s generation + spinner), NFR2 (API error handling)
 
 ### Epic 4: Learning Insights
 Users can review their complete question history for any domain (single-question navigation with all recorded fields), request an AI-generated explanation for any past question, and view a stats dashboard showing score, accuracy, difficulty level, time played, score trend, and return streak — giving them a genuine signal of their knowledge growth over time and turning history from a passive record into an active learning tool.
-**FRs covered:** FR12, FR13, FR37, FR38
+**FRs covered:** FR12, FR13, FR37, FR38, FR42
 ### Epic 5: Global Settings
 Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
 **FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19
@@ -500,7 +511,7 @@ So that I can easily support the developer without leaving the terminal.
 
 ## Epic 2: Domain Management
 
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Stats, Archive, Back), archive domains they're not actively using, and unarchive them to resume exactly where they left off.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Bookmarks, View Stats, Archive, Back), archive domains they're not actively using, and unarchive them to resume exactly where they left off.
 
 ### Story 2.1: Home Screen — Display Domain List
 
@@ -586,7 +597,7 @@ So that I can choose to play, review history, check stats, or archive — all fr
 **Given** I am on the home screen and at least one active domain exists  
 **When** I select a domain  
 **Then** the domain sub-menu opens with the prompt header showing: domain name, current score, and total questions answered (read fresh from disk)  
-**And** the available options are: Play, View History, View Stats, Archive, Delete, and Back  
+**And** the available options are: Play, View History, View Bookmarks, View Stats, Archive, Delete, and Back  
 
 **Given** I am on the domain sub-menu  
 **When** I select "Play"  
@@ -789,7 +800,7 @@ So that I can take a meaningful quiz session and never lose progress even if I q
 **Given** an answer has been processed  
 **When** `writeDomain()` is called  
 **Then** the full updated domain state (meta, hashes + new hash appended, history + new record appended) is atomically persisted before the next question is shown  
-**And** every `QuestionRecord` field specified in FR11 is written (question, options, correctAnswer, userAnswer, isCorrect, answeredAt ISO8601, timeTakenMs, speedTier, scoreDelta, difficultyLevel)  
+**And** every `QuestionRecord` field specified in FR11 is written (question, options, correctAnswer, userAnswer, isCorrect, answeredAt ISO8601, timeTakenMs, speedTier, scoreDelta, difficultyLevel, bookmarked)  
 
 **Given** `generateQuestion()` returns `{ ok: false }` with a provider-specific error (network, auth, no provider, or parse)  
 **When** the error is received in the quiz screen  
@@ -812,7 +823,7 @@ So that I can learn from every question immediately instead of having to look it
 
 **Given** I have answered a quiz question and the feedback panel is displayed  
 **When** I inspect the post-answer navigation options  
-**Then** three options are shown: "💡 Explain answer", "▶️  Next question", and "🚪 Back"  
+**Then** three options are shown: "💡 Explain answer", "⭐ Bookmark" (or "⭐ Remove bookmark" if already bookmarked), "▶️  Next question", and "🚪 Back"  
 
 **Given** I select "💡 Explain answer"  
 **When** the action is triggered  
@@ -823,7 +834,7 @@ So that I can learn from every question immediately instead of having to look it
 
 **Given** the explanation has been displayed  
 **When** I inspect the post-explanation navigation options  
-**Then** three options are shown: "📚 Teach me more", "▶️  Next question", and "🚪 Back" — the "Explain answer" option is no longer available for this question  
+**Then** three options are shown: "📚 Teach me more", "⭐ Bookmark" (or "⭐ Remove bookmark"), "▶️  Next question", and "🚪 Back" — the "Explain answer" option is no longer available for this question  
 
 **Given** `ai/prompts.ts` is updated  
 **When** I call `buildExplanationPrompt(question, userAnswer, settings)`  
@@ -956,7 +967,7 @@ So that I can go beyond the immediate answer and understand the foundational pri
 
 **Given** an AI-generated explanation has been displayed for the current quiz question  
 **When** I inspect the post-explanation navigation options  
-**Then** three options are shown: "📚 Teach me more", "▶️  Next question", and "🚪 Back"  
+**Then** three options are shown: "📚 Teach me more", "⭐ Bookmark" (or "⭐ Remove bookmark"), "▶️  Next question", and "🚪 Back"  
 
 **Given** I select "📚 Teach me more"  
 **When** the action is triggered  
@@ -967,7 +978,7 @@ So that I can go beyond the immediate answer and understand the foundational pri
 
 **Given** the micro-lesson has been displayed  
 **When** I inspect the post-micro-lesson navigation options  
-**Then** two options are shown: "▶️  Next question" and "🚪 Back" — "Teach me more" is no longer available for this question  
+**Then** two options are shown: "⭐ Bookmark" (or "⭐ Remove bookmark"), "▶️  Next question", and "🚪 Back" — "Teach me more" is no longer available for this question  
 
 **Given** `ai/prompts.ts` is updated  
 **When** I call `buildMicroLessonPrompt(question, explanation, settings)`  
@@ -1073,7 +1084,7 @@ So that I can reinforce understanding of past questions and turn my history into
 
 **Given** I am viewing a question in the history screen  
 **When** the navigation controls are displayed  
-**Then** the options include Previous, Next, Explain answer, and Back (alongside the progress indicator)  
+**Then** the options include Previous, Next, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back (alongside the progress indicator)  
 
 **Given** I am viewing a question in the history screen  
 **When** I select "Explain answer"  
@@ -1083,7 +1094,7 @@ So that I can reinforce understanding of past questions and turn my history into
 
 **Given** the explanation is already displayed on the screen  
 **When** the navigation menu re-appears  
-**Then** the options are Teach me more, Previous, Next, and Back — Explain answer is hidden while the explanation is visible  
+**Then** the options are Teach me more, Previous, Next, Bookmark (or Remove bookmark), and Back — Explain answer is hidden while the explanation is visible  
 
 **Given** the explanation was previously displayed for a question  
 **When** I navigate away (Previous or Next) and then navigate back to the same question  
@@ -1095,7 +1106,7 @@ So that I can reinforce understanding of past questions and turn my history into
 
 **Given** the domain has exactly 1 history entry  
 **When** I view the entry and select "Explain answer"  
-**Then** the explanation is displayed inline and the navigation menu shows only Explain answer (before explaining) or Teach me more and Back (after explaining) — Previous and Next are not shown for single-entry history  
+**Then** the explanation is displayed inline and the navigation menu shows only Explain answer and Bookmark (before explaining) or Teach me more, Bookmark, and Back (after explaining) — Previous and Next are not shown for single-entry history  
 
 **Given** `screens/history.test.ts` is updated  
 **When** I run `npm test`  
@@ -1113,7 +1124,7 @@ So that I can turn my question history into a genuine learning resource by explo
 
 **Given** an AI-generated explanation has been displayed for the current history question  
 **When** the navigation menu re-appears  
-**Then** the options include Teach me more, Previous, Next, and Back — Explain answer is hidden  
+**Then** the options include Teach me more, Previous, Next, Bookmark (or Remove bookmark), and Back — Explain answer is hidden  
 
 **Given** I select "Teach me more"  
 **When** the action is triggered  
@@ -1122,7 +1133,7 @@ So that I can turn my question history into a genuine learning resource by explo
 
 **Given** the micro-lesson has been displayed  
 **When** the navigation menu re-appears  
-**Then** the options are Previous, Next, and Back — Teach me more is no longer available for this question  
+**Then** the options are Previous, Next, Bookmark (or Remove bookmark), and Back — Teach me more is no longer available for this question  
 
 **Given** the micro-lesson was previously displayed for a question  
 **When** I navigate away (Previous or Next) and then navigate back to the same question  
@@ -1130,11 +1141,11 @@ So that I can turn my question history into a genuine learning resource by explo
 
 **Given** I select "Teach me more" and the AI call fails (network error, auth error, parse error)  
 **When** the error is caught  
-**Then** a warning message is displayed (e.g., "Could not generate micro-lesson.") and I am returned to the navigation menu (Teach me more/Previous/Next/Back) — the failure is non-critical and does not interrupt history browsing  
+**Then** a warning message is displayed (e.g., "Could not generate micro-lesson.") and I am returned to the navigation menu (Teach me more/Previous/Next/Bookmark/Back) — the failure is non-critical and does not interrupt history browsing  
 
 **Given** the domain has exactly 1 history entry and an explanation has been displayed  
 **When** I select "Teach me more"  
-**Then** the micro-lesson is displayed inline and the navigation menu shows only Back — Previous and Next are not shown for single-entry history  
+**Then** the micro-lesson is displayed inline and the navigation menu shows only Bookmark (or Remove bookmark) and Back — Previous and Next are not shown for single-entry history  
 
 **Given** `screens/history.test.ts` is updated  
 **When** I run `npm test`  
@@ -1933,3 +1944,169 @@ So that I get instant feedback on how the session went — score change, accurac
 **Given** `screens/domain-menu.test.ts`, `screens/quiz.test.ts`, and `utils/format.test.ts` are updated  
 **When** I run `npm test`  
 **Then** all tests pass, covering: session summary displayed after quiz with ≥1 answer, summary not displayed after quiz with 0 answers, summary not displayed on subsequent domain sub-menu renders, summary not displayed when entering domain from home screen, all 8 fields rendered with correct values and colors, dim divider lines present, `formatTotalTimePlayed` and `formatAccuracy` reused from stats, `colorDifficultyLevel` used for difficulty labels, difficulty ▲/▼/— indicator colored correctly, session data passed from quiz to domain menu  
+
+---
+
+## Epic 10: Question Bookmarking
+
+Users can bookmark any answered question to flag it for later revisiting — from the quiz post-answer screen or from history navigation. Bookmarked questions are accessible via a dedicated View Bookmarks screen in the domain sub-menu, with navigation identical to View History. Bookmarks are per-domain, stored as a boolean flag on each question record, with no cap on count.
+
+**FRs covered:** FR41, FR42, FR43
+**FRs updated:** FR3 (View Bookmarks added to domain sub-menu), FR8 (Bookmark option in quiz post-answer), FR11 (bookmarked field on question record), FR12 (Bookmark option in history navigation), FR35 (Bookmark option in post-explanation quiz navigation), FR37 (Bookmark option in post-explanation history navigation)
+**NFRs covered:** NFR5 (bookmarks navigation included in terminal reset screens)
+**Additional requirements covered:** `domain/schema.ts` — `bookmarked` boolean field on `QuestionRecord`; `screens/bookmarks.ts` — View Bookmarks screen; `screens/quiz.ts` — Bookmark/Remove bookmark in post-answer navigation; `screens/history.ts` — Bookmark/Remove bookmark in history navigation; `screens/domain-menu.ts` — View Bookmarks action added; `router.ts` — `showBookmarks()` route
+
+### Story 10.1: Question Record — Bookmarked Field
+
+As a developer,
+I want the `QuestionRecord` schema extended with a `bookmarked` boolean field (default: `false`),
+So that every question can be flagged for later revisiting and the flag persists across sessions.
+
+**Acceptance Criteria:**
+
+**Given** `domain/schema.ts` is updated  
+**When** I inspect `QuestionRecordSchema`  
+**Then** it includes a `bookmarked` field of type `z.boolean().default(false)`  
+
+**Given** existing domain JSON files do not have a `bookmarked` field on question records  
+**When** they are loaded via `readDomain()`  
+**Then** Zod applies the default value `false` — existing records are backward compatible with no migration required  
+
+**Given** `domain/schema.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: `bookmarked` field present in schema, default value `false`, explicit `true`/`false` accepted, backward compatibility with records missing the field  
+
+---
+
+### Story 10.2: Bookmark Toggle in Quiz Post-Answer
+
+As a user,
+I want a Bookmark / Remove bookmark option in the quiz post-answer navigation so I can flag interesting or tricky questions during the quiz,
+So that I can build a curated list of questions to revisit later without interrupting my quiz flow.
+
+**Acceptance Criteria:**
+
+**Given** I have answered a quiz question and the feedback panel is displayed  
+**When** I inspect the post-answer navigation options  
+**Then** four options are shown: "▶️  Next question", "💡 Explain answer", "⭐ Bookmark" (or "⭐ Remove bookmark" if already bookmarked), and "🚪 Back"  
+
+**Given** I select "⭐ Bookmark"  
+**When** the action is triggered  
+**Then** the `bookmarked` field on the current question record is set to `true`  
+**And** the domain file is updated via `writeDomain()` immediately  
+**And** the navigation menu re-renders with "⭐ Remove bookmark" replacing "⭐ Bookmark"  
+**And** a ⭐ indicator appears next to the question text on the current screen  
+
+**Given** I select "⭐ Remove bookmark" on a bookmarked question  
+**When** the action is triggered  
+**Then** the `bookmarked` field is set to `false`  
+**And** the domain file is updated via `writeDomain()` immediately  
+**And** the navigation menu re-renders with "⭐ Bookmark" replacing "⭐ Remove bookmark"  
+**And** the ⭐ indicator is removed from the question text  
+
+**Given** the explanation has been displayed for the current question  
+**When** I inspect the post-explanation navigation options  
+**Then** four options are shown: "📚 Teach me more", "▶️  Next question", "⭐ Bookmark" (or "⭐ Remove bookmark"), and "🚪 Back"  
+
+**Given** the micro-lesson has been displayed for the current question  
+**When** I inspect the post-micro-lesson navigation options  
+**Then** three options are shown: "▶️  Next question", "⭐ Bookmark" (or "⭐ Remove bookmark"), and "🚪 Back" — Teach me more is removed  
+
+**Given** `screens/quiz.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Bookmark option present in post-answer navigation, bookmark toggle updates record and domain file, Remove bookmark available when already bookmarked, ⭐ indicator shown/hidden, bookmark option persists through explanation and micro-lesson states  
+
+---
+
+### Story 10.3: Bookmark Toggle in History Navigation
+
+As a user,
+I want a Bookmark / Remove bookmark option in the history navigation so I can flag past questions for targeted review,
+So that I can curate my study list from my full question history.
+
+**Acceptance Criteria:**
+
+**Given** I am viewing a question in the history screen  
+**When** the navigation controls are displayed  
+**Then** the options include Previous, Next, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back  
+
+**Given** the question is not bookmarked  
+**When** I select "⭐ Bookmark"  
+**Then** the `bookmarked` field is set to `true` and the domain file is updated immediately  
+**And** a ⭐ indicator appears next to the question text  
+**And** the navigation menu re-renders with "⭐ Remove bookmark"  
+
+**Given** the question is already bookmarked  
+**When** I select "⭐ Remove bookmark"  
+**Then** the `bookmarked` field is set to `false` and the domain file is updated immediately  
+**And** the ⭐ indicator is removed from the question text  
+**And** the navigation menu re-renders with "⭐ Bookmark"  
+
+**Given** the explanation has been displayed for the current history question  
+**When** the navigation menu re-appears  
+**Then** the options include Teach me more, Previous, Next, Bookmark (or Remove bookmark), and Back  
+
+**Given** `screens/history.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Bookmark option present in all history navigation states, toggle updates record and domain file, ⭐ indicator shown/hidden, bookmark option persists through explanation and micro-lesson states  
+
+---
+
+### Story 10.4: View Bookmarks Screen
+
+As a user,
+I want a "View Bookmarks" option in the domain sub-menu that opens a screen showing only my bookmarked questions with the same navigation as View History,
+So that I can quickly access and review the questions I've flagged for targeted study.
+
+**Acceptance Criteria:**
+
+**Given** I am on the domain sub-menu  
+**When** I inspect the available actions  
+**Then** a "⭐ View Bookmarks" action is present after "📜 View History" and before "📊 View Stats"  
+
+**Given** the domain has bookmarked questions  
+**When** I select "⭐ View Bookmarks"  
+**Then** `screens/bookmarks.ts` loads and displays only questions where `bookmarked === true`  
+**And** questions are displayed one at a time with Previous/Next/Explain answer/Remove bookmark/Back controls  
+**And** a progress indicator shows the current position (e.g., "Bookmark 2 of 8")  
+**And** each entry displays all fields recorded per question (see FR11) with the ⭐ indicator  
+
+**Given** I am viewing a bookmarked question  
+**When** I select "Explain answer"  
+**Then** the same AI explain flow as View History is triggered — explanation displayed inline, followed by Teach me more option  
+
+**Given** I am viewing a bookmarked question  
+**When** I select "⭐ Remove bookmark"  
+**Then** the `bookmarked` field is set to `false` and the domain file is updated immediately  
+**And** the bookmarks list is refreshed — the current view navigates to the next bookmarked question (or previous if it was the last)  
+**And** the progress indicator updates to reflect the reduced count  
+
+**Given** I remove the last remaining bookmark  
+**When** the bookmarks list becomes empty  
+**Then** a message is displayed: "No bookmarked questions." with a Back action  
+**And** selecting Back returns me to the domain sub-menu  
+
+**Given** the domain has no bookmarked questions  
+**When** I select "⭐ View Bookmarks"  
+**Then** a message is displayed: "No bookmarked questions." with a Back action  
+**And** selecting Back returns me to the domain sub-menu  
+
+**Given** I am on the bookmarks screen  
+**When** I select "Back"  
+**Then** I return to the domain sub-menu  
+
+**Given** I press Ctrl+C on the bookmarks screen  
+**When** the exit is detected  
+**Then** the app handles it gracefully and returns to the domain sub-menu  
+
+**Given** `router.ts` is updated  
+**When** I inspect its exports  
+**Then** a `showBookmarks(slug)` function is exported that calls `screens/bookmarks.ts`  
+
+**Given** `screens/domain-menu.ts` is updated  
+**When** `showDomainMenuScreen()` renders the domain sub-menu  
+**Then** the "⭐ View Bookmarks" action routes to `router.showBookmarks(slug)`  
+
+**Given** `screens/bookmarks.test.ts`, `screens/domain-menu.test.ts`, and `router.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: View Bookmarks action present in domain sub-menu, bookmarks screen renders only bookmarked questions, navigation identical to history (Previous/Next/Explain/Back), Remove bookmark updates record and refreshes list, empty state displayed when no bookmarks, progress indicator reflects bookmark count, `clearAndBanner()` called on render, Back returns to domain sub-menu, Ctrl+C handled gracefully, router exports `showBookmarks`  

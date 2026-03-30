@@ -10,6 +10,7 @@ import * as router from '../router.js'
 export type DomainMenuAction =
   | { action: 'play' }
   | { action: 'history' }
+  | { action: 'bookmarks' }
   | { action: 'stats' }
   | { action: 'archive' }
   | { action: 'delete' }
@@ -19,6 +20,7 @@ export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMen
   return [
     { name: '▶  Play', value: { action: 'play' } },
     { name: '📜  View History', value: { action: 'history' } },
+    { name: '⭐  View Bookmarks', value: { action: 'bookmarks' } },
     { name: '📊  View Stats', value: { action: 'stats' } },
     { name: '🗄  Archive', value: { action: 'archive' } },
     { name: '🗑  Delete', value: { action: 'delete' } },
@@ -61,6 +63,7 @@ async function promptForDomainAction(
       message: 'Choose an action:',
       choices: buildDomainMenuChoices(),
       theme: menuTheme,
+      pageSize: 10,
     })
   } catch (err) {
     if (err instanceof ExitPromptError) {
@@ -161,6 +164,8 @@ async function handleDomainAction(slug: string, answer: DomainMenuAction): Promi
     return await router.showQuiz(slug)
   } else if (answer.action === 'history') {
     await router.showHistory(slug)
+  } else if (answer.action === 'bookmarks') {
+    await router.showBookmarks(slug)
   } else if (answer.action === 'stats') {
     await router.showStats(slug)
   } else if (answer.action === 'archive') {
