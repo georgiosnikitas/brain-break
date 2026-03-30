@@ -164,6 +164,8 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
+## Priority: Low
+
 ### 4. Challenge Mode / Timed Sprint
 
 **Description:** A mode where the user gets N questions in a fixed time window (e.g., 10 questions in 3 minutes). Adds a competitive edge and a different engagement loop from the default exploratory mode.
@@ -174,32 +176,10 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-## Priority: Low
-
-### 5. Spaced Repetition Integration
-
-**Description:** Re-surface questions the user previously answered incorrectly at increasing intervals (Leitner-box or SM-2 algorithm). Leverages existing history data (timestamps, correctness, difficulty).
-
-**KPIs targeted:** Score growth rate, Correct answer rate over time
-
-**Complexity:** Medium
-
----
-
-### 6. Streak & Achievement Badges
+### 5. Streak & Achievement Badges
 
 **Description:** Surface achievements based on existing tracked data: "7-day streak", "10 correct in a row", "100 questions in Greek Mythology". Habit formation accelerator.
 
 **KPIs targeted:** 7-day return, Daily sessions per active user
-
-**Complexity:** Small
-
----
-
-### 7. Difficulty Calibration Insights
-
-**Description:** After 50+ questions, show the user their "calibrated difficulty" — the level where they stabilize. "Your natural level in Java is Advanced (4)." A genuine skill signal.
-
-**KPIs targeted:** Score growth rate, Perceived value
 
 **Complexity:** Small
