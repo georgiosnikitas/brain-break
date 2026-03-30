@@ -79,10 +79,20 @@ function makeQuestion(correctAnswer: AnswerOption = 'A') {
   }
 }
 
+function getLogs(spy: ReturnType<typeof vi.spyOn>): string {
+  return spy.mock.calls.map((c) => String(c[0])).join('\n')
+}
+
+function getChoiceValues(callIndex: number): string[] {
+  const call = mockSelect.mock.calls[callIndex]
+  return (call[0] as any).choices.map((c: any) => c.value)
+}
+
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
 beforeEach(() => {
+  vi.restoreAllMocks()
   vi.clearAllMocks()
   mockStart.mockReturnThis()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
@@ -104,43 +114,20 @@ describe('showQuiz', () => {
     expect(mockStop).toHaveBeenCalled()
   })
 
-  it('displays error and returns null on NETWORK error', async () => {
+  it.each([
+    [AI_ERRORS.NETWORK_OPENAI, 'OpenAI API'],
+    [AI_ERRORS.AUTH_COPILOT, 'authentication'],
+    [AI_ERRORS.PARSE, 'unexpected response'],
+  ])('displays error and returns null on %s error', async (aiError, expectedMsg) => {
     const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
+    mockGenerateQuestion.mockResolvedValue({ ok: false, error: aiError })
     mockSelect.mockResolvedValueOnce(true as any)
 
     const result = await showQuiz('typescript')
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI API'))
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining(expectedMsg))
     expect(mockSelect).toHaveBeenCalledOnce()
     expect(result).toBeNull()
-    consoleSpy.mockRestore()
-  })
-
-  it('displays error and returns null on AUTH error', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.AUTH_COPILOT })
-    mockSelect.mockResolvedValueOnce(true as any)
-
-    const result = await showQuiz('typescript')
-
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('authentication'))
-    expect(mockSelect).toHaveBeenCalledOnce()
-    expect(result).toBeNull()
-    consoleSpy.mockRestore()
-  })
-
-  it('displays error and returns null on PARSE error', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: false, error: AI_ERRORS.PARSE })
-    mockSelect.mockResolvedValueOnce(true as any)
-
-    const result = await showQuiz('typescript')
-
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('unexpected response'))
-    expect(mockSelect).toHaveBeenCalledOnce()
-    expect(result).toBeNull()
-    consoleSpy.mockRestore()
   })
 
   it('persists domain with correct record and returns SessionData after correct answer + exit', async () => {
@@ -195,12 +182,11 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('Correct answer:')
     expect(logged).toContain('B)')
     const record = mockWriteDomain.mock.calls[0][1].history[0]
     expect(record.isCorrect).toBe(false)
-    consoleSpy.mockRestore()
   })
 
   it('does not show "Correct answer:" line on a correct submission', async () => {
@@ -210,11 +196,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const hasCorrectAnswerLine = consoleSpy.mock.calls
-      .map((c) => String(c[0]))
-      .some((m) => m.includes('Correct answer:'))
-    expect(hasCorrectAnswerLine).toBe(false)
-    consoleSpy.mockRestore()
+    expect(getLogs(consoleSpy)).not.toContain('Correct answer:')
   })
 
   it('loops for a second question when user chooses "next"', async () => {
@@ -248,7 +230,6 @@ describe('showQuiz', () => {
     expect(mockWriteDomain).toHaveBeenCalledOnce()
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI API'))
     expect(result).toBeNull()
-    consoleSpy.mockRestore()
   })
 
   it('accumulates history across loop iterations', async () => {
@@ -276,7 +257,6 @@ describe('showQuiz', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('disk full'))
     expect(result).not.toBeNull()
-    consoleSpy.mockRestore()
   })
 
   it('returns null when ExitPromptError is thrown during answer selection', async () => {
@@ -325,7 +305,6 @@ describe('showQuiz', () => {
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('corrupted'))
     expect(mockWriteDomain).toHaveBeenCalledOnce()
-    warnSpy.mockRestore()
   })
 
   it('calls clearScreen before rendering a question', async () => {
@@ -354,9 +333,8 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('📝 Quiz — typescript')
-    consoleSpy.mockRestore()
   })
 
   it('shows all 4 answer options with user selection marker before feedback', async () => {
@@ -366,13 +344,12 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('A) A typed JS superset')
     expect(logged).toContain('B) A framework')
     expect(logged).toContain('C) A runtime')
     expect(logged).toContain('D) A test tool')
     expect(logged).toContain('► A)')
-    consoleSpy.mockRestore()
   })
 
   it('calls readSettings once per quiz session start', async () => {
@@ -424,9 +401,8 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('✓ Correct!')
-    consoleSpy.mockRestore()
   })
 
   it('uses colorIncorrect and colorCorrect reveal for incorrect answer feedback', async () => {
@@ -436,11 +412,10 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('✗ Incorrect')
     expect(logged).toContain('Correct answer:')
     expect(logged).toContain('B)')
-    consoleSpy.mockRestore()
   })
 
   it('uses colorSpeedTier in feedback — speed tier label is present', async () => {
@@ -450,9 +425,8 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toMatch(/Fast|Normal|Slow/)
-    consoleSpy.mockRestore()
   })
 
   it('uses colorScoreDelta in feedback — score delta is present', async () => {
@@ -462,9 +436,8 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toMatch(/Score:.*[+-]\d+/)
-    consoleSpy.mockRestore()
   })
 
   it('uses colorDifficultyLevel in feedback — difficulty label is present', async () => {
@@ -475,9 +448,8 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // defaultDomainFile() starts at difficultyLevel 2 → label 'Elementary'
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('Elementary')
-    consoleSpy.mockRestore()
   })
 
   it('re-throws non-ExitPromptError from answer select (askQuestion)', async () => {
@@ -508,9 +480,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // The post-answer select call is the 2nd select call (1st = answer)
-    const postAnswerCall = mockSelect.mock.calls[1]
-    const choices = (postAnswerCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(1)
     expect(values).toContain('explain')
     expect(values).toContain('bookmark')
     expect(values).toContain('next')
@@ -528,10 +498,9 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('TypeScript adds static typing.')
     expect(mockGenerateExplanation).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
   })
 
   it('starts and stops explain spinner around generateExplanation call', async () => {
@@ -561,7 +530,6 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate explanation'))
-    warnSpy.mockRestore()
   })
 
   it('shows teach/next/exit after explain is used (post-explain action)', async () => {
@@ -575,9 +543,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // 3rd select call is the post-explain prompt (teach/next/exit)
-    const postExplainCall = mockSelect.mock.calls[2]
-    const choices = (postExplainCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(2)
     expect(values).toContain('teach')
     expect(values).toContain('next')
     expect(values).toContain('exit')
@@ -642,10 +608,9 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const logged = getLogs(consoleSpy)
     expect(logged).toContain('Deep dive into TypeScript type system...')
     expect(mockGenerateMicroLesson).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
   })
 
   it('calls generateMicroLesson with correct arguments', async () => {
@@ -700,7 +665,6 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not generate micro-lesson'))
-    warnSpy.mockRestore()
   })
 
   it('shows next/exit only (no teach) after micro-lesson is displayed', async () => {
@@ -717,9 +681,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // 4th select call is the post-teach prompt (next/exit only)
-    const postTeachCall = mockSelect.mock.calls[3]
-    const choices = (postTeachCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(3)
     expect(values).toContain('next')
     expect(values).toContain('exit')
     expect(values).not.toContain('teach')
@@ -773,13 +735,10 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // 3rd select call is the post-explain-failure prompt (next/exit only, no teach)
-    const postFailCall = mockSelect.mock.calls[2]
-    const choices = (postFailCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(2)
     expect(values).toContain('next')
     expect(values).toContain('exit')
     expect(values).not.toContain('teach')
-    warnSpy.mockRestore()
   })
 
   it('skips teach option and goes to next/exit when AI returns empty explanation', async () => {
@@ -794,9 +753,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // 3rd select call must not include teach
-    const postEmptyCall = mockSelect.mock.calls[2]
-    const choices = (postEmptyCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(2)
     expect(values).toContain('next')
     expect(values).toContain('exit')
     expect(values).not.toContain('teach')
@@ -812,9 +769,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const postAnswerCall = mockSelect.mock.calls[1]
-    const choices = (postAnswerCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(1)
     expect(values).toContain('bookmark')
   })
 
@@ -871,9 +826,8 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // The 3rd select call (after bookmark toggle re-render) shows "Remove bookmark"
-    const afterBookmarkCall = mockSelect.mock.calls[2]
-    const choices = (afterBookmarkCall[0] as any).choices
-    const bookmarkChoice = choices.find((c: any) => c.value === 'bookmark')
+    const call = mockSelect.mock.calls[2]
+    const bookmarkChoice = (call[0] as any).choices.find((c: any) => c.value === 'bookmark')
     expect(bookmarkChoice?.name).toContain('Remove bookmark')
   })
 
@@ -917,9 +871,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const postExplainCall = mockSelect.mock.calls[2]
-    const choices = (postExplainCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(2)
     expect(values).toContain('bookmark')
   })
 
@@ -970,9 +922,7 @@ describe('showQuiz', () => {
     await showQuiz('typescript')
 
     // 4th select call is the re-shown post-explain prompt (should have teach)
-    const reShownExplainCall = mockSelect.mock.calls[3]
-    const choices = (reShownExplainCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(3)
     expect(values).toContain('teach')
   })
 
@@ -1006,9 +956,7 @@ describe('showQuiz', () => {
 
     await showQuiz('typescript')
 
-    const postTeachCall = mockSelect.mock.calls[3]
-    const choices = (postTeachCall[0] as any).choices
-    const values = choices.map((c: any) => c.value)
+    const values = getChoiceValues(3)
     expect(values).toContain('bookmark')
     expect(values).not.toContain('teach')
     expect(values).not.toContain('explain')

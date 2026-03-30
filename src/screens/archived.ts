@@ -71,6 +71,34 @@ async function handleUnarchiveAction(slug: string): Promise<void> {
   }
 }
 
+async function showEmptyArchivedMessage(): Promise<void> {
+  console.log(header('🗄  Archived domains'))
+  console.log(dim('No archived domains.'))
+  try {
+    await select<ArchivedAction>({
+      message: 'Navigation',
+      choices: [{ name: '←  Back', value: { action: 'back' as const } }],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (!(err instanceof ExitPromptError)) throw err
+  }
+}
+
+async function promptArchivedSelection(entries: HomeEntry[]): Promise<ArchivedAction | null> {
+  try {
+    return await select<ArchivedAction>({
+      message: '🗄  Archived domains',
+      choices: buildArchivedChoices(entries),
+      pageSize: 15,
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) return null
+    throw err
+  }
+}
+
 export async function showArchivedScreen(): Promise<void> {
   let browsing = true
   while (browsing) {
@@ -79,38 +107,13 @@ export async function showArchivedScreen(): Promise<void> {
     const archivedEntries = await loadArchivedEntries(listResult)
 
     if (archivedEntries.length === 0) {
-      console.log(header('🗄  Archived domains'))
-      console.log(dim('No archived domains.'))
-      try {
-        await select<ArchivedAction>({
-          message: 'Navigation',
-          choices: [{ name: '←  Back', value: { action: 'back' as const } }],
-          theme: menuTheme,
-        })
-      } catch (err) {
-        if (!(err instanceof ExitPromptError)) throw err
-      }
+      await showEmptyArchivedMessage()
       browsing = false
       continue
     }
 
-    let answer: ArchivedAction
-    try {
-      answer = await select<ArchivedAction>({
-        message: '🗄  Archived domains',
-        choices: buildArchivedChoices(archivedEntries),
-        pageSize: 15,
-        theme: menuTheme,
-      })
-    } catch (err) {
-      if (err instanceof ExitPromptError) {
-        browsing = false
-        continue
-      }
-      throw err
-    }
-
-    if (answer.action === 'back') {
+    const answer = await promptArchivedSelection(archivedEntries)
+    if (answer === null || answer.action === 'back') {
       browsing = false
     } else if (answer.action === 'unarchive') {
       await handleUnarchiveAction(answer.slug)
