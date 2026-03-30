@@ -14,13 +14,7 @@ author: George
 
 ## Priority: High
 
-### ~~1. Explain Answer from History~~ ✅ Promoted
-
-**Status:** Promoted to PRD Feature 6, FR37, Epic 4 Story 4.4 (2026-03-28)
-
----
-
-### 2. Google Drive Sync
+### 1. Google Drive Sync
 
 **Description:** Manual cloud backup and restore of domain data via Google Drive. Users connect their Google account through OAuth 2.0 (PKCE) in Settings, protect credentials with a 4-6 digit PIN, and manually Upload or Download domain data. Settings and tokens are never synced — only domain JSON files.
 
@@ -148,15 +142,9 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### ~~3. Session Summary / Post-Session Report~~ ✅ Promoted
-
-**Status:** Promoted to PRD Feature 14 (2026-03-29)
-
----
-
 ## Priority: Medium
 
-### 4. Cross-Domain Stats / Global Dashboard
+### 2. Cross-Domain Stats / Global Dashboard
 
 **Description:** A "View All Stats" command from the home screen aggregating across all domains — total questions answered, total time played, strongest/weakest domains, global score.
 
@@ -166,13 +154,7 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### ~~5. Explanation Drill-Down / "Teach Me More"~~ ✅ Promoted
-
-**Status:** Promoted to PRD Feature 13 (2026-03-28)
-
----
-
-### 6. Question Bookmarking / Favorites
+### 3. Question Bookmarking / Favorites
 
 **Description:** Let users flag questions they want to revisit. "Star this question" adds it to a bookmarked list accessible from the domain sub-menu.
 
@@ -182,7 +164,7 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### 7. Challenge Mode / Timed Sprint
+### 4. Challenge Mode / Timed Sprint
 
 **Description:** A mode where the user gets N questions in a fixed time window (e.g., 10 questions in 3 minutes). Adds a competitive edge and a different engagement loop from the default exploratory mode.
 
@@ -192,21 +174,9 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### ~~11. Exit Message~~ ✅ Promoted
-
-**Status:** Promoted to PRD Feature 15, FR40, Epic 8 Story 8.3 (2026-03-30)
-
-**Description:** When the user exits the application (via the 🚪 Exit action on the home screen, or via Ctrl+C from any screen), display a styled farewell screen — similar to the welcome screen — before the process terminates. The screen should include the Brain Break ASCII art with the same gradient rendering, a short farewell tagline printed with the typewriter effect, and optionally a quick recap of the session (e.g., questions answered). No interaction required — the screen displays and the process exits.
-
-**KPIs targeted:** Perceived value, User satisfaction
-
-**Complexity:** Small
-
----
-
 ## Priority: Low
 
-### 8. Spaced Repetition Integration
+### 5. Spaced Repetition Integration
 
 **Description:** Re-surface questions the user previously answered incorrectly at increasing intervals (Leitner-box or SM-2 algorithm). Leverages existing history data (timestamps, correctness, difficulty).
 
@@ -216,7 +186,7 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### 9. Streak & Achievement Badges
+### 6. Streak & Achievement Badges
 
 **Description:** Surface achievements based on existing tracked data: "7-day streak", "10 correct in a row", "100 questions in Greek Mythology". Habit formation accelerator.
 
@@ -226,7 +196,7 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### 10. Difficulty Calibration Insights
+### 7. Difficulty Calibration Insights
 
 **Description:** After 50+ questions, show the user their "calibrated difficulty" — the level where they stabilize. "Your natural level in Java is Advanced (4)." A genuine skill signal.
 
