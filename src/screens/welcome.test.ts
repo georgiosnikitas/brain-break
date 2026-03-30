@@ -5,9 +5,19 @@ vi.mock('@inquirer/prompts', () => ({
 }))
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 vi.mock('../utils/format.js', () => ({
+  ASCII_ART: [
+    ' ____            _          ____                 _    ',
+    '| __ ) _ __ __ _(_)_ __    | __ ) _ __ ___  __ _| | __',
+    '|  _ \\| \'__/ _` | | \'_ \\   |  _ \\| \'__/ _ \\/ _` | |/ /',
+    '| |_) | | | (_| | | | | |  | |_) | | |  __/ (_| |   < ',
+    '|____/|_|  \\__,_|_|_| |_|  |____/|_|  \\___|\\__,_|_|\\_\\',
+  ],
   gradientShadow: vi.fn((width: number) => `[shadow:${width}]`),
   getGradientWidth: vi.fn(() => 60),
   lerpColor: vi.fn(() => ({ r: 100, g: 90, b: 160 })),
+  gradientText: vi.fn((text: string) => text),
+  typewriterPrint: vi.fn(),
+  cancellableSleep: vi.fn(() => ({ promise: new Promise<void>(() => {}), cancel: vi.fn() })),
   menuTheme: { style: { highlight: (t: string) => t } },
 }))
 
@@ -15,17 +25,15 @@ import { showWelcomeScreen, TAGLINE } from './welcome.js'
 import { select } from '@inquirer/prompts'
 import { clearScreen } from '../utils/screen.js'
 import { ExitPromptError } from '@inquirer/core'
-import { menuTheme } from '../utils/format.js'
+import { menuTheme, typewriterPrint, cancellableSleep } from '../utils/format.js'
 
 const mockSelect = vi.mocked(select)
 let logSpy: ReturnType<typeof vi.spyOn>
-let stdoutSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
   logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-  stdoutSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
   mockSelect.mockResolvedValueOnce('continue' as unknown as string)
 })
 
@@ -54,16 +62,9 @@ describe('showWelcomeScreen', () => {
     expect(output).toMatch(/v\d+\.\d+\.\d+/)
   })
 
-  it('writes the tagline via stdout (not console.log)', async () => {
+  it('prints the tagline via typewriterPrint', async () => {
     await runScreen()
-    const logOutput = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n')
-    const stdoutOutput = stdoutSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('')
-    // tagline chars are written individually so the continuous string won't appear in log
-    expect(logOutput).not.toContain(TAGLINE)
-    // each character of the tagline must appear in the stdout stream
-    for (const char of new Set(TAGLINE.replaceAll(' ', ''))) {
-      expect(stdoutOutput).toContain(char)
-    }
+    expect(vi.mocked(typewriterPrint)).toHaveBeenCalledWith(TAGLINE)
   })
 
   it('displays the version from package.json', async () => {
@@ -119,44 +120,15 @@ describe('showWelcomeScreen', () => {
     expect(output).toContain('[shadow:60]')
   })
 
-  describe('typewriter effect', () => {
-    it('erases the in-progress cursor after each character', async () => {
-      await runScreen()
-      const eraseWrites = stdoutSpy.mock.calls.filter((c: unknown[]) => String(c[0]) === '\b \b')
-      expect(eraseWrites).toHaveLength(TAGLINE.length)
-    })
+  it('auto-dismisses after 3 seconds when no keypress is provided', async () => {
+    mockSelect.mockReset()
+    mockSelect.mockImplementation(() => new Promise(() => {}) as never)
+    vi.mocked(cancellableSleep).mockReturnValueOnce({ promise: Promise.resolve(), cancel: vi.fn() })
 
-    it('writes one stdout call per tagline character during typing', async () => {
-      await runScreen()
-      // Each char gets exactly one write containing the char + cursor pair,
-      // preceded by one erase write. Verify each char appears in the collected output.
-      const writes = stdoutSpy.mock.calls.map((c: unknown[]) => String(c[0]))
-      for (const char of TAGLINE) {
-        expect(writes.some((w: string) => w.includes(char))).toBe(true)
-      }
-    })
+    const promise = showWelcomeScreen()
+    await vi.runAllTimersAsync()
+    await promise
 
-    it('blinks the cursor exactly 3 times after typing completes', async () => {
-      await runScreen()
-      // Each blink cycle hides the cursor with '\b ' then shows it again.
-      const blinkOffWrites = stdoutSpy.mock.calls.filter((c: unknown[]) => String(c[0]) === '\b ')
-      expect(blinkOffWrites).toHaveLength(3)
-    })
-
-    it('leaves the cursor visible after the final blink', async () => {
-      await runScreen()
-      const writes = stdoutSpy.mock.calls.map((c: unknown[]) => String(c[0]))
-      // The last write before '\n' must not be a hide sequence
-      const newlineIdx = writes.lastIndexOf('\n')
-      expect(newlineIdx).toBeGreaterThan(0)
-      const writeBeforeNewline = writes[newlineIdx - 1]
-      expect(writeBeforeNewline).not.toBe('\b ')
-    })
-
-    it('ends the tagline line with a newline via stdout', async () => {
-      await runScreen()
-      const writes = stdoutSpy.mock.calls.map((c: unknown[]) => String(c[0]))
-      expect(writes).toContain('\n')
-    })
+    // Should resolve without error (no process.exit on welcome auto-dismiss)
   })
 })

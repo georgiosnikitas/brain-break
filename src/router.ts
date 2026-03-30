@@ -8,6 +8,7 @@ import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
+import { showExitScreen } from './screens/exit.js'
 import { readDomain, writeDomain, deleteDomain as deleteDomainStore } from './domain/store.js'
 import { warn, error as errorFmt } from './utils/format.js'
 import type { SettingsFile, SessionData } from './domain/schema.js'
@@ -70,4 +71,8 @@ export async function showProviderSetup(settings: SettingsFile): Promise<void> {
 
 export async function showWelcome(): Promise<void> {
   await showWelcomeScreen()
+}
+
+export async function showExit(totalQuestions: number): Promise<void> {
+  await showExitScreen(totalQuestions)
 }

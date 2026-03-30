@@ -98,7 +98,7 @@ async function selectSettingsAction(
       { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
       { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
-      { name: `🎬  Welcome screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
+      { name: `🎬  Welcome & Exit screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
       new Separator(),
       { name: '💾  Save', value: 'save' as const },
       { name: '←  Back', value: 'back' as const },
@@ -160,7 +160,7 @@ export async function showSettingsScreen(): Promise<void> {
           break
         case 'showWelcome':
           showWelcome = !showWelcome
-          banner = showWelcome ? success('Welcome screen enabled') : warn('Welcome screen disabled')
+          banner = showWelcome ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled')
           break
         case 'save':
           await handleSaveAction({

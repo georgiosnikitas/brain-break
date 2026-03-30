@@ -10,6 +10,7 @@ vi.mock('@inquirer/prompts', () => ({
 vi.mock('../domain/store.js', () => ({
   listDomains: vi.fn(),
   readDomain: vi.fn(),
+  readSettings: vi.fn(),
 }))
 vi.mock('../router.js', () => ({
   showDomainMenu: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock('../router.js', () => ({
   showCreateDomain: vi.fn(),
   showArchived: vi.fn(),
   showSettings: vi.fn(),
+  showExit: vi.fn(),
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
@@ -28,25 +30,28 @@ vi.mock('qrcode-terminal', () => ({
 import type { DomainListEntry } from '../domain/store.js'
 import type { DomainMeta } from '../domain/schema.js'
 import { select } from '@inquirer/prompts'
-import { listDomains, readDomain } from '../domain/store.js'
+import { listDomains, readDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { defaultDomainFile } from '../domain/schema.js'
+import { defaultDomainFile, defaultSettings } from '../domain/schema.js'
 
 const mockSelect = vi.mocked(select)
 const mockListDomains = vi.mocked(listDomains)
 const mockReadDomain = vi.mocked(readDomain)
+const mockReadSettings = vi.mocked(readSettings)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockListDomains.mockResolvedValue({ ok: true, data: [] })
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
+  mockReadSettings.mockResolvedValue({ ok: true, data: defaultSettings() })
   vi.mocked(router.showDomainMenu).mockResolvedValue(undefined)
   vi.mocked(router.showQuiz).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.showCreateDomain).mockResolvedValue(undefined)
   vi.mocked(router.showArchived).mockResolvedValue(undefined)
   vi.mocked(router.showSettings).mockResolvedValue(undefined)
+  vi.mocked(router.showExit).mockResolvedValue(undefined)
 })
 
 // Separator instances have no `value` property — use this guard throughout
@@ -227,6 +232,32 @@ describe('filterActiveDomains', () => {
 // showHomeScreen — routing
 // ---------------------------------------------------------------------------
 describe('showHomeScreen — routing', () => {
+  it('calls router.showExit before process.exit when showWelcome is true and exit is selected', async () => {
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: true } })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showExit)).toHaveBeenCalledWith(0)
+    expect(exitSpy).toHaveBeenCalledWith(0)
+    exitSpy.mockRestore()
+  })
+
+  it('exits immediately without router.showExit when showWelcome is false and exit is selected', async () => {
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showExit)).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(0)
+    exitSpy.mockRestore()
+  })
+
   it('calls router.showDomainMenu with the correct slug when a domain is selected', async () => {
     const domain = defaultDomainFile()
     mockListDomains.mockResolvedValue({

@@ -338,7 +338,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Welcome screen enabled'))
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Welcome & Exit screen enabled'))
   })
 
   it('showWelcome toggle shows disabled banner when turning off', async () => {
@@ -347,7 +347,19 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Welcome screen disabled'))
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Welcome & Exit screen disabled'))
+  })
+
+  it('renders the Welcome & Exit screen toggle label in settings menu', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const toggleChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'showWelcome')
+    expect(toggleChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('Welcome & Exit screen') })
+    )
   })
 
   it('Save after showWelcome toggle persists the toggled value', async () => {

@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-29'
+lastEdited: '2026-03-30'
 status: 'complete'
 editHistory:
+  - date: '2026-03-30'
+    changes: 'PRD sync for Exit Message and settings toggle rename: FR40 added (Exit Message screen shown on explicit home Exit when showWelcome=true; skipped when false). FR3 updated with conditional Exit behavior. FR15 and FR33 updated to rename settings label to "🎬 Welcome & Exit screen". FR32 updated so showWelcome=false skips both welcome and exit branded screens. NFR5 updated to include Exit Message screen and clearScreen() exception list (Welcome/Exit/Provider Setup). FR and NFR Coverage Maps updated (FR40 → Epic 8). Epic 8 updated and Story 8.3 (Exit Message) added.'
   - date: '2026-03-29'
     changes: 'FR39 added (Session Summary): after a quiz session ends, the domain sub-menu renders a one-time ephemeral session summary block between the domain header and the action menu — displaying score delta, questions answered, correct/incorrect split, accuracy, fastest/slowest answer times, session duration, and difficulty change. FR3 updated (post-quiz return now includes session summary reference). FR Coverage Map updated with FR39 → Epic 9. Epic 9 (Session Summary) added with 1 story (9.1: Session Summary Display). Reflects PRD Feature 14 (2026-03-29).'
   - date: '2026-03-28'
@@ -56,7 +58,7 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39).
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
@@ -80,7 +82,7 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Question Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), and Welcome Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Question Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
@@ -114,9 +116,9 @@ FR30: All AI provider error messages are provider-specific: network errors ident
 
 FR31: On every launch where the `showWelcome` setting is `true` (default), a Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen. The Welcome Screen shows: the app emoji branding (`🧠🔨`), a gradient-colored ASCII art rendering of "Brain Break" (cyan-to-magenta row interpolation; bold cyan fallback on limited terminals), a styled subtitle (`> Train your brain, one question at a time_`) where `>` is rendered in cyan and `_` is rendered in magenta, the current version number (dim white), and a gradient shadow bar. The user dismisses the screen by pressing Enter. Ctrl+C exits the app cleanly.
 
-FR32: The `showWelcome` setting is a boolean (default: `true`) stored in `~/.brain-break/settings.json`. When `false`, the Welcome Screen is skipped entirely on launch.
+FR32: The `showWelcome` setting is a boolean (default: `true`) stored in `~/.brain-break/settings.json`. When `false`, both branded screens are skipped: the Welcome Screen on launch and the Exit Message on explicit home-screen Exit.
 
-FR33: The Settings screen includes a "🎬 Welcome screen" toggle (displayed as ON/OFF) that controls the `showWelcome` setting. Toggling it takes immediate effect in-memory and is persisted on Save.
+FR33: The Settings screen includes a "🎬 Welcome & Exit screen" toggle (displayed as ON/OFF) that controls the `showWelcome` setting for both branded screens. Toggling it takes immediate effect in-memory and is persisted on Save.
 
 FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
 
@@ -130,6 +132,8 @@ FR38: After an AI-generated explanation is displayed — in both the quiz post-a
 
 FR39: After a quiz session ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu. The summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to View History, View Stats, or any other screen and returning does not re-display it; re-entering the domain from the home screen does not re-display it. A session is defined as the period from selecting Play to selecting Back — every session with at least one answered question produces a summary. The summary displays: score delta (green if positive, red if negative), questions answered, correct/incorrect split, accuracy %, fastest answer time (green), slowest answer time (red), session duration (using the same `formatTotalTimePlayed` format as the stats dashboard), and difficulty change (starting → ending level with ▲/▼/— indicator using `colorDifficultyLevel`). The summary block is framed by dim horizontal divider lines and renders on the domain sub-menu screen using the standard `clearAndBanner()` flow.
 
+FR40: The app has a branded Exit Message screen shown only on explicit home-screen Exit when `showWelcome` is `true`. The screen uses `clearScreen()` (not `clearAndBanner()`) and renders the same visual language as the Welcome Screen: app emoji branding, gradient ASCII art "Brain Break" (cyan→magenta with bold-cyan fallback on limited terminals), styled subtitle `> Train your brain, one question at a time_`, version in dim white, and gradient shadow bar. Interaction model: auto-exit after 3 seconds with exit code 0; Enter exits immediately; Ctrl+C exits immediately. When `showWelcome` is `false`, explicit Exit terminates immediately without showing this screen.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -140,7 +144,7 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
 NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
@@ -204,13 +208,14 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR30 | Epic 7 | Per-provider AI error messages |
 | FR31 | Epic 8 | Welcome Screen — gradient ASCII art, tagline, version, press-enter dismiss |
 | FR32 | Epic 8 | `showWelcome` boolean setting (default: true) — skip welcome when false |
-| FR33 | Epic 8, Epic 5 | Settings screen — 🎬 Welcome screen toggle (ON/OFF) |
+| FR33 | Epic 8, Epic 5 | Settings screen — 🎬 Welcome & Exit screen toggle (ON/OFF) |
 | FR34 | Epic 8 | Static banner — `🧠🔨 Brain Break` + gradient shadow bar via `clearAndBanner()` |
 | FR35 | Epic 3 | Post-answer "Explain answer" option — AI-generated explanation of the correct answer |
 | FR36 | Epic 3 | Unified question detail rendering — shared `renderQuestionDetail()` used in quiz feedback and history detail view |
 | FR37 | Epic 4 | Explain answer from history — AI-generated explanation available in View History navigation |
 | FR38 | Epic 3, Epic 4 | Explanation Drill-Down — "Teach me more" micro-lesson after AI explanation in quiz and history |
 | FR39 | Epic 9 | Session Summary — ephemeral post-quiz summary on domain sub-menu |
+| FR40 | Epic 8 | Exit Message — branded farewell screen on explicit Exit when showWelcome is enabled |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -218,7 +223,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | NFR2 | Epic 3, Epic 7 | Graceful per-provider API/auth error → domain sub-menu |
 | NFR3 | Epic 2 | ENOENT → defaultDomainFile(); corrupted → warn + reset |
 | NFR4 | Epic 2 | ≤ 2s startup to home screen |
-| NFR5 | Story 1.6, Epic 8 | Full terminal reset (viewport + scroll-back buffer) + static banner via `clearAndBanner()` before every screen render (cross-cutting); Welcome/Provider Setup use `clearScreen()` only |
+| NFR5 | Story 1.6, Epic 8 | Full terminal reset (viewport + scroll-back buffer) + static banner via `clearAndBanner()` before every screen render (cross-cutting); Welcome/Exit Message/Provider Setup use `clearScreen()` only |
 | NFR6 | Epic 6 | ANSI 8/16-color baseline; interactive-only |
 
 ## Epic List
@@ -262,12 +267,12 @@ Users can select their preferred AI provider (GitHub Copilot, OpenAI, Anthropic,
 **NFRs covered:** NFR2 (per-provider error handling)
 **Additional requirements covered:** `ai/providers.ts` — `AiProvider` interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot), `createProvider()` factory, `validateProvider()` readiness checks; `ai/client.ts` refactored to provider-agnostic orchestration; `screens/provider-setup.ts` first-launch screen; `domain/schema.ts` expanded with `AiProviderType`; startup flow wired in `index.ts`/`router.ts`
 
-### Epic 8: Welcome Screen & Static Banner
-On every app launch (when enabled), a branded Welcome Screen greets the user with gradient-colored ASCII art, a tagline, and the app version — dismissible with Enter. Every screen in the app renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across all navigation states.
-**FRs covered:** FR31, FR32, FR33, FR34
-**FRs updated:** FR15 (Settings screen adds Welcome Screen toggle), FR17 (settings defaults expanded with `showWelcome: true`)
-**NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Provider Setup)
-**Additional requirements covered:** `screens/welcome.ts` — Welcome Screen with gradient ASCII art; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — gradient color utilities; `domain/schema.ts` — `showWelcome` boolean; startup flow wired in `index.ts`/`router.ts`
+### Epic 8: Welcome & Exit Screens + Static Banner
+When enabled, branded launch/exit screens frame the session: a Welcome Screen on startup and an Exit Message screen on explicit home Exit, both sharing the same visual language (gradient ASCII art, styled subtitle, version, and shadow bar). Every normal app screen renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across navigation states.
+**FRs covered:** FR31, FR32, FR33, FR34, FR40
+**FRs updated:** FR15 (Settings screen label renamed to Welcome & Exit Screen toggle), FR17 (settings defaults include `showWelcome: true`)
+**NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Exit/Provider Setup)
+**Additional requirements covered:** `screens/welcome.ts` — Welcome Screen; `screens/exit.ts` — Exit Message screen; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — gradient color utilities; `domain/schema.ts` — `showWelcome` boolean; startup flow wired in `index.ts`/`router.ts`
 ---
 
 ## Epic 1: Project Foundation & Developer Infrastructure
@@ -1684,14 +1689,14 @@ So that the first-launch flow is fully wired and subsequent launches skip setup 
 
 ---
 
-## Epic 8: Welcome Screen & Static Banner
+### Epic 8: Welcome & Exit Screens + Static Banner
 
-On every app launch (when enabled), a branded Welcome Screen greets the user with gradient-colored ASCII art, a tagline, and the app version — dismissible with Enter. Every screen in the app renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across all navigation states.
+When enabled, branded launch/exit screens frame the session: a Welcome Screen on startup and an Exit Message screen on explicit home Exit, both sharing the same visual language (gradient ASCII art, styled subtitle, version, and shadow bar). Every normal app screen renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across navigation states.
 
-**FRs covered:** FR31, FR32, FR33, FR34
-**FRs updated:** FR15 (Settings screen adds Welcome Screen toggle), FR17 (settings defaults expanded with `showWelcome: true`)
-**NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Provider Setup)
-**Additional requirements covered:** `screens/welcome.ts` — Welcome Screen with gradient ASCII art, tagline, version, and press-enter dismiss; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — `lerpColor()`, `gradientShadow()`, `getGradientWidth()` gradient utilities; `domain/schema.ts` — `showWelcome` boolean in `SettingsFile`; `index.ts` — startup flow updated to check `showWelcome` setting; `router.ts` — `showWelcome()` route added
+**FRs covered:** FR31, FR32, FR33, FR34, FR40
+**FRs updated:** FR15 (Settings screen label renamed to Welcome & Exit Screen toggle), FR17 (settings defaults include `showWelcome: true`)
+**NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Exit/Provider Setup)
+**Additional requirements covered:** `screens/welcome.ts` — Welcome Screen; `screens/exit.ts` — Exit Message screen; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — gradient utilities; `domain/schema.ts` — `showWelcome` boolean in `SettingsFile`; `index.ts` — startup flow checks `showWelcome`; `router.ts` — `showWelcome()` and `showExit()` routes
 
 ### Story 8.1: Welcome Screen
 
@@ -1733,7 +1738,7 @@ So that I get a polished, recognizable first impression of the app and can confi
 
 **Given** the Settings screen is open  
 **When** I inspect the available options  
-**Then** a "🎬 Welcome screen: ON/OFF" toggle is present  
+**Then** a "🎬 Welcome & Exit screen: ON/OFF" toggle is present  
 **And** toggling it flips the `showWelcome` value in-memory  
 **And** saving persists the new value to `settings.json`  
 
@@ -1803,6 +1808,10 @@ So that the app feels polished and I always know I'm in Brain Break regardless o
 **When** the screen is drawn  
 **Then** `clearScreen()` is called (not `clearAndBanner()`) — the Welcome Screen renders its own branded layout without the static banner  
 
+**Given** the Exit Message screen renders  
+**When** the screen is drawn  
+**Then** `clearScreen()` is called (not `clearAndBanner()`) — the Exit Message screen renders its own branded layout without the static banner  
+
 **Given** the Provider Setup screen renders  
 **When** the screen is drawn  
 **Then** `clearScreen()` is called (not `clearAndBanner()`) — the Provider Setup screen renders its own layout  
@@ -1815,7 +1824,46 @@ So that the app feels polished and I always know I'm in Brain Break regardless o
 
 **Given** co-located tests exist  
 **When** I run `npm test`  
-**Then** all tests pass, covering: `banner()` output contains "Brain Break", `clearAndBanner()` calls `clearScreen()` then `banner()`, all screen modules call `clearAndBanner()` on render (except Welcome and Provider Setup which call `clearScreen()`)  
+**Then** all tests pass, covering: `banner()` output contains "Brain Break", `clearAndBanner()` calls `clearScreen()` then `banner()`, all screen modules call `clearAndBanner()` on render (except Welcome, Exit Message, and Provider Setup which call `clearScreen()`)  
+
+---
+
+### Story 8.3: Exit Message Screen
+
+As a user,
+I want a branded farewell screen when I choose Exit from the home screen,
+So that app termination feels intentional and visually consistent with the Welcome experience.
+
+**Acceptance Criteria:**
+
+**Given** I am on the home screen and `settings.showWelcome` is `true`  
+**When** I select `Exit`  
+**Then** an Exit Message screen is displayed before the process terminates  
+
+**Given** the Exit Message screen is displayed  
+**When** it renders  
+**Then** it uses `clearScreen()` (not `clearAndBanner()`)  
+**And** it displays in order: `🧠🔨`, gradient ASCII "Brain Break" (cyan→magenta with bold-cyan fallback on limited terminals), styled subtitle `> Train your brain, one question at a time_`, a dim status line indicating automatic exit in 3 seconds, version in dim white, and a gradient shadow bar  
+
+**Given** the Exit Message screen is displayed  
+**When** 3 seconds elapse  
+**Then** the app exits with code 0  
+
+**Given** the Exit Message screen is displayed  
+**When** I press Enter  
+**Then** the app exits immediately with code 0  
+
+**Given** the Exit Message screen is displayed  
+**When** I press Ctrl+C  
+**Then** the app exits immediately with code 0  
+
+**Given** `settings.showWelcome` is `false`  
+**When** I select `Exit` from the home screen  
+**Then** the app exits immediately with code 0 and does not show the Exit Message screen  
+
+**Given** co-located tests exist in `screens/exit.test.ts`, `router.test.ts`, and `screens/home.test.ts`  
+**When** I run `npm test`  
+**Then** all tests pass, covering: conditional rendering by `showWelcome`, 3-second auto-exit, Enter immediate exit, Ctrl+C immediate exit, and `clearScreen()` usage without static banner  
 
 ---
 

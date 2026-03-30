@@ -17,8 +17,12 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-29'
+lastEdited: '2026-03-30'
 editHistory:
+  - date: '2026-03-30'
+    changes: 'Settings toggle behavior updated: the settings label is now "🎬 Welcome & Exit screen" (renamed from "Welcome screen") and controls both branded screens. When enabled, the Welcome Screen is shown on launch and the Exit Message is shown on explicit home-screen Exit. When disabled, both screens are skipped. Feature 8, Feature 11, Feature 15, onboarding journey, and Feature 1 exit action wording were aligned to this rule.'
+  - date: '2026-03-30'
+    changes: 'Feature 15 (Exit Message) added and promoted to MVP: selecting Exit from the home screen now displays a branded farewell screen before termination. The screen reuses Welcome Screen visual language (same gradient ASCII art, styled subtitle, version, and gradient shadow bar), uses clearScreen() (no static banner), supports Ctrl+C immediate exit, and auto-exits after 3 seconds with Enter allowing immediate dismissal. Product Scope updated from 14 to 15 capabilities. Functional Requirements preamble updated. Feature 1 home-screen exit action linked to Feature 15. User Journeys Core Usage updated with explicit app-exit flow. NFR 5 updated to include Exit Message in clearScreen() exceptions.'
   - date: '2026-03-29'
     changes: 'Feature 14 (Session Summary) added: after a quiz session ends, the domain sub-menu renders a one-time session summary block between the domain header and the action menu — displaying score delta, questions answered, correct/incorrect split, accuracy, fastest/slowest answer times, session duration, and difficulty change. The summary is ephemeral: it appears only on the first render of the domain sub-menu after a quiz and is not shown on subsequent re-renders. Product Scope updated from 13 to 14 capabilities. FR preamble updated. Feature 1 domain sub-menu updated with session summary cross-reference. User Journeys Core Usage updated. NFR 5 updated with session summary rendering note.'
   - date: '2026-03-25'
@@ -120,7 +124,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 14 capabilities define the complete MVP:
+The following 15 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -136,6 +140,7 @@ The following 14 capabilities define the complete MVP:
 12. Static Banner
 13. Explanation Drill-Down
 14. Session Summary
+15. Exit Message
 
 ### Out of Scope
 
@@ -215,7 +220,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys, configures provider-specific settings (model name, endpoint), and the app makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and proceeds anyway — the user can explore all UI except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. The welcome screen can be disabled in Settings. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic, selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
+**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow keys, configures provider-specific settings (model name, endpoint), and the app makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and proceeds anyway — the user can explore all UI except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. This behavior is controlled by the Settings toggle labeled **🎬 Welcome & Exit screen**. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic, selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -223,6 +228,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 - Navigates menus with arrow keys (↑↓); the focused option is highlighted with a full-row background; confirms selection with Enter
 - Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
 - On exiting the quiz, the domain sub-menu displays a one-time session summary — score delta, accuracy, speed stats, and difficulty change — giving every session a tangible result before the user decides what to do next
+- When the user is done, selecting Exit from the home screen shows a branded farewell screen (Feature 15), then the app terminates cleanly
 - History persists between sessions automatically
 
 **"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. Intrigued, they hit "Teach me more" and get a one-minute micro-lesson on the concept — connecting the question to deeper principles they hadn't considered. They come back and get it right next time. The score rises. *That feedback loop is the product.*
@@ -288,7 +294,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 14 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 15 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -300,7 +306,7 @@ The following 14 features define the complete MVP capability set. Each feature i
 - If no domains exist, the list is empty and the only available action is to create a new one
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate domain-specific questions for it
 - All state (history, score, time played) is domain-scoped and isolated
-- The home screen actions are: select a domain, create a new domain, view archived domains, settings, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen
+- The home screen actions are: select a domain, create a new domain, view archived domains, settings, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen; when `showWelcome` is `true`, selecting Exit displays the Exit Message screen (Feature 15) before terminating the app; when `showWelcome` is `false`, the app terminates immediately
 - Selecting "Create new domain" shows an input prompt (`New domain name:`); after entering a name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary); a Save/Back navigation prompt follows — selecting Save creates the domain, selecting Back returns to the home screen without creating a domain; pressing Ctrl+C at any prompt returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
@@ -427,7 +433,7 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Question Language**, **Tone of Voice**, and **Welcome Screen** toggle
+- Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Question Language**, **Tone of Voice**, and **Welcome & Exit Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
 - On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, showWelcome = `true`
@@ -471,9 +477,9 @@ User can view a summary dashboard for the active domain:
   - **Pirate** — pirate vernacular throughout, nautical metaphors, "Arr" as appropriate
 - The selected tone is injected into every AI prompt as a voice instruction
 
-**Welcome Screen**
-- A 🎬 Welcome screen toggle (displayed as ON/OFF) controls whether the branded Welcome Screen is shown on every app launch
-- Default is ON — when disabled, the app skips the Welcome Screen and proceeds directly to the home screen after Provider Setup (if needed)
+**Welcome & Exit Screen**
+- A 🎬 Welcome & Exit screen toggle (displayed as ON/OFF) controls whether the branded Welcome Screen (Feature 11) is shown on launch and whether the branded Exit Message screen (Feature 15) is shown on explicit home-screen Exit
+- Default is ON — when disabled, the app skips the Welcome Screen and also skips the Exit Message screen (explicit Exit terminates immediately)
 
 - Selecting Back from Settings returns the user to the home screen without saving unsaved changes
 - Selecting Save persists the changes and returns the user to the home screen
@@ -524,7 +530,7 @@ All interactive menus throughout the application use full-row background highlig
 - The Welcome Screen uses `clearScreen()` (not `clearAndBanner()`) because it renders its own full-screen branded layout
 - When `showWelcome` is `false` in settings, the Welcome Screen is skipped entirely — the app proceeds directly from Provider Setup (if needed) to the home screen
 - The `showWelcome` setting is a boolean stored in `~/.brain-break/settings.json` (default: `true`)
-- The Settings screen includes a **🎬 Welcome screen** toggle (displayed as ON/OFF) allowing the user to enable or disable the Welcome Screen; the toggle takes effect on the next app launch
+- The Settings screen includes a **🎬 Welcome & Exit screen** toggle (displayed as ON/OFF) allowing the user to enable or disable both the Welcome Screen and the Exit Message screen; the toggle takes effect on the next app launch and on the next explicit Exit action
 
 ### Feature 12 — Static Banner
 
@@ -562,6 +568,24 @@ All interactive menus throughout the application use full-row background highlig
 - The summary block is framed by dim horizontal divider lines (e.g., `── Last Session ──────`) rendered using `dim()`
 - The summary renders on the domain sub-menu screen using the standard `clearAndBanner()` flow — no additional terminal reset is triggered; it is content between the banner and the action menu
 
+### Feature 15 — Exit Message
+
+- When `showWelcome` is `true`, selecting **Exit** from the home screen displays a branded Exit Message screen before the process terminates
+- When `showWelcome` is `false`, selecting **Exit** terminates immediately with no Exit Message screen
+- The Exit Message screen uses `clearScreen()` (not `clearAndBanner()`) so it renders as a full-screen branded layout, consistent with the Welcome Screen behavior
+- The Exit Message screen renders the following content in order:
+  1. The app emoji branding (`🧠🔨`)
+  2. A gradient-colored ASCII art rendering of "Brain Break" identical to the Welcome Screen — cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan
+  3. A styled subtitle line identical to the Welcome Screen: `>` rendered in **cyan**, the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
+  4. A dim status line indicating automatic termination: `Exiting in 3 seconds...` (or equivalent phrasing)
+  5. The current app version (e.g., `v1.2.0`) rendered in dim white
+  6. A gradient shadow bar spanning the terminal width (same cyan-to-magenta gradient)
+- Interaction model:
+  - The app auto-exits after 3 seconds with process exit code 0
+  - Pressing Enter on the Exit Message screen exits immediately with process exit code 0
+  - Pressing Ctrl+C on the Exit Message screen exits immediately with process exit code 0
+- The Exit Message appears only for the explicit Exit action on the home screen; it is not required for error-driven termination paths
+
 ---
 
 ## Non-Functional Requirements
@@ -589,7 +613,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
+All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, stats dashboard, welcome screen, exit message screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.

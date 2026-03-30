@@ -3,11 +3,11 @@ title: 'Welcome Screen & Persistent Banner'
 slug: 'welcome-screen-persistent-banner'
 created: '2026-03-23'
 status: 'done'
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9]
 tech_stack: ['TypeScript (ES2022, ESM)', 'chalk ^5.0.0 (bgRgb, rgb for gradients)', '@inquirer/prompts 7.10.1 (select for dismissal)', 'zod (settings schema validation)', 'vitest (testing)', 'node:module createRequire (for package.json version read)']
 files_to_modify: ['src/utils/screen.ts', 'src/utils/format.ts', 'src/domain/schema.ts', 'src/screens/welcome.ts (new)', 'src/screens/home.ts', 'src/screens/quiz.ts', 'src/screens/history.ts', 'src/screens/stats.ts', 'src/screens/domain-menu.ts', 'src/screens/archived.ts', 'src/screens/provider-setup.ts', 'src/screens/settings.ts', 'src/screens/create-domain.ts', 'src/index.ts', 'src/router.ts']
 code_patterns: ['clearScreen() called at top of every screen - 11 calls across 8 files', 'chalk wrappers in format.ts (success, error, warn, dim, bold, header)', 'Zod schema with .default() for backward-compatible additions', 'select() from @inquirer/prompts for all user interaction', 'menuTheme with chalk.inverse applied to all select prompts', 'atomic file write (tmp + rename) for settings persistence', 'ExitPromptError catch pattern in all screens', 'ESM with "type": "module" - no resolveJsonModule']
-test_patterns: ['vitest with vi.mock for module mocking', 'all 8 screen test files mock clearScreen: vi.mock("../utils/screen.js", () => ({ clearScreen: vi.fn() }))', 'screen.test.ts tests clearScreen directly', 'regression.test.ts also mocks clearScreen', 'tests assert clearScreen was called (toHaveBeenCalled)', 'test files: screen.test.ts, home.test.ts, quiz.test.ts, history.test.ts, stats.test.ts, domain-menu.test.ts, archived.test.ts, settings.test.ts, create-domain.test.ts, regression.test.ts']
+test_patterns: ['vitest with vi.mock for module mocking', 'all screen test files mock both: vi.mock("../utils/screen.js", () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))', 'screen.test.ts tests clearScreen and clearAndBanner directly', 'regression.test.ts also mocks clearAndBanner', 'tests assert clearAndBanner was called (toHaveBeenCalled) — clearScreen only in welcome.test.ts and exit.test.ts', 'test files: screen.test.ts, home.test.ts, quiz.test.ts, history.test.ts, stats.test.ts, domain-menu.test.ts, archived.test.ts, settings.test.ts, create-domain.test.ts, regression.test.ts']
 ---
 
 ## Tech-Spec: Welcome Screen & Persistent Banner
@@ -129,9 +129,9 @@ Add two visual identity elements:
   - Action: Create file exporting `showWelcomeScreen(): Promise<void>` with:
     1. `clearScreen()` (not `clearAndBanner` — welcome replaces the banner)
     2. Build a 12-line vertical gradient block (each line uses `gradientBg` with slightly different color stops progressing cyan→magenta top-to-bottom)
-    3. Lines contain: empty padding (2 lines), `🧠🔨` emoji line (bold white), FIGlet ASCII art for "Brain Break" in Standard font (bold white, ~6 lines), tagline `"Train your brain, one question at a time!"` (bold yellow), version `v{version}` (dim white), empty padding (1 line)
+    3. Lines contain: empty padding (1 line), `🧠🔨` emoji line (bold), 5 gradient art lines, empty line, typewriter tagline (see below), version `v{version}` (dim white), empty line, `gradientShadow(width)`, empty line
     4. Version: `const { version } = createRequire(import.meta.url)('../../package.json')` — import `createRequire` from `node:module`
-    5. `console.log()` each gradient line
+    5. **Typewriter effect for tagline**: `typewriterPrint(TAGLINE)` writes each character with `chalk.dim.white(char)` followed by a blinking `chalk.bold.cyan('_')` cursor (`\b` backspace to erase between chars). After the last char: blink cursor 3 times (`TYPEWRITER_BLINK_COUNT = 3`) at `TYPEWRITER_BLINK_DELAY_MS = 300ms` intervals, then `\n`. Uses `sleep(TYPEWRITER_CHAR_DELAY_MS = 30)` between characters. `TAGLINE` is exported as a named const for use in tests.
     6. `await select({ message: ' ', choices: [{ value: 'continue', name: 'Press enter to continue...' }], theme: menuTheme })` — import `select` from `@inquirer/prompts`, `menuTheme` from `../utils/format.js`
     7. Wrap `select()` in `try/catch` for `ExitPromptError` from `@inquirer/core` — on catch, call `process.exit(0)` (matches home screen pattern)
   - Notes: The FIGlet art is a hardcoded template literal — no runtime dependency. Import `clearScreen` from `../utils/screen.js`. For vertical gradient, interpolate bgRgb row-by-row from cyan to magenta (different from horizontal banner gradient).

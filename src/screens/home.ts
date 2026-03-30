@@ -1,6 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { listDomains, readDomain, type DomainListEntry } from '../domain/store.js'
+import { listDomains, readDomain, readSettings, type DomainListEntry } from '../domain/store.js'
+import { defaultSettings } from '../domain/schema.js'
 import { dim, bold, error as errorFmt, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
@@ -76,8 +77,28 @@ async function loadHomeEntries(
   return []
 }
 
-async function handleHomeAction(answer: HomeAction): Promise<void> {
-  if (answer.action === 'exit') process.exit(0)
+async function handleHomeAction(answer: HomeAction, homeEntries: HomeEntry[], listResult: Awaited<Result<DomainListEntry[]>>): Promise<void> {
+  if (answer.action === 'exit') {
+    const settingsResult = await readSettings()
+    const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+    if (settings.showWelcome) {
+      let totalQuestions = homeEntries.reduce((sum, e) => sum + e.totalQuestions, 0)
+      if (listResult.ok) {
+        const archivedEntries = listResult.data.filter(
+          (e): e is Extract<DomainListEntry, { corrupted: false }> => !e.corrupted && e.meta.archived,
+        )
+        const archivedCounts = await Promise.all(
+          archivedEntries.map(async (e) => {
+            const r = await readDomain(e.slug)
+            return r.ok ? r.data.history.length : 0
+          }),
+        )
+        totalQuestions += archivedCounts.reduce((sum, n) => sum + n, 0)
+      }
+      await router.showExit(totalQuestions)
+    }
+    process.exit(0)
+  }
   if (answer.action === 'select') await router.showDomainMenu(answer.slug)
   if (answer.action === 'create') await router.showCreateDomain()
   if (answer.action === 'archived') await router.showArchived()
@@ -127,6 +148,6 @@ export async function showHomeScreen(): Promise<void> {
       throw err
     }
 
-    await handleHomeAction(answer)
+    await handleHomeAction(answer, homeEntries, listResult)
   }
 }

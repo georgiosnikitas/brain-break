@@ -15,6 +15,7 @@ import {
   showSettings,
   showProviderSetup,
   showWelcome,
+  showExit,
 } from './router.js'
 import { writeDomain, readDomain, _setDataDir } from './domain/store.js'
 import { defaultDomainFile } from './domain/schema.js'
@@ -32,6 +33,7 @@ vi.mock('./screens/domain-menu.js', () => ({ showDomainMenuScreen: vi.fn() }))
 vi.mock('./screens/settings.js', () => ({ showSettingsScreen: vi.fn() }))
 vi.mock('./screens/provider-setup.js', () => ({ showProviderSetupScreen: vi.fn() }))
 vi.mock('./screens/welcome.js', () => ({ showWelcomeScreen: vi.fn() }))
+vi.mock('./screens/exit.js', () => ({ showExitScreen: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // archiveDomain
@@ -113,6 +115,7 @@ import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
+import { showExitScreen } from './screens/exit.js'
 
 describe('showHome', () => {
   it('delegates to showHomeScreen', async () => {
@@ -189,6 +192,13 @@ describe('showWelcome', () => {
   it('delegates to showWelcomeScreen', async () => {
     await showWelcome()
     expect(showWelcomeScreen).toHaveBeenCalledOnce()
+  })
+})
+
+describe('showExit', () => {
+  it('delegates to showExitScreen', async () => {
+    await showExit(42)
+    expect(showExitScreen).toHaveBeenCalledWith(42)
   })
 })
 
