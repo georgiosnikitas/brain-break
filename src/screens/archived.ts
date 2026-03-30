@@ -72,7 +72,8 @@ async function handleUnarchiveAction(slug: string): Promise<void> {
 }
 
 export async function showArchivedScreen(): Promise<void> {
-  while (true) {
+  let browsing = true
+  while (browsing) {
     clearAndBanner()
     const listResult = await listDomains()
     const archivedEntries = await loadArchivedEntries(listResult)
@@ -89,7 +90,8 @@ export async function showArchivedScreen(): Promise<void> {
       } catch (err) {
         if (!(err instanceof ExitPromptError)) throw err
       }
-      return
+      browsing = false
+      continue
     }
 
     let answer: ArchivedAction
@@ -101,12 +103,18 @@ export async function showArchivedScreen(): Promise<void> {
         theme: menuTheme,
       })
     } catch (err) {
-      if (err instanceof ExitPromptError) return
+      if (err instanceof ExitPromptError) {
+        browsing = false
+        continue
+      }
       throw err
     }
 
-    if (answer.action === 'back') return
-    if (answer.action === 'unarchive') await handleUnarchiveAction(answer.slug)
+    if (answer.action === 'back') {
+      browsing = false
+    } else if (answer.action === 'unarchive') {
+      await handleUnarchiveAction(answer.slug)
+    }
     // loop re-renders with refreshed list
   }
 }
