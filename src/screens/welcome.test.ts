@@ -87,6 +87,7 @@ describe('showWelcomeScreen', () => {
         choices: [{ value: 'continue', name: 'Press enter to continue...' }],
         theme: menuTheme,
       }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
   })
 
