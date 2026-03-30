@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, writeDomain, type DomainListEntry } from '../domain/store.js'
-import { dim, bold, warn, error as errorFmt, menuTheme } from '../utils/format.js'
+import { dim, bold, warn, error as errorFmt, header, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import type { HomeEntry } from './home.js'
 import type { Result } from '../domain/schema.js'
@@ -76,6 +76,21 @@ export async function showArchivedScreen(): Promise<void> {
     clearAndBanner()
     const listResult = await listDomains()
     const archivedEntries = await loadArchivedEntries(listResult)
+
+    if (archivedEntries.length === 0) {
+      console.log(header('🗄  Archived domains'))
+      console.log(dim('No archived domains.'))
+      try {
+        await select<ArchivedAction>({
+          message: 'Navigation',
+          choices: [{ name: '←  Back', value: { action: 'back' as const } }],
+          theme: menuTheme,
+        })
+      } catch (err) {
+        if (!(err instanceof ExitPromptError)) throw err
+      }
+      return
+    }
 
     let answer: ArchivedAction
     try {

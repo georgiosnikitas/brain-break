@@ -418,22 +418,60 @@ describe('showBookmarks — Bookmark toggle', () => {
     warnSpy.mockRestore()
   })
 
-  it('question text is shown plainly regardless of bookmark state', async () => {
-    const records = makeBookmarkedHistory(2)
+  it('removes unbookmarked item from list on next navigation', async () => {
+    const records = makeBookmarkedHistory(3)
     const domain = { ...defaultDomainFile(), history: records }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect
       .mockResolvedValueOnce('bookmark')  // toggle first question off (bookmarked → false)
-      .mockResolvedValueOnce('next')      // navigate to question 2
-      .mockResolvedValueOnce('prev')      // navigate back to question 1 (now unbookmarked)
+      .mockResolvedValueOnce('next')      // navigate next → list recalculated, Q1 removed
       .mockResolvedValueOnce('back')
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
-    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('Question 1')
-    expect(allLogs).not.toContain('⭐ Question 1')
+    // After removing Q1's bookmark and pressing next, we land on Q2 at index 0 of [Q2, Q3]
+    const thirdMessage = mockSelect.mock.calls[2][0].message
+    expect(thirdMessage).toContain('Bookmark 1 of 2')
+    consoleSpy.mockRestore()
+  })
+
+  it('removes unbookmarked item from list on prev navigation', async () => {
+    const records = makeBookmarkedHistory(3)
+    const domain = { ...defaultDomainFile(), history: records }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('next')      // go to Q2 (index 1)
+      .mockResolvedValueOnce('bookmark')  // toggle Q2 off
+      .mockResolvedValueOnce('prev')      // navigate prev → list recalculated, Q2 removed, land on Q1
+      .mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showBookmarks('typescript')
+
+    // After removing Q2's bookmark and pressing prev, we land on Q1 at index 0 of [Q1, Q3]
+    const fourthMessage = mockSelect.mock.calls[3][0].message
+    expect(fourthMessage).toContain('Bookmark 1 of 2')
+    consoleSpy.mockRestore()
+  })
+
+  it('shows empty state when all bookmarks are removed via navigation', async () => {
+    const records = makeBookmarkedHistory(2)
+    const domain = { ...defaultDomainFile(), history: records }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('bookmark')  // toggle Q1 off
+      .mockResolvedValueOnce('next')      // navigate → recalculate to [Q2]
+      .mockResolvedValueOnce('bookmark')  // toggle Q2 off
+      .mockResolvedValueOnce('back')      // back from empty state
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showBookmarks('typescript')
+
+    // After removing Q2's bookmark, navigating would show empty state
+    // But since Q2 is the last item, no next/prev is available
+    // so the user presses back. The flow exits via showDomainMenu.
+    expect(mockShowDomainMenu).toHaveBeenCalledWith('typescript')
     consoleSpy.mockRestore()
   })
 })

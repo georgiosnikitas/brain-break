@@ -126,6 +126,12 @@ afterEach(async () => {
 
 describe('showArchivedScreen', () => {
   it('returns immediately when Back is selected', async () => {
+    const archived = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, archived: true },
+    }
+    await writeDomain('back-test', archived)
+
     mockSelect.mockResolvedValueOnce({ action: 'back' })
     await showArchivedScreen()
     expect(mockSelect).toHaveBeenCalledTimes(1)
@@ -153,7 +159,7 @@ describe('showArchivedScreen', () => {
     expect(after.data.meta.difficultyLevel).toBe(4)
   })
 
-  it('re-renders after unarchive (calls select twice before back)', async () => {
+  it('re-renders after unarchive and shows empty message', async () => {
     const archived = {
       ...defaultDomainFile(),
       meta: { ...defaultDomainFile().meta, archived: true },
@@ -166,6 +172,7 @@ describe('showArchivedScreen', () => {
 
     await showArchivedScreen()
 
+    // select called once for unarchive, then again showing empty archived screen with Back
     expect(mockSelect).toHaveBeenCalledTimes(2)
   })
 
@@ -176,14 +183,16 @@ describe('showArchivedScreen', () => {
     _setDataDir(fakePath)
 
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     mockSelect.mockResolvedValueOnce({ action: 'back' })
 
     await showArchivedScreen()
 
     expect(errorSpy).toHaveBeenCalled()
-    // Screen still renders (select called), user can exit via Back
+    // Screen still renders with Back option
     expect(mockSelect).toHaveBeenCalledTimes(1)
     errorSpy.mockRestore()
+    logSpy.mockRestore()
   })
 
   it('shows error and re-renders when writeDomain fails during unarchive', async () => {
@@ -246,6 +255,12 @@ describe('showArchivedScreen', () => {
   })
 
   it('re-throws non-ExitPromptError from select', async () => {
+    const archived = {
+      ...defaultDomainFile(),
+      meta: { ...defaultDomainFile().meta, archived: true },
+    }
+    await writeDomain('throw-test', archived)
+
     const boom = new Error('unexpected select failure')
     mockSelect.mockRejectedValueOnce(boom)
 
@@ -281,5 +296,25 @@ describe('showArchivedScreen', () => {
     await showArchivedScreen()
 
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
+  })
+
+  it('shows "No archived domains." message and Back option when there are no archived entries', async () => {
+    // No archived domains on disk — testDir is empty
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    mockSelect.mockResolvedValueOnce({ action: 'back' })
+
+    await showArchivedScreen()
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('🗄  Archived domains'))
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No archived domains.'))
+    // select is called with Navigation message and Back option
+    expect(mockSelect).toHaveBeenCalledTimes(1)
+    expect(mockSelect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Navigation',
+        choices: [{ name: '←  Back', value: { action: 'back' } }],
+      }),
+    )
+    logSpy.mockRestore()
   })
 })

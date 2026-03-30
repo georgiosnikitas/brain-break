@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain, readSettings } from '../domain/store.js'
-import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile } from '../domain/schema.js'
+import { defaultSettings, type QuestionRecord, type DomainFile } from '../domain/schema.js'
 import {
   warn,
   dim,
@@ -99,8 +99,23 @@ async function processNavAction(
     await toggleBookmark(state.bookmarks[state.index], domainSlug, domain)
     return { ...state, skipClear: true }
   }
-  const newIndex = nav === 'next' ? state.index + 1 : state.index - 1
-  return { ...state, index: newIndex, ...resetNavState(), skipClear: false }
+  const currentRecord = state.bookmarks[state.index]
+  const newBookmarks = domain.history.filter(r => r.bookmarked)
+  if (newBookmarks.length === 0) {
+    return { ...state, bookmarks: newBookmarks, index: 0, ...resetNavState(), skipClear: false }
+  }
+  const currentPosInNew = newBookmarks.indexOf(currentRecord)
+  let newIndex: number
+  if (nav === 'next') {
+    newIndex = currentPosInNew >= 0
+      ? Math.min(currentPosInNew + 1, newBookmarks.length - 1)
+      : Math.min(state.index, newBookmarks.length - 1)
+  } else {
+    newIndex = currentPosInNew >= 0
+      ? Math.max(currentPosInNew - 1, 0)
+      : Math.max(state.index - 1, 0)
+  }
+  return { ...state, index: newIndex, bookmarks: newBookmarks, ...resetNavState(), skipClear: false }
 }
 
 async function navigateBookmarks(bookmarks: QuestionRecord[], domain: DomainFile, domainSlug: string): Promise<void> {
@@ -124,6 +139,10 @@ async function navigateBookmarks(bookmarks: QuestionRecord[], domain: DomainFile
     }
 
     state = await processNavAction(nav, state, domain, domainSlug, settings)
+    if (state.bookmarks.length === 0) {
+      await showEmptyBookmarksState(domainSlug)
+      return
+    }
   }
 }
 
