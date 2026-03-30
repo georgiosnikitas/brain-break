@@ -39,8 +39,7 @@ export async function showWelcomeScreen(): Promise<void> {
     message: ' ',
     choices: [{ value: 'continue', name: 'Press enter to continue...' }],
     theme: menuTheme,
-    signal: abortController.signal,
-  }).catch((e: unknown) => {
+  }, { signal: abortController.signal }).catch((e: unknown) => {
     if (!(e instanceof AbortPromptError)) throw e
   })
 
