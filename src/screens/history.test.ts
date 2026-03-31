@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
+import { makeRecord, setupNavScreenBeforeEach } from './__test-helpers__/nav-test-setup.js'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -48,23 +49,6 @@ const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
-  return {
-    question: 'What is TypeScript?',
-    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
-    correctAnswer: 'A',
-    userAnswer: 'A',
-    isCorrect: true,
-    answeredAt: '2026-03-12T10:00:00.000Z',
-    timeTakenMs: 5000,
-    speedTier: 'fast',
-    scoreDelta: 60,
-    difficultyLevel: 3,
-    bookmarked: false,
-    ...overrides,
-  }
-}
-
 function makeHistory(count: number): QuestionRecord[] {
   return Array.from({ length: count }, (_, i) =>
     makeRecord({ question: `Question ${i + 1}`, answeredAt: new Date(2026, 2, i + 1).toISOString() }),
@@ -75,13 +59,7 @@ function makeHistory(count: number): QuestionRecord[] {
 // Setup
 // ---------------------------------------------------------------------------
 beforeEach(() => {
-  vi.clearAllMocks()
-  mockShowDomainMenu.mockResolvedValue(undefined)
-  mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
-  mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
-  mockReadSettings.mockResolvedValue({ ok: true, data: { provider: null, language: 'English', tone: 'natural' as const, openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true } })
-  mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Test explanation text' })
-  mockGenerateMicroLesson.mockResolvedValue({ ok: true, data: 'Test micro-lesson text' })
+  setupNavScreenBeforeEach({ mockShowDomainMenu, mockWriteDomain, mockReadDomain, mockReadSettings, mockGenerateExplanation, mockGenerateMicroLesson })
 })
 
 // ---------------------------------------------------------------------------
@@ -482,6 +460,23 @@ describe('showHistory — explain answer', () => {
     // Warning must survive on screen — clearAndBanner only called once (initial render)
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalledTimes(1)
     warnSpy.mockRestore()
+  })
+
+  it('ignores a teach action when no explanation text is available', async () => {
+    mockGenerateExplanation.mockResolvedValue({ ok: false, error: 'Network error' })
+    const domain = { ...defaultDomainFile(), history: makeHistory(1) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect
+      .mockResolvedValueOnce('explain')
+      .mockResolvedValueOnce('teach')
+      .mockResolvedValueOnce('back')
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showHistory('typescript')
+
+    expect(mockGenerateMicroLesson).not.toHaveBeenCalled()
+    expect(mockSelect).toHaveBeenCalledTimes(3)
+    expect(mockShowDomainMenu).toHaveBeenCalledOnce()
   })
 
   it('does not call clearAndBanner when rendering explanation inline', async () => {

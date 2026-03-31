@@ -13,6 +13,14 @@ const validMeta = {
   archived: false,
 }
 
+function parseDomain(overrides: { meta?: Record<string, unknown>; hashes?: unknown[]; history?: unknown[] } = {}) {
+  return DomainFileSchema.safeParse({
+    meta: overrides.meta ?? validMeta,
+    hashes: overrides.hashes ?? [],
+    history: overrides.history ?? [],
+  })
+}
+
 const validHistory = [
   {
     question: 'What is 2+2?',
@@ -39,103 +47,59 @@ describe('DomainFileSchema', () => {
   })
 
   it('accepts empty hashes and history arrays', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain()
     expect(result.success).toBe(true)
   })
 
   it('accepts null lastSessionAt', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, lastSessionAt: null },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, lastSessionAt: null } })
     expect(result.success).toBe(true)
   })
 
   it('rejects missing meta.score', () => {
     const { score: _score, ...metaWithoutScore } = validMeta
-    const result = DomainFileSchema.safeParse({
-      meta: metaWithoutScore,
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: metaWithoutScore })
     expect(result.success).toBe(false)
   })
 
   it('rejects invalid streakType value', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, streakType: 'winning' },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, streakType: 'winning' } })
     expect(result.success).toBe(false)
   })
 
   it('rejects invalid correctAnswer value (not A–D)', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], correctAnswer: 'E' }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], correctAnswer: 'E' }] })
     expect(result.success).toBe(false)
   })
 
   it('rejects invalid speedTier value', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], speedTier: 'turbo' }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], speedTier: 'turbo' }] })
     expect(result.success).toBe(false)
   })
 
   it('rejects difficultyLevel below 1 in meta', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, difficultyLevel: 0 },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, difficultyLevel: 0 } })
     expect(result.success).toBe(false)
   })
 
   it('rejects difficultyLevel above 5 in meta', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, difficultyLevel: 6 },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, difficultyLevel: 6 } })
     expect(result.success).toBe(false)
   })
 
   it('rejects startingDifficulty below 1 in meta', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, startingDifficulty: 0 },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, startingDifficulty: 0 } })
     expect(result.success).toBe(false)
   })
 
   it('rejects startingDifficulty above 5 in meta', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, startingDifficulty: 6 },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, startingDifficulty: 6 } })
     expect(result.success).toBe(false)
   })
 
   it('defaults startingDifficulty to 2 when missing (backward compat)', () => {
     const { startingDifficulty: _, ...metaWithoutStarting } = validMeta
-    const result = DomainFileSchema.safeParse({
-      meta: metaWithoutStarting,
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: metaWithoutStarting })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.meta.startingDifficulty).toBe(2)
@@ -143,29 +107,17 @@ describe('DomainFileSchema', () => {
   })
 
   it('rejects difficultyLevel below 1 in history entry', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], difficultyLevel: 0 }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], difficultyLevel: 0 }] })
     expect(result.success).toBe(false)
   })
 
   it('rejects difficultyLevel above 5 in history entry', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], difficultyLevel: 6 }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], difficultyLevel: 6 }] })
     expect(result.success).toBe(false)
   })
 
   it('defaults bookmarked to false when field is missing (backward compat)', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [validHistory[0]],
-    })
+    const result = parseDomain({ history: [validHistory[0]] })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.history[0].bookmarked).toBe(false)
@@ -173,11 +125,7 @@ describe('DomainFileSchema', () => {
   })
 
   it('accepts bookmarked: true on history entry', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], bookmarked: true }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], bookmarked: true }] })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.history[0].bookmarked).toBe(true)
@@ -185,11 +133,7 @@ describe('DomainFileSchema', () => {
   })
 
   it('accepts bookmarked: false on history entry', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], bookmarked: false }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], bookmarked: false }] })
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.history[0].bookmarked).toBe(false)
@@ -197,38 +141,22 @@ describe('DomainFileSchema', () => {
   })
 
   it('rejects empty question string', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: validMeta,
-      hashes: [],
-      history: [{ ...validHistory[0], question: '' }],
-    })
+    const result = parseDomain({ history: [{ ...validHistory[0], question: '' }] })
     expect(result.success).toBe(false)
   })
 
   it('rejects non-datetime createdAt string', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, createdAt: 'not-a-date' },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, createdAt: 'not-a-date' } })
     expect(result.success).toBe(false)
   })
 
   it('rejects NaN score', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, score: Number.NaN },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, score: Number.NaN } })
     expect(result.success).toBe(false)
   })
 
   it('rejects Infinity score', () => {
-    const result = DomainFileSchema.safeParse({
-      meta: { ...validMeta, score: Infinity },
-      hashes: [],
-      history: [],
-    })
+    const result = parseDomain({ meta: { ...validMeta, score: Infinity } })
     expect(result.success).toBe(false)
   })
 })
@@ -366,47 +294,35 @@ describe('AiProviderTypeSchema', () => {
 })
 
 describe('SettingsFileSchema — provider fields', () => {
+  const validSettings = {
+    provider: null as string | null,
+    language: 'English',
+    tone: 'natural',
+    openaiModel: 'gpt-4o-mini',
+    anthropicModel: 'claude-sonnet-4-20250514',
+    geminiModel: 'gemini-2.0-flash',
+    ollamaEndpoint: 'http://localhost:11434',
+    ollamaModel: 'llama3',
+  }
+
+  function parseSettings(overrides: Record<string, unknown> = {}) {
+    return SettingsFileSchema.safeParse({ ...validSettings, ...overrides })
+  }
+
   it('accepts full valid input with all 5 fields including null provider', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: null,
-      language: 'English',
-      tone: 'natural',
-      openaiModel: 'gpt-4o-mini',
-      anthropicModel: 'claude-sonnet-4-20250514',
-      geminiModel: 'gemini-2.0-flash',
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3',
-    })
+    const result = parseSettings()
     expect(result.success).toBe(true)
   })
 
   it('accepts input with provider set to each valid provider type', () => {
     for (const provider of ['copilot', 'openai', 'anthropic', 'gemini', 'ollama'] as const) {
-      const result = SettingsFileSchema.safeParse({
-        provider,
-        language: 'English',
-        tone: 'natural',
-        openaiModel: 'gpt-4o-mini',
-        anthropicModel: 'claude-sonnet-4-20250514',
-        geminiModel: 'gemini-2.0-flash',
-        ollamaEndpoint: 'http://localhost:11434',
-        ollamaModel: 'llama3',
-      })
+      const result = parseSettings({ provider })
       expect(result.success).toBe(true)
     }
   })
 
   it('rejects invalid non-null provider value', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: 'grok',
-      language: 'English',
-      tone: 'natural',
-      openaiModel: 'gpt-4o-mini',
-      anthropicModel: 'claude-sonnet-4-20250514',
-      geminiModel: 'gemini-2.0-flash',
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3',
-    })
+    const result = parseSettings({ provider: 'grok' })
     expect(result.success).toBe(false)
   })
 
@@ -421,72 +337,27 @@ describe('SettingsFileSchema — provider fields', () => {
   })
 
   it('rejects empty ollamaEndpoint string', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: 'ollama',
-      language: 'English',
-      tone: 'natural',
-      openaiModel: 'gpt-4o-mini',
-      anthropicModel: 'claude-sonnet-4-20250514',
-      geminiModel: 'gemini-2.0-flash',
-      ollamaEndpoint: '',
-      ollamaModel: 'llama3',
-    })
+    const result = parseSettings({ provider: 'ollama', ollamaEndpoint: '' })
     expect(result.success).toBe(false)
   })
 
   it('rejects empty ollamaModel string', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: 'ollama',
-      language: 'English',
-      tone: 'natural',
-      openaiModel: 'gpt-4o-mini',
-      anthropicModel: 'claude-sonnet-4-20250514',
-      geminiModel: 'gemini-2.0-flash',
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: '',
-    })
+    const result = parseSettings({ provider: 'ollama', ollamaModel: '' })
     expect(result.success).toBe(false)
   })
 
   it('rejects empty openaiModel string', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: 'openai',
-      language: 'English',
-      tone: 'natural',
-      openaiModel: '',
-      anthropicModel: 'claude-sonnet-4-20250514',
-      geminiModel: 'gemini-2.0-flash',
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3',
-    })
+    const result = parseSettings({ provider: 'openai', openaiModel: '' })
     expect(result.success).toBe(false)
   })
 
   it('rejects empty anthropicModel string', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: 'anthropic',
-      language: 'English',
-      tone: 'natural',
-      openaiModel: 'gpt-4o-mini',
-      anthropicModel: '',
-      geminiModel: 'gemini-2.0-flash',
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3',
-    })
+    const result = parseSettings({ provider: 'anthropic', anthropicModel: '' })
     expect(result.success).toBe(false)
   })
 
   it('rejects empty geminiModel string', () => {
-    const result = SettingsFileSchema.safeParse({
-      provider: 'gemini',
-      language: 'English',
-      tone: 'natural',
-      openaiModel: 'gpt-4o-mini',
-      anthropicModel: 'claude-sonnet-4-20250514',
-      geminiModel: '',
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3',
-    })
+    const result = parseSettings({ provider: 'gemini', geminiModel: '' })
     expect(result.success).toBe(false)
   })
 })

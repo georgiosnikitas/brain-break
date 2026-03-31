@@ -1,25 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createFormatMock } from './__test-helpers__/format-mock.js'
 
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
 }))
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
-vi.mock('../utils/format.js', () => ({
-  ASCII_ART: [
-    ' ____            _          ____                 _    ',
-    '| __ ) _ __ __ _(_)_ __    | __ ) _ __ ___  __ _| | __',
-    '|  _ \\| \'__/ _` | | \'_ \\   |  _ \\| \'__/ _ \\/ _` | |/ /',
-    '| |_) | | | (_| | | | | |  | |_) | | |  __/ (_| |   < ',
-    '|____/|_|  \\__,_|_|_| |_|  |____/|_|  \\___|\\__,_|_|\\_\\',
-  ],
-  gradientShadow: vi.fn((width: number) => `[shadow:${width}]`),
-  getGradientWidth: vi.fn(() => 60),
-  lerpColor: vi.fn(() => ({ r: 100, g: 90, b: 160 })),
-  gradientText: vi.fn((text: string) => text),
-  typewriterPrint: vi.fn(),
-  cancellableSleep: vi.fn(() => ({ promise: new Promise<void>(() => {}), cancel: vi.fn() })),
-  menuTheme: { style: { highlight: (t: string) => t } },
-}))
+vi.mock('../utils/format.js', () => createFormatMock())
 
 import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'

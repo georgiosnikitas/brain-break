@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
+import { makeRecord, setupNavScreenBeforeEach } from './__test-helpers__/nav-test-setup.js'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -48,26 +49,9 @@ const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
-  return {
-    question: 'What is TypeScript?',
-    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
-    correctAnswer: 'A',
-    userAnswer: 'A',
-    isCorrect: true,
-    answeredAt: '2026-03-12T10:00:00.000Z',
-    timeTakenMs: 5000,
-    speedTier: 'fast',
-    scoreDelta: 60,
-    difficultyLevel: 3,
-    bookmarked: true,
-    ...overrides,
-  }
-}
-
 function makeBookmarkedHistory(count: number): QuestionRecord[] {
   return Array.from({ length: count }, (_, i) =>
-    makeRecord({ question: `Question ${i + 1}`, answeredAt: new Date(2026, 2, i + 1).toISOString() }),
+    makeRecord({ question: `Question ${i + 1}`, answeredAt: new Date(2026, 2, i + 1).toISOString(), bookmarked: true }),
   )
 }
 
@@ -83,13 +67,7 @@ function makeMixedHistory(): QuestionRecord[] {
 // Setup
 // ---------------------------------------------------------------------------
 beforeEach(() => {
-  vi.clearAllMocks()
-  mockShowDomainMenu.mockResolvedValue(undefined)
-  mockWriteDomain.mockResolvedValue({ ok: true, data: undefined })
-  mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
-  mockReadSettings.mockResolvedValue({ ok: true, data: { provider: null, language: 'English', tone: 'natural' as const, openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true } })
-  mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Test explanation text' })
-  mockGenerateMicroLesson.mockResolvedValue({ ok: true, data: 'Test micro-lesson text' })
+  setupNavScreenBeforeEach({ mockShowDomainMenu, mockWriteDomain, mockReadDomain, mockReadSettings, mockGenerateExplanation, mockGenerateMicroLesson })
 })
 
 // ---------------------------------------------------------------------------
@@ -481,7 +459,7 @@ describe('showBookmarks — Bookmark toggle', () => {
 // ---------------------------------------------------------------------------
 describe('showBookmarks — Explain answer', () => {
   it('calls generateExplanation with correct arguments', async () => {
-    const record = makeRecord({ question: 'What is TS?', userAnswer: 'B', correctAnswer: 'A', difficultyLevel: 3 })
+    const record = makeRecord({ question: 'What is TS?', userAnswer: 'B', correctAnswer: 'A', difficultyLevel: 3, bookmarked: true })
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
@@ -543,7 +521,7 @@ describe('showBookmarks — Explain answer', () => {
 // ---------------------------------------------------------------------------
 describe('showBookmarks — Teach me more', () => {
   it('calls generateMicroLesson with correct arguments', async () => {
-    const record = makeRecord({ question: 'What is TS?', userAnswer: 'B', correctAnswer: 'A' })
+    const record = makeRecord({ question: 'What is TS?', userAnswer: 'B', correctAnswer: 'A', bookmarked: true })
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockGenerateExplanation.mockResolvedValue({ ok: true, data: 'Explanation of TS.' })

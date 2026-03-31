@@ -1,4 +1,4 @@
-import { select, Separator } from '@inquirer/prompts'
+import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain, readSettings } from '../domain/store.js'
 import { defaultSettings, type QuestionRecord, type DomainFile } from '../domain/schema.js'
@@ -7,48 +7,12 @@ import {
   dim,
   header,
   menuTheme,
-  renderQuestionDetail,
 } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { handleExplainAnswer, handleTeachMeMoreAnswer, toggleBookmark } from './question-nav.js'
+import { handleExplainAnswer, handleTeachMeMoreAnswer, toggleBookmark, buildNavChoices, displayEntry, selectNavAction, type NavAction } from './question-nav.js'
 import * as router from '../router.js'
 
-type NavAction = 'next' | 'prev' | 'back' | 'explain' | 'teach' | 'bookmark'
-
-export function buildBookmarkChoices(
-  currentIndex: number,
-  totalItems: number,
-  explainVisible?: boolean,
-  teachVisible?: boolean,
-  bookmarked?: boolean,
-): Array<{ name: string; value: NavAction } | Separator> {
-  const choices: Array<{ name: string; value: NavAction } | Separator> = []
-  if (!explainVisible) choices.push({ name: '💡 Explain answer', value: 'explain' })
-  if (explainVisible && !teachVisible) choices.push({ name: '📚 Teach me more', value: 'teach' })
-  choices.push({ name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' })
-  if (currentIndex < totalItems - 1) choices.push({ name: '➡️  Next question', value: 'next' })
-  if (currentIndex > 0) choices.push({ name: '⬅️  Previous question', value: 'prev' })
-  if (choices.length > 0) choices.push(new Separator())
-  choices.push({ name: '←  Back', value: 'back' })
-  return choices
-}
-
-function displayEntry(record: QuestionRecord): void {
-  console.log(record.question)
-  renderQuestionDetail(record, { showTimestamp: true })
-}
-
-async function selectNavAction(
-  message: string,
-  choices: Array<{ name: string; value: NavAction } | Separator>,
-): Promise<NavAction | null> {
-  try {
-    return await select<NavAction>({ message, choices, theme: menuTheme })
-  } catch (err) {
-    if (err instanceof ExitPromptError) return null
-    throw err
-  }
-}
+export { buildNavChoices as buildBookmarkChoices } from './question-nav.js'
 
 async function showEmptyBookmarksState(domainSlug: string): Promise<void> {
   clearAndBanner()
@@ -99,6 +63,10 @@ async function processNavAction(
     await toggleBookmark(state.bookmarks[state.index], domainSlug, domain)
     return { ...state, skipClear: true }
   }
+  if (nav === 'back') return state
+
+  // nav is now 'next' | 'prev' — refresh bookmark list after potential unbookmark
+  const _exhaustive: 'next' | 'prev' = nav
   const currentRecord = state.bookmarks[state.index]
   const newBookmarks = domain.history.filter(r => r.bookmarked)
   if (newBookmarks.length === 0) {
@@ -131,7 +99,7 @@ async function navigateBookmarks(bookmarks: QuestionRecord[], domain: DomainFile
     }
     state.skipClear = false
 
-    const choices = buildBookmarkChoices(state.index, state.bookmarks.length, state.explainVisible, state.teachVisible, state.bookmarks[state.index].bookmarked)
+    const choices = buildNavChoices(state.index, state.bookmarks.length, state.explainVisible, state.teachVisible, state.bookmarks[state.index].bookmarked)
     const nav = await selectNavAction(`Bookmark ${state.index + 1} of ${state.bookmarks.length}`, choices)
     if (nav === null || nav === 'back') {
       await router.showDomainMenu(domainSlug)

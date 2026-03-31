@@ -80,7 +80,7 @@ function makeQuestion(correctAnswer: AnswerOption = 'A') {
 }
 
 function getLogs(spy: ReturnType<typeof vi.spyOn>): string {
-  return spy.mock.calls.map((c) => String(c[0])).join('\n')
+  return spy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
 }
 
 function getChoiceValues(callIndex: number): string[] {
@@ -723,7 +723,7 @@ describe('showQuiz', () => {
   })
 
   it('shows next/exit after explain failure (no teach option)', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    vi.spyOn(console, 'warn').mockReturnValue(undefined)
     vi.spyOn(console, 'log').mockReturnValue(undefined)
     mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
     mockGenerateExplanation.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
