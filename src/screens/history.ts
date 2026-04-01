@@ -73,7 +73,7 @@ async function navigateHistory(history: QuestionRecord[], domain: DomainFile, do
   while (true) {
     if (!state.explainVisible && !state.skipClear) {
       clearAndBanner()
-      console.log(header(`📜 Question History — ${domainSlug}`))
+      console.log(header(`📜 History — ${domainSlug}`))
       displayEntry(history[state.index])
     }
     state.skipClear = false
@@ -105,7 +105,7 @@ export async function showHistory(domainSlug: string): Promise<void> {
 
   if (history.length === 0) {
     clearAndBanner()
-    console.log(header(`📜 Question History — ${domainSlug}`))
+    console.log(header(`📜 History — ${domainSlug}`))
     console.log(dim('No questions answered yet'))
     try {
       await select<NavAction>({

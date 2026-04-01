@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema } from './schema.js'
+import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema } from './schema.js'
 
 const validMeta = {
   score: 100,
@@ -431,5 +431,38 @@ describe('showWelcome setting', () => {
     }
     const parsed = SettingsFileSchema.parse(oldSettings)
     expect(parsed.showWelcome).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// QuestionRecordSchema — userAnswer validation
+// ---------------------------------------------------------------------------
+describe('QuestionRecordSchema', () => {
+  const validRecord = {
+    question: 'What is 2+2?',
+    options: { A: '3', B: '4', C: '5', D: '6' },
+    correctAnswer: 'B',
+    userAnswer: 'B',
+    isCorrect: true,
+    answeredAt: '2026-03-07T12:01:00.000Z',
+    timeTakenMs: 3200,
+    speedTier: 'fast',
+    scoreDelta: 60,
+    difficultyLevel: 3,
+  }
+
+  it('accepts TIMEOUT as a valid userAnswer', () => {
+    const result = QuestionRecordSchema.safeParse({ ...validRecord, userAnswer: 'TIMEOUT', isCorrect: false })
+    expect(result.success).toBe(true)
+  })
+
+  it.each(['A', 'B', 'C', 'D'] as const)('accepts %s as a valid userAnswer', (answer) => {
+    const result = QuestionRecordSchema.safeParse({ ...validRecord, userAnswer: answer })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects an invalid userAnswer value', () => {
+    const result = QuestionRecordSchema.safeParse({ ...validRecord, userAnswer: 'E' })
+    expect(result.success).toBe(false)
   })
 })

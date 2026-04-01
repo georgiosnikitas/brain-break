@@ -183,6 +183,19 @@ describe('showCreateDomainScreen', () => {
     expect(list.data.filter((e) => e.slug === 'some-topic')).toHaveLength(0)
   })
 
+  it('Back at difficulty: does not create domain and returns without error', async () => {
+    mockInput.mockResolvedValueOnce('some-topic')
+    mockSelect.mockResolvedValueOnce('back') // back at difficulty
+
+    await expect(showCreateDomainScreen()).resolves.toBeUndefined()
+
+    expect(mockSelect).toHaveBeenCalledOnce()
+    const list = await listDomains()
+    expect(list.ok).toBe(true)
+    if (!list.ok) return
+    expect(list.data.filter((e) => e.slug === 'some-topic')).toHaveLength(0)
+  })
+
   it('returns silently when ExitPromptError is thrown from input', async () => {
     mockInput.mockRejectedValueOnce(new ExitPromptError())
 

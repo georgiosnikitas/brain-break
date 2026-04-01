@@ -4,8 +4,9 @@ status: complete
 inputDocuments: []
 date: 2026-03-01
 author: George
-lastEdited: '2026-03-25'
-editHistory:  - date: '2026-03-30'
+lastEdited: '2026-03-31'
+editHistory:  - date: '2026-03-31'
+    changes: 'MVP Feature Summary updated from 14 to 15 core capabilities: added Challenge Mode (Sprint) — timed sprint sessions accessible from the domain sub-menu; user selects question count (5/10/20) and time budget (2/5/10 min); all N questions preloaded upfront; visible countdown timer never pauses; post-answer nav limited to Next/Back; sprint ends when questions run out or time expires; only answered questions recorded in history. Aligns with PRD Feature 17, Epic 11, and FR44–FR46. Key Differentiators table updated with Timed sprint mode row.'  - date: '2026-03-30'
     changes: 'MVP Feature Summary updated from 13 to 14 core capabilities: added Question Bookmarking (bookmark any answered question from quiz or history, View Bookmarks screen in domain sub-menu with navigation identical to View History, per-domain storage, no cap). Aligns with PRD Feature 16, Epic 10, and FR41–FR43.'  - date: '2026-03-25'
     changes: 'MVP Feature Summary updated from 10 to 12 core capabilities: added Welcome Screen (branded splash with gradient ASCII art, tagline, version — controllable via showWelcome setting) and Static Banner (persistent 🧠🔨 Brain Break header + gradient shadow bar on every screen except Welcome/Provider Setup). Aligns with PRD Features 11 and 12, Epic 8, and FR31–FR34.'
   - date: '2026-03-25'
@@ -67,6 +68,7 @@ No existing CLI-first tool combines AI question generation, user-defined open-en
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill signal scoring | ✅ | ❌ (completion %) | ❌ |
+| Timed sprint mode | ✅ | ❌ | ❌ |
 | Zero setup friction | ✅ | ❌ | ❌ |
 | Open source / shareable | ✅ | ❌ | Partial |
 
@@ -111,22 +113,23 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 
 ## MVP Feature Summary
 
-The MVP delivers fourteen core capabilities:
+The MVP delivers fifteen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
-- **Interactive terminal quiz** — one question at a time, per-question response timer, immediate correctness feedback with score delta, an on-demand "Explain answer" option that asks the AI to explain why the correct answer is right, and a "Teach me more" follow-up that generates a micro-lesson on the underlying concept
+- **Interactive terminal quiz** — one question at a time, silent per-question timer, immediate correctness feedback with score delta and speed tier, and an on-demand AI explanation of the correct answer
+- **Challenge mode (sprint)** — a timed sprint from the domain sub-menu; select a question count (5/10/20) and time budget (2/5/10 min); all N questions preloaded upfront; a visible countdown runs continuously without pausing; post-answer nav limited to Next and Back; sprint ends when questions run out or time expires
 - **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets
-- **Persistent question history** — every answered question stored locally with full detail (answer, timing, score delta, difficulty) per domain
+- **Persistent question history** — every answered question stored locally with full detail (answer, timing, score delta, difficulty, bookmark status) per domain
 - **View history command** — single-question navigation with progress indicator for all past questions in the active domain
 - **View stats command** — summary dashboard showing score, accuracy, total time played, starting difficulty, current difficulty level, score trend, and return streak
-- **Global settings** — configurable AI provider, question language (free-text), and tone of voice; settings are global across all domains and persist between sessions
+- **Question bookmarking** — bookmark any answered question from the quiz or history for later revisiting; accessible via a dedicated View Bookmarks screen in the domain sub-menu with navigation identical to View History; per-domain, no cap
+- **Explanation drill-down** — after an AI explanation (in quiz or history), a "Teach me more" option generates a concise micro-lesson on the underlying concept, turning every question into a deeper learning opportunity
+- **Global settings** — configurable AI provider, question language (free-text), and tone of voice; global across all domains and persists between sessions
+- **Welcome screen** — on launch (when enabled), a branded splash screen with gradient ASCII art, styled subtitle, and app version; dismissible with Enter; controllable via `showWelcome` setting (default: on)
+- **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar
 - **Terminal UI highlighting & color system** — full-row menu highlight, semantic post-answer colors, speed tier badge colors, and difficulty level badge colors
 - **Coffee supporter screen** — dedicated screen with ASCII QR code linking to the creator's Buy Me a Coffee page
-- **Welcome screen** — on launch (when enabled), a branded splash screen displays gradient-colored ASCII art, a styled subtitle, and the app version — dismissible with Enter; controllable via a `showWelcome` setting (default: on)
-- **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar at the top of the terminal
-- **Explanation drill-down** — after viewing an AI-generated explanation (in both quiz and history), a "Teach me more" option calls the AI to generate a concise micro-lesson on the underlying concept, extending the quiz into a true learning loop
-- **Question bookmarking** — users can bookmark any answered question from the quiz post-answer screen or history navigation for later revisiting; bookmarked questions are accessible via a dedicated View Bookmarks screen in the domain sub-menu with navigation identical to View History; bookmarks are per-domain with no cap
 
 → Full feature specifications and acceptance criteria: [prd.md](prd.md)
 

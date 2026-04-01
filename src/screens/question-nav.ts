@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
-import { type QuestionRecord, type SettingsFile, type DomainFile } from '../domain/schema.js'
+import { type AnswerOption, type QuestionRecord, type SettingsFile, type DomainFile } from '../domain/schema.js'
 import { writeDomain } from '../domain/store.js'
 import { warn, menuTheme, renderQuestionDetail } from '../utils/format.js'
 import { generateExplanation, generateMicroLesson, type Question } from '../ai/client.js'
@@ -59,7 +59,7 @@ export async function handleExplainAnswer(
 ): Promise<{ visible: boolean; skipClear: boolean; explanationText: string | null }> {
   const question = toQuestion(record)
   const spinner = ora('Generating explanation...').start()
-  const result = await generateExplanation(question, record.userAnswer, settings)
+  const result = await generateExplanation(question, record.userAnswer as AnswerOption, settings)
     .finally(() => spinner.stop())
   if (result.ok) {
     console.log(`\n${result.data}\n`)

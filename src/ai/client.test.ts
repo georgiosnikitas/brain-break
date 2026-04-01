@@ -26,7 +26,7 @@ vi.mock('./providers.js', async (importOriginal) => {
 })
 
 // Must import after mock setup
-const { generateQuestion, generateMotivationalMessage, generateExplanation, generateMicroLesson, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
+const { generateQuestion, preloadQuestions, generateMotivationalMessage, generateExplanation, generateMicroLesson, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
 const { createProvider } = await import('./providers.js')
 const mockCreateProvider = vi.mocked(createProvider)
 
@@ -63,6 +63,12 @@ function makeValidResponse(question = 'What is 2+2?') {
 
 function makeVerificationResponse(correctAnswer: 'A' | 'B' | 'C' | 'D' = 'C') {
   return JSON.stringify({ correctAnswer })
+}
+
+function mockSuccessfulGeneration(question = 'What is 2+2?') {
+  mockGenerateCompletion
+    .mockResolvedValueOnce(makeValidResponse(question))
+    .mockResolvedValueOnce(makeVerificationResponse('C'))
 }
 
 // ---------------------------------------------------------------------------
@@ -821,5 +827,115 @@ describe('answer verification', () => {
     if (!result.ok) return
     expect(result.data.question).toBe('What is 5+5?')
     expect(mockGenerateCompletion).toHaveBeenCalledTimes(5)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// preloadQuestions
+// ---------------------------------------------------------------------------
+describe('preloadQuestions', () => {
+  const settings = makeSettings('openai')
+
+  it('returns ok:true with Question[] of length N on success', async () => {
+    mockSuccessfulGeneration('Q1')
+    mockSuccessfulGeneration('Q2')
+    mockSuccessfulGeneration('Q3')
+
+    const result = await preloadQuestions(3, 'typescript', 2, new Set(), settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toHaveLength(3)
+    expect(result.data[0].question).toBe('Q1')
+    expect(result.data[1].question).toBe('Q2')
+    expect(result.data[2].question).toBe('Q3')
+  })
+
+  it('accumulates hashes in the running set across calls', async () => {
+    // Q1 generates fine. Q2 is a duplicate of Q1 → dedup retry fires
+    // because Q1's hash is now in the running set.
+    mockSuccessfulGeneration('Q1')
+    // Q2 returns same text as Q1 → triggers dedup → retry returns unique Q
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse('Q1'))       // Q2 first attempt (dup of Q1)
+      .mockResolvedValueOnce(makeVerificationResponse('C'))  // Q2 verification
+      .mockResolvedValueOnce(makeValidResponse('Q2-unique')) // Q2 dedup retry
+      .mockResolvedValueOnce(makeVerificationResponse('C'))  // Q2 retry verification
+
+    const result = await preloadQuestions(2, 'typescript', 2, new Set(), settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toHaveLength(2)
+    expect(result.data[0].question).toBe('Q1')
+    expect(result.data[1].question).toBe('Q2-unique')
+    // 2 completions for Q1 + 4 completions for Q2 (gen+verify+dedup+verify) = 6
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(6)
+  })
+
+  it('passes growing previousQuestions array to each call', async () => {
+    // Q1 generates fine. Q2 duplicates Q1 → dedup prompt should contain Q1's text
+    mockSuccessfulGeneration('Q1')
+    // Q2 returns same as Q1 → dedup retry fires with previousQuestions containing Q1
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse('Q1'))       // Q2 dup
+      .mockResolvedValueOnce(makeVerificationResponse('C'))  // Q2 verify
+      .mockResolvedValueOnce(makeValidResponse('Q2-unique')) // Q2 dedup retry
+      .mockResolvedValueOnce(makeVerificationResponse('C'))  // verify
+
+    await preloadQuestions(2, 'typescript', 2, new Set(), settings)
+
+    // The dedup prompt (3rd call to generateCompletion) should contain Q1
+    const dedupPrompt: string = mockGenerateCompletion.mock.calls[4][0]
+    expect(dedupPrompt).toContain('Q1')
+  })
+
+  it('returns failure immediately on any generateQuestion error — no further calls', async () => {
+    mockSuccessfulGeneration('Q1')
+    // Second call fails
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
+
+    const result = await preloadQuestions(3, 'typescript', 2, new Set(), settings)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+
+  it('partial failure at 3rd of 5 — result is ok:false, only 2 completions', async () => {
+    mockSuccessfulGeneration('Q1')
+    mockSuccessfulGeneration('Q2')
+    // 3rd fails with network error
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
+
+    const result = await preloadQuestions(5, 'typescript', 2, new Set(), settings)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_OPENAI)
+    // 2 successful calls × 2 completions each + 1 failed = 5 total completion calls
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(5)
+  })
+
+  it('calls onProgress after each successful generation', async () => {
+    mockSuccessfulGeneration('Q1')
+    mockSuccessfulGeneration('Q2')
+    mockSuccessfulGeneration('Q3')
+    const onProgress = vi.fn()
+
+    await preloadQuestions(3, 'typescript', 2, new Set(), settings, onProgress)
+
+    expect(onProgress).toHaveBeenCalledTimes(3)
+    expect(onProgress).toHaveBeenNthCalledWith(1, 1, 3)
+    expect(onProgress).toHaveBeenNthCalledWith(2, 2, 3)
+    expect(onProgress).toHaveBeenNthCalledWith(3, 3, 3)
+  })
+
+  it('returns ok:true with empty array when count is 0', async () => {
+    const result = await preloadQuestions(0, 'typescript', 2, new Set(), settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toEqual([])
   })
 })

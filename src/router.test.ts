@@ -6,6 +6,7 @@ import {
   archiveDomain,
   showHome,
   showQuiz,
+  showChallenge,
   showCreateDomain,
   showArchived,
   showHistory,
@@ -32,6 +33,8 @@ vi.mock('./screens/history.js', () => ({ showHistory: vi.fn() }))
 vi.mock('./screens/bookmarks.js', () => ({ showBookmarks: vi.fn() }))
 vi.mock('./screens/stats.js', () => ({ showStats: vi.fn() }))
 vi.mock('./screens/domain-menu.js', () => ({ showDomainMenuScreen: vi.fn() }))
+vi.mock('./screens/sprint-setup.js', () => ({ showSprintSetup: vi.fn() }))
+vi.mock('./screens/challenge.js', () => ({ showChallengeExecution: vi.fn() }))
 vi.mock('./screens/settings.js', () => ({ showSettingsScreen: vi.fn() }))
 vi.mock('./screens/provider-setup.js', () => ({ showProviderSetupScreen: vi.fn() }))
 vi.mock('./screens/welcome.js', () => ({ showWelcomeScreen: vi.fn() }))
@@ -115,6 +118,8 @@ import { showHistory as showHistoryScreen } from './screens/history.js'
 import { showBookmarks as showBookmarksScreen } from './screens/bookmarks.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
+import { showSprintSetup } from './screens/sprint-setup.js'
+import { showChallengeExecution } from './screens/challenge.js'
 import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
@@ -131,6 +136,58 @@ describe('showQuiz', () => {
   it('delegates to showSelectDomainScreen with the slug', async () => {
     await showQuiz('my-slug')
     expect(showSelectDomainScreen).toHaveBeenCalledWith('my-slug')
+  })
+})
+
+describe('showChallenge', () => {
+  it('is exported and callable', async () => {
+    vi.mocked(showSprintSetup).mockResolvedValueOnce(null)
+
+    await expect(showChallenge('my-slug')).resolves.toBeNull()
+  })
+
+  it('delegates to showSprintSetup with the slug', async () => {
+    vi.mocked(showSprintSetup).mockResolvedValueOnce(null)
+
+    await showChallenge('my-slug')
+
+    expect(showSprintSetup).toHaveBeenCalledWith('my-slug')
+  })
+
+  it('calls showChallengeExecution with slug, config, and preloaded questions after successful preload', async () => {
+    const config = { timeBudgetMs: 300_000, questionCount: 10 }
+    const sessionData = { records: [], startingDifficulty: 2 }
+    const questions = [{ question: 'Q1' }] as Array<{ question: string }>
+    const storeModule = await import('./domain/store.js')
+    const aiClientModule = await import('./ai/client.js')
+    const { defaultSettings } = await import('./domain/schema.js')
+
+    vi.mocked(showSprintSetup).mockResolvedValueOnce(config)
+    vi.spyOn(storeModule, 'readDomain').mockResolvedValueOnce({ ok: true, data: defaultDomainFile() })
+    vi.spyOn(storeModule, 'readSettings').mockResolvedValueOnce({ ok: true, data: defaultSettings() })
+    vi.spyOn(aiClientModule, 'preloadQuestions').mockResolvedValueOnce({ ok: true, data: questions as never[] })
+    vi.mocked(showChallengeExecution).mockResolvedValueOnce(sessionData)
+
+    await showChallenge('my-slug')
+
+    expect(showChallengeExecution).toHaveBeenCalledWith('my-slug', config, questions)
+  })
+
+  it('returns session data from showChallengeExecution', async () => {
+    const config = { timeBudgetMs: 300_000, questionCount: 10 }
+    const sessionData = { records: [], startingDifficulty: 2 }
+    const questions = [{ question: 'Q1' }] as Array<{ question: string }>
+    const storeModule = await import('./domain/store.js')
+    const aiClientModule = await import('./ai/client.js')
+    const { defaultSettings } = await import('./domain/schema.js')
+
+    vi.mocked(showSprintSetup).mockResolvedValueOnce(config)
+    vi.spyOn(storeModule, 'readDomain').mockResolvedValueOnce({ ok: true, data: defaultDomainFile() })
+    vi.spyOn(storeModule, 'readSettings').mockResolvedValueOnce({ ok: true, data: defaultSettings() })
+    vi.spyOn(aiClientModule, 'preloadQuestions').mockResolvedValueOnce({ ok: true, data: questions as never[] })
+    vi.mocked(showChallengeExecution).mockResolvedValueOnce(sessionData)
+
+    await expect(showChallenge('my-slug')).resolves.toEqual(sessionData)
   })
 })
 

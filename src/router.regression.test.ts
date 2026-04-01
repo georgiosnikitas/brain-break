@@ -193,9 +193,11 @@ describe('corrupted domain handling — store integration', () => {
     const valid = list.data.find((e) => e.slug === 'valid-topic')
     const broken = list.data.find((e) => e.slug === 'broken')
     expect(valid).toBeDefined()
-    expect(valid!.corrupted).toBe(false)
+    if (!valid) return
+    expect(valid.corrupted).toBe(false)
     expect(broken).toBeDefined()
-    expect(broken!.corrupted).toBe(true)
+    if (!broken) return
+    expect(broken.corrupted).toBe(true)
   })
 
   it('readDomain returns error for schema-invalid JSON', async () => {
@@ -204,5 +206,86 @@ describe('corrupted domain handling — store integration', () => {
 
     const result = await readDomain('bad-schema')
     expect(result.ok).toBe(false)
+  })
+})
+
+// ===========================================================================
+// TIMEOUT record persistence roundtrip
+// ===========================================================================
+describe('TIMEOUT record persistence — store integration', () => {
+  it('domain with TIMEOUT userAnswer survives write → read through Zod validation', async () => {
+    const domain = {
+      ...defaultDomainFile(),
+      history: [
+        {
+          question: 'What is TypeScript?',
+          options: { A: 'Typed JS', B: 'A framework', C: 'A runtime', D: 'A tool' },
+          correctAnswer: 'A' as const,
+          userAnswer: 'TIMEOUT' as const,
+          isCorrect: false,
+          answeredAt: '2026-04-01T10:00:00.000Z',
+          timeTakenMs: 8_000,
+          speedTier: 'slow' as const,
+          scoreDelta: -40,
+          difficultyLevel: 2,
+          bookmarked: false,
+        },
+      ],
+      hashes: ['abc123'],
+    }
+
+    await writeDomain('timeout-topic', domain)
+
+    const result = await readDomain('timeout-topic')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.history).toHaveLength(1)
+    expect(result.data.history[0].userAnswer).toBe('TIMEOUT')
+    expect(result.data.history[0].isCorrect).toBe(false)
+    expect(result.data.history[0].speedTier).toBe('slow')
+  })
+
+  it('domain with mixed A/B/C/D and TIMEOUT records persists correctly', async () => {
+    const domain = {
+      ...defaultDomainFile(),
+      history: [
+        {
+          question: 'Q1',
+          options: { A: 'a', B: 'b', C: 'c', D: 'd' },
+          correctAnswer: 'A' as const,
+          userAnswer: 'A' as const,
+          isCorrect: true,
+          answeredAt: '2026-04-01T10:00:00.000Z',
+          timeTakenMs: 2_000,
+          speedTier: 'fast' as const,
+          scoreDelta: 40,
+          difficultyLevel: 2,
+          bookmarked: false,
+        },
+        {
+          question: 'Q2',
+          options: { A: 'a', B: 'b', C: 'c', D: 'd' },
+          correctAnswer: 'B' as const,
+          userAnswer: 'TIMEOUT' as const,
+          isCorrect: false,
+          answeredAt: '2026-04-01T10:01:00.000Z',
+          timeTakenMs: 8_000,
+          speedTier: 'slow' as const,
+          scoreDelta: -40,
+          difficultyLevel: 2,
+          bookmarked: false,
+        },
+      ],
+      hashes: ['hash1', 'hash2'],
+    }
+
+    await writeDomain('mixed-answers', domain)
+
+    const result = await readDomain('mixed-answers')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.history).toHaveLength(2)
+    expect(result.data.history[0].userAnswer).toBe('A')
+    expect(result.data.history[1].userAnswer).toBe('TIMEOUT')
   })
 })

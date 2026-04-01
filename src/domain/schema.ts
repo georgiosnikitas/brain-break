@@ -46,7 +46,7 @@ export const QuestionRecordSchema = z.object({
     D: z.string().min(1),
   }),
   correctAnswer: AnswerOptionSchema,
-  userAnswer: AnswerOptionSchema,
+  userAnswer: z.enum(['A', 'B', 'C', 'D', 'TIMEOUT']),
   isCorrect: z.boolean(),
   answeredAt: z.string().datetime(),
   timeTakenMs: z.number().min(0).finite(),
@@ -73,6 +73,7 @@ export type DomainFile = z.infer<typeof DomainFileSchema>
 export interface SessionData {
   records: QuestionRecord[]
   startingDifficulty: number
+  sprintResult?: { questionsAnswered: number; totalQuestions: number; timedOut: boolean }
 }
 
 // ---------------------------------------------------------------------------

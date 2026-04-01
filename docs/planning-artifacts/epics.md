@@ -1,8 +1,12 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-03-30'
+lastEdited: '2026-04-01'
 status: 'complete'
 editHistory:
+  - date: '2026-04-01'
+    changes: 'Label alignment pass (synced with PRD 2026-04-01 update): Domain sub-menu actions renamed from "View History" / "View Bookmarks" / "View Stats" to "History" / "Bookmarks" / "Statistics". Home screen "View archived domains" renamed to "Archived domains". Settings "Question Language" shortened to "Language". Sprint setup "Time budget" / "Question count" renamed to "Sprint duration" / "Sprint size". FR8/FR35 post-answer option order corrected to Explain → Bookmark → Next → Back. FRs updated: FR3, FR5, FR8, FR15, FR35, FR39, FR43, FR44. FR Coverage Map updated. Epic descriptions updated: Epic 2, 5, 10, 11. Story ACs updated: 2.1, 2.4, 2.5, 4.1, 4.2, 5.2, 7.5, 9.x session summary, 10.4, 11.1, 11.3. Historical editHistory entries preserved as-is.'
+  - date: '2026-03-31'
+    changes: 'Feature 17 (Challenge Mode — Sprint) added: FR44 (Sprint Setup Screen — Challenge action in domain sub-menu, sprint setup screen with time budget and question count presets, Confirm/Back, question preloading with dedup and self-consistency rules), FR45 (Sprint Execution — visible countdown timer that never pauses, limited post-answer nav to Next/Back only, per-question speed tier by individual answer time), FR46 (Sprint Termination & History — four termination conditions, auto-submit on timer expiry, only answered questions in history, preloaded unanswered questions discarded, sprint result in session summary). FR3 updated (Challenge added to domain sub-menu actions). FR39 updated (Sprint result field 9 added to session summary for Challenge sessions). FR Coverage Map updated (FR44/45/46 → Epic 11, FR3/FR39 cross-reference updated). Epic 11 (Challenge Mode — Sprint) added with 4 stories (11.1–11.4). Epic 2 and Epic 9 headers updated with Challenge Mode references.'
   - date: '2026-03-30'
     changes: 'FR41-FR43 added (Question Bookmarking): FR41 — bookmarked boolean field on question records, toggleable from quiz/history/bookmarks. FR42 — Bookmark/Remove bookmark option in quiz post-answer and history navigation with ⭐ indicator. FR43 — View Bookmarks screen in domain sub-menu with navigation identical to View History. FR3 updated (View Bookmarks added to sub-menu actions). FR8 updated (4 post-answer options including Bookmark). FR11 updated (bookmarked field). FR12 updated (Bookmark in history navigation + ⭐ indicator). FR35 updated (Bookmark in post-explanation quiz nav). FR37 updated (Bookmark in post-explanation history nav). NFR5 updated (bookmarks navigation in screen list). FR Coverage Map updated (FR41 → Epic 10/3/4, FR42 → Epic 3/4/10, FR43 → Epic 10). Epic 2 description and Story 2.5 updated with View Bookmarks. Epic 3 FRs updated (FR41, FR42 added). Epic 4 FRs updated (FR42 added). Stories 3.3, 3.4, 3.8, 4.3, 4.4 ACs updated with Bookmark navigation. Epic 10 (Question Bookmarking) added with 4 stories (10.1-10.4).'
   - date: '2026-03-30'
@@ -60,17 +64,17 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, View History, View Bookmarks, View Stats, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. After a quiz session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, Challenge, History, Bookmarks, Statistics, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. Selecting Challenge opens the sprint setup screen (see FR44). After a quiz or challenge sprint session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
-FR5: The home screen includes a "View archived domains" action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off.
+FR5: The home screen includes an "Archived domains" action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off.
 
 FR6: Questions are generated on demand via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama) as multiple-choice (4 options: A–D). The app sends identical prompt structures to all providers and expects the same JSON response schema — provider differences are abstracted behind a unified provider adapter layer. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
-FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers four options: Next question, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back.
+FR8: Questions are displayed one at a time in the terminal. A silent timer starts when the question is displayed and stops when the user submits their answer. After answering, the post-answer feedback is rendered on the same screen as the original question — no terminal clear or screen transition occurs. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if they were wrong, time taken, speed tier (fast/normal/slow), and score delta. The post-answer prompt offers four options: Explain answer, Bookmark (or Remove bookmark if already bookmarked), Next question, and Back.
 
 FR9: Score is per-domain, cumulative, and never resets. Score delta = base points × speed multiplier (rounded to nearest integer). Base points by difficulty: L1=10, L2=20, L3=30, L4=40, L5=50. Speed multipliers: Fast+Correct=×2, Normal+Correct=×1, Slow+Correct=×0.5, Fast+Incorrect=−1×, Normal+Incorrect=−1.5×, Slow+Incorrect=−2×.
 
@@ -84,7 +88,7 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Question Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), and Welcome & Exit Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
@@ -124,7 +128,7 @@ FR33: The Settings screen includes a "🎬 Welcome & Exit screen" toggle (displa
 
 FR34: Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top after clearing the terminal. The banner displays `🧠🔨 Brain Break` in bold text followed by a cyan-to-magenta gradient shadow bar, rendered via a shared `clearAndBanner()` utility. The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) because they render their own branded layout.
 
-FR35: After answering a quiz question and viewing the feedback panel, the user is presented with four options: Next question, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a four-option prompt: Teach me more, Next question, Bookmark (or Remove bookmark), and Back (Explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Bookmark/Back prompt without interrupting the quiz session.
+FR35: After answering a quiz question and viewing the feedback panel, the user is presented with four options: Explain answer, Bookmark (or Remove bookmark if already bookmarked), Next question, and Back. Selecting "Explain answer" calls the AI provider with the question context (question text, all options, correct answer, and the user's chosen answer) to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect. The explanation is displayed inline below the feedback panel using the active language and tone settings, with a loading spinner shown during generation. After the explanation is displayed, the user sees a four-option prompt: Teach me more, Bookmark (or Remove bookmark), Next question, and Back (Explain is not offered again for the same question). If the AI explanation call fails, a non-critical warning is displayed and the user is returned to the Next/Bookmark/Back prompt without interrupting the quiz session.
 
 FR36: The post-answer options/result block in the quiz session and the question detail block in the history screen are rendered by a single shared function `renderQuestionDetail(record: QuestionRecord, opts?: { showTimestamp?: boolean })` exported from `utils/format.ts`. The function renders in order: all four answer options (A–D) with `►` marking the user's answer, a blank separator line, correct/incorrect status, the correct answer reveal when the user was wrong (highlighted in green), a compound time/speed/difficulty line, and a score delta line. When `opts.showTimestamp` is `true`, an answered-at timestamp line is appended (used by history only). The quiz post-answer screen calls `renderQuestionDetail(record)` without a timestamp. The history detail view prints the question text as a plain (non-bold, non-numbered) line and calls `renderQuestionDetail(record, { showTimestamp: true })`. The private `showAnswerOptions()` and `showFeedback()` functions in `screens/quiz.ts` and the body of `displayEntry()` options/result block in `screens/history.ts` are replaced by calls to this shared function. The `globalIndex` parameter is removed from `displayEntry()` since numbered headers are no longer rendered.
 
@@ -132,7 +136,7 @@ FR37: The history navigation screen includes an "Explain answer" option that cal
 
 FR38: After an AI-generated explanation is displayed — in both the quiz post-answer flow (Feature 3) and history navigation (Feature 6) — the user is presented with a "Teach me more" option alongside the existing navigation controls. Selecting "Teach me more" calls the AI provider to generate a concise micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept behind the question — going deeper than the initial explanation to cover foundational principles, related concepts, and practical context. The micro-lesson is displayed inline below the explanation on the same screen using the active language and tone settings, with a loading spinner during generation. After the micro-lesson is displayed, "Teach me more" is removed from the navigation controls. If the user navigates away and returns to the same question, "Teach me more" is available again only after selecting "Explain answer" again — micro-lesson availability follows explanation availability. If the AI call fails, a non-critical warning is displayed and the user is returned to the navigation controls.
 
-FR39: After a quiz session ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu. The summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to View History, View Stats, or any other screen and returning does not re-display it; re-entering the domain from the home screen does not re-display it. A session is defined as the period from selecting Play to selecting Back — every session with at least one answered question produces a summary. The summary displays: score delta (green if positive, red if negative), questions answered, correct/incorrect split, accuracy %, fastest answer time (green), slowest answer time (red), session duration (using the same `formatTotalTimePlayed` format as the stats dashboard), and difficulty change (starting → ending level with ▲/▼/— indicator using `colorDifficultyLevel`). The summary block is framed by dim horizontal divider lines and renders on the domain sub-menu screen using the standard `clearAndBanner()` flow.
+FR39: After a quiz session or challenge sprint ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu. The summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a session; navigating to History, Statistics, or any other screen and returning does not re-display it; re-entering the domain from the home screen does not re-display it. A session is defined as the period from selecting Play (or confirming sprint setup) to selecting Back — every session with at least one answered question produces a summary. The summary displays: score delta (green if positive, red if negative), questions answered (shown as `X / N` for sprint sessions, e.g. `7 / 10`), correct/incorrect split, accuracy %, fastest answer time (green), slowest answer time (red), session duration (using the same `formatTotalTimePlayed` format as the stats dashboard), and difficulty change (starting → ending level with ▲/▼/— indicator using `colorDifficultyLevel`). For Challenge Mode sprint sessions, a ninth field **Sprint result** is appended: `Completed X / N questions` in green when all N questions were answered, or `Time expired — X / N questions answered` in red when the timer ran out. The summary block is framed by dim horizontal divider lines and renders on the domain sub-menu screen using the standard `clearAndBanner()` flow.
 
 FR40: The app has a branded Exit Message screen shown only on explicit home-screen Exit when `showWelcome` is `true`. The screen uses `clearScreen()` (not `clearAndBanner()`) and renders the same visual language as the Welcome Screen: app emoji branding, gradient ASCII art "Brain Break" (cyan→magenta with bold-cyan fallback on limited terminals), styled subtitle `> Train your brain, one question at a time_`, version in dim white, and gradient shadow bar. Interaction model: auto-exit after 3 seconds with exit code 0; Enter exits immediately; Ctrl+C exits immediately. When `showWelcome` is `false`, explicit Exit terminates immediately without showing this screen.
 
@@ -140,7 +144,13 @@ FR41: Every answered question record includes a `bookmarked` boolean field (defa
 
 FR42: The quiz post-answer screen and post-explanation navigation include a **Bookmark** option (or **Remove bookmark** if the question is already bookmarked), placed after the Explain answer option. A bookmarked question displays a ⭐ indicator next to the question text on the post-answer screen. The bookmark toggle is available in both the pre-explanation state (Next/Explain/Bookmark/Back) and the post-explanation state (Teach me more/Next/Bookmark/Back). The history navigation screen includes the same Bookmark/Remove bookmark toggle in its navigation controls, with the ⭐ indicator on bookmarked questions.
 
-FR43: The domain sub-menu includes a **View Bookmarks** action positioned after View History. Selecting it opens a bookmarks navigation screen that displays only bookmarked questions for the active domain. Navigation is identical to View History (Feature 6): single-question display with Previous/Next/Explain answer/Remove bookmark/Back controls and a progress indicator (e.g., "Bookmark 2 of 8"). Explain answer and Teach me more follow the same flow as View History. Selecting Remove bookmark removes the flag, updates the domain file, and navigates to the next bookmarked question (or previous if it was the last); if no bookmarks remain, the user is returned to the domain sub-menu with a message: "No bookmarked questions." If the domain has no bookmarked questions when View Bookmarks is selected, the screen displays "No bookmarked questions." with a Back action.
+FR43: The domain sub-menu includes a **Bookmarks** action positioned after History. Selecting it opens a bookmarks navigation screen that displays only bookmarked questions for the active domain. Navigation is identical to History (Feature 6): single-question display with Previous/Next/Explain answer/Remove bookmark/Back controls and a progress indicator (e.g., "Bookmark 2 of 8"). Explain answer and Teach me more follow the same flow as History. Selecting Remove bookmark removes the flag, updates the domain file, and navigates to the next bookmarked question (or previous if it was the last); if no bookmarks remain, the user is returned to the domain sub-menu with a message: "No bookmarked questions." If the domain has no bookmarked questions when Bookmarks is selected, the screen displays "No bookmarked questions." with a Back action.
+
+FR44: The domain sub-menu includes a **Challenge** action positioned after Play. Selecting Challenge opens a sprint setup screen with two parameter selectors navigated via arrow keys: **Sprint duration** (2 min / 5 min / 10 min) and **Sprint size N** (5 / 10 / 20). The setup screen provides Confirm and Back actions; Back returns to the domain sub-menu without starting a sprint. On Confirm, all N questions are preloaded before the sprint starts — applying the same SHA-256 deduplication and self-consistency verification rules as FR6. A loading spinner is shown during preload. If the AI provider is unreachable during preload, the provider-specific error message from NFR2 is displayed and the user is returned to the domain sub-menu; no sprint starts.
+
+FR45: Challenge Mode sprint execution — the sprint starts immediately after all N questions are preloaded. A visible countdown timer in `M:SS` format (e.g., `4:32`) is rendered prominently on every screen during the sprint (question display and post-answer screens). The timer **never pauses** — it runs continuously through question display, answer selection, and post-answer review. Questions are displayed and scored identically to FR8 (same post-answer inline feedback: correct/incorrect status, correct answer reveal, time taken, speed tier, score delta). Per-question speed tier is measured by the individual answer time (time from question display to answer selection) — not the sprint clock. Post-answer navigation in Challenge Mode is limited to two options only: **Next question** and **Back** — no Explain answer, Bookmark, Remove bookmark, or Teach me more options are available during a sprint.
+
+FR46: Challenge Mode sprint termination and history — the sprint ends on whichever condition occurs first: (a) all N questions answered — sprint completes normally; (b) timer reaches zero while a question is displayed — the unanswered question is auto-submitted as incorrect using the slow + incorrect scoring multiplier; (c) timer reaches zero while the post-answer feedback is displayed — the sprint ends immediately after the current feedback; (d) user selects Back — sprint exits immediately. Only answered questions (including auto-submitted timed-out questions) are recorded in domain history with all FR11 fields. Preloaded questions that were never displayed to the user are discarded — their hashes are not added to the deduplication store. Score and difficulty level persist to the domain file after sprint termination. After sprint termination, the user is returned to the domain sub-menu and the FR39 session summary block is displayed on first render, including the sprint-specific Sprint result field (field 9 of FR39).
 
 ### NonFunctional Requirements
 
@@ -186,9 +196,9 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 |---|---|---|
 | FR1 | Epic 2 | Home screen — domain list with score + count; select opens domain sub-menu |
 | FR2 | Epic 2 | Create new domain via free-text input |
-| FR3 | Epic 2 | Domain sub-menu — Play/History/Stats/Archive/Delete/Back + motivational message on Play |
+| FR3 | Epic 2 | Domain sub-menu — Play/Challenge/History/Bookmarks/Stats/Archive/Delete/Back + motivational message on Play |
 | FR4 | Epic 2 | Archive domain from domain sub-menu (preserves all data) |
-| FR5 | Epic 2 | View archived domains + unarchive |
+| FR5 | Epic 2 | Archived domains + unarchive |
 | FR6 | Epic 3, Epic 7 | Multi-provider question generation + SHA-256 deduplication |
 | FR7 | Epic 3 | Adaptive difficulty (5 levels, streak-driven, persists) |
 | FR8 | Epic 3 | Quiz loop — silent timer + post-answer feedback |
@@ -220,13 +230,16 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR34 | Epic 8 | Static banner — `🧠🔨 Brain Break` + gradient shadow bar via `clearAndBanner()` |
 | FR35 | Epic 3 | Post-answer "Explain answer" option — AI-generated explanation of the correct answer |
 | FR36 | Epic 3 | Unified question detail rendering — shared `renderQuestionDetail()` used in quiz feedback and history detail view |
-| FR37 | Epic 4 | Explain answer from history — AI-generated explanation available in View History navigation |
+| FR37 | Epic 4 | Explain answer from history — AI-generated explanation available in History navigation |
 | FR38 | Epic 3, Epic 4 | Explanation Drill-Down — "Teach me more" micro-lesson after AI explanation in quiz and history |
-| FR39 | Epic 9 | Session Summary — ephemeral post-quiz summary on domain sub-menu |
+| FR39 | Epic 9, Epic 11 | Session Summary — ephemeral post-session summary on domain sub-menu; Sprint result field for Challenge sessions |
 | FR40 | Epic 8 | Exit Message — branded farewell screen on explicit Exit when showWelcome is enabled |
 | FR41 | Epic 10, Epic 3, Epic 4 | Bookmarked boolean field on question records — toggle from quiz, history, and bookmarks screens |
 | FR42 | Epic 3, Epic 4, Epic 10 | Bookmark/Remove bookmark option in quiz post-answer and history navigation + ⭐ indicator |
-| FR43 | Epic 10 | View Bookmarks screen — domain sub-menu action, per-domain bookmarked question navigation |
+| FR43 | Epic 10 | Bookmarks screen — domain sub-menu action, per-domain bookmarked question navigation |
+| FR44 | Epic 11 | Challenge action in domain sub-menu + sprint setup screen (sprint duration / sprint size presets) + question preloading |
+| FR45 | Epic 11 | Sprint execution — visible countdown timer, limited post-answer nav (Next/Back only), per-question speed tier |
+| FR46 | Epic 11 | Sprint termination (four conditions), auto-submit on timer expiry, history rules (answered only), sprint result in session summary |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -246,7 +259,7 @@ Users can clone the repo, install dependencies, and run `tsx src/index.ts` to re
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
 
 ### Epic 2: Domain Management
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Stats, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, History, Statistics, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
@@ -259,7 +272,7 @@ Users can take an AI-generated, never-repeating, multiple-choice quiz session in
 Users can review their complete question history for any domain (single-question navigation with all recorded fields), request an AI-generated explanation for any past question, and view a stats dashboard showing score, accuracy, difficulty level, time played, score trend, and return streak — giving them a genuine signal of their knowledge growth over time and turning history from a passive record into an active learning tool.
 **FRs covered:** FR12, FR13, FR37, FR38, FR42
 ### Epic 5: Global Settings
-Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
+Users can configure their preferred language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
 **FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19
 **FRs updated:** FR3 (motivational message → AI-generated with language/tone), FR6/FR18 (language + tone injected into all AI calls)
 **NFRs covered:** none directly
@@ -284,6 +297,22 @@ When enabled, branded launch/exit screens frame the session: a Welcome Screen on
 **FRs updated:** FR15 (Settings screen label renamed to Welcome & Exit Screen toggle), FR17 (settings defaults include `showWelcome: true`)
 **NFRs covered:** NFR5 (banner rendering after terminal reset on all screens except Welcome/Exit/Provider Setup)
 **Additional requirements covered:** `screens/welcome.ts` — Welcome Screen; `screens/exit.ts` — Exit Message screen; `utils/screen.ts` — `banner()` and `clearAndBanner()` utilities; `utils/format.ts` — gradient color utilities; `domain/schema.ts` — `showWelcome` boolean; startup flow wired in `index.ts`/`router.ts`
+
+### Epic 9: Session Summary
+After completing a quiz or challenge sprint session, the domain sub-menu displays a one-time ephemeral session summary block — score delta, accuracy, speed, difficulty change, and (for sprints) sprint completion result — giving every session a tangible scorecard before the user decides what to do next.
+**FRs covered:** FR39
+**FRs updated:** FR3 (post-session return includes session summary for both Play and Challenge)
+
+### Epic 10: Question Bookmarking
+Users can bookmark any answered question to flag it for later revisiting — from the quiz post-answer screen or from history navigation. Bookmarked questions are accessible via a dedicated Bookmarks screen in the domain sub-menu, with navigation identical to History.
+**FRs covered:** FR41, FR42, FR43
+
+### Epic 11: Challenge Mode (Sprint)
+Users can launch a timed sprint session from the domain sub-menu — configuring a sprint size (5/10/20) and sprint duration (2/5/10 min), with all N questions preloaded upfront. A visible countdown timer runs throughout without pausing; post-answer nav is limited to Next and Back. Sprint ends when questions run out or time expires. Answered questions are stored in domain history; the session summary shows the sprint completion result.
+**FRs covered:** FR44, FR45, FR46
+**FRs updated:** FR3 (Challenge added to domain sub-menu), FR39 (Sprint result field added)
+**NFRs covered:** NFR2 (AI provider error during preload), NFR5 (sprint setup screen in terminal reset list)
+
 ---
 
 ## Epic 1: Project Foundation & Developer Infrastructure
@@ -511,7 +540,7 @@ So that I can easily support the developer without leaving the terminal.
 
 ## Epic 2: Domain Management
 
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, View History, View Bookmarks, View Stats, Archive, Back), archive domains they're not actively using, and unarchive them to resume exactly where they left off.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
 
 ### Story 2.1: Home Screen — Display Domain List
 
@@ -525,8 +554,8 @@ So that I can see my current progress at a glance and choose what to do next.
 **When** I run `tsx src/index.ts`  
 **Then** the home screen renders within ≤ 2 seconds showing a list of all active (non-archived) domains  
 **And** each domain entry shows: domain name, current score, and total questions answered  
-**And** the available actions include: select a domain (opens domain sub-menu), create a new domain, view archived domains, and exit  
-**And** archive / view history / view stats actions are NOT shown on the home screen — they are accessed from the domain sub-menu  
+**And** the available actions include: select a domain (opens domain sub-menu), create a new domain, archived domains, and exit  
+**And** archive / history / statistics actions are NOT shown on the home screen — they are accessed from the domain sub-menu  
 
 **Given** no domain files exist in `~/.brain-break/`  
 **When** the home screen loads  
@@ -590,14 +619,14 @@ So that I can immediately start getting quiz questions on any topic I choose.
 
 As a user,
 I want selecting a domain to open a sub-menu showing the domain's current stats and actions I can take,
-So that I can choose to play, review history, check stats, or archive — all from a focused, per-domain context.
+So that I can choose to play, review history, check statistics, or archive — all from a focused, per-domain context.
 
 **Acceptance Criteria:**
 
 **Given** I am on the home screen and at least one active domain exists  
 **When** I select a domain  
 **Then** the domain sub-menu opens with the prompt header showing: domain name, current score, and total questions answered (read fresh from disk)  
-**And** the available options are: Play, View History, View Bookmarks, View Stats, Archive, Delete, and Back  
+**And** the available options are: Play, History, Bookmarks, Statistics, Archive, Delete, and Back  
 
 **Given** I am on the domain sub-menu  
 **When** I select "Play"  
@@ -633,7 +662,7 @@ So that my active domain list stays focused without losing any history or progre
 **And** the domain disappears from the active domain list and I am returned to the home screen  
 
 **Given** I archived one or more domains  
-**When** I select "View archived domains" from the home screen  
+**When** I select "Archived domains" from the home screen  
 **Then** the app shows a list of all archived domains with their last-known scores and question counts  
 
 **Given** I am viewing the archived domains list  
@@ -1018,7 +1047,7 @@ So that I can review past questions in detail, see where I went wrong, and track
 
 **Acceptance Criteria:**
 
-**Given** I am on the domain sub-menu and choose "View History"  
+**Given** I am on the domain sub-menu and choose "History"  
 **When** `screens/history.ts` loads  
 **Then** the history is read from the domain file and displayed one entry at a time, starting from the most recent question  
 **And** each entry shows: question text, all 4 options, my chosen answer, the correct answer, whether I was correct, timestamp (formatted), time taken (ms), speed tier, score delta, and difficulty level  
@@ -1034,7 +1063,7 @@ So that I can review past questions in detail, see where I went wrong, and track
 **Then** the single entry is shown with the progress indicator ("Question 1 of 1") and only a "Back" option — no Previous/Next controls  
 
 **Given** the domain has no history entries  
-**When** I navigate to View History  
+**When** I navigate to History  
 **Then** a message is shown ("No questions answered yet") and a "Back" option returns me to the domain sub-menu  
 
 **Given** I am on the history screen  
@@ -1051,7 +1080,7 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 
 **Acceptance Criteria:**
 
-**Given** I am on the domain sub-menu and choose "View Stats"  
+**Given** I am on the domain sub-menu and choose "Statistics"  
 **When** `screens/stats.ts` loads  
 **Then** the stats dashboard displays all of the following, derived from the domain file:  
 - Current score
@@ -1065,7 +1094,7 @@ So that I have a clear, motivating picture of my progress and know whether my sk
 - Current return streak in days (consecutive days with at least one answered question, derived from `answeredAt` history)
 
 **Given** the domain has no history entries  
-**When** I navigate to View Stats  
+**When** I navigate to Statistics  
 **Then** the dashboard shows current score (0), totals (0), and placeholders for derived fields (e.g. "No data yet")  
 
 **Given** I am on the stats screen  
@@ -1155,7 +1184,7 @@ So that I can turn my question history into a genuine learning resource by explo
 
 ## Epic 5: Global Settings
 
-Users can configure their preferred question language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content.
+Users can configure their preferred language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content.
 
 ### Story 5.1: Settings Schema & Store
 
@@ -1196,22 +1225,22 @@ So that all modules have a single, type-safe, tested source of truth for user se
 ### Story 5.2: Settings Screen
 
 As a user,
-I want a Settings option in the home screen menu that opens a screen where I can configure my question language and tone of voice,
+I want a Settings option in the home screen menu that opens a screen where I can configure my language and tone of voice,
 So that I can personalise how questions and AI responses are delivered to me.
 
 **Acceptance Criteria:**
 
 **Given** I am on the home screen  
 **When** I inspect the menu options  
-**Then** a "⚙️  Settings" action is present between "View archived domains" and "☕  Buy me a coffee"  
+**Then** a "⚙️  Settings" action is present between "Archived domains" and "☕  Buy me a coffee"  
 
 **Given** I select "⚙️  Settings" from the home screen  
 **When** the settings screen loads  
 **Then** the terminal is cleared and current settings are read from disk via `readSettings()`  
-**And** the screen displays the current values for Question Language and Tone of Voice  
+**And** the screen displays the current values for Language and Tone of Voice  
 
 **Given** the settings screen is open  
-**When** I edit the Question Language field  
+**When** I edit the Language field  
 **Then** I can type any free-text value (e.g. `Greek`, `Japanese`, `Pirate English`)  
 
 **Given** the settings screen is open  
@@ -1623,7 +1652,7 @@ So that I can switch providers or fix configuration issues without restarting th
 
 **Given** I am on the Settings screen  
 **When** I inspect the available options  
-**Then** an "AI Provider" selector is present as the first configuration option, above Question Language and Tone of Voice  
+**Then** an "AI Provider" selector is present as the first configuration option, above Language and Tone of Voice  
 **And** it shows the currently configured provider name  
 
 **Given** I select the AI Provider option  
@@ -1880,12 +1909,12 @@ So that app termination feels intentional and visually consistent with the Welco
 
 ## Epic 9: Session Summary
 
-After completing a quiz session, the domain sub-menu displays a one-time ephemeral session summary block between the domain header and the action menu — giving every session a tangible result before the user decides what to do next.
+After completing a quiz or challenge sprint session, the domain sub-menu displays a one-time ephemeral session summary block between the domain header and the action menu — giving every session a tangible result before the user decides what to do next.
 
 **FRs covered:** FR39
-**FRs updated:** FR3 (post-quiz domain sub-menu return includes session summary)
+**FRs updated:** FR3 (post-session domain sub-menu return includes session summary for both Play and Challenge)
 **NFRs covered:** NFR5 (session summary renders within the domain sub-menu's standard `clearAndBanner()` flow)
-**Additional requirements covered:** `screens/domain-menu.ts` — session summary rendering and ephemeral state management; `utils/format.ts` — `formatTotalTimePlayed`, `formatAccuracy`, `colorDifficultyLevel`, `colorCorrect`, `colorIncorrect` reused from Stats Dashboard; `screens/quiz.ts` — session data collection (start difficulty, question records) passed back to domain menu
+**Additional requirements covered:** `screens/domain-menu.ts` — session summary rendering and ephemeral state management; `utils/format.ts` — `formatTotalTimePlayed`, `formatAccuracy`, `colorDifficultyLevel`, `colorCorrect`, `colorIncorrect` reused from Stats Dashboard; `screens/quiz.ts` and `screens/challenge.ts` — session data collection (start difficulty, question records, sprint config) passed back to domain menu
 
 ### Story 9.1: Session Summary Display
 
@@ -1916,7 +1945,7 @@ So that I get instant feedback on how the session went — score change, accurac
 **Then** it is framed by dim horizontal divider lines (e.g., `── Last Session ──────`) rendered using `dim()`  
 
 **Given** the session summary was displayed on the first domain sub-menu render after a quiz  
-**When** I navigate to View History, View Stats, or any other screen and return to the domain sub-menu  
+**When** I navigate to History, Statistics, or any other screen and return to the domain sub-menu  
 **Then** the session summary is no longer displayed — only the standard domain header and action menu are shown  
 
 **Given** the session summary was displayed on the first domain sub-menu render after a quiz  
@@ -1949,12 +1978,12 @@ So that I get instant feedback on how the session went — score change, accurac
 
 ## Epic 10: Question Bookmarking
 
-Users can bookmark any answered question to flag it for later revisiting — from the quiz post-answer screen or from history navigation. Bookmarked questions are accessible via a dedicated View Bookmarks screen in the domain sub-menu, with navigation identical to View History. Bookmarks are per-domain, stored as a boolean flag on each question record, with no cap on count.
+Users can bookmark any answered question to flag it for later revisiting — from the quiz post-answer screen or from history navigation. Bookmarked questions are accessible via a dedicated Bookmarks screen in the domain sub-menu, with navigation identical to History. Bookmarks are per-domain, stored as a boolean flag on each question record, with no cap on count.
 
 **FRs covered:** FR41, FR42, FR43
-**FRs updated:** FR3 (View Bookmarks added to domain sub-menu), FR8 (Bookmark option in quiz post-answer), FR11 (bookmarked field on question record), FR12 (Bookmark option in history navigation), FR35 (Bookmark option in post-explanation quiz navigation), FR37 (Bookmark option in post-explanation history navigation)
+**FRs updated:** FR3 (Bookmarks added to domain sub-menu), FR8 (Bookmark option in quiz post-answer), FR11 (bookmarked field on question record), FR12 (Bookmark option in history navigation), FR35 (Bookmark option in post-explanation quiz navigation), FR37 (Bookmark option in post-explanation history navigation)
 **NFRs covered:** NFR5 (bookmarks navigation included in terminal reset screens)
-**Additional requirements covered:** `domain/schema.ts` — `bookmarked` boolean field on `QuestionRecord`; `screens/bookmarks.ts` — View Bookmarks screen; `screens/quiz.ts` — Bookmark/Remove bookmark in post-answer navigation; `screens/history.ts` — Bookmark/Remove bookmark in history navigation; `screens/domain-menu.ts` — View Bookmarks action added; `router.ts` — `showBookmarks()` route
+**Additional requirements covered:** `domain/schema.ts` — `bookmarked` boolean field on `QuestionRecord`; `screens/bookmarks.ts` — Bookmarks screen; `screens/quiz.ts` — Bookmark/Remove bookmark in post-answer navigation; `screens/history.ts` — Bookmark/Remove bookmark in history navigation; `screens/domain-menu.ts` — Bookmarks action added; `router.ts` — `showBookmarks()` route
 
 ### Story 10.1: Question Record — Bookmarked Field
 
@@ -2052,20 +2081,20 @@ So that I can curate my study list from my full question history.
 
 ---
 
-### Story 10.4: View Bookmarks Screen
+### Story 10.4: Bookmarks Screen
 
 As a user,
-I want a "View Bookmarks" option in the domain sub-menu that opens a screen showing only my bookmarked questions with the same navigation as View History,
+I want a "Bookmarks" option in the domain sub-menu that opens a screen showing only my bookmarked questions with the same navigation as History,
 So that I can quickly access and review the questions I've flagged for targeted study.
 
 **Acceptance Criteria:**
 
 **Given** I am on the domain sub-menu  
 **When** I inspect the available actions  
-**Then** a "⭐ View Bookmarks" action is present after "📜 View History" and before "📊 View Stats"  
+**Then** a "⭐ Bookmarks" action is present after "📜 History" and before "📊 Statistics"  
 
 **Given** the domain has bookmarked questions  
-**When** I select "⭐ View Bookmarks"  
+**When** I select "⭐ Bookmarks"  
 **Then** `screens/bookmarks.ts` loads and displays only questions where `bookmarked === true`  
 **And** questions are displayed one at a time with Previous/Next/Explain answer/Remove bookmark/Back controls  
 **And** a progress indicator shows the current position (e.g., "Bookmark 2 of 8")  
@@ -2073,7 +2102,7 @@ So that I can quickly access and review the questions I've flagged for targeted 
 
 **Given** I am viewing a bookmarked question  
 **When** I select "Explain answer"  
-**Then** the same AI explain flow as View History is triggered — explanation displayed inline, followed by Teach me more option  
+**Then** the same AI explain flow as History is triggered — explanation displayed inline, followed by Teach me more option  
 
 **Given** I am viewing a bookmarked question  
 **When** I select "⭐ Remove bookmark"  
@@ -2087,7 +2116,7 @@ So that I can quickly access and review the questions I've flagged for targeted 
 **And** selecting Back returns me to the domain sub-menu  
 
 **Given** the domain has no bookmarked questions  
-**When** I select "⭐ View Bookmarks"  
+**When** I select "⭐ Bookmarks"  
 **Then** a message is displayed: "No bookmarked questions." with a Back action  
 **And** selecting Back returns me to the domain sub-menu  
 
@@ -2105,8 +2134,184 @@ So that I can quickly access and review the questions I've flagged for targeted 
 
 **Given** `screens/domain-menu.ts` is updated  
 **When** `showDomainMenuScreen()` renders the domain sub-menu  
-**Then** the "⭐ View Bookmarks" action routes to `router.showBookmarks(slug)`  
+**Then** the "⭐ Bookmarks" action routes to `router.showBookmarks(slug)`  
 
 **Given** `screens/bookmarks.test.ts`, `screens/domain-menu.test.ts`, and `router.test.ts` are updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: View Bookmarks action present in domain sub-menu, bookmarks screen renders only bookmarked questions, navigation identical to history (Previous/Next/Explain/Back), Remove bookmark updates record and refreshes list, empty state displayed when no bookmarks, progress indicator reflects bookmark count, `clearAndBanner()` called on render, Back returns to domain sub-menu, Ctrl+C handled gracefully, router exports `showBookmarks`  
+**Then** all tests pass, covering: Bookmarks action present in domain sub-menu, bookmarks screen renders only bookmarked questions, navigation identical to history (Previous/Next/Explain/Back), Remove bookmark updates record and refreshes list, empty state displayed when no bookmarks, progress indicator reflects bookmark count, `clearAndBanner()` called on render, Back returns to domain sub-menu, Ctrl+C handled gracefully, router exports `showBookmarks`  
+
+---
+
+## Epic 11: Challenge Mode (Sprint)
+
+Users can launch a timed sprint session from the domain sub-menu — configuring a sprint size (5/10/20) and sprint duration (2/5/10 min), with all N questions preloaded upfront before the sprint starts. A visible countdown timer runs throughout the sprint without pausing; post-answer navigation is limited to Next question and Back. The sprint ends when questions run out or time expires. Only answered questions are stored in domain history; the session summary shows the sprint completion result.
+
+**FRs covered:** FR44, FR45, FR46
+**FRs updated:** FR3 (Challenge added to domain sub-menu), FR39 (Sprint result field 9 added for Challenge sessions)
+**NFRs covered:** NFR2 (AI provider error during preload → domain sub-menu, no sprint started), NFR5 (sprint setup screen + sprint question/post-answer screens in terminal reset list)
+**Additional requirements covered:** `screens/sprint-setup.ts` — sprint setup screen (sprint duration + sprint size selectors, Confirm/Back); `screens/challenge.ts` — sprint execution loop with visible countdown timer and limited nav; `ai/client.ts` — `preloadQuestions(N, domain, settings)` batch preload; `domain/scoring.ts` — auto-submit timed-out question with slow+incorrect multiplier; `screens/domain-menu.ts` — Challenge action routes to sprint setup, sprint session data (including sprint config, N, answeredCount) fed to session summary; `router.ts` — `showChallenge(slug)` route
+
+---
+
+### Story 11.1: Sprint Setup Screen
+
+As a user,
+I want a sprint setup screen accessible from the domain sub-menu where I can configure the number of questions and sprint duration before starting a timed sprint,
+So that I can define the exact scope of my sprint and start with clear expectations.
+
+**Acceptance Criteria:**
+
+**Given** I am on the domain sub-menu  
+**When** I inspect the available actions  
+**Then** a "⚡ Challenge" action is present immediately after "▶️  Play"  
+
+**Given** I select "⚡ Challenge"  
+**When** the sprint setup screen loads  
+**Then** `clearAndBanner()` is called and the sprint setup screen renders  
+**And** the screen displays two parameter selectors navigated via arrow keys:  
+  - **Sprint duration:** 2 min / 5 min / 10 min  
+  - **Sprint size:** 5 / 10 / 20  
+**And** the screen provides two actions: **Confirm** and **Back**  
+
+**Given** I am on the sprint setup screen  
+**When** I select "Back"  
+**Then** I am returned to the domain sub-menu without starting a sprint and without triggering any question preloading  
+
+**Given** I am on the sprint setup screen  
+**When** I press Ctrl+C  
+**Then** the app handles it gracefully and returns to the domain sub-menu  
+
+**Given** `router.ts` is updated  
+**When** I inspect its exports  
+**Then** a `showChallenge(slug)` function is exported that calls `screens/sprint-setup.ts`  
+
+**Given** `screens/domain-menu.ts` is updated  
+**When** `showDomainMenuScreen()` renders the domain sub-menu  
+**Then** the "⚡ Challenge" action routes to `router.showChallenge(slug)`  
+
+**Given** `screens/sprint-setup.test.ts`, `screens/domain-menu.test.ts`, and `router.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: Challenge action present in domain sub-menu after Play, sprint setup screen renders with duration and size selectors, Back returns to domain sub-menu, Ctrl+C handled gracefully, `clearAndBanner()` called on render, `showChallenge()` exported from router  
+
+---
+
+### Story 11.2: Question Preloading
+
+As a developer,
+I want `ai/client.ts` to export a `preloadQuestions(N, domain, difficultyLevel, existingHashes, settings)` function that generates all N questions upfront before the sprint starts,
+So that the full question set is ready before the countdown begins and the sprint is never interrupted by AI generation latency.
+
+**Acceptance Criteria:**
+
+**Given** `ai/client.ts` exports `preloadQuestions(N, domain, difficultyLevel, existingHashes, settings)`  
+**When** called  
+**Then** it generates N questions sequentially using the same `generateQuestion()` logic as the quiz loop (same deduplication hash check, same self-consistency verification)  
+**And** returns `Result<Question[]>` — `{ ok: true, data: Question[] }` when all N questions are ready  
+**And** returns `{ ok: false, error: <provider-specific message> }` if the AI provider is unreachable for any question during preloading  
+
+**Given** the sprint setup screen receives a Confirm selection  
+**When** preloading begins  
+**Then** an `ora` spinner is displayed (e.g., "Preparing sprint questions…") while `preloadQuestions()` runs  
+**And** the spinner stops and the sprint begins once all N questions are successfully generated  
+
+**Given** `preloadQuestions()` returns `{ ok: false }` (provider error during preload)  
+**When** the error is received in the sprint setup screen  
+**Then** the provider-specific error message (from NFR2 / `AI_ERRORS`) is displayed  
+**And** the user is returned to the domain sub-menu — no sprint is started  
+
+**Given** `preloadQuestions()` completes successfully  
+**When** the N questions are returned  
+**Then** none of their hashes are added to the domain's deduplication store at this point — hashes are only committed when a question is answered and `writeDomain()` is called (see Story 11.4)  
+
+**Given** `ai/client.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: `preloadQuestions()` returns N valid questions, dedup and verification applied to each, provider error mid-preload returns `{ ok: false }`, spinner displayed during preload, error returns user to domain sub-menu  
+
+---
+
+### Story 11.3: Sprint Execution Loop
+
+As a user,
+I want to work through a sprint of preloaded questions with a visible countdown timer that never pauses — with only Next question and Back available after each answer — so that the time pressure is constant and I can focus purely on answering.
+
+**Acceptance Criteria:**
+
+**Given** all N questions are preloaded and the sprint is starting  
+**When** the first question is displayed  
+**Then** `clearAndBanner()` is called and the question renders at the top of the terminal  
+**And** a visible countdown timer in `M:SS` format (e.g., `4:32`) is rendered prominently above or below the question  
+**And** the timer begins counting down from the configured sprint duration at the moment the first question is displayed  
+
+**Given** a question is displayed during the sprint  
+**When** I choose one of the 4 answer options (A–D)  
+**Then** the silent per-question timer stops and `timeTakenMs` is recorded (individual answer time — not time elapsed on the sprint clock)  
+**And** `applyAnswer()` is called to compute `scoreDelta` and `updatedMeta`  
+**And** the post-answer feedback is rendered **on the same screen** as the question — no terminal clear or `clearAndBanner()` between question and feedback  
+**And** the feedback shows: correct/incorrect status, correct answer reveal (if wrong), time taken, speed tier (based on the individual `timeTakenMs` and `speedThresholds`), and score delta  
+**And** the **countdown timer remains visible** on the post-answer screen and continues counting down  
+
+**Given** the post-answer feedback is displayed  
+**When** I inspect the navigation options  
+**Then** exactly two options are shown: **▶️  Next question** and **🚪 Back** — no Explain answer, Bookmark, Remove bookmark, or Teach me more options  
+
+**Given** I select "▶️  Next question"  
+**When** the next question loads  
+**Then** `clearAndBanner()` is called, the next preloaded question is displayed, and the countdown timer continues from its current value (it was never paused)  
+
+**Given** I select "🚪 Back" during an active sprint  
+**When** the action is triggered  
+**Then** the sprint exits immediately — no further questions are displayed and no further scoring occurs  
+**And** the user is returned to the domain sub-menu with session data for the session summary  
+
+**Given** `screens/challenge.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: countdown timer rendered on question screen and post-answer screen, timer continues during post-answer (no pause), per-question speed tier uses individual answer time, post-answer nav limited to Next/Back (no Explain/Bookmark/Teach), `clearAndBanner()` called on each new question (not on post-answer), Back exits sprint immediately  
+
+---
+
+### Story 11.4: Sprint Termination & History
+
+As a user,
+I want the sprint to end cleanly on any termination condition — all questions answered, timer expired, or Back — with all answered questions saved to history and the session summary showing my sprint result,
+So that I always get accurate feedback and my progress is correctly recorded regardless of how the sprint ended.
+
+**Acceptance Criteria:**
+
+**Given** I answered the last (Nth) question in the sprint  
+**When** I select Next question (or the post-answer screen is displaying for the final question)  
+**Then** the sprint completes normally — no further question is shown  
+**And** the user is returned to the domain sub-menu  
+**And** the session summary (FR39) is displayed on first domain sub-menu render with the Sprint result field: `Completed N / N questions` in green  
+
+**Given** the sprint countdown timer reaches zero while a question is displayed (unanswered)  
+**When** the timer hits `0:00`  
+**Then** the current question is auto-submitted as incorrect  
+**And** `applyAnswer()` is called with `isCorrect: false` and a `timeTakenMs` equal to the remaining question display time (treated as a slow answer — slow + incorrect multiplier)  
+**And** the sprint ends immediately and the user is returned to the domain sub-menu  
+**And** the session summary displays: Sprint result `Time expired — X / N questions answered` in red  
+
+**Given** the sprint countdown timer reaches zero while the post-answer feedback is displayed  
+**When** the timer hits `0:00`  
+**Then** the sprint ends immediately — the current question has already been answered and recorded  
+**And** the user is returned to the domain sub-menu  
+**And** the session summary displays: Sprint result `Time expired — X / N questions answered` in red  
+
+**Given** the sprint ends (for any reason)  
+**When** domain persistence occurs  
+**Then** only questions that were answered (correctly, incorrectly, or auto-submitted as timed-out) are written to the domain history with all FR11 fields  
+**And** preloaded questions that were never displayed to the user are discarded — their hashes are **not** added to the domain's `hashes` array  
+**And** `writeDomain()` is called once per answered question (after each answer, as in the regular quiz loop) — not in a single batch at sprint end  
+**And** score and difficulty level accumulated during the sprint are reflected in the final domain state  
+
+**Given** the auto-submitted timed-out question is written to domain history  
+**When** its `QuestionRecord` is inspected  
+**Then** `isCorrect` is `false`, `userAnswer` reflects the auto-submit (e.g., `"TIMEOUT"`), `timeTakenMs` is the elapsed display time, `speedTier` is `"slow"`, and `scoreDelta` matches the slow + incorrect formula  
+
+**Given** `screens/challenge.ts` feeds session data back to the domain menu  
+**When** `showDomainMenuScreen(slug, sessionData)` is called after a sprint  
+**Then** `sessionData` includes: all answered `QuestionRecord` entries, starting difficulty level, sprint config `{ timeBudgetMs, questionCount }`, and `answeredCount`  
+**And** the session summary renders field 9 (Sprint result) using `answeredCount` and `questionCount`  
+
+**Given** `screens/challenge.test.ts`, `screens/domain-menu.test.ts`, and `domain/scoring.test.ts` are updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: normal completion (all N answered) → green sprint result; timer-expired mid-question → auto-submit incorrect + red sprint result; timer-expired mid-post-answer → sprint ends, correct count unchanged; Back exit → sprint ends, answers so far recorded; unanswered preloaded questions not in history, hashes not stored; `writeDomain()` called per answered question; auto-submitted record has correct fields; session summary receives sprint config and renders Sprint result field correctly

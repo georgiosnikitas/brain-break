@@ -2,13 +2,14 @@ import { select, confirm, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import { defaultDomainFile, type SessionData } from '../domain/schema.js'
-import { bold, dim, warn, colorCorrect, colorIncorrect, colorDifficultyLevel, formatAccuracy, formatDuration, menuTheme } from '../utils/format.js'
+import { bold, dim, warn, header, colorCorrect, colorIncorrect, colorDifficultyLevel, formatAccuracy, formatDuration, menuTheme } from '../utils/format.js'
 import { formatTotalTimePlayed } from './stats.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
 export type DomainMenuAction =
   | { action: 'play' }
+  | { action: 'challenge' }
   | { action: 'history' }
   | { action: 'bookmarks' }
   | { action: 'stats' }
@@ -19,9 +20,10 @@ export type DomainMenuAction =
 export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMenuAction } | Separator> {
   return [
     { name: '▶  Play', value: { action: 'play' } },
-    { name: '📜  View History', value: { action: 'history' } },
-    { name: '⭐  View Bookmarks', value: { action: 'bookmarks' } },
-    { name: '📊  View Stats', value: { action: 'stats' } },
+    { name: '⏱️  Challenge', value: { action: 'challenge' } },
+    { name: '📜 History', value: { action: 'history' } },
+    { name: '⭐ Bookmarks', value: { action: 'bookmarks' } },
+    { name: '📊 Statistics', value: { action: 'stats' } },
     { name: '🗄  Archive', value: { action: 'archive' } },
     { name: '🗑  Delete', value: { action: 'delete' } },
     new Separator(),
@@ -30,8 +32,9 @@ export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMen
 }
 
 function renderDomainHeader(slug: string, score: number, totalQuestions: number): void {
-  const scoreLabel = dim(`score: ${score} · ${totalQuestions} questions`)
-  console.log(`${bold(slug)}  ${scoreLabel}`)
+  const scoreLabel = dim('score: ' + score + ' · ' + totalQuestions + ' questions')
+  const title = header('Domain — ' + slug)
+  console.log(title + '  ' + scoreLabel)
 }
 
 function formatColoredDifficultyLabel(level: number): string {
@@ -85,7 +88,10 @@ export function renderSessionSummary(sessionData: SessionData, endingDifficulty:
   console.log('🏆 ' + bold('Score delta:') + ` ${colorDelta(deltaStr)}`)
 
   // 2. Questions answered
-  console.log('📝 ' + bold('Questions answered:') + ` ${records.length}`)
+  const answeredLabel = sessionData.sprintResult
+    ? records.length + ' / ' + sessionData.sprintResult.totalQuestions
+    : String(records.length)
+  console.log('📝 ' + bold('Questions answered:') + ' ' + answeredLabel)
 
   // 3. Correct / Incorrect
   const correctCount = records.filter((r) => r.isCorrect).length
@@ -120,6 +126,15 @@ export function renderSessionSummary(sessionData: SessionData, endingDifficulty:
       bold('Difficulty:') +
       ` ${formatColoredDifficultyLabel(startingDifficulty)} → ${formatColoredDifficultyLabel(endingDifficulty)}${difficultySuffix}`,
   )
+
+  // 9. Sprint result (challenge sessions only)
+  if (sessionData.sprintResult) {
+    const { questionsAnswered, totalQuestions, timedOut } = sessionData.sprintResult
+    if (timedOut) {
+      const label = 'Time expired — ' + questionsAnswered + ' / ' + totalQuestions + ' questions answered'
+      console.log('⚡ ' + bold('Sprint result:') + ' ' + colorIncorrect(label))
+    }
+  }
 
   console.log(dim('─────────────────────'))
 }
@@ -162,6 +177,8 @@ export async function showDomainMenuScreen(slug: string, sessionData?: SessionDa
 async function handleDomainAction(slug: string, answer: DomainMenuAction): Promise<false | SessionData | null> {
   if (answer.action === 'play') {
     return await router.showQuiz(slug)
+  } else if (answer.action === 'challenge') {
+    return await router.showChallenge(slug)
   } else if (answer.action === 'history') {
     await router.showHistory(slug)
   } else if (answer.action === 'bookmarks') {

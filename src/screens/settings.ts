@@ -4,7 +4,7 @@ import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
-import { menuTheme, success, warn } from '../utils/format.js'
+import { menuTheme, success, warn, header } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import { promptForProviderSettings } from './provider-settings.js'
 import * as router from '../router.js'
@@ -38,12 +38,20 @@ async function handleProviderAction(
   ollamaEndpoint: string,
   ollamaModel: string,
 ) {
-  const selectedProvider = await select<AiProviderType>({
+  const selectedProvider = await select<AiProviderType | 'back'>({
     message: 'AI Provider',
-    choices: PROVIDER_CHOICES,
+    choices: [
+      ...PROVIDER_CHOICES,
+      new Separator(),
+      { name: '←  Back', value: 'back' as const },
+    ],
     default: provider ?? undefined,
     theme: menuTheme,
   })
+
+  if (selectedProvider === 'back') {
+    return { ...settings, provider, openaiModel, anthropicModel, geminiModel, ollamaEndpoint, ollamaModel, message: '' }
+  }
 
   const updatedSettings = await promptForProviderSettings(selectedProvider, {
     ...settings,
@@ -93,7 +101,7 @@ async function selectSettingsAction(
   showWelcome: boolean,
 ): Promise<SettingsAction> {
   return select<SettingsAction>({
-    message: '⚙️  Settings',
+    message: 'Choose a setting:',
     choices: [
       { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
@@ -125,6 +133,7 @@ export async function showSettingsScreen(): Promise<void> {
   try {
     while (true) {
       clearAndBanner()
+      console.log(header('⚙️  Settings'))
       if (banner) {
         console.log(banner + '\n')
         banner = ''

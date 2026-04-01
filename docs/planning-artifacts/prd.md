@@ -20,8 +20,12 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-03-30'
+lastEdited: '2026-04-01'
 editHistory:
+  - date: '2026-04-01'
+    changes: 'Label alignment pass: domain sub-menu actions renamed from "View History" / "View Bookmarks" / "View Stats" to "History" / "Bookmarks" / "Statistics" matching implemented UI. Home screen "view archived domains" renamed to "Archived domains". Settings "Question Language" shortened to "Language". Feature 17 sprint setup parameters renamed from "Time budget" / "Question count" to "Sprint duration" / "Sprint size". Feature 3 post-answer option order corrected to match code: Explain answer → Bookmark → Next question → Back (previously listed Next question first). Feature 15 exit screen status line updated from static "Exiting in 3 seconds..." to dynamic exit messages based on total questions answered. Feature titles, KPIs, User Journeys, NFR5, Feature 10, 14, and 16 cross-references updated for consistency.'
+  - date: '2026-03-31'
+    changes: 'Feature 17 (Challenge Mode — Sprint) added: a new game mode accessible via a Challenge action in the domain sub-menu. User selects time budget (2/5/10 min) and question count (5/10/20) on a sprint setup screen. All N questions are preloaded upfront before the sprint starts (same deduplication and self-consistency rules as Feature 2). A visible countdown timer runs continuously — through question display and post-answer review — never pausing. Post-answer options are limited to Next question and Back. Timer reaching zero mid-question auto-submits as incorrect; mid-post-answer ends the sprint immediately. Only answered questions are recorded in domain history — unanswered preloaded questions are discarded. Same scoring formula as Feature 4. Post-sprint shows Feature 14 session summary with sprint completion indicator. Product Scope updated from 16 to 17 capabilities. Feature 1 domain sub-menu updated. Feature 14 Session Summary updated. User Journeys Core Usage updated. NFR 5 updated.'
   - date: '2026-03-30'
     changes: 'Feature 16 (Question Bookmarking) added: users can bookmark any answered question for later revisiting via ⭐ indicator. Bookmark/Remove bookmark available in quiz post-answer (Feature 3), View History (Feature 6), and new View Bookmarks screen. View Bookmarks added to domain sub-menu after View History — navigation identical to View History (single-question nav with Previous/Next/Explain/Remove bookmark/Back). Bookmarked flag stored as boolean on each question record in domain JSON (Feature 5). Per-domain only, no cap. Product Scope updated from 15 to 16 capabilities. FR preamble updated. Feature 1 domain sub-menu updated. User Journeys Aha Moment and Long-term updated. NFR 5 updated with bookmarks navigation.'
   - date: '2026-03-30'
@@ -102,8 +106,8 @@ Curious people want to stay sharp across a wide variety of topics, but existing 
 - **Questions answered per session:** ≥ 5 questions — measured via question count per session in local history
 
 ### Learning KPIs
-- **Score growth rate:** Score increases progressively over the first 30 days — measured by score trend calculation from local history, surfaced to the user in the View Stats command
-- **Correct answer rate over time:** Improves in a configured domain after 20+ questions — measured by correct/incorrect ratio over time from local history, surfaced in View Stats
+- **Score growth rate:** Score increases progressively over the first 30 days — measured by score trend calculation from local history, surfaced to the user in the Statistics screen
+- **Correct answer rate over time:** Improves in a configured domain after 20+ questions — measured by correct/incorrect ratio over time from local history, surfaced in Statistics
 - **History depth:** Users who have answered 50+ questions have a full personal knowledge log — measured by total question count in local domain file
 
 ### Adoption KPIs
@@ -120,7 +124,7 @@ The MVP is considered successful when:
 2. Questions never repeat within a domain across sessions
 3. Difficulty level increases after 3 consecutive correct answers and decreases after 3 consecutive wrong answers
 4. Score and history persist correctly between sessions and across domain switches
-5. View History displays all answered questions with correct data; View Stats displays correct totals and score trend
+5. History displays all answered questions with correct data; Statistics displays correct totals and score trend
 6. Speed tier classification (fast / normal / slow) is surfaced to the user after each answer
 
 ---
@@ -129,15 +133,15 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 16 capabilities define the complete MVP:
+The following 17 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
 3. Interactive Terminal Quiz
 4. Scoring System
 5. Persistent History (Per Domain)
-6. View History Command
-7. View Stats Command
+6. History
+7. Statistics
 8. Global Settings (Language & Tone)
 9. Terminal UI Highlighting & Color System
 10. Coffee Supporter Screen
@@ -147,6 +151,7 @@ The following 16 capabilities define the complete MVP:
 14. Session Summary
 15. Exit Message
 16. Question Bookmarking
+17. Challenge Mode (Sprint)
 
 ### Out of Scope
 
@@ -230,10 +235,11 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
-- Sessions are 2–10 minutes; 3–10 questions per session
+- Sessions are 2–10 minutes; 3–10 questions per session in Play mode; sprint sessions run a fixed N questions within a fixed sprint duration (5/10/20 questions × 2/5/10 minutes) in Challenge mode
 - Navigates menus with arrow keys (↑↓); the focused option is highlighted with a full-row background; confirms selection with Enter
-- Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
-- On exiting the quiz, the domain sub-menu displays a one-time session summary — score delta, accuracy, speed stats, and difficulty change — giving every session a tangible result before the user decides what to do next
+- **Play:** Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
+- **Challenge:** Selects Challenge from the domain sub-menu → picks sprint duration and sprint size presets → app preloads all N questions → sprint starts with a visible countdown timer that never pauses → answers questions with Next question as the only forward action → sprint ends when all N questions are answered or the timer hits zero
+- On exiting a session, the domain sub-menu displays a one-time session summary — score delta, accuracy, speed stats, and difficulty change — giving every session a tangible result before the user decides what to do next; Challenge sessions additionally show a sprint completion line (questions completed vs total, or time-expired indicator)
 - When the user is done, selecting Exit from the home screen shows a branded farewell screen (Feature 15), then the app terminates cleanly
 - History persists between sessions automatically
 
@@ -241,7 +247,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via View Bookmarks for targeted review. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via Bookmarks for targeted review. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -300,7 +306,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 16 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 17 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -312,23 +318,24 @@ The following 16 features define the complete MVP capability set. Each feature i
 - If no domains exist, the list is empty and the only available action is to create a new one
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate domain-specific questions for it
 - All state (history, score, time played) is domain-scoped and isolated
-- The home screen actions are: select a domain, create a new domain, view archived domains, settings, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen; when `showWelcome` is `true`, selecting Exit displays the Exit Message screen (Feature 15) before terminating the app; when `showWelcome` is `false`, the app terminates immediately
+- The home screen actions are: select a domain, create a new domain, archived domains, settings, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen; when `showWelcome` is `true`, selecting Exit displays the Exit Message screen (Feature 15) before terminating the app; when `showWelcome` is `false`, the app terminates immediately
 - Selecting "Create new domain" shows an input prompt (`New domain name:`); after entering a name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary); a Save/Back navigation prompt follows — selecting Save creates the domain, selecting Back returns to the home screen without creating a domain; pressing Ctrl+C at any prompt returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
 
 - Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
-- The domain sub-menu provides the following actions: **Play**, **View History**, **View Bookmarks**, **View Stats**, **Archive**, **Delete**, and **Back**
+- The domain sub-menu provides the following actions: **Play**, **Challenge**, **History**, **Bookmarks**, **Statistics**, **Archive**, **Delete**, and **Back**
 - Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — the message is AI-generated using the active language and tone of voice settings, then the quiz begins
-- After a quiz session ends, the user is returned to the domain sub-menu (not the home screen); on this first re-render, a session summary block is displayed between the domain header and the action menu (see Feature 14 — Session Summary)
+- After a quiz or challenge sprint session ends, the user is returned to the domain sub-menu (not the home screen); on this first re-render, a session summary block is displayed between the domain header and the action menu (see Feature 14 — Session Summary)
 - Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
 - Selecting **Delete** prompts the user with a blocking confirmation dialog (*"Delete '[domain]' permanently? This cannot be undone."*) — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu
 - Selecting **Back** returns the user to the home screen
-- Selecting **View History**, **View Bookmarks**, or **View Stats** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
+- Selecting **History**, **Bookmarks**, or **Statistics** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
+- Selecting **Challenge** opens the sprint setup screen (see Feature 17 — Challenge Mode)
 
 **Archived domains**
 
-- The home screen includes a *"View archived domains"* action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off
+- The home screen includes an *"Archived domains"* action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off
 - Switching to a previously used domain resumes exactly where the user left off
 
 ### Feature 2 — AI-Powered Question Generation (Multi-Provider)
@@ -363,10 +370,10 @@ The following 16 features define the complete MVP capability set. Each feature i
 - A timer starts silently when the question is displayed and stops when the user submits their answer — no visible countdown is shown during the question
 - The response time is recorded for every question
 - After answering, the post-answer feedback is rendered **on the same screen** as the original question — no terminal clear or screen transition occurs between the question display and the feedback panel. The user sees the question text, answer options, their chosen answer, and all feedback together: correct/incorrect status, the right answer if wrong, time taken, speed tier (fast / normal / slow), and score delta
-- After the feedback panel, the user is presented with four options: **Next question**, **Explain answer**, **Bookmark** (or **Remove bookmark** if the question is already bookmarked), and **Back**
+- After the feedback panel, the user is presented with four options: **Explain answer**, **Bookmark** (or **Remove bookmark** if the question is already bookmarked), **Next question**, and **Back**
 - A bookmarked question displays a ⭐ indicator next to the question text throughout the post-answer screen
 - Selecting **Explain answer** calls the AI provider to generate a concise explanation (2–4 sentences) of why the correct answer is correct — optionally noting why common wrong choices are incorrect — displayed inline below the feedback panel using the active language and tone settings; a loading spinner is shown during generation
-- After the explanation is displayed, the user is presented with four options: **Teach me more**, **Next question**, **Bookmark** (or **Remove bookmark** if already bookmarked), and **Back** (Explain is not offered again for the same question)
+- After the explanation is displayed, the user is presented with four options: **Teach me more**, **Bookmark** (or **Remove bookmark** if already bookmarked), **Next question**, and **Back** (Explain is not offered again for the same question)
 - If the AI call for the explanation fails, a warning message is displayed (e.g. *"Could not generate explanation."*) and the user is returned to the Next/Back prompt — the failure is non-critical and does not interrupt the quiz session
 
 ### Feature 4 — Scoring System
@@ -416,7 +423,7 @@ Every answered question is recorded with:
 - Difficulty level assigned to the question
 - Whether the question is bookmarked (boolean, default: false)
 
-### Feature 6 — View History Command
+### Feature 6 — History
 
 - User can view their full question history for the active domain
 - Questions are displayed one at a time; the user navigates with Previous, Next, Explain answer, Bookmark (or Remove bookmark if already bookmarked), and Back controls; a progress indicator shows the user's current position (e.g., "Question 3 of 47")
@@ -426,7 +433,7 @@ Every answered question is recorded with:
 - After the explanation is displayed, the navigation menu re-appears with Teach me more, Previous, Next, Bookmark (or Remove bookmark), and Back (Explain is not shown while the explanation is already visible on screen). If the user navigates away and returns to the same question, Explain answer is available again
 - If the AI call for the explanation fails, a warning message is displayed (e.g., *"Could not generate explanation."*) and the user is returned to the navigation menu — the failure is non-critical and does not interrupt history browsing
 
-### Feature 7 — View Stats Command
+### Feature 7 — Statistics
 
 User can view a summary dashboard for the active domain:
 - Current score
@@ -441,7 +448,7 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Question Language**, **Tone of Voice**, and **Welcome & Exit Screen** toggle
+- Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Language**, **Tone of Voice**, and **Welcome & Exit Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
 - On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, showWelcome = `true`
@@ -469,7 +476,7 @@ User can view a summary dashboard for the active domain:
 - API keys are never entered in-app — they are read from environment variables at runtime
 - Changing providers takes effect on the next AI call — no restart required
 
-**Question Language**
+**Language**
 - Free-text entry — any language name the user types becomes the active language (e.g., `Greek`, `Spanish`, `Japanese`, `Pirate English`)
 - The configured language is injected into every AI prompt; the LLM renders all generated content in that language
 - No validation — the language string is passed directly to the AI; unsupported or misspelled entries produce AI-best-effort output
@@ -520,7 +527,7 @@ All interactive menus throughout the application use full-row background highlig
 
 ### Feature 10 — Coffee Supporter Screen
 
-- The home screen includes a **☕ Buy me a coffee** action, positioned between the "View archived domains" separator and the Exit action
+- The home screen includes a **☕ Buy me a coffee** action, positioned between the "Archived domains" separator and the Exit action
 - Selecting it opens a dedicated screen that clears the terminal and displays an ASCII QR code linking to the creator's Buy Me a Coffee page, followed by the URL (`https://www.buymeacoffee.com/georgiosnikitas`) in plain text
 - The screen provides a single **Back** action that returns the user to the home screen
 
@@ -562,17 +569,18 @@ All interactive menus throughout the application use full-row background highlig
 ### Feature 14 — Session Summary
 
 - After a quiz session ends and the user is returned to the domain sub-menu, a one-time session summary block is displayed between the domain header and the action menu
-- The session summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to View History, View Stats, or any other screen and returning to the domain sub-menu does not re-display it; re-entering the domain from the home screen does not re-display it
-- A session is defined as the period from selecting Play to selecting Back — every session that includes at least one answered question produces a summary
+- The session summary is ephemeral — it appears only on the first render of the domain sub-menu immediately after a quiz session; navigating to History, Statistics, or any other screen and returning to the domain sub-menu does not re-display it; re-entering the domain from the home screen does not re-display it
+- A session is defined as the period from selecting Play (or completing sprint setup in Challenge mode) to selecting Back — every session that includes at least one answered question produces a summary
 - The session summary displays the following fields in order, using the same `bold('Label:') + ' value'` format as the Stats Dashboard (Feature 7):
   1. **Score delta:** Net score change for the session (positive or negative) — displayed in green (positive) or red (negative) using `colorCorrect` / `colorIncorrect`
-  2. **Questions answered:** Count of questions answered in the session
+  2. **Questions answered:** Count of questions answered in the session; for Challenge Mode sprints, displayed as "X / N" (e.g., `7 / 10`) where N is the configured question count
   3. **Correct / Incorrect:** Correct count and incorrect count (e.g., `5 / 2`)
   4. **Accuracy:** Percentage of correct answers (e.g., `71.4%`) — formatted using `formatAccuracy`
   5. **Fastest answer:** Shortest response time in the session (e.g., `3.2s`) — displayed in green
   6. **Slowest answer:** Longest response time in the session (e.g., `12.8s`) — displayed in red
   7. **Session duration:** Total time from first question displayed to last answer submitted — formatted using the same `formatTotalTimePlayed` function as the Stats Dashboard
   8. **Difficulty:** Starting difficulty level → ending difficulty level with directional indicator (e.g., `2 — Elementary → 3 — Intermediate ▲`) — difficulty labels use `colorDifficultyLevel`; ▲ displayed in green, ▼ displayed in red, — displayed in yellow when difficulty is unchanged
+  9. **Sprint result** *(Challenge Mode only):* displayed only for sprint sessions — `Completed X / N questions` in green when all N questions were answered, or `Time expired — X / N questions answered` in red when the timer ran out before all questions were answered
 - The summary block is framed by dim horizontal divider lines (e.g., `── Last Session ──────`) rendered using `dim()`
 - The summary renders on the domain sub-menu screen using the standard `clearAndBanner()` flow — no additional terminal reset is triggered; it is content between the banner and the action menu
 
@@ -585,7 +593,7 @@ All interactive menus throughout the application use full-row background highlig
   1. The app emoji branding (`🧠🔨`)
   2. A gradient-colored ASCII art rendering of "Brain Break" identical to the Welcome Screen — cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan
   3. A styled subtitle line identical to the Welcome Screen: `>` rendered in **cyan**, the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
-  4. A dim status line indicating automatic termination: `Exiting in 3 seconds...` (or equivalent phrasing)
+  4. A dynamic exit message based on total questions answered in the session — e.g., *"Break's over, see you next round"* (0 questions), *"X questions smashed, not bad for a break"* (1–9), *"X questions? Your brain's showing off"* (10–49), *"X questions deep, absolute brain breaker"* (50–99), *"X questions mastered, certified brain breaker"* (100+) — rendered via typewriter animation
   5. The current app version (e.g., `v1.2.0`) rendered in dim white
   6. A gradient shadow bar spanning the terminal width (same cyan-to-magenta gradient)
 - Interaction model:
@@ -600,19 +608,72 @@ All interactive menus throughout the application use full-row background highlig
 - A bookmarked question displays a ⭐ indicator next to the question text wherever it appears (quiz post-answer screen, history view, bookmarks list)
 - Bookmarking and unbookmarking are available in three contexts:
   - **Quiz post-answer screen (Feature 3):** After answering a question, **Bookmark** appears in the navigation options (after Explain answer); if the question is already bookmarked, **Remove bookmark** is shown instead. The option persists through explanation and micro-lesson states
-  - **View History (Feature 6):** Each question in history navigation includes **Bookmark** (or **Remove bookmark** if already bookmarked) in the navigation controls. The option persists through explanation and micro-lesson states
-  - **View Bookmarks (this feature):** Each bookmarked question includes **Remove bookmark** in the navigation controls
+  - **History (Feature 6):** Each question in history navigation includes **Bookmark** (or **Remove bookmark** if already bookmarked) in the navigation controls. The option persists through explanation and micro-lesson states
+  - **Bookmarks (this feature):** Each bookmarked question includes **Remove bookmark** in the navigation controls
 - Toggling a bookmark updates the `bookmarked` field on the question record in the domain JSON file immediately — the change persists across sessions
-- The domain sub-menu includes a **View Bookmarks** action positioned after View History: Play, View History, **View Bookmarks**, View Stats, Archive, Delete, Back
+- The domain sub-menu includes a **Bookmarks** action positioned after History: Play, History, **Bookmarks**, Statistics, Archive, Delete, Back
 
-**View Bookmarks screen**
+**Bookmarks screen**
 
 - Accessed from the domain sub-menu — displays only bookmarked questions for the active domain
-- Navigation is identical to View History (Feature 6): questions displayed one at a time with Previous, Next, Explain answer, Remove bookmark, and Back controls; a progress indicator shows the user's current position (e.g., "Bookmark 2 of 8")
+- Navigation is identical to History (Feature 6): questions displayed one at a time with Previous, Next, Explain answer, Remove bookmark, and Back controls; a progress indicator shows the user's current position (e.g., "Bookmark 2 of 8")
 - Each entry displays all fields recorded per question (see Feature 5 — Persistent History) with the ⭐ indicator
 - Selecting **Explain answer** follows the same flow as Feature 6: AI-generated explanation displayed inline, followed by Teach me more option — identical behavior and error handling
 - Selecting **Remove bookmark** removes the ⭐ flag from the question, updates the domain file, and navigates to the next bookmarked question (or the previous one if it was the last); if no bookmarks remain, the user is returned to the domain sub-menu with a message: *"No bookmarked questions."*
-- If the domain has no bookmarked questions when View Bookmarks is selected, the screen displays *"No bookmarked questions."* with a Back action that returns the user to the domain sub-menu
+- If the domain has no bookmarked questions when Bookmarks is selected, the screen displays *"No bookmarked questions."* with a Back action that returns the user to the domain sub-menu
+
+---
+
+### Feature 17 — Challenge Mode (Sprint)
+
+- Challenge Mode is a time-constrained quiz sprint accessible from the domain sub-menu; it runs on the same domain, question pool, history, score, and deduplication as Play mode
+- Selecting **Challenge** from the domain sub-menu opens a sprint setup screen
+
+**Sprint setup screen**
+
+- The user configures two parameters via arrow key navigation, then confirms:
+  - **Sprint duration:** 2 min / 5 min / 10 min
+  - **Sprint size (N):** 5 / 10 / 20
+- The setup screen provides **Confirm** and **Back** actions; Back returns the user to the domain sub-menu without starting a sprint
+
+**Question preloading**
+
+- On Confirm, the app preloads all N questions before the sprint starts — applying the same deduplication (SHA-256 hash check against domain history) and self-consistency verification rules as Feature 2
+- A loading spinner is shown during preload; if AI question generation or verification fails for a question, it is regenerated using the same retry logic as Feature 2 until N valid questions are ready
+- The sprint does not start until all N questions are successfully preloaded
+- If the AI provider is unreachable during preload, the app displays the same provider-specific error message as NFR 2 and returns the user to the domain sub-menu — no sprint is started
+
+**Sprint execution**
+
+- The sprint starts immediately after preload completes — the first question is displayed with the countdown timer visible
+- A **countdown timer** is rendered prominently on every screen during the sprint (question display and post-answer); the timer shows the remaining time in `M:SS` format (e.g., `4:32`)
+- The timer **never pauses** — it runs continuously through question display, answer selection, and post-answer review
+- Questions are displayed and scored identically to Feature 3 (Interactive Terminal Quiz): the same post-answer inline feedback (correct/incorrect status, correct answer reveal, time taken, speed tier, score delta) renders on the same screen as the question
+- **Per-question speed tier** is measured by the individual answer time (time from question display to answer selection) — not the sprint clock
+- **Post-answer navigation in Challenge Mode is limited to two options:**
+  - **Next question** — loads the next preloaded question
+  - **Back** — exits the sprint immediately; questions not yet answered are discarded (see History rules below)
+- No Explain answer, Bookmark, Remove bookmark, or Teach me more options are available during a sprint
+
+**Sprint termination**
+
+The sprint ends on whichever condition occurs first:
+- **All N questions answered** — sprint completes normally
+- **Timer reaches zero mid-question** — the current unanswered question is auto-submitted as incorrect with the recorded answer marked as timed out; the sprint ends immediately
+- **Timer reaches zero mid-post-answer** — the sprint ends immediately after the current feedback is shown; no further questions are presented
+- **User selects Back** — sprint exits immediately
+
+**History and scoring rules**
+
+- Only questions that have been answered (correctly, incorrectly, or timed-out auto-submit) are recorded in domain history — with all standard fields (see Feature 5)
+- Preloaded questions that were never displayed to the user are discarded and not recorded in history; their hashes are not added to the deduplication store
+- The same scoring formula applies as Feature 4 (difficulty base points × speed multiplier); auto-submitted timed-out questions use the slow + incorrect multiplier
+- Score and difficulty level persist to the domain file at the end of the sprint, covering only answered questions
+
+**Post-sprint**
+
+- After sprint termination, the user is returned to the domain sub-menu
+- The domain sub-menu renders the Feature 14 session summary block on first re-render, including the sprint-specific **Sprint result** field (field 9 of Feature 14)
 
 ---
 
@@ -641,7 +702,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, welcome screen, exit message screen, and settings screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
+All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, statistics dashboard, welcome screen, exit message screen, settings screen, and sprint setup screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. This exception applies to both Play mode (Feature 3) and Challenge Mode (Feature 17). A terminal reset occurs only when the user selects Next question (loading the next question) or exits the session. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.

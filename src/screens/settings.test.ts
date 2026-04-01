@@ -29,6 +29,7 @@ vi.mock('../utils/format.js', () => ({
   menuTheme: { style: { highlight: (t: string) => t } },
   success: (t: string) => `[success]${t}`,
   warn: (t: string) => `[warn]${t}`,
+  header: (t: string) => `[header]${t}`,
 }))
 
 import { select, input } from '@inquirer/prompts'

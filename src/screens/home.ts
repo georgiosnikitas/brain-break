@@ -43,15 +43,17 @@ export function buildHomeChoices(
 
   if (entries.length > 0) {
     choices.push(new Separator())
+  } else {
+    choices.push(new Separator(dim('No domains yet.')), new Separator())
   }
 
   choices.push(
-    { name: '➕  Create new domain', value: { action: 'create' } },
-    { name: '🗄  View archived domains', value: { action: 'archived' } },
+    { name: '➕ Create new domain', value: { action: 'create' } },
+    { name: '🗄  Archived domains', value: { action: 'archived' } },
     { name: '⚙️  Settings', value: { action: 'settings' } },
     new Separator(),
-    { name: '☕  Buy me a coffee', value: { action: 'coffee' } },
-    { name: '🚪  Exit', value: { action: 'exit' } },
+    { name: '🍵 Buy me a coffee', value: { action: 'coffee' } },
+    { name: '🚪 Exit', value: { action: 'exit' } },
   )
 
   return choices
@@ -108,7 +110,7 @@ async function handleHomeAction(answer: HomeAction, homeEntries: HomeEntry[], li
 
 export async function showCoffeeScreen(): Promise<void> {
   clearAndBanner()
-  console.log('\n  ☕  Enjoying brain-break? Buy me a coffee!\n')
+  console.log('\n  🍵 Enjoying brain-break? Buy me a coffee!\n')
   console.log('  Scan the QR code with your phone:\n')
   await new Promise<void>((resolve) => {
     qrcode.generate(COFFEE_URL, { small: true }, (code) => {
@@ -121,7 +123,7 @@ export async function showCoffeeScreen(): Promise<void> {
   try {
     await select({
       message: 'Navigation',
-      choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+      choices: [new Separator(), { name: '← Back', value: 'back' as const }],
       theme: menuTheme,
     })
   } catch (err) {
@@ -138,7 +140,7 @@ export async function showHomeScreen(): Promise<void> {
     let answer: HomeAction
     try {
       answer = await select<HomeAction>({
-        message: '👨‍💻 Options',
+        message: '👨‍💻 Choose a domain:',
         choices: buildHomeChoices(homeEntries),
         pageSize: 20,
         theme: menuTheme,

@@ -6,9 +6,13 @@ import { makeRecord, setupNavScreenBeforeEach } from './__test-helpers__/nav-tes
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
+const { MockSeparator } = vi.hoisted(() => {
+  const MockSeparator = vi.fn(function(this: any, text?: string) { this.type = 'separator'; this.text = text })
+  return { MockSeparator }
+})
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
-  Separator: vi.fn(),
+  Separator: MockSeparator,
 }))
 
 vi.mock('../domain/store.js', () => ({
@@ -177,27 +181,25 @@ describe('showBookmarks — empty state', () => {
   it('shows "No bookmarked questions." when no bookmarks exist', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
-    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('No bookmarked questions.')
+    const choices = mockSelect.mock.calls[0][0].choices
+    expect(choices[0].text).toContain('No bookmarked questions.')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
   })
 
   it('shows "No bookmarked questions." when history has only non-bookmarked entries', async () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
-    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('No bookmarked questions.')
-    consoleSpy.mockRestore()
+    const choices = mockSelect.mock.calls[0][0].choices
+    expect(choices[0].text).toContain('No bookmarked questions.')
   })
 
   it('shows only Back choice when no bookmarks', async () => {
@@ -207,9 +209,9 @@ describe('showBookmarks — empty state', () => {
 
     await showBookmarks('typescript')
 
-    const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name: string; value: string }>
-    expect(choices).toHaveLength(1)
-    expect(choices[0].value).toBe('back')
+    const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name?: string; value?: string }>
+    expect(choices).toHaveLength(3)
+    expect(choices[2].value).toBe('back')
   })
 })
 

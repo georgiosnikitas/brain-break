@@ -89,7 +89,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   const incorrect = total - correct
 
   clearAndBanner()
-  console.log(header(`📊 Stats Dashboard — ${domainSlug}`))
+  console.log(header(`📊 Statistics — ${domainSlug}`))
 
   if (total === 0) {
     console.log('🏆 ' + bold('Score:') + ` ${meta.score}`)

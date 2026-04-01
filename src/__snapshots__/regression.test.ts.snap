@@ -2,7 +2,7 @@
 
 exports[`stats screen — full output snapshot > renders the empty-history placeholder lines deterministically 1`] = `
 [
-  "📊 Stats Dashboard — test-domain",
+  "📊 Statistics — test-domain",
   "🏆 Score: 0",
   "📝 Questions answered: 0",
   "✅ Correct / Incorrect: 0 / 0",
@@ -18,7 +18,7 @@ exports[`stats screen — full output snapshot > renders the empty-history place
 
 exports[`stats screen — full output snapshot > renders the populated stats dashboard deterministically 1`] = `
 [
-  "📊 Stats Dashboard — test-domain",
+  "📊 Statistics — test-domain",
   "🏆 Score: 10",
   "📝 Questions answered: 2",
   "✅ Correct / Incorrect: 1 / 1",

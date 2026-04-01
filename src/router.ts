@@ -1,3 +1,6 @@
+import { select, Separator } from '@inquirer/prompts'
+import { ExitPromptError } from '@inquirer/core'
+import ora from 'ora'
 import { showHomeScreen } from './screens/home.js'
 import { showCreateDomainScreen } from './screens/create-domain.js'
 import { showSelectDomainScreen } from './screens/select-domain.js'
@@ -6,12 +9,16 @@ import { showHistory as showHistoryScreen } from './screens/history.js'
 import { showBookmarks as showBookmarksScreen } from './screens/bookmarks.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
+import { showSprintSetup } from './screens/sprint-setup.js'
+import { showChallengeExecution } from './screens/challenge.js'
 import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
 import { showExitScreen } from './screens/exit.js'
-import { readDomain, writeDomain, deleteDomain as deleteDomainStore } from './domain/store.js'
-import { warn, error as errorFmt } from './utils/format.js'
+import { readDomain, writeDomain, deleteDomain as deleteDomainStore, readSettings } from './domain/store.js'
+import { defaultDomainFile, defaultSettings } from './domain/schema.js'
+import { preloadQuestions } from './ai/client.js'
+import { warn, error as errorFmt, colorIncorrect, menuTheme } from './utils/format.js'
 import type { SettingsFile, SessionData } from './domain/schema.js'
 
 export async function showHome(): Promise<void> {
@@ -20,6 +27,50 @@ export async function showHome(): Promise<void> {
 
 export async function showQuiz(slug: string): Promise<SessionData | null> {
   return await showSelectDomainScreen(slug)
+}
+
+export async function showChallenge(slug: string): Promise<SessionData | null> {
+  const config = await showSprintSetup(slug)
+  if (config === null) {
+    return null
+  }
+
+  const domainResult = await readDomain(slug)
+  const domain = domainResult.ok ? domainResult.data : defaultDomainFile()
+
+  const settingsResult = await readSettings()
+  const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+
+  const spinner = ora(`Generating questions (0/${config.questionCount})...`).start()
+
+  const preloadResult = await preloadQuestions(
+    config.questionCount,
+    slug,
+    domain.meta.difficultyLevel,
+    new Set(domain.hashes),
+    settings,
+    (generated, total) => {
+      spinner.text = `Generating questions (${generated}/${total})...`
+    },
+  )
+
+  if (!preloadResult.ok) {
+    spinner.stop()
+    console.error(colorIncorrect(preloadResult.error))
+    try {
+      await select({
+        message: 'Something went wrong',
+        choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+        theme: menuTheme,
+      })
+    } catch (err) {
+      if (!(err instanceof ExitPromptError)) throw err
+    }
+    return null
+  }
+
+  spinner.stop()
+  return await showChallengeExecution(slug, config, preloadResult.data)
 }
 
 export async function showCreateDomain(): Promise<void> {

@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-30'
+lastEdited: '2026-03-31'
 editHistory:
+  - date: '2026-03-31'
+    changes: 'Challenge Mode — Sprint (PRD Feature 17, Epic 11, FR44–FR46): Requirements Overview updated (12→13 features, Challenge Mode added). Estimated components updated (14–16→16–18). Cross-cutting concerns updated (sprint timer and batch preloading added). Navigation pattern updated (Challenge route in domain sub-menu, showChallenge + showSprintSetup router exports). New Challenge Mode (Sprint) Architecture section added — timer strategy (Date.now wall-clock delta + AbortController prompt interruption), preloadQuestions() in ai/client.ts, sprint-setup.ts and challenge.ts screen split, per-answer writeDomain, limited post-answer nav (Next/Back only), four termination conditions (all answered, timer-mid-question auto-submit, timer-mid-feedback, user Back). Module Architecture src/ tree updated (sprint-setup.ts + challenge.ts added, router count 14→16). Complete Project Directory Structure updated (sprint-setup.ts/challenge.ts + tests added, router count 14→16). Feature to Structure Mapping updated (F14 row added). Cross-Cutting Concern Mapping updated (sprint countdown timer + batch question preloading rows added). Data Flow Sprint Cycle diagram added. Requirements Coverage Validation updated (F14 row added). Coherence Validation updated with Challenge Mode mention. All changes additive — no architectural decisions changed.'
   - date: '2026-03-30'
     changes: 'Exit screen, welcome screen timer, welcome toggle rename: Requirements Overview updated (11→12 features, exit screen added, welcome screen description expanded with 3s auto-proceed timer). Estimated components updated (13–15→14–16). Settings screen description updated (welcome screen toggle → Welcome & Exit screen toggle ON/OFF). Settings JSON schema showWelcome comment updated (controls both welcome + exit). defaultSettings() description updated. Cross-cutting concern updated (showWelcome controls startup + exit, read before exit routing). New Welcome Screen section added (3s cancellableSleep auto-proceed behavior). New Exit Screen section added (showExitScreen, getExitMessage, dynamic messages by totalQuestions, 3s auto-exit timer, total questions aggregation from active + archived domains). Navigation flow updated (exit action branches on showWelcome ON/OFF, welcome annotated with auto-proceed). Screen count updated (11→13). Module Architecture src/ tree updated (exit.ts added, welcome.ts comment expanded, settings.ts comment renamed, router count 13→14). Complete Project Directory Structure updated (exit.ts + exit.test.ts added, settings.ts comment renamed, welcome.ts comment expanded, router count 13→14). Feature to Structure Mapping updated (F11 expanded with timer, F13 row added). Requirements Coverage Validation updated (F11 expanded, F13 row added). Data Flow Startup updated (welcome timer behavior). Data Flow Exit added (full exit routing flow). All changes additive — no architectural decisions changed.'
   - date: '2026-03-30'
@@ -47,7 +49,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-12 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, and an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer.
+13 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, and an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -61,7 +63,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Primary domain: CLI / terminal application (Unix-like: macOS, Linux, WSL)
 - Complexity level: Low-Medium
 - External dependencies: 5 AI provider adapters via Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for OpenAI, Anthropic, Gemini, and Ollama; GitHub Copilot SDK as a custom adapter — one provider active at runtime, user-selected
-- Estimated architectural components: 14–16 focused modules
+- Estimated architectural components: 16–18 focused modules
 
 ### Technical Constraints & Dependencies
 
@@ -74,13 +76,15 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Cross-Cutting Concerns Identified
 
-- **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 5 supported backends (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine
+- **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 5 supported backends (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine and the challenge mode batch-preload path
 - **File I/O with integrity guarantees:** Read/write/permission enforcement is needed everywhere domain state is touched — must be centralized, not scattered
 - **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer; bookmark status can be toggled from post-answer, history, and bookmark screens — all must be atomically persisted
 - **Terminal rendering:** All user-facing output (home screen, quiz, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output. **Exception:** the post-answer quiz feedback panel renders inline on the same screen as the question — `clearScreen()` is **not** called between the question display and the feedback panel. A terminal reset occurs only when the user selects Next question (loading a new question) or exits the quiz
 - **Deduplication:** SHA-256 lookup on every question generation — must be fast and correctly scoped per domain
 - **Global settings & AI voice injection:** Language, tone of voice, and AI provider selection stored in a global settings file; language + tone injected into every AI prompt — affects questions, answer options, and motivational messages; provider setting determines which AI backend is used; `showWelcome` setting controls both the startup welcome screen and the exit screen; must be read before any AI call and before exit routing
 - **Semantic color system:** Post-answer feedback, speed tier badges, difficulty level badges, and menu highlighting all use a consistent color vocabulary defined in a single utility module
+- **Sprint countdown timer:** Challenge mode renders a visible `M:SS` countdown on every question and post-answer screen; the timer never pauses and must be able to interrupt the active `inquirer` prompt when it expires (auto-submit). Uses wall-clock `Date.now()` deltas — not `setInterval` ticks — to avoid drift
+- **Batch question preloading:** Challenge mode preloads all N questions before the sprint starts. The preload loop accumulates hashes to prevent intra-batch duplicates in addition to domain-history hashes. AI provider failure during preload aborts the entire sprint
 
 ## Starter Template Evaluation
 
@@ -439,7 +443,7 @@ export const AI_ERRORS = {
 No state machine framework. Navigation is explicit function calls dispatched from a `router.ts` module. The app uses a two-level menu model:
 
 - **Level 1 — Home screen:** Lists active domains (with score/count) + actions: create domain, view archived, settings, buy me a coffee, exit
-- **Level 2 — Domain sub-menu:** Selected from home; shows Play, View History, View Bookmarks, View Stats, Archive, Delete, Back
+- **Level 2 — Domain sub-menu:** Selected from home; shows Play, Challenge, View History, View Bookmarks, View Stats, Archive, Delete, Back
 
 ```
 startup → readSettings()
@@ -451,6 +455,9 @@ router.showHome()
   → user creates domain     → router.showCreateDomain() → router.showHome()
   → user selects domain      → router.showDomainMenu(slug)
     → Play                   → router.showQuiz(slug) → router.showDomainMenu(slug)
+    → Challenge              → router.showChallenge(slug) → router.showDomainMenu(slug)
+      → showSprintSetup(slug)  → user confirms → showChallengeExecution(slug, config, questions)
+      → showSprintSetup(slug)  → user backs    → router.showDomainMenu(slug)
     → View History            → router.showHistory(slug) → router.showDomainMenu(slug)
     → View Bookmarks          → router.showBookmarks(slug) → router.showDomainMenu(slug)
     → View Stats              → router.showStats(slug) → router.showDomainMenu(slug)
@@ -466,7 +473,7 @@ router.showHome()
 
 Each screen is a standalone `async` function that resolves when the user exits it. `router.ts` is the only place that calls other screens — screens never call each other directly.
 
-*Rationale:* 13 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
+*Rationale:* 15 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
@@ -482,7 +489,7 @@ export async function showHome(): Promise<void> {
 }
 ```
 
-**Exception — quiz post-answer feedback:** After the user answers a question, the feedback panel (correct/incorrect, correct answer reveal, time taken, speed tier, score delta) is rendered **inline on the same screen** as the question. `clearScreen()` is **not** called between the question display and the feedback panel — the user sees the original question, their chosen answer, and all feedback together. A terminal reset occurs only when the user selects Next question (triggering `clearScreen()` + rendering the next question) or exits the quiz.
+**Exception — quiz post-answer feedback:** After the user answers a question, the feedback panel (correct/incorrect, correct answer reveal, time taken, speed tier, score delta) is rendered **inline on the same screen** as the question. `clearScreen()` is **not** called between the question display and the feedback panel — the user sees the original question, their chosen answer, and all feedback together. A terminal reset occurs only when the user selects Next question (triggering `clearScreen()` + rendering the next question) or exits the quiz. This same inline feedback exception applies to Challenge Mode (Feature 14) — post-answer feedback renders on the same screen as the question, with a terminal reset only on Next or Back.
 
 ```typescript
 // ✅ Quiz feedback pattern — NO clearScreen between question and feedback
@@ -578,6 +585,95 @@ All semantic coloring logic is centralized in `utils/format.ts`. No screen modul
 
 ---
 
+### Challenge Mode (Sprint) Architecture
+
+`screens/sprint-setup.ts` exports `showSprintSetup(slug)`. `screens/challenge.ts` exports `showChallengeExecution(slug, config, questions)`. The router's `showChallenge(slug)` orchestrates: setup → preload → execute → return to domain sub-menu.
+
+**Sprint Setup Screen — `screens/sprint-setup.ts`**
+
+The Challenge action is positioned after Play in the domain sub-menu. Selecting it calls `router.showChallenge(slug)`, which first invokes `showSprintSetup(slug)`. The setup screen renders two `inquirer` select prompts navigated via arrow keys:
+- **Time budget:** `2 min` / `5 min` / `10 min` (stored as milliseconds: 120_000, 300_000, 600_000)
+- **Question count N:** `5` / `10` / `20`
+
+Two actions: **Confirm** and **Back**. Back returns `null` to the router, which returns the user to the domain sub-menu. Confirm returns `{ timeBudgetMs: number, questionCount: number }`.
+
+**Question Preloading — `preloadQuestions()` in `ai/client.ts`**
+
+New public export:
+
+```typescript
+export async function preloadQuestions(
+  count: number,
+  domain: string,
+  difficultyLevel: number,
+  existingHashes: Set<string>,
+  settings: SettingsFile
+): Promise<Result<Question[]>>
+```
+
+- Sequential generation loop — accumulates each question's hash into a running `Set` (union of `existingHashes` + all hashes generated so far in this batch) to prevent intra-batch duplicates in addition to domain-history duplicates
+- Each question goes through the same `generateQuestion()` pipeline: prompt → AI call → Zod parse → Fisher-Yates shuffle → self-consistency verification → dedup check → result
+- An `ora` spinner is shown by the calling screen during preload; the spinner text updates with progress (e.g., `"Generating questions (3/10)..."`)
+- If the AI provider is unreachable or an unrecoverable error occurs during any question generation, the entire preload fails — returns `{ ok: false, error: <provider-specific message> }`; no partial results are returned
+- On failure, the calling screen displays the error (same `AI_ERRORS` messages as Play mode) and returns the user to the domain sub-menu — no sprint is started
+- Preloaded questions are passed to the execution screen in memory — not written to disk until answered
+
+**Sprint Execution — `screens/challenge.ts`**
+
+Receives `slug`, `config: { timeBudgetMs, questionCount }`, and `questions: Question[]` from the router. Owns the sprint loop and timer.
+
+**Timer strategy — wall-clock `Date.now()` delta:**
+- Record `sprintStartMs = Date.now()` when the first question renders
+- On each render (question display, post-answer feedback), compute `remainingMs = config.timeBudgetMs - (Date.now() - sprintStartMs)` and format as `M:SS`
+- The timer is rendered prominently above (or alongside) the question text in the terminal
+- **No `setInterval` ticking** — remaining time is computed on-demand from the wall-clock delta to avoid drift accumulation
+
+**Timer-based prompt interruption — `AbortController`:**
+- Before each `inquirer` prompt (answer selection, post-answer navigation), create an `AbortController` and compute `timeLeftMs = config.timeBudgetMs - (Date.now() - sprintStartMs)`
+- Schedule `setTimeout(abortController.abort, timeLeftMs)` to fire when the sprint timer expires
+- Pass `signal: abortController.signal` to the `inquirer` prompt — when aborted, the prompt throws and the sprint loop handles the timeout
+- Clear the timeout if the user answers before it fires
+
+**Per-question execution flow:**
+1. `clearScreen()` + render banner + render countdown timer (`M:SS`)
+2. Render question text + options via `renderQuestionDetail()`
+3. Start `inquirer` answer prompt with `AbortController` timeout
+4. **User answers in time:** record answer, compute `applyAnswer()`, render inline feedback (same pattern as quiz — no `clearScreen()` between question and feedback), render countdown timer in feedback, prompt Next / Back with `AbortController` timeout
+5. **Timer expires mid-question:** auto-submit as incorrect (`userAnswer: "TIMEOUT"`, `isCorrect: false`, speed tier: `slow`, scoring uses slow + incorrect multiplier); render brief timeout feedback; sprint ends
+6. **Timer expires mid-post-answer-feedback:** sprint ends immediately — no further questions
+7. **User selects Back:** sprint exits immediately — unanswered questions discarded
+
+**Post-answer navigation (limited):**
+- **Next question** — advances to next preloaded question; `clearScreen()` triggers
+- **Back** — exits sprint immediately (termination condition d)
+- No Explain answer, Bookmark, Remove bookmark, or Teach me more options during a sprint
+
+**Per-answer persistence:**
+Each answered question is written to the domain file immediately via `writeDomain(slug, updatedState)` — same write-after-every-answer pattern as `screens/quiz.ts`. No batch write at sprint end. This ensures crash safety: if the process terminates mid-sprint, all already-answered questions are persisted.
+
+Fields written per answered question (appended to `history[]`):
+- All standard `QuestionRecord` fields: `question`, `options`, `correctAnswer`, `userAnswer`, `isCorrect`, `answeredAt`, `timeTakenMs`, `speedTier`, `scoreDelta`, `difficultyLevel`, `bookmarked: false`
+- For auto-submitted timeout questions: `userAnswer: "TIMEOUT"`, `isCorrect: false`, `speedTier: "slow"`
+- Question hash added to `hashes[]` only for answered questions
+- `meta` updated via `applyAnswer()` after each question (streak, difficulty, score, totalTimePlayedMs)
+
+**Sprint termination — four conditions:**
+
+| Condition | Trigger | Behavior |
+|---|---|---|
+| All N questions answered | Loop exhausts preloaded array | Normal completion — proceed to post-sprint |
+| Timer expires mid-question | `AbortController` aborts answer prompt | Auto-submit current question as `TIMEOUT` → persist → proceed to post-sprint |
+| Timer expires mid-post-answer | `AbortController` aborts navigation prompt | Sprint ends immediately → proceed to post-sprint |
+| User selects Back | User action during post-answer nav | Sprint exits immediately → proceed to post-sprint |
+
+**Unanswered question disposal:**
+Preloaded questions that were never displayed or answered are discarded in memory. Their hashes are **not** added to the domain's `hashes[]` array — they remain eligible for future generation.
+
+**Post-sprint:**
+After termination, the challenge screen returns session data to the router: `{ questionsAnswered, totalQuestions, timeTakenMs, scoreDelta, sprintConfig }`. The router returns the user to `showDomainMenu(slug)`, which renders the Feature 14 session summary block on first re-render — including the sprint-specific **Sprint result** field (field 9: `"Completed X/N questions"` in green or `"Time expired — X/N questions answered"` in red).
+
+---
+
 ### Module Architecture
 
 **`src/` Directory Structure**
@@ -585,14 +681,16 @@ All semantic coloring logic is centralized in `utils/format.ts`. No screen modul
 ```
 src/
 ├── index.ts              # Entry point — bootstraps and calls router
-├── router.ts             # Navigation between screens — 14 exported functions
+├── router.ts             # Navigation dispatcher — 16 exported functions, only file that calls screens
 ├── screens/
 │   ├── home.ts           # F1: domain list + coffee screen (F10)
 │   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
-│   ├── domain-menu.ts    # F1: domain sub-menu (Play, History, Bookmarks, Stats, Archive, Delete, Back)
+│   ├── domain-menu.ts    # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Stats, Archive, Delete, Back)
 │   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
 │   ├── archived.ts       # F1: archived domain list + unarchive
 │   ├── quiz.ts           # F3: question loop, timer, answer feedback
+│   ├── sprint-setup.ts   # F14: sprint parameter selection (time budget + question count)
+│   ├── challenge.ts      # F14: sprint execution loop — preload spinner, countdown timer, limited post-answer nav
 │   ├── history.ts        # F6: single-question navigation history view
 │   ├── bookmarks.ts      # F12: single-question bookmark navigation view
 │   ├── stats.ts          # F7: stats dashboard
@@ -602,7 +700,7 @@ src/
 │   ├── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
 │   └── exit.ts           # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 ├── ai/
-│   ├── client.ts         # F2: provider-agnostic AI client + error handling
+│   ├── client.ts         # F2/F14: provider-agnostic AI client + error handling + preloadQuestions()
 │   ├── providers.ts      # F2: AiProvider interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot)
 │   └── prompts.ts        # F2: prompt templates + Zod response schema + voice injection
 ├── domain/
@@ -640,6 +738,7 @@ src/
 **Cross-Component Dependencies:**
 - Schema types flow from `domain/schema.ts` → all modules (includes `AiProviderType`)
 - `screens/quiz.ts` depends on both `domain/store.ts` and `ai/client.ts` — the two slowest paths
+- `screens/challenge.ts` depends on `domain/store.ts`, `ai/client.ts` (preloadQuestions), and `domain/scoring.ts` — same dependency profile as quiz.ts
 - `ai/client.ts` depends on `ai/providers.ts` (provider factory) and `ai/prompts.ts` (prompt builders)
 - `domain/scoring.ts` is pure computation — no I/O dependencies, easiest to unit test
 
@@ -810,13 +909,13 @@ brain-break/
 │       └── ci.yml                  # tsc --noEmit + vitest
 ├── src/
 │   ├── index.ts                    # Entry: bootstraps app, reads settings, routes to provider setup / welcome / home
-│   ├── router.ts                   # Navigation dispatcher — 14 exported functions, only file that calls screens
+│   ├── router.ts                   # Navigation dispatcher — 16 exported functions, only file that calls screens
 │   ├── screens/
 │   │   ├── home.ts                 # F1/F10: domain list + coffee screen
 │   │   ├── home.test.ts
 │   │   ├── create-domain.ts        # F1: new domain input + starting difficulty selection + validation + duplicate check
 │   │   ├── create-domain.test.ts
-│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, History, Bookmarks, Stats, Archive, Delete, Back)
+│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Stats, Archive, Delete, Back)
 │   │   ├── domain-menu.test.ts
 │   │   ├── select-domain.ts        # F1/F2: motivational message + quiz transition
 │   │   ├── select-domain.test.ts
@@ -824,6 +923,10 @@ brain-break/
 │   │   ├── archived.test.ts
 │   │   ├── quiz.ts                 # F3: question loop, timer, answer feedback
 │   │   ├── quiz.test.ts
+│   │   ├── sprint-setup.ts         # F14: sprint parameter selection (time budget + question count)
+│   │   ├── sprint-setup.test.ts
+│   │   ├── challenge.ts            # F14: sprint execution loop — preload spinner, countdown timer, limited post-answer nav
+│   │   ├── challenge.test.ts
 │   │   ├── history.ts              # F6: single-question navigation history view
 │   │   ├── history.test.ts
 │   │   ├── bookmarks.ts            # F12: single-question bookmark navigation view
@@ -840,7 +943,7 @@ brain-break/
 │   │   ├── exit.ts                 # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 │   │   └── exit.test.ts
 │   ├── ai/
-│   │   ├── client.ts               # F2: provider-agnostic AI client + Result<T> error wrapping
+│   │   ├── client.ts               # F2/F14: provider-agnostic AI client + Result<T> error wrapping + preloadQuestions()
 │   │   ├── client.test.ts
 │   │   ├── providers.ts            # F2: AiProvider interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot)
 │   │   ├── providers.test.ts
@@ -902,6 +1005,7 @@ brain-break/
 | F11 — Welcome Screen | `screens/welcome.ts` (animated ASCII-art + typewriter tagline + 3s auto-proceed timer), `domain/schema.ts` (`showWelcome` setting) |
 | F12 — Question Bookmarks | `screens/bookmarks.ts`, `screens/quiz.ts` (bookmark toggle post-answer), `screens/history.ts` (bookmark toggle), `screens/domain-menu.ts` (View Bookmarks action), `domain/store.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F13 — Exit Screen | `screens/exit.ts` (dynamic session message + typewriter animation + 3s auto-exit timer), `screens/home.ts` (total questions aggregation + conditional exit routing), `domain/schema.ts` (`showWelcome` setting) |
+| F14 — Challenge Mode (Sprint) | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution loop + timer + per-answer write), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 | NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
@@ -914,12 +1018,14 @@ brain-break/
 | Atomic file write | `domain/store.ts` → `writeDomain()`, `writeSettings()` |
 | AI error messages | `ai/providers.ts` → `AI_ERRORS` constants (per-provider network + auth + quota messages); re-exported from `ai/client.ts` |
 | Domain slug derivation | `utils/slugify.ts` exclusively |
-| Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path; **exception:** post-answer quiz feedback renders inline on the question screen (no `clearScreen()` between question and feedback) |
+| Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path; **exception:** post-answer feedback (both quiz and challenge mode) renders inline on the question screen (no `clearScreen()` between question and feedback) |
 | Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
 | Provider abstraction | `ai/providers.ts` → `AiProvider` interface + 5 adapters (4 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter); `ai/client.ts` → `createProvider()` factory |
 | Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme`, gradient rendering (`lerpColor`, `gradientBg`, `gradientShadow`) |
-| Question detail rendering | `utils/format.ts` → `renderQuestionDetail()` — unified options + feedback block (markers, correct/incorrect status, time/speed/difficulty, score delta, optional timestamp) consumed by `screens/quiz.ts`, `screens/history.ts`, and `screens/bookmarks.ts` |
+| Question detail rendering | `utils/format.ts` → `renderQuestionDetail()` — unified options + feedback block (markers, correct/incorrect status, time/speed/difficulty, score delta, optional timestamp) consumed by `screens/quiz.ts`, `screens/history.ts`, `screens/bookmarks.ts`, and `screens/challenge.ts` |
 | Settings tone migration | `domain/store.ts` → `migrateSettings()` — maps legacy tone values on read |
+| Sprint countdown timer | `screens/challenge.ts` — wall-clock `Date.now()` delta rendered as `M:SS` on every question + post-answer screen; `AbortController` + `setTimeout` interrupts active `inquirer` prompt on timer expiry |
+| Batch question preloading | `ai/client.ts` → `preloadQuestions()` — sequential N-question generation with intra-batch + domain-history dedup; `ora` spinner progress in `screens/challenge.ts`; provider failure aborts entire sprint |
 
 ### Integration Points
 
@@ -993,6 +1099,45 @@ screens/settings.ts
   → returns to home screen
 ```
 
+**Data Flow — Sprint Cycle (Challenge Mode):**
+```
+router.showChallenge(slug)
+  → screens/sprint-setup.ts.showSprintSetup(slug)
+    → user selects timeBudget + questionCount → Confirm
+    → returns { timeBudgetMs, questionCount }
+  → domain/store.ts.readDomain(slug)                   [reads domain file for hashes + meta]
+  → domain/store.ts.readSettings()                     [reads settings for AI provider]
+  → ai/client.ts.preloadQuestions(count, domain, difficulty, hashes, settings)
+    → sequential loop: for each of N questions:
+      → generateQuestion(domain, difficulty, runningHashes, prev, settings)
+        → same pipeline as Question Cycle (prompt → AI → Zod → shuffle → verify → dedup)
+      → accumulates question hash into runningHashes Set (intra-batch dedup)
+    → returns Result<Question[]>
+  → preload failure → display AI_ERRORS message → router.showDomainMenu(slug)
+  → preload success → screens/challenge.ts.showChallengeExecution(slug, config, questions)
+    → sprintStartMs = Date.now()
+    → for each preloaded question (index 0..N-1):
+      → remainingMs = timeBudgetMs - (Date.now() - sprintStartMs)
+      → clearScreen() + banner + render timer (M:SS) + render question
+      → inquirer answer prompt + AbortController(remainingMs)
+        → user answers in time:
+          → domain/scoring.ts.applyAnswer(meta, isCorrect, timeTakenMs, thresholds)
+          → append QuestionRecord to history + hash to hashes[]
+          → domain/store.ts.writeDomain(slug, updatedState)    [fs.rename atomic — per answer]
+          → render inline feedback + timer
+          → inquirer Next/Back prompt + AbortController(remainingMs)
+            → Next → continue loop
+            → Back → break loop (termination d)
+            → timeout → break loop (termination c)
+        → timeout (AbortController fires):
+          → auto-submit: userAnswer="TIMEOUT", isCorrect=false, speedTier="slow"
+          → domain/scoring.ts.applyAnswer(meta, false, timeBudgetMs, thresholds)
+          → append QuestionRecord + hash + writeDomain() (termination b)
+          → break loop
+    → return session data { questionsAnswered, totalQuestions, scoreDelta, ... }
+  → router.showDomainMenu(slug) [renders session summary with sprint result field]
+```
+
 ### Development Workflow
 
 **Suggested `package.json` scripts:**
@@ -1013,7 +1158,7 @@ screens/settings.ts
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design.
+All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design. Challenge Mode reuses the same `generateQuestion()` pipeline, `applyAnswer()` scoring, `writeDomain()` persistence, and `renderQuestionDetail()` rendering — no new architectural primitives needed; the `AbortController`-based prompt interruption uses native Node.js APIs already available in the runtime target.
 
 ### Requirements Coverage Validation ✅
 
@@ -1032,14 +1177,15 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | F11 — Welcome Screen | ✅ | `screens/welcome.ts` (ASCII-art + typewriter + gradient rendering + 3s auto-proceed timer) |
 | F12 — Question Bookmarks | ✅ | `screens/bookmarks.ts`, `screens/quiz.ts` (bookmark toggle post-answer), `screens/history.ts` (bookmark toggle), `screens/domain-menu.ts` (View Bookmarks action), `domain/store.ts` |
 | F13 — Exit Screen | ✅ | `screens/exit.ts` (dynamic session message + typewriter + gradient rendering + 3s auto-exit timer), `screens/home.ts` (total questions aggregation) |
+| F14 — Challenge Mode (Sprint) | ✅ | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution + timer), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` |
 
 | NFR | Status | Addressed By |
 |---|---|---|
 | NFR 1 — ≤5s question generation | ✅ | `ora` spinner + `Result<T>` fast-fail path |
-| NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state |
-| NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT |
+| NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state; same error path for `preloadQuestions()` batch failures |
+| NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT; sprint per-answer write ensures crash safety |
 | NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
-| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer quiz feedback renders inline (no clear between question and feedback); bookmarks screen follows standard clearScreen pattern |
+| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer feedback (quiz and challenge) renders inline (no clear between question and feedback); sprint-setup and challenge screens follow standard clearScreen pattern |
 | NFR 6 — Terminal color rendering | ✅ | `utils/format.ts` → ANSI 8/16-color baseline; `chalk` handles terminal capability detection |
 
 ### Implementation Readiness Validation ✅
@@ -1087,7 +1233,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 **✅ Project Structure**
 - [x] Complete directory structure defined
 - [x] Component boundaries established
-- [x] All integration points mapped (question cycle, startup flow)
+- [x] All integration points mapped (question cycle, startup flow, sprint cycle)
 - [x] Requirements to structure mapping complete
 
 ### Architecture Readiness Assessment

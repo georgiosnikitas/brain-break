@@ -1,4 +1,4 @@
-import { select } from '@inquirer/prompts'
+import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain, readSettings } from '../domain/store.js'
 import { defaultSettings, type QuestionRecord, type DomainFile } from '../domain/schema.js'
@@ -17,11 +17,14 @@ export { buildNavChoices as buildBookmarkChoices } from './question-nav.js'
 async function showEmptyBookmarksState(domainSlug: string): Promise<void> {
   clearAndBanner()
   console.log(header(`⭐ Bookmarks — ${domainSlug}`))
-  console.log(dim('No bookmarked questions.'))
   try {
     await select<NavAction>({
       message: 'Navigation',
-      choices: [{ name: '←  Back', value: 'back' }],
+      choices: [
+        new Separator(dim('No bookmarked questions.')),
+        new Separator(),
+        { name: '←  Back', value: 'back' },
+      ],
       theme: menuTheme,
     })
   } catch (err) {

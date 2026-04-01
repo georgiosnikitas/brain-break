@@ -306,15 +306,11 @@ describe('showArchivedScreen', () => {
     await showArchivedScreen()
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('🗄  Archived domains'))
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No archived domains.'))
-    // select is called with Navigation message and Back option
+    // select is called with Choose a domain message, "No archived domains." separator, and Back option
     expect(mockSelect).toHaveBeenCalledTimes(1)
-    expect(mockSelect).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'Navigation',
-        choices: [{ name: '←  Back', value: { action: 'back' } }],
-      }),
-    )
+    const choices = mockSelect.mock.calls[0][0].choices
+    expect(choices).toHaveLength(3)
+    expect(choices[2]).toEqual({ name: '←  Back', value: { action: 'back' } })
     logSpy.mockRestore()
   })
 })

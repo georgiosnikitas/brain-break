@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-03-30
+last_updated: 2026-04-01
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -116,13 +116,22 @@ development_status:
   epic-9-retrospective: optional
 
   # Epic 10: Bookmarking
-  epic-10: in-progress
+  epic-10: done
   10-1-question-record-bookmarked-field: done
   10-2-bookmark-toggle-quiz: done
   10-3-bookmark-toggle-history: done
+  10-4-view-bookmarks-screen: done
 
   # Epic 8: Welcome & Exit Screens + Static Banner
   epic-8: done
   8-1-welcome-screen-persistent-banner: done
   8-3-exit-message-screen: done
   epic-8-retrospective: optional
+
+  # Epic 11: Challenge Mode (Sprint)
+  epic-11: in-progress
+  11-1-sprint-setup-screen: done
+  11-2-question-preloading: done
+  11-3-sprint-execution-loop: done
+  11-4-sprint-termination-and-history: in-progress
+  epic-11-retrospective: optional

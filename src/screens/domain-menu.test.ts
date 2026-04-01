@@ -31,6 +31,7 @@ vi.mock('../utils/format.js', async (importOriginal) => {
 
 vi.mock('../router.js', () => ({
   showQuiz: vi.fn(),
+  showChallenge: vi.fn(),
   showHistory: vi.fn(),
   showBookmarks: vi.fn(),
   showStats: vi.fn(),
@@ -61,6 +62,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   vi.mocked(router.showQuiz).mockResolvedValue(null)
+  vi.mocked(router.showChallenge).mockResolvedValue(null)
   vi.mocked(router.showHistory).mockResolvedValue(undefined)
   vi.mocked(router.showBookmarks).mockResolvedValue(undefined)
   vi.mocked(router.showStats).mockResolvedValue(undefined)
@@ -73,31 +75,33 @@ beforeEach(() => {
 // buildDomainMenuChoices
 // ---------------------------------------------------------------------------
 describe('buildDomainMenuChoices', () => {
-  it('returns 8 items with a Separator before Back', () => {
+  it('returns 9 items with a Separator before Back', () => {
     const choices = buildDomainMenuChoices()
-    expect(choices).toHaveLength(8)
+    expect(choices).toHaveLength(9)
   })
 
-  it('names contain Play, History, Bookmarks, Stats, Archive, Delete, Back in order', () => {
+  it('names contain Play, Challenge, History, Bookmarks, Statistics, Archive, Delete, Back in order', () => {
     const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].name).toContain('Play')
-    expect(choices[1].name).toContain('History')
-    expect(choices[2].name).toContain('Bookmarks')
-    expect(choices[3].name).toContain('Stats')
-    expect(choices[4].name).toContain('Archive')
-    expect(choices[5].name).toContain('Delete')
-    expect(choices[7].name).toContain('Back')
+    expect(choices[1].name).toContain('Challenge')
+    expect(choices[2].name).toContain('History')
+    expect(choices[3].name).toContain('Bookmarks')
+    expect(choices[4].name).toContain('Statistics')
+    expect(choices[5].name).toContain('Archive')
+    expect(choices[6].name).toContain('Delete')
+    expect(choices[8].name).toContain('Back')
   })
 
-  it('action values are play, history, bookmarks, stats, archive, delete, back in order', () => {
+  it('action values are play, challenge, history, bookmarks, stats, archive, delete, back in order', () => {
     const choices = buildDomainMenuChoices() as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].value).toEqual({ action: 'play' })
-    expect(choices[1].value).toEqual({ action: 'history' })
-    expect(choices[2].value).toEqual({ action: 'bookmarks' })
-    expect(choices[3].value).toEqual({ action: 'stats' })
-    expect(choices[4].value).toEqual({ action: 'archive' })
-    expect(choices[5].value).toEqual({ action: 'delete' })
-    expect(choices[7].value).toEqual({ action: 'back' })
+    expect(choices[1].value).toEqual({ action: 'challenge' })
+    expect(choices[2].value).toEqual({ action: 'history' })
+    expect(choices[3].value).toEqual({ action: 'bookmarks' })
+    expect(choices[4].value).toEqual({ action: 'stats' })
+    expect(choices[5].value).toEqual({ action: 'archive' })
+    expect(choices[6].value).toEqual({ action: 'delete' })
+    expect(choices[8].value).toEqual({ action: 'back' })
   })
 })
 
@@ -113,6 +117,36 @@ describe('showDomainMenuScreen — Play', () => {
     await showDomainMenuScreen('typescript')
 
     expect(vi.mocked(router.showQuiz)).toHaveBeenCalledWith('typescript')
+  })
+})
+
+describe('showDomainMenuScreen — Challenge', () => {
+  it('calls router.showChallenge with the correct slug on challenge', async () => {
+    mockSelect
+      .mockResolvedValueOnce({ action: 'challenge' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    expect(vi.mocked(router.showChallenge)).toHaveBeenCalledWith('typescript')
+  })
+
+  it('renders returned challenge session data on the next menu render', async () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+    vi.mocked(router.showChallenge).mockResolvedValueOnce({
+      startingDifficulty: 2,
+      records: [makeSessionRecord({ scoreDelta: 12, answeredAt: '2026-03-29T10:00:03.000Z' })],
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'challenge' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map((call) => String(call[0])).join('\n')
+    expect(logged).toContain('Last Session')
+
+    consoleSpy.mockRestore()
   })
 })
 
@@ -401,6 +435,87 @@ describe('renderSessionSummary', () => {
 
     const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(logged).toContain('-8')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not render sprint result when all questions completed', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      {
+        records: [makeSessionRecord(), makeSessionRecord()],
+        startingDifficulty: 2,
+        sprintResult: { questionsAnswered: 2, totalQuestions: 2, timedOut: false },
+      },
+      2,
+    )
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Sprint result:')
+    consoleSpy.mockRestore()
+  })
+
+  it('renders red sprint result when timer expired', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      {
+        records: [makeSessionRecord()],
+        startingDifficulty: 2,
+        sprintResult: { questionsAnswered: 1, totalQuestions: 3, timedOut: true },
+      },
+      2,
+    )
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).toContain('Sprint result:')
+    expect(logged).toContain('Time expired — 1 / 3 questions answered')
+    consoleSpy.mockRestore()
+  })
+
+  it('does not render sprint result field for regular quiz sessions', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      { records: [makeSessionRecord()], startingDifficulty: 2 },
+      2,
+    )
+
+    const logged = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(logged).not.toContain('Sprint result:')
+    consoleSpy.mockRestore()
+  })
+
+  it('shows X / N format for questions answered in sprint sessions', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      {
+        records: [makeSessionRecord()],
+        startingDifficulty: 2,
+        sprintResult: { questionsAnswered: 1, totalQuestions: 5, timedOut: true },
+      },
+      2,
+    )
+
+    const calls = consoleSpy.mock.calls.map((c) => String(c[0]))
+    const answeredLine = calls.find((line) => line.includes('Questions answered:'))
+    expect(answeredLine).toContain('1 / 5')
+    consoleSpy.mockRestore()
+  })
+
+  it('shows plain count for questions answered in regular quiz sessions', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    renderSessionSummary(
+      { records: [makeSessionRecord(), makeSessionRecord(), makeSessionRecord()], startingDifficulty: 2 },
+      2,
+    )
+
+    const calls = consoleSpy.mock.calls.map((c) => String(c[0]))
+    const answeredLine = calls.find((line) => line.includes('Questions answered:'))
+    expect(answeredLine).toContain('3')
+    expect(answeredLine).not.toContain('/')
     consoleSpy.mockRestore()
   })
 })

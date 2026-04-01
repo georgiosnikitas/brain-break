@@ -183,6 +183,32 @@ export async function generateQuestion(
   }
 }
 
+export async function preloadQuestions(
+  count: number,
+  domain: string,
+  difficultyLevel: number,
+  existingHashes: Set<string>,
+  settings: SettingsFile,
+  onProgress?: (generated: number, total: number) => void,
+): Promise<Result<Question[]>> {
+  const runningHashes = new Set(existingHashes)
+  const questions: Question[] = []
+  const previousQuestions: string[] = []
+
+  for (let i = 0; i < count; i++) {
+    const result = await generateQuestion(domain, difficultyLevel, runningHashes, previousQuestions, settings)
+    if (!result.ok) {
+      return { ok: false, error: result.error }
+    }
+    questions.push(result.data)
+    runningHashes.add(hashQuestion(result.data.question))
+    previousQuestions.push(result.data.question)
+    onProgress?.(i + 1, count)
+  }
+
+  return { ok: true, data: questions }
+}
+
 export async function generateMotivationalMessage(
   trigger: MotivationalTrigger,
   settings?: SettingsFile,

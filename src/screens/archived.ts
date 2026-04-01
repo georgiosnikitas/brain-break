@@ -31,6 +31,8 @@ export function buildArchivedChoices(
 
   if (entries.length > 0) {
     choices.push(new Separator())
+  } else {
+    choices.push(new Separator(dim('No archived domains.')), new Separator())
   }
 
   choices.push({ name: '←  Back', value: { action: 'back' } })
@@ -71,24 +73,10 @@ async function handleUnarchiveAction(slug: string): Promise<void> {
   }
 }
 
-async function showEmptyArchivedMessage(): Promise<void> {
-  console.log(header('🗄  Archived domains'))
-  console.log(dim('No archived domains.'))
-  try {
-    await select<ArchivedAction>({
-      message: 'Navigation',
-      choices: [{ name: '←  Back', value: { action: 'back' as const } }],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (!(err instanceof ExitPromptError)) throw err
-  }
-}
-
 async function promptArchivedSelection(entries: HomeEntry[]): Promise<ArchivedAction | null> {
   try {
     return await select<ArchivedAction>({
-      message: '🗄  Archived domains',
+      message: 'Choose a domain:',
       choices: buildArchivedChoices(entries),
       pageSize: 15,
       theme: menuTheme,
@@ -103,12 +91,15 @@ export async function showArchivedScreen(): Promise<void> {
   let browsing = true
   while (browsing) {
     clearAndBanner()
+    console.log(header('🗄  Archived domains'))
     const listResult = await listDomains()
     const archivedEntries = await loadArchivedEntries(listResult)
 
     if (archivedEntries.length === 0) {
-      await showEmptyArchivedMessage()
-      browsing = false
+      const answer = await promptArchivedSelection(archivedEntries)
+      if (answer === null || answer.action === 'back') {
+        browsing = false
+      }
       continue
     }
 

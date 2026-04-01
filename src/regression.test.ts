@@ -193,6 +193,53 @@ describe('scoring boundaries — difficulty and streak edge cases', () => {
 })
 
 // ===========================================================================
+// 2b. Timeout scoring — forced slow tier regression
+// ===========================================================================
+describe('timeout scoring — forced slow tier penalty', () => {
+  const thresholds = { fastMs: 2_000, slowMs: 8_000 }
+
+  it('timeout at fast elapsed time still gets slow+incorrect penalty when forced to slowMs', () => {
+    const meta = { ...defaultDomainFile().meta, difficultyLevel: 2 as DifficultyLevel }
+
+    // Simulate the forced-slow-tier pattern used in autoSubmitTimeoutQuestion:
+    // actual elapsed = 3_000ms (would be "normal"), but we force Math.max(3_000, 8_000)
+    const forcedTime = Math.max(3_000, thresholds.slowMs)
+    const { updatedMeta, scoreDelta, speedTier } = applyAnswer(meta, false, forcedTime, thresholds)
+
+    expect(speedTier).toBe('slow')
+    expect(scoreDelta).toBe(-40) // basePts(20) * slow+incorrect multiplier(-2)
+    expect(updatedMeta.score).toBe(-40)
+  })
+
+  it('timeout at already-slow elapsed time uses actual time unchanged', () => {
+    const meta = { ...defaultDomainFile().meta, difficultyLevel: 3 as DifficultyLevel }
+
+    // Actual elapsed = 15_000ms (already >= slowMs), Math.max(15_000, 8_000) = 15_000
+    const forcedTime = Math.max(15_000, thresholds.slowMs)
+    const { speedTier, scoreDelta } = applyAnswer(meta, false, forcedTime, thresholds)
+
+    expect(speedTier).toBe('slow')
+    expect(scoreDelta).toBe(-60) // basePts(30) * slow+incorrect(-2)
+  })
+
+  it('mixed session with timeout produces correct accumulated state', () => {
+    let meta = { ...defaultDomainFile().meta, difficultyLevel: 2 as DifficultyLevel }
+
+    // Q1: correct fast → +40
+    meta = applyAnswer(meta, true, 1_500, thresholds).updatedMeta
+    // Q2: correct fast → +40
+    meta = applyAnswer(meta, true, 1_500, thresholds).updatedMeta
+    // Q3: timeout (forced slow) → -40 (breaks correct streak at 2, starts incorrect)
+    meta = applyAnswer(meta, false, Math.max(3_000, thresholds.slowMs), thresholds).updatedMeta
+
+    expect(meta.score).toBe(40) // 40+40-40
+    expect(meta.streakCount).toBe(1)
+    expect(meta.streakType).toBe('incorrect')
+    expect(meta.difficultyLevel).toBe(2) // no promotion (streak broken before 3)
+  })
+})
+
+// ===========================================================================
 // 3. Stats computation edge-case regression
 // ===========================================================================
 describe('stats computations — edge-case regression', () => {

@@ -21,7 +21,7 @@ export async function showCreateDomainScreen(): Promise<void> {
       validate: validateDomainName,
     })).trim()
 
-    const difficulty = await select<number>({
+    const difficulty = await select<number | 'back'>({
       message: 'Starting difficulty:',
       choices: [
         { name: '1 — Beginner', value: 1 },
@@ -29,10 +29,14 @@ export async function showCreateDomainScreen(): Promise<void> {
         { name: '3 — Intermediate', value: 3 },
         { name: '4 — Advanced', value: 4 },
         { name: '5 — Expert', value: 5 },
+        new Separator(),
+        { name: '←  Back', value: 'back' as const },
       ],
       default: 2,
       theme: menuTheme,
     })
+
+    if (difficulty === 'back') return
 
     const nav = await select<'save' | 'back'>({
       message: 'Navigation',
