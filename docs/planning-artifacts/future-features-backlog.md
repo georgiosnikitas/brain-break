@@ -154,31 +154,9 @@ Google Drive appears as a single menu item (like AI Provider) that opens a sub-s
 
 ---
 
-### ~~3. Question Bookmarking / Favorites~~ ✅ Promoted to MVP
-
-> **Promoted:** 2026-03-30 — added as PRD Feature 16, Epic 10, FR41–FR43.
-
-~~**Description:** Let users flag questions they want to revisit. "Star this question" adds it to a bookmarked list accessible from the domain sub-menu.~~
-
-~~**KPIs targeted:** Session completion rate, Knowledge reinforcement~~
-
-~~**Complexity:** Small~~
-
----
-
 ## Priority: Low
 
-### 4. Challenge Mode / Timed Sprint
-
-**Description:** A mode where the user gets N questions in a fixed time window (e.g., 10 questions in 3 minutes). Adds a competitive edge and a different engagement loop from the default exploratory mode.
-
-**KPIs targeted:** Daily sessions per active user, Questions answered per session
-
-**Complexity:** Medium
-
----
-
-### 5. Streak & Achievement Badges
+### 3. Streak & Achievement Badges
 
 **Description:** Surface achievements based on existing tracked data: "7-day streak", "10 correct in a row", "100 questions in Greek Mythology". Habit formation accelerator.
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import chalk from 'chalk'
 import {
   success,
   error,
@@ -18,6 +19,12 @@ import {
   getGradientWidth,
   gradientBg,
   gradientShadow,
+  gradientText,
+  typewriterPrint,
+  cancellableSleep,
+  lerpColor,
+  CYAN,
+  MAGENTA,
   renderQuestionDetail,
 } from './format.js'
 import type { QuestionRecord } from '../domain/schema.js'
@@ -247,6 +254,160 @@ describe('gradientShadow', () => {
   it('returns a string when called', () => {
     const result = gradientShadow(10)
     expect(typeof result).toBe('string')
+  })
+})
+
+describe('lerpColor', () => {
+  it('returns CYAN at t=0', () => {
+    expect(lerpColor(0)).toEqual(CYAN)
+  })
+
+  it('returns MAGENTA at t=1', () => {
+    expect(lerpColor(1)).toEqual(MAGENTA)
+  })
+
+  it('returns a midpoint color at t=0.5', () => {
+    const mid = lerpColor(0.5)
+    expect(mid.r).toBe(Math.round((CYAN.r + MAGENTA.r) / 2))
+    expect(mid.g).toBe(Math.round((CYAN.g + MAGENTA.g) / 2))
+    expect(mid.b).toBe(Math.round((CYAN.b + MAGENTA.b) / 2))
+  })
+})
+
+describe('cancellableSleep', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('resolves after the specified time', async () => {
+    vi.useFakeTimers()
+    const { promise } = cancellableSleep(100)
+    vi.advanceTimersByTime(100)
+    await expect(promise).resolves.toBeUndefined()
+  })
+
+  it('cancel keeps the promise pending after timers advance', async () => {
+    vi.useFakeTimers()
+    const { promise, cancel } = cancellableSleep(100)
+    let settled = false
+
+    void promise.then(() => {
+      settled = true
+    })
+
+    cancel()
+    await vi.runAllTimersAsync()
+
+    expect(settled).toBe(false)
+  })
+})
+
+describe('gradientText', () => {
+  it('returns a string containing the input text', () => {
+    expect(gradientText('Hello', 0, 5)).toContain('Hello')
+  })
+
+  it('handles totalRows=1 without division by zero', () => {
+    expect(gradientText('X', 0, 1)).toContain('X')
+  })
+
+  it('uses truecolor when chalk.level >= 3', () => {
+    const origLevel = chalk.level
+    try {
+      chalk.level = 3
+      const result = gradientText('Hi', 0, 3)
+      expect(result).toContain('Hi')
+    } finally {
+      chalk.level = origLevel
+    }
+  })
+})
+
+describe('typewriterPrint', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('writes characters and a trailing newline to stdout', async () => {
+    vi.useFakeTimers()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+
+    const p = typewriterPrint('ab')
+    await vi.runAllTimersAsync()
+    await p
+
+    const written = writeSpy.mock.calls.map((c) => String(c[0])).join('')
+    expect(written).toContain('a')
+    expect(written).toContain('b')
+    expect(written).toContain('\n')
+    writeSpy.mockRestore()
+  })
+
+  it('works for empty string (only cursor blink and newline)', async () => {
+    vi.useFakeTimers()
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+
+    const p = typewriterPrint('')
+    await vi.runAllTimersAsync()
+    await p
+
+    const written = writeSpy.mock.calls.map((c) => String(c[0])).join('')
+    expect(written).toContain('\n')
+    writeSpy.mockRestore()
+  })
+})
+
+describe('gradientBg — truecolor branch', () => {
+  let origLevel: typeof chalk.level
+
+  beforeEach(() => {
+    origLevel = chalk.level
+    chalk.level = 3
+  })
+
+  afterEach(() => {
+    chalk.level = origLevel
+  })
+
+  it('returns a string containing the input text', () => {
+    const result = gradientBg('Test', 20)
+    expect(result).toContain('Test')
+  })
+
+  it('handles empty text', () => {
+    const result = gradientBg('', 10)
+    expect(typeof result).toBe('string')
+  })
+
+  it('handles width equal to text length (no padding)', () => {
+    const result = gradientBg('ABCDE', 5)
+    expect(result).toContain('ABCDE')
+  })
+})
+
+describe('gradientShadow — truecolor branch', () => {
+  let origLevel: typeof chalk.level
+
+  beforeEach(() => {
+    origLevel = chalk.level
+    chalk.level = 3
+  })
+
+  afterEach(() => {
+    chalk.level = origLevel
+  })
+
+  it('returns a non-empty string containing shadow characters', () => {
+    const result = gradientShadow(10)
+    expect(result.length).toBeGreaterThan(0)
+    const stripped = result.replaceAll(/\x1B\[[0-9;]*m/g, '')
+    expect(stripped).toContain('▀')
+  })
+
+  it('handles width=1', () => {
+    const result = gradientShadow(1)
+    const stripped = result.replaceAll(/\x1B\[[0-9;]*m/g, '')
+    expect(stripped).toBe('▀')
   })
 })
 
