@@ -108,14 +108,16 @@ describe('showCreateDomainScreen', () => {
     const existing = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, score: 999 } }
     await writeDomain('my-topic', existing)
 
-    mockInput.mockResolvedValueOnce('my-topic')
+    mockInput
+      .mockResolvedValueOnce('my-topic')     // first attempt — duplicate
+      .mockResolvedValueOnce('other-topic')  // second attempt — unique
     mockSelect.mockResolvedValueOnce(2)      // difficulty
     mockSelect.mockResolvedValueOnce('save') // nav
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showCreateDomainScreen()
 
-    expect(warnSpy).toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('A domain named "my-topic" already exists.'))
     warnSpy.mockRestore()
 
     // Existing data must be preserved — score still 999, not reset to 0
@@ -123,27 +125,58 @@ describe('showCreateDomainScreen', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.meta.score).toBe(999)
+
+    // Second unique domain should have been created
+    const result2 = await readDomain('other-topic')
+    expect(result2.ok).toBe(true)
   })
 
   it('does not create a file when slug matches an archived domain', async () => {
     const archived = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, archived: true } }
     await writeDomain('archived-topic', archived)
 
-    mockInput.mockResolvedValueOnce('archived-topic')
+    mockInput
+      .mockResolvedValueOnce('archived-topic')  // first attempt — archived duplicate
+      .mockResolvedValueOnce('fresh-topic')     // second attempt — unique
     mockSelect.mockResolvedValueOnce(2)      // difficulty
     mockSelect.mockResolvedValueOnce('save') // nav
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await showCreateDomainScreen()
 
-    expect(warnSpy).toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('A domain named "archived-topic" already exists in your archived domains.'))
     warnSpy.mockRestore()
 
-    // listDomains should still show exactly one entry (no duplicate written)
+    // listDomains should still show exactly one entry for archived slug (no duplicate written)
     const list = await listDomains()
     expect(list.ok).toBe(true)
     if (!list.ok) return
     expect(list.data.filter((e) => e.slug === 'archived-topic')).toHaveLength(1)
+
+    // Second unique domain should have been created
+    const result = await readDomain('fresh-topic')
+    expect(result.ok).toBe(true)
+  })
+
+  it('detects duplicate via slugified comparison', async () => {
+    // Pre-create with slug "python-3"
+    await writeDomain('python-3', defaultDomainFile())
+
+    mockInput
+      .mockResolvedValueOnce('Python 3')       // slugifies to "python-3" — duplicate
+      .mockResolvedValueOnce('python-basics')   // unique
+    mockSelect.mockResolvedValueOnce(2)      // difficulty
+    mockSelect.mockResolvedValueOnce('save') // nav
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await showCreateDomainScreen()
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('A domain named "Python 3" already exists.'))
+    warnSpy.mockRestore()
+
+    // Unique domain should have been created
+    const result = await readDomain('python-basics')
+    expect(result.ok).toBe(true)
   })
 
   it('logs an error and does not write when listDomains fails', async () => {

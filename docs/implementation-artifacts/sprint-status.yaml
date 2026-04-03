@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-04-01
+last_updated: 2026-04-03
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -63,6 +63,7 @@ development_status:
   2-5-domain-sub-menu: done
   2-6-delete-domain: done
   2-7-domain-starting-difficulty: done
+  2-8-duplicate-domain-validation: done
   epic-2-retrospective: optional
 
   # Epic 3: AI-Powered Adaptive Quiz
@@ -129,9 +130,9 @@ development_status:
   epic-8-retrospective: optional
 
   # Epic 11: Challenge Mode (Sprint)
-  epic-11: in-progress
+  epic-11: done
   11-1-sprint-setup-screen: done
   11-2-question-preloading: done
   11-3-sprint-execution-loop: done
-  11-4-sprint-termination-and-history: in-progress
+  11-4-sprint-termination-and-history: done
   epic-11-retrospective: optional

@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-04-01'
+lastEdited: '2026-04-03'
 status: 'complete'
 editHistory:
+  - date: '2026-04-03'
+    changes: 'Duplicate domain name validation added: FR47 added to Requirements Inventory (slugified comparison against active and archived domains with context-specific messages). FR Coverage Map updated (FR47 → Epic 2). Epic 2 FRs covered updated to include FR47. Story 2.2 duplicate AC replaced — previously a single vague AC ("informs me the domain already exists and returns to home screen"); now two explicit ACs: active duplicate shows "already exists" and returns to name prompt; archived duplicate shows "already exists in your archived domains" and returns to name prompt. Both cases keep the user in the create flow. Reflects PRD edit 2026-04-03 (Feature 1 duplicate-domain validation).'
   - date: '2026-04-01'
     changes: 'Label alignment pass (synced with PRD 2026-04-01 update): Domain sub-menu actions renamed from "View History" / "View Bookmarks" / "View Stats" to "History" / "Bookmarks" / "Statistics". Home screen "View archived domains" renamed to "Archived domains". Settings "Question Language" shortened to "Language". Sprint setup "Time budget" / "Question count" renamed to "Sprint duration" / "Sprint size". FR8/FR35 post-answer option order corrected to Explain → Bookmark → Next → Back. FRs updated: FR3, FR5, FR8, FR15, FR35, FR39, FR43, FR44. FR Coverage Map updated. Epic descriptions updated: Epic 2, 5, 10, 11. Story ACs updated: 2.1, 2.4, 2.5, 4.1, 4.2, 5.2, 7.5, 9.x session summary, 10.4, 11.1, 11.3. Historical editHistory entries preserved as-is.'
   - date: '2026-03-31'
@@ -152,6 +154,8 @@ FR45: Challenge Mode sprint execution — the sprint starts immediately after al
 
 FR46: Challenge Mode sprint termination and history — the sprint ends on whichever condition occurs first: (a) all N questions answered — sprint completes normally; (b) timer reaches zero while a question is displayed — the unanswered question is auto-submitted as incorrect using the slow + incorrect scoring multiplier; (c) timer reaches zero while the post-answer feedback is displayed — the sprint ends immediately after the current feedback; (d) user selects Back — sprint exits immediately. Only answered questions (including auto-submitted timed-out questions) are recorded in domain history with all FR11 fields. Preloaded questions that were never displayed to the user are discarded — their hashes are not added to the deduplication store. Score and difficulty level persist to the domain file after sprint termination. After sprint termination, the user is returned to the domain sub-menu and the FR39 session summary block is displayed on first render, including the sprint-specific Sprint result field (field 9 of FR39).
 
+FR47: When creating a new domain, after the user enters a name the app validates uniqueness by comparing the slugified form against all existing domain files (both active and archived). If a matching active domain exists, the app displays: "A domain named '[name]' already exists." and returns the user to the name input prompt. If a matching archived domain exists, the app displays: "A domain named '[name]' already exists in your archived domains." and returns the user to the name input prompt. Creation only proceeds when no duplicate is found.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -240,6 +244,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR44 | Epic 11 | Challenge action in domain sub-menu + sprint setup screen (sprint duration / sprint size presets) + question preloading |
 | FR45 | Epic 11 | Sprint execution — visible countdown timer, limited post-answer nav (Next/Back only), per-question speed tier |
 | FR46 | Epic 11 | Sprint termination (four conditions), auto-submit on timer expiry, history rules (answered only), sprint result in session summary |
+| FR47 | Epic 2 | Duplicate domain name validation — slugified comparison against active and archived domains with context-specific messages |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -260,7 +265,7 @@ Users can clone the repo, install dependencies, and run `tsx src/index.ts` to re
 
 ### Epic 2: Domain Management
 Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, History, Statistics, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
-**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24, FR47
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
 ### Epic 3: AI-Powered Adaptive Quiz
@@ -605,9 +610,17 @@ So that I can immediately start getting quiz questions on any topic I choose.
 **When** I press Ctrl+C  
 **Then** I return to the home screen without creating a domain  
 
-**Given** I type a domain name that slugifies to an already-existing slug  
-**When** I confirm creation  
-**Then** the app informs me the domain already exists and returns to the home screen without creating a duplicate file  
+**Given** I type a domain name that slugifies to the same slug as an existing **active** domain (e.g. "Python 3" when `python-3.json` already exists as active)  
+**When** I press Enter after entering the name  
+**Then** the app displays: *"A domain named '[name]' already exists."*  
+**And** the user is returned to the `New domain name:` input prompt — the create flow is not exited  
+**And** no domain file is created  
+
+**Given** I type a domain name that slugifies to the same slug as an existing **archived** domain  
+**When** I press Enter after entering the name  
+**Then** the app displays: *"A domain named '[name]' already exists in your archived domains."*  
+**And** the user is returned to the `New domain name:` input prompt — the create flow is not exited  
+**And** no domain file is created  
 
 **Given** I am creating a domain  
 **When** I leave the name field empty and confirm  

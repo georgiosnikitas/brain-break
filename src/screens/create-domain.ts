@@ -13,13 +13,39 @@ export function validateDomainName(name: string): string | true {
   return true
 }
 
-export async function showCreateDomainScreen(): Promise<void> {
-  clearAndBanner()
-  try {
+function duplicateDomainMessage(name: string, isArchived: boolean): string {
+  return isArchived
+    ? `A domain named "${name}" already exists in your archived domains.`
+    : `A domain named "${name}" already exists.`
+}
+
+async function promptForUniqueDomainSlug(): Promise<string | null> {
+  while (true) {
     const name = (await input({
       message: 'New domain name:',
       validate: validateDomainName,
     })).trim()
+
+    const slug = slugify(name)
+
+    const listResult = await listDomains()
+    if (!listResult.ok) {
+      console.error(errorFmt(`Failed to check existing domains: ${listResult.error}`))
+      return null
+    }
+
+    const match = listResult.data.find((entry) => entry.slug === slug)
+    if (!match) return slug
+
+    console.warn(warn(duplicateDomainMessage(name, !match.corrupted && match.meta.archived)))
+  }
+}
+
+export async function showCreateDomainScreen(): Promise<void> {
+  clearAndBanner()
+  try {
+    const slug = await promptForUniqueDomainSlug()
+    if (!slug) return
 
     const difficulty = await select<number | 'back'>({
       message: 'Starting difficulty:',
@@ -49,19 +75,6 @@ export async function showCreateDomainScreen(): Promise<void> {
     })
 
     if (nav === 'back') return
-
-    const slug = slugify(name)
-
-    const listResult = await listDomains()
-    if (!listResult.ok) {
-      console.error(errorFmt(`Failed to check existing domains: ${listResult.error}`))
-      return
-    }
-    const exists = listResult.data.some((e) => e.slug === slug)
-    if (exists) {
-      console.warn(warn(`Domain "${slug}" already exists.`))
-      return
-    }
 
     const writeResult = await writeDomain(slug, defaultDomainFile(difficulty))
     if (!writeResult.ok) {
