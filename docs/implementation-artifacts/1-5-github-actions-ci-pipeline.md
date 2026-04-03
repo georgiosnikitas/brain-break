@@ -21,13 +21,13 @@ So that regressions are caught automatically before they reach the main branch.
 - [x] CI runs `npm run typecheck` (`tsc --noEmit`)
 - [x] CI runs `npm test` (`vitest run`)
 - [x] Workflow fails if either command exits with a non-zero code (default GitHub Actions behaviour)
-- [x] Node.js version matches project `engines` requirement (`>=25.8.0`)
+- [x] Node.js version matches project `engines` requirement (`>=22.0.0`)
 
 ## Tasks
 
 - [x] 1. Create `.github/workflows/ci.yml`
   - [x] 1.1 Trigger on `push` and `pull_request` for all branches
-  - [x] 1.2 Use `actions/setup-node@v4` with Node 25 and npm cache
+  - [x] 1.2 Use `actions/setup-node@v4` with Node 22 and npm cache
   - [x] 1.3 Steps: checkout → install (`npm ci`) → typecheck → test
 
 ## File List
@@ -38,7 +38,7 @@ So that regressions are caught automatically before they reach the main branch.
 
 ### Dev Notes
 
-- Node 25 chosen to satisfy `"engines": { "node": ">=25.8.0" }` in `package.json`
+- Node 22 chosen to match `"engines": { "node": ">=22.0.0" }` in `package.json`
 - `npm ci` used (not `npm install`) for reproducible installs from `package-lock.json`
 - No matrix needed — single Node version, single OS target
 

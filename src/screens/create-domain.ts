@@ -56,7 +56,7 @@ export async function showCreateDomainScreen(): Promise<void> {
         { name: '4 — Advanced', value: 4 },
         { name: '5 — Expert', value: 5 },
         new Separator(),
-        { name: '←  Back', value: 'back' as const },
+        { name: '↩️  Back', value: 'back' as const },
       ],
       default: 2,
       theme: menuTheme,
@@ -68,8 +68,8 @@ export async function showCreateDomainScreen(): Promise<void> {
       message: 'Navigation',
       choices: [
         new Separator(),
-        { name: '💾  Save', value: 'save' as const },
-        { name: '←  Back', value: 'back' as const },
+        { name: '💾 Save', value: 'save' as const },
+        { name: '↩️  Back', value: 'back' as const },
       ],
       theme: menuTheme,
     })

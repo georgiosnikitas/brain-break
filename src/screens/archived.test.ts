@@ -310,7 +310,7 @@ describe('showArchivedScreen', () => {
     expect(mockSelect).toHaveBeenCalledTimes(1)
     const choices = mockSelect.mock.calls[0][0].choices
     expect(choices).toHaveLength(3)
-    expect(choices[2]).toEqual({ name: '←  Back', value: { action: 'back' } })
+    expect(choices[2]).toEqual({ name: '↩️  Back', value: { action: 'back' } })
     logSpy.mockRestore()
   })
 })

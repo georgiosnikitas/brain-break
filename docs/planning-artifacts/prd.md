@@ -20,8 +20,14 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-04-03'
+lastEdited: '2026-04-04'
 editHistory:
+  - date: '2026-04-04'
+    changes: 'Feature 8 (Settings) updated: added ASCII Art Milestone setting with three options — Instant (0 questions), Quick (10 questions), Classic (100 questions) — positioned before the Welcome & Exit Screen toggle; default is Classic (100). Feature 18 (ASCII Art) updated: all hardcoded 100-answer references replaced with configurable threshold from settings; progress bar and percentage capped at 100% regardless of correctCount exceeding the threshold. FR49 added (ASCII Art Milestone setting). Settings persistence updated with asciiArtMilestone field. Feature 1 defaults updated.'
+  - date: '2026-04-03'
+    changes: 'Feature 18 (ASCII Art) updated with milestone unlock gating: ASCII art is locked behind 100 cumulative correct answers per domain. The domain sub-menu ASCII Art label now shows a cyan-to-magenta gradient progress bar with percentage when locked (e.g., "ASCII Art [████░░░░░░] 42%") and a sparkle indicator when unlocked ("ASCII Art ✨"). The ASCII Art screen displays a motivational message with a larger gradient progress bar when locked, and renders the FIGlet art as before when unlocked. FR3 updated (ASCII Art label dynamic with unlock status). FR48 updated (milestone gating, progress bar, locked-screen messaging). Feature 1 domain sub-menu updated. Feature 18 rewritten.'
+  - date: '2026-04-03'
+    changes: 'Feature 18 (ASCII Art) added: a new domain sub-menu action that renders the domain name locally using the `figlet` npm package, with row-by-row cyan-to-magenta gradient coloring. The screen shows a header ("ASCII Art — <domain>"), the colored art, a `🔄 Regenerate` choice, a separator, and a `←  Back` option. Regenerate rerenders immediately with a different curated FIGlet font. Rendering is local and instantaneous with no AI provider dependency. Product Scope updated from 17 to 18 capabilities. Feature 1 domain sub-menu updated. FR preamble updated.'
   - date: '2026-04-03'
     changes: 'Duplicate domain name validation added to Feature 1 create-domain flow: after entering a name the app checks the slugified form against all active and archived domain files. Active duplicates show "A domain named [name] already exists." Archived duplicates show "A domain named [name] already exists in your archived domains." User is returned to the name prompt in both cases. User Journeys Onboarding updated with duplicate-handling branch. Implementation Decisions domain file naming updated with slug-based duplicate validation rule. MVP Acceptance Criteria updated with item 7 covering duplicate detection.'
   - date: '2026-04-01'
@@ -39,7 +45,7 @@ editHistory:
   - date: '2026-03-25'
     changes: 'Prose review pass: fixed one hyphenation issue ("fullstack" → "full-stack") and one contradictory phrase in Feature 2 ("factually wrong correct answer" → "factually incorrect answer marked as correct").'
   - date: '2026-03-25'
-    changes: 'Source code alignment pass: (1) FR preamble corrected from 10 to 12 features. (2) Google Gemini env var corrected from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY (2 occurrences: Project-Type Requirements and Feature 8 First-Launch Provider Setup). (3) Runtime updated from "no minimum version — use current LTS" to Node.js v25.8.0 matching engines.node in package.json. (4) Feature 1 home screen action list updated — added "settings" between "view archived domains" and "buy me a coffee" to match implemented home screen menu order. (5) Feature 8 default tone corrected from Normal to Natural. (6) User Journeys Onboarding rewritten — eliminated confusing re-description of provider selection as occurring on the home screen; now accurately describes the sequential flow: Provider Setup → Welcome Screen → Home Screen with domain list. (7) Provider Setup validation updated — all providers now described as making a real one-shot API test call (testProviderConnection) rather than only checking env var presence.'
+    changes: 'Source code alignment pass: (1) FR preamble corrected from 10 to 12 features. (2) Google Gemini env var corrected from GOOGLE_API_KEY to GOOGLE_GENERATIVE_AI_API_KEY (2 occurrences: Project-Type Requirements and Feature 8 First-Launch Provider Setup). (3) Runtime updated from "no minimum version — use current LTS" to Node.js >=22.0.0 matching engines.node in package.json. (4) Feature 1 home screen action list updated — added "settings" between "view archived domains" and "buy me a coffee" to match implemented home screen menu order. (5) Feature 8 default tone corrected from Normal to Natural. (6) User Journeys Onboarding rewritten — eliminated confusing re-description of provider selection as occurring on the home screen; now accurately describes the sequential flow: Provider Setup → Welcome Screen → Home Screen with domain list. (7) Provider Setup validation updated — all providers now described as making a real one-shot API test call (testProviderConnection) rather than only checking env var presence.'
   - date: '2026-03-25'
     changes: 'Feature 7 (View Stats) updated: starting difficulty level added to the stats dashboard — displayed alongside current difficulty to show progression. Reflects GitHub issue #46.'
   - date: '2026-03-25'
@@ -136,7 +142,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 17 capabilities define the complete MVP:
+The following 18 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -155,6 +161,7 @@ The following 17 capabilities define the complete MVP:
 15. Exit Message
 16. Question Bookmarking
 17. Challenge Mode (Sprint)
+18. ASCII Art (Milestone Unlock)
 
 ### Out of Scope
 
@@ -280,7 +287,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Project-Type Requirements
 
-- **Runtime:** Node.js v25.8.0 (Current release — developer tool, single-user, no stability concern)
+- **Runtime:** Node.js >=22.0.0 (per `package.json` engines field)
 - **Interface:** Terminal only — no web UI, no GUI, no browser-based components
 - **AI Integration:** The app supports 5 AI providers, selectable by the user at first launch or in Settings:
   - **GitHub Copilot SDK** — uses the user’s existing Copilot credentials (no API key required)
@@ -300,7 +307,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the LLM constructs the prompt and returns a **JSON structured response** with the following schema: question text, answer options (A–D), correct answer, difficulty level, and speed tier time thresholds (fast / normal / slow in ms)
 - **Language and tone injection:** Every AI prompt (questions, motivational messages, answer explanations) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-4o-mini", "anthropicModel": "claude-sonnet-4-20250514", "geminiModel": "gemini-2.0-flash", "showWelcome": true }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `copilot` | `openai` | `anthropic` | `gemini` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-4o-mini`), `anthropicModel` (string, default `claude-sonnet-4-20250514`), `geminiModel` (string, default `gemini-2.0-flash`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama3`), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-4o-mini", "anthropicModel": "claude-sonnet-4-20250514", "geminiModel": "gemini-2.0-flash", "asciiArtMilestone": 100, "showWelcome": true }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Answer verification mechanism:** After generating a question, a separate verification prompt asks the AI to independently determine the correct answer for the same question (without revealing the original `correctAnswer`). If the verification answer disagrees with the generated answer, the question is discarded and regenerated once. The verification prompt uses the active language/tone settings. This is a fail-open mechanism: verification errors (network, parse, schema mismatch) silently pass through to avoid blocking the quiz experience
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`). Duplicate validation compares the slugified form against existing domain files — ensuring visually distinct inputs that normalize to the same slug (e.g. `Python 3` and `python-3`) are detected as duplicates
@@ -309,7 +316,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 17 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 18 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -327,13 +334,14 @@ The following 17 features define the complete MVP capability set. Each feature i
 **Domain sub-menu (Level 2)**
 
 - Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
-- The domain sub-menu provides the following actions: **Play**, **Challenge**, **History**, **Bookmarks**, **Statistics**, **Archive**, **Delete**, and **Back**
+- The domain sub-menu provides the following actions: **Play**, **Challenge**, **History**, **Bookmarks**, **Statistics**, **ASCII Art**, **Archive**, **Delete**, and **Back**
+- The **ASCII Art** label dynamically reflects the domain's unlock status: when the domain has fewer correct answers than the configured ASCII Art Milestone threshold (Feature 8, default: 100), the label shows a cyan-to-magenta gradient progress bar with percentage (e.g., `ASCII Art [████░░░░░░] 42%`); when the domain has reached the threshold, the label shows `ASCII Art ✨`
 - Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — the message is AI-generated using the active language and tone of voice settings, then the quiz begins
 - After a quiz or challenge sprint session ends, the user is returned to the domain sub-menu (not the home screen); on this first re-render, a session summary block is displayed between the domain header and the action menu (see Feature 14 — Session Summary)
 - Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
 - Selecting **Delete** prompts the user with a blocking confirmation dialog (*"Delete '[domain]' permanently? This cannot be undone."*) — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu
 - Selecting **Back** returns the user to the home screen
-- Selecting **History**, **Bookmarks**, or **Statistics** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
+- Selecting **History**, **Bookmarks**, **Statistics**, or **ASCII Art** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
 - Selecting **Challenge** opens the sprint setup screen (see Feature 17 — Challenge Mode)
 
 **Archived domains**
@@ -451,10 +459,10 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure four global preferences: **AI Provider**, **Language**, **Tone of Voice**, and **Welcome & Exit Screen** toggle
+- Selecting Settings opens a settings screen where the user can configure five global preferences: **AI Provider**, **Language**, **Tone of Voice**, **ASCII Art Milestone**, and **Welcome & Exit Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
-- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, showWelcome = `true`
+- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, asciiArtMilestone = `100`, showWelcome = `true`
 
 **First-Launch Provider Setup**
 
@@ -494,6 +502,15 @@ User can view a summary dashboard for the active domain:
   - **Robot** — terse, mechanical, emotionless phrasing
   - **Pirate** — pirate vernacular throughout, nautical metaphors, "Arr" as appropriate
 - The selected tone is injected into every AI prompt as a voice instruction
+
+**ASCII Art Milestone**
+- A 🎨 ASCII Art Milestone selector (displayed as the currently active option name) controls how many cumulative correct answers are required to unlock the ASCII Art feature per domain
+- Three options via arrow key navigation:
+  - **Instant (0 questions)** — ASCII Art is unlocked from the start for all domains
+  - **Quick (10 questions)** — unlocks after 10 cumulative correct answers per domain
+  - **Classic (100 questions)** — unlocks after 100 cumulative correct answers per domain (default)
+- The setting is global — it applies to all domains; changing the threshold is retroactive (domains that already meet the new threshold immediately unlock, domains that no longer meet it re-lock)
+- The selected value is stored as `asciiArtMilestone` (number: `0` | `10` | `100`) in `settings.json`
 
 **Welcome & Exit Screen**
 - A 🎬 Welcome & Exit screen toggle (displayed as ON/OFF) controls whether the branded Welcome Screen (Feature 11) is shown on launch and whether the branded Exit Message screen (Feature 15) is shown on explicit home-screen Exit
@@ -614,7 +631,7 @@ All interactive menus throughout the application use full-row background highlig
   - **History (Feature 6):** Each question in history navigation includes **Bookmark** (or **Remove bookmark** if already bookmarked) in the navigation controls. The option persists through explanation and micro-lesson states
   - **Bookmarks (this feature):** Each bookmarked question includes **Remove bookmark** in the navigation controls
 - Toggling a bookmark updates the `bookmarked` field on the question record in the domain JSON file immediately — the change persists across sessions
-- The domain sub-menu includes a **Bookmarks** action positioned after History: Play, History, **Bookmarks**, Statistics, Archive, Delete, Back
+  - The domain sub-menu includes a **Bookmarks** action positioned after History within the implemented menu order: Play, Challenge, History, **Bookmarks**, Statistics, ASCII Art, Archive, Delete, Back
 
 **Bookmarks screen**
 
@@ -677,6 +694,35 @@ The sprint ends on whichever condition occurs first:
 
 - After sprint termination, the user is returned to the domain sub-menu
 - The domain sub-menu renders the Feature 14 session summary block on first re-render, including the sprint-specific **Sprint result** field (field 9 of Feature 14)
+
+### Feature 18 — ASCII Art (Milestone Unlock)
+
+- ASCII Art is gated behind a configurable milestone: the domain must have cumulative correct answers equal to or exceeding the **ASCII Art Milestone** setting (Feature 8) to unlock the FIGlet rendering — the default threshold is 100
+- The correct answer count is computed on demand by filtering the domain's `history` array for `isCorrect: true` records — no new aggregate field is added to the domain schema
+- The domain sub-menu **ASCII Art label dynamically reflects unlock status:**
+  - **Locked (below threshold):** The label displays `🎨 ASCII Art` followed by a compact cyan-to-magenta gradient progress bar and percentage (e.g., `🎨 ASCII Art [████░░░░░░] 42%`) — the bar uses filled blocks (`█`) colored via the app's `lerpColor` gradient and dim unfilled blocks (`░`); the percentage and progress bar are capped at 100% even if `correctCount` exceeds the threshold
+  - **Unlocked (≥ threshold):** The label displays `🎨 ASCII Art ✨`
+
+**Locked screen (below threshold)**
+
+- Selecting ASCII Art when locked opens a screen with the standard `clearAndBanner()` flow
+- The screen displays:
+  1. A header: `🎨 ASCII Art — <domain>` (using `header()`, same pattern as Statistics)
+  2. A motivational message explaining the milestone goal — dynamically reflecting the configured threshold, e.g., *"🔒 ASCII Art unlocks when you've answered N questions correctly!"* where N is the threshold value
+  3. A gradient progress bar with percentage on a single line — same `lerpColor` gradient styling as the menu label, rendered at a wider width for visual impact; capped at 100%
+  4. A separator and a `↩️  Back` choice
+- Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
+
+**Unlocked screen (≥ threshold)**
+
+- Selecting ASCII Art when unlocked opens the FIGlet rendering screen
+- Each render randomly selects one font from a curated list of 14 FIGlet fonts
+- The screen displays a header (`🎨 ASCII Art — <domain>`) following the same header pattern as the Statistics screen
+- The rendered ASCII art is displayed below the header, colored using the app's cyan-to-magenta gradient system (`lerpColor`) — color is interpolated row-by-row from cyan (top) to magenta (bottom); any combination or pattern of the two colors is acceptable
+- Below the art, a **🔄 Regenerate** choice, a separator, and a **↩️  Back** choice are displayed
+- Selecting **Regenerate** rerenders the art immediately using a different font from the curated list
+- Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
+- Rendering is local and instant — no network calls, no loading spinner, no AI dependency
 
 ---
 

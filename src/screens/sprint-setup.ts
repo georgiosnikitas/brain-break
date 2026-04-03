@@ -36,7 +36,7 @@ export async function showSprintSetup(slug: string): Promise<SprintConfig | null
       choices: [
         ...TIME_BUDGET_CHOICES,
         new Separator(),
-        { name: '←  Back', value: 'back' as const },
+        { name: '↩️  Back', value: 'back' as const },
       ],
       theme: menuTheme,
     })
@@ -50,7 +50,7 @@ export async function showSprintSetup(slug: string): Promise<SprintConfig | null
       choices: [
         ...QUESTION_COUNT_CHOICES,
         new Separator(),
-        { name: '←  Back', value: 'back' as const },
+        { name: '↩️  Back', value: 'back' as const },
       ],
       theme: menuTheme,
     })
@@ -62,9 +62,9 @@ export async function showSprintSetup(slug: string): Promise<SprintConfig | null
     const action = await select<SprintSetupAction>({
       message: 'Ready to start?',
       choices: [
-        { name: '🏁  Confirm', value: 'confirm' },
+        { name: '🏁 Confirm', value: 'confirm' },
         new Separator(),
-        { name: '←  Back', value: 'back' },
+        { name: '↩️  Back', value: 'back' },
       ],
       theme: menuTheme,
     })

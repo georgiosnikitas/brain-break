@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-03-31'
+lastEdited: '2026-04-03'
 editHistory:
+  - date: '2026-04-03'
+    changes: 'ASCII Art sync with implemented codebase (PRD Feature 18, Epic 12): Requirements Overview updated (13→15 features, ASCII Art added and stale feature count corrected). Estimated components updated (16–18→17–19). Technical constraints updated with `figlet` dependency. New ASCII Art Screen architecture section added. Module Architecture src/ tree updated (ascii-art.ts added, domain-menu comments expanded). Complete Project Directory Structure updated (ascii-art.ts + ascii-art.test.ts added, domain-menu comment expanded). Terminal UI navigation flow updated with the ASCII Art route. Feature to Structure Mapping updated (F15 row added). Requirements Coverage Validation updated (F15 row added). Coherence Validation updated with `figlet` mention. All changes additive — no architectural decisions changed.'
   - date: '2026-03-31'
     changes: 'Challenge Mode — Sprint (PRD Feature 17, Epic 11, FR44–FR46): Requirements Overview updated (12→13 features, Challenge Mode added). Estimated components updated (14–16→16–18). Cross-cutting concerns updated (sprint timer and batch preloading added). Navigation pattern updated (Challenge route in domain sub-menu, showChallenge + showSprintSetup router exports). New Challenge Mode (Sprint) Architecture section added — timer strategy (Date.now wall-clock delta + AbortController prompt interruption), preloadQuestions() in ai/client.ts, sprint-setup.ts and challenge.ts screen split, per-answer writeDomain, limited post-answer nav (Next/Back only), four termination conditions (all answered, timer-mid-question auto-submit, timer-mid-feedback, user Back). Module Architecture src/ tree updated (sprint-setup.ts + challenge.ts added, router count 14→16). Complete Project Directory Structure updated (sprint-setup.ts/challenge.ts + tests added, router count 14→16). Feature to Structure Mapping updated (F14 row added). Cross-Cutting Concern Mapping updated (sprint countdown timer + batch question preloading rows added). Data Flow Sprint Cycle diagram added. Requirements Coverage Validation updated (F14 row added). Coherence Validation updated with Challenge Mode mention. All changes additive — no architectural decisions changed.'
   - date: '2026-03-30'
@@ -49,7 +51,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-13 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, and an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer.
+15 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, and a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -62,8 +64,8 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - Primary domain: CLI / terminal application (Unix-like: macOS, Linux, WSL)
 - Complexity level: Low-Medium
-- External dependencies: 5 AI provider adapters via Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for OpenAI, Anthropic, Gemini, and Ollama; GitHub Copilot SDK as a custom adapter — one provider active at runtime, user-selected
-- Estimated architectural components: 16–18 focused modules
+- External dependencies: 5 AI provider adapters via Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for OpenAI, Anthropic, Gemini, and Ollama; GitHub Copilot SDK as a custom adapter — one provider active at runtime, user-selected; `figlet` for local ASCII Art banner rendering
+- Estimated architectural components: 17–19 focused modules
 
 ### Technical Constraints & Dependencies
 
@@ -126,6 +128,7 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - `ora` v8 — loading spinner during question generation
 - `chalk` v5 — terminal color and styling, ESM-native
 - `qrcode-terminal` — ASCII QR code rendering for Coffee Supporter Screen (Feature 10)
+- `figlet` — local ASCII art banner rendering for the ASCII Art Screen (Feature 15)
 
 **Dependency Patching:**
 - `patch-package` (devDependency) — applies patches via `postinstall` script
@@ -443,7 +446,7 @@ export const AI_ERRORS = {
 No state machine framework. Navigation is explicit function calls dispatched from a `router.ts` module. The app uses a two-level menu model:
 
 - **Level 1 — Home screen:** Lists active domains (with score/count) + actions: create domain, view archived, settings, buy me a coffee, exit
-- **Level 2 — Domain sub-menu:** Selected from home; shows Play, Challenge, View History, View Bookmarks, View Stats, Archive, Delete, Back
+- **Level 2 — Domain sub-menu:** Selected from home; shows Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back
 
 ```
 startup → readSettings()
@@ -458,9 +461,10 @@ router.showHome()
     → Challenge              → router.showChallenge(slug) → router.showDomainMenu(slug)
       → showSprintSetup(slug)  → user confirms → showChallengeExecution(slug, config, questions)
       → showSprintSetup(slug)  → user backs    → router.showDomainMenu(slug)
-    → View History            → router.showHistory(slug) → router.showDomainMenu(slug)
-    → View Bookmarks          → router.showBookmarks(slug) → router.showDomainMenu(slug)
-    → View Stats              → router.showStats(slug) → router.showDomainMenu(slug)
+    → History                 → router.showHistory(slug) → router.showDomainMenu(slug)
+    → Bookmarks               → router.showBookmarks(slug) → router.showDomainMenu(slug)
+    → Statistics              → router.showStats(slug) → router.showDomainMenu(slug)
+    → ASCII Art               → router.showAsciiArt(slug) → router.showDomainMenu(slug)
     → Archive                 → router.archiveDomain(slug) → router.showHome()
     → Delete                  → router.deleteDomain(slug) → router.showHome()
     → Back                    → router.showHome()
@@ -674,6 +678,25 @@ After termination, the challenge screen returns session data to the router: `{ q
 
 ---
 
+### ASCII Art Screen
+
+`screens/ascii-art.ts` exports `showAsciiArtScreen(slug)`. The router's `showAsciiArt(slug)` delegates to it, and `screens/domain-menu.ts` exposes the ASCII Art action between Statistics and Archive.
+
+**Rendering model:**
+- `figlet.textSync(slug, { font })` generates the banner locally — no AI provider call, no network dependency, and no loading spinner
+- `pickRandomFont(previousFont?)` selects one font from a curated list of 14 FIGlet fonts; when regenerating, the immediate previous font is excluded so the banner style changes on the next render
+- `clearAndBanner()` preserves the standard functional screen shell
+- `header('🎨 ASCII Art — ' + slug)` matches the Statistics-style header pattern
+- `colorAsciiArt()` trims trailing blank lines and applies `gradientText()` row-by-row from cyan (top) to magenta (bottom)
+
+**Navigation:**
+- The screen shows `🔄 Regenerate`, a separator, and `←  Back`
+- Selecting Regenerate rerenders the banner immediately with a different font while staying on the same screen
+- Selecting Back or receiving `ExitPromptError` returns to `router.showDomainMenu(slug)`
+- No persistence, caching, or file I/O occurs on this screen
+
+---
+
 ### Module Architecture
 
 **`src/` Directory Structure**
@@ -685,7 +708,7 @@ src/
 ├── screens/
 │   ├── home.ts           # F1: domain list + coffee screen (F10)
 │   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
-│   ├── domain-menu.ts    # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Stats, Archive, Delete, Back)
+│   ├── domain-menu.ts    # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back)
 │   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
 │   ├── archived.ts       # F1: archived domain list + unarchive
 │   ├── quiz.ts           # F3: question loop, timer, answer feedback
@@ -694,6 +717,7 @@ src/
 │   ├── history.ts        # F6: single-question navigation history view
 │   ├── bookmarks.ts      # F12: single-question bookmark navigation view
 │   ├── stats.ts          # F7: stats dashboard
+│   ├── ascii-art.ts      # F15: local FIGlet domain banner with randomized font selection + gradient coloring
 │   ├── settings.ts       # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
 │   ├── provider-settings.ts # F8: per-provider model/endpoint prompts with defaults
 │   ├── provider-setup.ts # F8: first-launch provider selection + validation
@@ -915,7 +939,7 @@ brain-break/
 │   │   ├── home.test.ts
 │   │   ├── create-domain.ts        # F1: new domain input + starting difficulty selection + validation + duplicate check
 │   │   ├── create-domain.test.ts
-│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Stats, Archive, Delete, Back)
+│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back)
 │   │   ├── domain-menu.test.ts
 │   │   ├── select-domain.ts        # F1/F2: motivational message + quiz transition
 │   │   ├── select-domain.test.ts
@@ -933,6 +957,8 @@ brain-break/
 │   │   ├── bookmarks.test.ts
 │   │   ├── stats.ts                # F7: stats dashboard
 │   │   ├── stats.test.ts
+│   │   ├── ascii-art.ts            # F15: local FIGlet domain banner with randomized font selection + gradient coloring
+│   │   ├── ascii-art.test.ts
 │   │   ├── settings.ts             # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
 │   │   ├── settings.test.ts
 │   │   ├── provider-settings.ts     # F8: per-provider model/endpoint prompts with defaults
@@ -1006,6 +1032,7 @@ brain-break/
 | F12 — Question Bookmarks | `screens/bookmarks.ts`, `screens/quiz.ts` (bookmark toggle post-answer), `screens/history.ts` (bookmark toggle), `screens/domain-menu.ts` (View Bookmarks action), `domain/store.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F13 — Exit Screen | `screens/exit.ts` (dynamic session message + typewriter animation + 3s auto-exit timer), `screens/home.ts` (total questions aggregation + conditional exit routing), `domain/schema.ts` (`showWelcome` setting) |
 | F14 — Challenge Mode (Sprint) | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution loop + timer + per-answer write), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` (`renderQuestionDetail`) |
+| F15 — ASCII Art Screen | `screens/ascii-art.ts` (local FIGlet rendering + randomized font selection + gradient coloring), `screens/domain-menu.ts` (ASCII Art action), `router.ts` (`showAsciiArt()`), `utils/format.ts` (`gradientText`) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 | NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
@@ -1158,7 +1185,7 @@ router.showChallenge(slug)
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design. Challenge Mode reuses the same `generateQuestion()` pipeline, `applyAnswer()` scoring, `writeDomain()` persistence, and `renderQuestionDetail()` rendering — no new architectural primitives needed; the `AbortController`-based prompt interruption uses native Node.js APIs already available in the runtime target.
+All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `figlet`, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 3 of 5 provider adapters (OpenAI, Anthropic, Gemini) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), local FIGlet rendering for ASCII Art, and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design. Challenge Mode reuses the same `generateQuestion()` pipeline, `applyAnswer()` scoring, `writeDomain()` persistence, and `renderQuestionDetail()` rendering — no new architectural primitives needed; the `AbortController`-based prompt interruption uses native Node.js APIs already available in the runtime target.
 
 ### Requirements Coverage Validation ✅
 
@@ -1178,6 +1205,7 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | F12 — Question Bookmarks | ✅ | `screens/bookmarks.ts`, `screens/quiz.ts` (bookmark toggle post-answer), `screens/history.ts` (bookmark toggle), `screens/domain-menu.ts` (View Bookmarks action), `domain/store.ts` |
 | F13 — Exit Screen | ✅ | `screens/exit.ts` (dynamic session message + typewriter + gradient rendering + 3s auto-exit timer), `screens/home.ts` (total questions aggregation) |
 | F14 — Challenge Mode (Sprint) | ✅ | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution + timer), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` |
+| F15 — ASCII Art Screen | ✅ | `screens/ascii-art.ts` (local FIGlet rendering + randomized font selection + gradient coloring), `screens/domain-menu.ts` (ASCII Art action), `router.ts` (`showAsciiArt()`), `utils/format.ts` (`gradientText`) |
 
 | NFR | Status | Addressed By |
 |---|---|---|

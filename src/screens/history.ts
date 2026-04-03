@@ -110,7 +110,7 @@ export async function showHistory(domainSlug: string): Promise<void> {
     try {
       await select<NavAction>({
         message: 'Navigation',
-        choices: [{ name: '←  Back', value: 'back' }],
+        choices: [{ name: '↩️  Back', value: 'back' }],
         theme: menuTheme,
       })
     } catch (err) {

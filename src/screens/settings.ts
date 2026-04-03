@@ -23,7 +23,16 @@ const TONE_LABELS: Record<string, string> = Object.fromEntries(
   TONE_CHOICES.map(c => [c.value, c.name])
 )
 
-type SettingsAction = 'provider' | 'language' | 'tone' | 'showWelcome' | 'save' | 'back'
+type SettingsAction = 'provider' | 'language' | 'tone' | 'asciiArtMilestone' | 'showWelcome' | 'save' | 'back'
+
+const MILESTONE_CHOICES: Array<{ name: string; value: 0 | 10 | 100 }> = [
+  { name: 'Instant (0 questions)', value: 0 },
+  { name: 'Quick (10 questions)', value: 10 },
+  { name: 'Classic (100 questions)', value: 100 },
+]
+
+const MILESTONE_LABELS: Record<number, string> = { 0: 'Instant', 10: 'Quick', 100: 'Classic' }
+const SETTINGS_PAGE_SIZE = 10
 
 export function getProviderLabel(provider: AiProviderType | null): string {
   return provider ? PROVIDER_LABELS[provider] : 'Not set'
@@ -43,10 +52,11 @@ async function handleProviderAction(
     choices: [
       ...PROVIDER_CHOICES,
       new Separator(),
-      { name: '←  Back', value: 'back' as const },
+      { name: '↩️  Back', value: 'back' as const },
     ],
     default: provider ?? undefined,
     theme: menuTheme,
+    pageSize: SETTINGS_PAGE_SIZE,
   })
 
   if (selectedProvider === 'back') {
@@ -84,6 +94,7 @@ async function handleToneAction(currentTone: ToneOfVoice): Promise<ToneOfVoice> 
     choices: TONE_CHOICES,
     default: currentTone,
     theme: menuTheme,
+    pageSize: SETTINGS_PAGE_SIZE,
   })
 }
 
@@ -98,6 +109,7 @@ async function selectSettingsAction(
   provider: AiProviderType | null,
   language: string,
   tone: ToneOfVoice,
+  asciiArtMilestone: 0 | 10 | 100,
   showWelcome: boolean,
 ): Promise<SettingsAction> {
   return select<SettingsAction>({
@@ -106,12 +118,14 @@ async function selectSettingsAction(
       { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
       { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
-      { name: `🎬  Welcome & Exit screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
+      { name: `🎨 ASCII Art Milestone: ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
+      { name: `🎬 Welcome & Exit screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
       new Separator(),
-      { name: '💾  Save', value: 'save' as const },
-      { name: '←  Back', value: 'back' as const },
+      { name: '💾 Save', value: 'save' as const },
+      { name: '↩️  Back', value: 'back' as const },
     ],
     theme: menuTheme,
+    pageSize: SETTINGS_PAGE_SIZE,
   })
 }
 
@@ -128,6 +142,7 @@ export async function showSettingsScreen(): Promise<void> {
   let ollamaEndpoint = currentSettings.ollamaEndpoint
   let ollamaModel = currentSettings.ollamaModel
   let showWelcome = currentSettings.showWelcome
+  let asciiArtMilestone = currentSettings.asciiArtMilestone
   let banner = ''
 
   try {
@@ -139,7 +154,7 @@ export async function showSettingsScreen(): Promise<void> {
         banner = ''
       }
       
-        const action = await selectSettingsAction(provider, language, tone, showWelcome)
+        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, showWelcome)
 
       switch (action) {
         case 'provider': {
@@ -171,6 +186,24 @@ export async function showSettingsScreen(): Promise<void> {
           showWelcome = !showWelcome
           banner = showWelcome ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled')
           break
+        case 'asciiArtMilestone':
+          const selectedMilestone = await select<0 | 10 | 100 | 'back'>({
+            message: 'ASCII Art Milestone',
+            choices: [
+              ...MILESTONE_CHOICES,
+              new Separator(),
+              { name: '↩️  Back', value: 'back' as const },
+            ],
+            default: asciiArtMilestone,
+            theme: menuTheme,
+            pageSize: SETTINGS_PAGE_SIZE,
+          })
+          if (selectedMilestone === 'back') {
+            break
+          }
+          asciiArtMilestone = selectedMilestone
+          banner = success(`ASCII Art Milestone set to ${MILESTONE_LABELS[asciiArtMilestone]}`)
+          break
         case 'save':
           await handleSaveAction({
             ...currentSettings,
@@ -182,6 +215,7 @@ export async function showSettingsScreen(): Promise<void> {
             geminiModel,
             ollamaEndpoint,
             ollamaModel,
+            asciiArtMilestone,
             showWelcome,
           })
           return await router.showHome()

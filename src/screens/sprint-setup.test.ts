@@ -61,7 +61,7 @@ describe('showSprintSetup', () => {
     expect(durationChoices[0]).toEqual(TIME_BUDGET_CHOICES[0])
     expect(durationChoices[1]).toEqual(TIME_BUDGET_CHOICES[1])
     expect(durationChoices[2]).toEqual(TIME_BUDGET_CHOICES[2])
-    expect(durationChoices[4]).toMatchObject({ name: '←  Back', value: 'back' })
+    expect(durationChoices[4]).toMatchObject({ name: '↩️  Back', value: 'back' })
 
     expect(mockSelect.mock.calls[1][0]).toMatchObject({
       message: 'Sprint size:',
@@ -70,13 +70,13 @@ describe('showSprintSetup', () => {
     expect(sizeChoices[0]).toEqual(QUESTION_COUNT_CHOICES[0])
     expect(sizeChoices[1]).toEqual(QUESTION_COUNT_CHOICES[1])
     expect(sizeChoices[2]).toEqual(QUESTION_COUNT_CHOICES[2])
-    expect(sizeChoices[4]).toMatchObject({ name: '←  Back', value: 'back' })
+    expect(sizeChoices[4]).toMatchObject({ name: '↩️  Back', value: 'back' })
     expect(mockSelect.mock.calls[2][0]).toMatchObject({
       message: 'Ready to start?',
       choices: [
-        { name: '🏁  Confirm', value: 'confirm' },
+        { name: '🏁 Confirm', value: 'confirm' },
         expect.any(Object),
-        { name: '←  Back', value: 'back' },
+        { name: '↩️  Back', value: 'back' },
       ],
     })
   })

@@ -1,10 +1,11 @@
 import { select, confirm, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { readDomain } from '../domain/store.js'
-import { defaultDomainFile, type SessionData } from '../domain/schema.js'
+import { readDomain, readSettings } from '../domain/store.js'
+import { defaultDomainFile, defaultSettings, type SessionData } from '../domain/schema.js'
 import { bold, dim, warn, header, colorCorrect, colorIncorrect, colorDifficultyLevel, formatAccuracy, formatDuration, menuTheme } from '../utils/format.js'
 import { formatTotalTimePlayed } from './stats.js'
 import { clearAndBanner } from '../utils/screen.js'
+import { renderCompactProgressLabel } from './ascii-art.js'
 import * as router from '../router.js'
 
 export type DomainMenuAction =
@@ -13,21 +14,26 @@ export type DomainMenuAction =
   | { action: 'history' }
   | { action: 'bookmarks' }
   | { action: 'stats' }
+  | { action: 'ascii-art' }
   | { action: 'archive' }
   | { action: 'delete' }
   | { action: 'back' }
 
-export function buildDomainMenuChoices(): Array<{ name: string; value: DomainMenuAction } | Separator> {
+export function buildDomainMenuChoices(correctCount: number, threshold: number): Array<{ name: string; value: DomainMenuAction } | Separator> {
+  const asciiArtLabel = threshold === 0 || correctCount >= threshold
+    ? '🎨 ASCII Art ✨'
+    : renderCompactProgressLabel(correctCount, threshold)
   return [
-    { name: '▶  Play', value: { action: 'play' } },
+    { name: '▶ Play', value: { action: 'play' } },
     { name: '⏱️  Challenge', value: { action: 'challenge' } },
     { name: '📜 History', value: { action: 'history' } },
     { name: '⭐ Bookmarks', value: { action: 'bookmarks' } },
     { name: '📊 Statistics', value: { action: 'stats' } },
+    { name: asciiArtLabel, value: { action: 'ascii-art' } },
     { name: '🗄  Archive', value: { action: 'archive' } },
     { name: '🗑  Delete', value: { action: 'delete' } },
     new Separator(),
-    { name: '←  Back', value: { action: 'back' } },
+    { name: '↩️  Back', value: { action: 'back' } },
   ]
 }
 
@@ -55,6 +61,8 @@ async function promptForDomainAction(
   totalQuestions: number,
   sessionData: SessionData | null | undefined,
   endingDifficulty: number,
+  correctCount: number,
+  threshold: number,
 ): Promise<DomainMenuAction | null> {
   renderDomainHeader(slug, score, totalQuestions)
   if (sessionData && sessionData.records.length > 0) {
@@ -64,7 +72,7 @@ async function promptForDomainAction(
   try {
     return await select<DomainMenuAction>({
       message: 'Choose an action:',
-      choices: buildDomainMenuChoices(),
+      choices: buildDomainMenuChoices(correctCount, threshold),
       theme: menuTheme,
       pageSize: 10,
     })
@@ -149,6 +157,10 @@ export async function showDomainMenuScreen(slug: string, sessionData?: SessionDa
     const domain = readResult.ok ? readResult.data : defaultDomainFile()
     const score = domain.meta.score
     const totalQuestions = domain.history.length
+    const correctCount = domain.history.filter((r) => r.isCorrect).length
+
+    const settingsResult = await readSettings()
+    const threshold = (settingsResult.ok ? settingsResult.data : defaultSettings()).asciiArtMilestone
 
     const answer = await promptForDomainAction(
       slug,
@@ -156,6 +168,8 @@ export async function showDomainMenuScreen(slug: string, sessionData?: SessionDa
       totalQuestions,
       sessionData,
       domain.meta.difficultyLevel,
+      correctCount,
+      threshold,
     )
     sessionData = undefined
 
@@ -164,7 +178,7 @@ export async function showDomainMenuScreen(slug: string, sessionData?: SessionDa
       return
     }
 
-    const result = await handleDomainAction(slug, answer)
+    const result = await handleDomainAction(slug, answer, correctCount, threshold)
     if (result === false) {
       return
     }
@@ -174,7 +188,29 @@ export async function showDomainMenuScreen(slug: string, sessionData?: SessionDa
   }
 }
 
-async function handleDomainAction(slug: string, answer: DomainMenuAction): Promise<false | SessionData | null> {
+async function confirmAndDeleteDomain(slug: string): Promise<false | null> {
+  let confirmed: boolean
+  try {
+    confirmed = await confirm({
+      message: `Delete "${slug}" permanently? This cannot be undone.`,
+      default: false,
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) {
+      await router.showHome()
+      return false
+    }
+    throw err
+  }
+  if (confirmed) {
+    await router.deleteDomain(slug)
+    await router.showHome()
+    return false
+  }
+  return null
+}
+
+async function handleDomainAction(slug: string, answer: DomainMenuAction, correctCount: number, threshold: number): Promise<false | SessionData | null> {
   if (answer.action === 'play') {
     return await router.showQuiz(slug)
   } else if (answer.action === 'challenge') {
@@ -185,29 +221,14 @@ async function handleDomainAction(slug: string, answer: DomainMenuAction): Promi
     await router.showBookmarks(slug)
   } else if (answer.action === 'stats') {
     await router.showStats(slug)
+  } else if (answer.action === 'ascii-art') {
+    await router.showAsciiArt(slug, correctCount, threshold)
   } else if (answer.action === 'archive') {
     await router.archiveDomain(slug)
     await router.showHome()
     return false
   } else if (answer.action === 'delete') {
-    let confirmed: boolean
-    try {
-      confirmed = await confirm({
-        message: `Delete "${slug}" permanently? This cannot be undone.`,
-        default: false,
-      })
-    } catch (err) {
-      if (err instanceof ExitPromptError) {
-        await router.showHome()
-        return false
-      }
-      throw err
-    }
-    if (confirmed) {
-      await router.deleteDomain(slug)
-      await router.showHome()
-      return false
-    }
+    return await confirmAndDeleteDomain(slug)
   } else {
     await router.showHome()
     return false

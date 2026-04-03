@@ -123,7 +123,7 @@ export async function showCoffeeScreen(): Promise<void> {
   try {
     await select({
       message: 'Navigation',
-      choices: [new Separator(), { name: '← Back', value: 'back' as const }],
+      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
       theme: menuTheme,
     })
   } catch (err) {

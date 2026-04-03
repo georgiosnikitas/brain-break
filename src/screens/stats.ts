@@ -96,7 +96,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log('📝 ' + bold('Questions answered:') + ' 0')
     console.log('✅ ' + bold('Correct / Incorrect:') + ' 0 / 0')
     console.log('🎯 ' + bold('Accuracy:') + ' No data yet')
-    console.log('⏱️  ' + bold('Total time played:') + ' No data yet')
+    console.log('⏱️ ' + bold('Total time played:') + ' No data yet')
     console.log('📈 ' + bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
     console.log('📈 ' + bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
     console.log('🔄 ' + bold('Score trend (30 days):') + ' No data yet')
@@ -113,7 +113,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log('📝 ' + bold('Questions answered:') + ` ${total}`)
     console.log('✅ ' + bold('Correct / Incorrect:') + ` ${correct} / ${incorrect}`)
     console.log('🎯 ' + bold('Accuracy:') + ` ${formatAccuracy(correct, total)}`)
-    console.log('⏱️  ' + bold('Total time played:') + ` ${formatTotalTimePlayed(meta.totalTimePlayedMs)}`)
+    console.log('⏱️ ' + bold('Total time played:') + ` ${formatTotalTimePlayed(meta.totalTimePlayedMs)}`)
     console.log('📈 ' + bold('Starting difficulty:') + ` ${difficultyLabel(meta.startingDifficulty)}`)
     console.log('📈 ' + bold('Current difficulty:') + ` ${difficultyLabel(meta.difficultyLevel)}`)
     console.log('🔄 ' + bold('Score trend (30 days):') + ` ${trendLabel}`)
@@ -126,7 +126,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
   try {
     await select({
       message: 'Navigation',
-      choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
       theme: menuTheme,
     })
   } catch (err) {

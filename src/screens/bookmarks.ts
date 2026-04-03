@@ -14,6 +14,10 @@ import * as router from '../router.js'
 
 export { buildNavChoices as buildBookmarkChoices } from './question-nav.js'
 
+function getBookmarkedHistory(domain: DomainFile): QuestionRecord[] {
+  return [...domain.history].reverse().filter(record => record.bookmarked)
+}
+
 async function showEmptyBookmarksState(domainSlug: string): Promise<void> {
   clearAndBanner()
   console.log(header(`⭐ Bookmarks — ${domainSlug}`))
@@ -23,7 +27,7 @@ async function showEmptyBookmarksState(domainSlug: string): Promise<void> {
       choices: [
         new Separator(dim('No bookmarked questions.')),
         new Separator(),
-        { name: '←  Back', value: 'back' },
+        { name: '↩️  Back', value: 'back' },
       ],
       theme: menuTheme,
     })
@@ -71,7 +75,7 @@ async function processNavAction(
   // nav is now 'next' | 'prev' — refresh bookmark list after potential unbookmark
   const _exhaustive: 'next' | 'prev' = nav
   const currentRecord = state.bookmarks[state.index]
-  const newBookmarks = domain.history.filter(r => r.bookmarked)
+  const newBookmarks = getBookmarkedHistory(domain)
   if (newBookmarks.length === 0) {
     return { ...state, bookmarks: newBookmarks, index: 0, ...resetNavState(), skipClear: false }
   }
@@ -125,9 +129,8 @@ export async function showBookmarks(domainSlug: string): Promise<void> {
     return
   }
   const domain = readResult.data
-  // Bookmarks is a filtered view — elements are references into domain.history.
-  // Un-bookmarked items remain navigable in the current session but disappear on re-entry.
-  const bookmarks = domain.history.filter(r => r.bookmarked)
+  // Bookmarks is a filtered History view, so it follows the same newest-first order.
+  const bookmarks = getBookmarkedHistory(domain)
 
   if (bookmarks.length === 0) {
     await showEmptyBookmarksState(domainSlug)

@@ -32,7 +32,8 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 - **Question bookmarking** — bookmark any answered question from the quiz or history for later revisiting via a dedicated bookmarks view
 - **Adaptive difficulty** — scoring and difficulty progression based on correctness and response speed
 - **Configurable language and tone** — language selection for questions and explanations, plus 7 tone options including humorous, sarcastic, and pirate
-- **Domain sub-menu** — play, history, bookmarks, stats, archive, and delete per domain
+- **Domain sub-menu** — play, history, bookmarks, stats, ASCII art, archive, and delete per domain
+- **ASCII art milestone** — unlock FIGlet ASCII art per domain
 - **Stats dashboard** — per-domain score trend, accuracy, and return streak
 - **Settings screen** — change provider, model, language, tone, and welcome screen at any time
 

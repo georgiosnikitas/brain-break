@@ -12,6 +12,7 @@ import {
   showHistory,
   showBookmarks,
   showStats,
+  showAsciiArt,
   deleteDomain,
   showDomainMenu,
   showSettings,
@@ -32,6 +33,7 @@ vi.mock('./screens/archived.js', () => ({ showArchivedScreen: vi.fn() }))
 vi.mock('./screens/history.js', () => ({ showHistory: vi.fn() }))
 vi.mock('./screens/bookmarks.js', () => ({ showBookmarks: vi.fn() }))
 vi.mock('./screens/stats.js', () => ({ showStats: vi.fn() }))
+vi.mock('./screens/ascii-art.js', () => ({ showAsciiArtScreen: vi.fn() }))
 vi.mock('./screens/domain-menu.js', () => ({ showDomainMenuScreen: vi.fn() }))
 vi.mock('./screens/sprint-setup.js', () => ({ showSprintSetup: vi.fn() }))
 vi.mock('./screens/challenge.js', () => ({ showChallengeExecution: vi.fn() }))
@@ -117,6 +119,7 @@ import { showArchivedScreen } from './screens/archived.js'
 import { showHistory as showHistoryScreen } from './screens/history.js'
 import { showBookmarks as showBookmarksScreen } from './screens/bookmarks.js'
 import { showStats as showStatsScreen } from './screens/stats.js'
+import { showAsciiArtScreen } from './screens/ascii-art.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSprintSetup } from './screens/sprint-setup.js'
 import { showChallengeExecution } from './screens/challenge.js'
@@ -223,6 +226,13 @@ describe('showStats', () => {
   it('delegates to showStatsScreen with the slug', async () => {
     await showStats('stats-slug')
     expect(showStatsScreen).toHaveBeenCalledWith('stats-slug')
+  })
+})
+
+describe('showAsciiArt', () => {
+  it('delegates to showAsciiArtScreen with slug, correctCount, and threshold', async () => {
+    await showAsciiArt('art-slug', 100, 100)
+    expect(showAsciiArtScreen).toHaveBeenCalledWith('art-slug', 100, 100)
   })
 })
 

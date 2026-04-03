@@ -278,7 +278,7 @@ describe('showChallengeExecution', () => {
 
     const postAnswerPrompt = mockSelect.mock.calls[1][0]
     const choiceNames = postAnswerPrompt.choices.filter((choice: unknown) => !(choice instanceof MockSeparator)).map((choice: { name: string }) => choice.name)
-    expect(choiceNames).toEqual(['▶️  Next question', '←  Back'])
+    expect(choiceNames).toEqual(['▶️ Next question', '↩️  Back'])
   })
 
   it('returns complete session data when all questions are answered', async () => {

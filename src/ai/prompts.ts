@@ -171,3 +171,4 @@ Explanation already provided: "${safeExplanation}"
 
 Reply with ONLY the micro-lesson — no JSON, no quotes, no extra text.`
 }
+

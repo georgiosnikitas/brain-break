@@ -30,7 +30,7 @@ so that I have a verified, runnable foundation to build all features on.
 
 4. **Given** the project structure  
    **When** I inspect the repo  
-   **Then** `package.json` has `"type": "module"`, a `bin` field pointing to `dist/index.js`, `engines.node: ">=25.8.0"`, and all required scripts (`dev`, `build`, `start`, `typecheck`, `test`, `test:watch`)  
+  **Then** `package.json` has `"type": "module"`, a `bin` field pointing to `dist/index.js`, `engines.node: ">=22.0.0"`, and all required scripts (`dev`, `build`, `start`, `typecheck`, `test`, `test:watch`)  
    **And** `tsconfig.json` has `strict: true`, `module: "nodenext"`, `moduleResolution: "nodenext"`, `target: "es2022"`  
    **And** the full `src/` directory tree exists (all files may be empty stubs): `index.ts`, `router.ts`, `screens/`, `ai/`, `domain/`, `utils/`  
    **And** `.gitignore` excludes `node_modules/` and `dist/`
@@ -40,7 +40,7 @@ so that I have a verified, runnable foundation to build all features on.
 - [x] Task 1: Initialize npm project and install dependencies (AC: 1, 4)
   - [x] 1.1 Run `npm init -y` to create `package.json`
   - [x] 1.2 Set `"type": "module"` in `package.json`
-  - [x] 1.3 Set `"engines": { "node": ">=25.8.0" }` in `package.json`
+  - [x] 1.3 Set `"engines": { "node": ">=22.0.0" }` in `package.json`
   - [x] 1.4 Set `"bin": { "brain-break": "dist/index.js" }` in `package.json`
   - [x] 1.5 Add all scripts: `dev` (`tsx src/index.ts`), `build` (`tsc`), `start` (`node dist/index.js`), `typecheck` (`tsc --noEmit`), `test` (`vitest run`), `test:watch` (`vitest`)
   - [x] 1.6 Install runtime deps: `npm install inquirer@^12 ora@^8 chalk@^5 zod`
@@ -145,7 +145,7 @@ src/
     "brain-break": "dist/index.js"
   },
   "engines": {
-    "node": ">=25.8.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "tsx src/index.ts",

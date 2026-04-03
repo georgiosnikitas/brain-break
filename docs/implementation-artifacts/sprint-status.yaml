@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-04-03
+last_updated: 2026-04-04
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -136,3 +136,10 @@ development_status:
   11-3-sprint-execution-loop: done
   11-4-sprint-termination-and-history: done
   epic-11-retrospective: optional
+
+  # Epic 12: ASCII Art
+  epic-12: in-progress
+  12-1-ascii-art-screen: done
+  12-2-ascii-art-milestone-unlock: done
+  12-3-ascii-art-milestone-setting: done
+  epic-12-retrospective: optional

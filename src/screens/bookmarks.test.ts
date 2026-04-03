@@ -61,9 +61,9 @@ function makeBookmarkedHistory(count: number): QuestionRecord[] {
 
 function makeMixedHistory(): QuestionRecord[] {
   return [
-    makeRecord({ question: 'Bookmarked 1', bookmarked: true }),
-    makeRecord({ question: 'Not bookmarked', bookmarked: false }),
-    makeRecord({ question: 'Bookmarked 2', bookmarked: true }),
+    makeRecord({ question: 'Bookmarked 1', answeredAt: new Date(2026, 2, 1).toISOString(), bookmarked: true }),
+    makeRecord({ question: 'Not bookmarked', answeredAt: new Date(2026, 2, 2).toISOString(), bookmarked: false }),
+    makeRecord({ question: 'Bookmarked 2', answeredAt: new Date(2026, 2, 3).toISOString(), bookmarked: true }),
   ]
 }
 
@@ -158,7 +158,7 @@ describe('buildBookmarkChoices', () => {
 // showBookmarks — renders only bookmarked questions
 // ---------------------------------------------------------------------------
 describe('showBookmarks — renders only bookmarked questions', () => {
-  it('filters to only bookmarked questions', async () => {
+  it('filters to only bookmarked questions and keeps newest-first ordering', async () => {
     const domain = { ...defaultDomainFile(), history: makeMixedHistory() }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
@@ -166,10 +166,25 @@ describe('showBookmarks — renders only bookmarked questions', () => {
 
     await showBookmarks('typescript')
 
-    // First question displayed should be "Bookmarked 1"; "Not bookmarked" should NOT appear
+    // Initial bookmark view should match History ordering: newest bookmarked entry first.
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('Bookmarked 1')
+    expect(allLogs).toContain('Bookmarked 2')
     expect(allLogs).not.toContain('Not bookmarked')
+    expect(allLogs).not.toContain('Bookmarked 1')
+    consoleSpy.mockRestore()
+  })
+
+  it('shows the most recent bookmarked question first', async () => {
+    const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(3) }
+    mockReadDomain.mockResolvedValue({ ok: true, data: domain })
+    mockSelect.mockResolvedValue('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showBookmarks('typescript')
+
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    expect(allLogs).toContain('Question 3')
+    expect(allLogs).not.toContain('Question 1')
     consoleSpy.mockRestore()
   })
 })
@@ -410,7 +425,7 @@ describe('showBookmarks — Bookmark toggle', () => {
 
     await showBookmarks('typescript')
 
-    // After removing Q1's bookmark and pressing next, we land on Q2 at index 0 of [Q2, Q3]
+    // After removing Q3's bookmark and pressing next, we land on Q2 at index 0 of [Q2, Q1]
     const thirdMessage = mockSelect.mock.calls[2][0].message
     expect(thirdMessage).toContain('Bookmark 1 of 2')
     consoleSpy.mockRestore()
@@ -429,7 +444,7 @@ describe('showBookmarks — Bookmark toggle', () => {
 
     await showBookmarks('typescript')
 
-    // After removing Q2's bookmark and pressing prev, we land on Q1 at index 0 of [Q1, Q3]
+    // After removing Q2's bookmark and pressing prev, we land on Q3 at index 0 of [Q3, Q1]
     const fourthMessage = mockSelect.mock.calls[3][0].message
     expect(fourthMessage).toContain('Bookmark 1 of 2')
     consoleSpy.mockRestore()

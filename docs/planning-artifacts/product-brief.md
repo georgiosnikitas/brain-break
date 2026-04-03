@@ -4,8 +4,12 @@ status: complete
 inputDocuments: []
 date: 2026-03-01
 author: George
-lastEdited: '2026-03-31'
-editHistory:  - date: '2026-03-31'
+lastEdited: '2026-04-04'
+editHistory:  - date: '2026-04-04'
+    changes: 'ASCII Art Milestone setting added: milestone threshold is now configurable in Settings with three options (Instant/0, Quick/10, Classic/100; default: Classic). MVP Feature Summary updated with configurable threshold. Aligns with PRD Feature 8 and Feature 18, Epic 12 Story 12.3, and FR49.'
+  - date: '2026-04-03'
+    changes: 'MVP Feature Summary updated from 15 to 16 core capabilities: added ASCII Art (Milestone Unlock) — domain sub-menu shows gradient progress bar toward 100 correct answers; once unlocked, displays FIGlet ASCII art with cyan-to-magenta gradient. Aligns with PRD Feature 18, Epic 12, and FR48.'
+  - date: '2026-03-31'
     changes: 'MVP Feature Summary updated from 14 to 15 core capabilities: added Challenge Mode (Sprint) — timed sprint sessions accessible from the domain sub-menu; user selects question count (5/10/20) and time budget (2/5/10 min); all N questions preloaded upfront; visible countdown timer never pauses; post-answer nav limited to Next/Back; sprint ends when questions run out or time expires; only answered questions recorded in history. Aligns with PRD Feature 17, Epic 11, and FR44–FR46. Key Differentiators table updated with Timed sprint mode row.'  - date: '2026-03-30'
     changes: 'MVP Feature Summary updated from 13 to 14 core capabilities: added Question Bookmarking (bookmark any answered question from quiz or history, View Bookmarks screen in domain sub-menu with navigation identical to View History, per-domain storage, no cap). Aligns with PRD Feature 16, Epic 10, and FR41–FR43.'  - date: '2026-03-25'
     changes: 'MVP Feature Summary updated from 10 to 12 core capabilities: added Welcome Screen (branded splash with gradient ASCII art, tagline, version — controllable via showWelcome setting) and Static Banner (persistent 🧠🔨 Brain Break header + gradient shadow bar on every screen except Welcome/Provider Setup). Aligns with PRD Features 11 and 12, Epic 8, and FR31–FR34.'
@@ -113,7 +117,7 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 
 ## MVP Feature Summary
 
-The MVP delivers fifteen core capabilities:
+The MVP delivers sixteen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
@@ -130,6 +134,7 @@ The MVP delivers fifteen core capabilities:
 - **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar
 - **Terminal UI highlighting & color system** — full-row menu highlight, semantic post-answer colors, speed tier badge colors, and difficulty level badge colors
 - **Coffee supporter screen** — dedicated screen with ASCII QR code linking to the creator's Buy Me a Coffee page
+- **ASCII art (milestone unlock)** — FIGlet ASCII art rendering of the domain name with cyan-to-magenta gradient, unlocked after reaching a configurable milestone (default: 100 cumulative correct answers; configurable to 0 or 10 in Settings); before unlock, the domain sub-menu shows a gradient progress bar with percentage, and the ASCII Art screen displays a motivational message with progress
 
 → Full feature specifications and acceptance criteria: [prd.md](prd.md)
 

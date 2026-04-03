@@ -1,8 +1,11 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-04-03'
+lastEdited: '2026-04-04'
 status: 'complete'
 editHistory:
+  - date: '2026-04-04'
+    changes: 'ASCII Art Milestone setting: FR49 added (configurable milestone threshold with three options — 0, 10, 100 — default 100; stored as asciiArtMilestone in settings.json). FR3 updated (ASCII Art label references configurable threshold via FR49). FR48 updated (milestone-gated behind configurable threshold instead of hardcoded 100). FR15 updated (Settings screen gains ASCII Art Milestone selector). FR17 updated (settings defaults expanded with asciiArtMilestone: 100). FR Coverage Map updated (FR49 → Epic 5, Epic 12). Epic 12 description and FRs covered updated. Story 12.3 added (ASCII Art Milestone Setting). Reflects PRD edit 2026-04-04 (Feature 8 and Feature 18 configurable threshold).'
+    changes: 'ASCII Art milestone unlock gating: FR48 updated (ASCII Art locked behind 100 cumulative correct answers per domain; domain sub-menu label shows gradient progress bar when locked, sparkle when unlocked; locked screen shows motivational message with progress bar; unlocked screen renders FIGlet art as before). FR3 updated (ASCII Art label dynamic with unlock status). FR Coverage Map FR48 description updated. Epic 12 description and Story 12.1 ACs updated with locked/unlocked states. Reflects PRD edit 2026-04-03 (Feature 18 milestone unlock).'
   - date: '2026-04-03'
     changes: 'Duplicate domain name validation added: FR47 added to Requirements Inventory (slugified comparison against active and archived domains with context-specific messages). FR Coverage Map updated (FR47 → Epic 2). Epic 2 FRs covered updated to include FR47. Story 2.2 duplicate AC replaced — previously a single vague AC ("informs me the domain already exists and returns to home screen"); now two explicit ACs: active duplicate shows "already exists" and returns to name prompt; archived duplicate shows "already exists in your archived domains" and returns to name prompt. Both cases keep the user in the create flow. Reflects PRD edit 2026-04-03 (Feature 1 duplicate-domain validation).'
   - date: '2026-04-01'
@@ -66,7 +69,7 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, Challenge, History, Bookmarks, Statistics, Archive, Delete, and Back. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. Selecting Challenge opens the sprint setup screen (see FR44). After a quiz or challenge sprint session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, and Back. The ASCII Art label dynamically reflects the domain's unlock status: when the domain has fewer correct answers than the configured ASCII Art Milestone threshold (FR49, default: 100), the label shows a cyan-to-magenta gradient progress bar with percentage (e.g., `ASCII Art [████░░░░░░] 42%`); when the domain has reached the threshold, the label shows `ASCII Art ✨`. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. Selecting Challenge opens the sprint setup screen (see FR44). Selecting ASCII Art opens the milestone-gated ASCII Art screen (see FR48). After a quiz or challenge sprint session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
@@ -90,11 +93,11 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), and Welcome & Exit Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3", showWelcome: true }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3", asciiArtMilestone: 100, showWelcome: true }`.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -156,6 +159,10 @@ FR46: Challenge Mode sprint termination and history — the sprint ends on which
 
 FR47: When creating a new domain, after the user enters a name the app validates uniqueness by comparing the slugified form against all existing domain files (both active and archived). If a matching active domain exists, the app displays: "A domain named '[name]' already exists." and returns the user to the name input prompt. If a matching archived domain exists, the app displays: "A domain named '[name]' already exists in your archived domains." and returns the user to the name input prompt. Creation only proceeds when no duplicate is found.
 
+FR48: The domain sub-menu includes an **ASCII Art** action positioned after **Statistics**. The ASCII Art feature is milestone-gated behind the configured ASCII Art Milestone threshold (FR49, default: 100 cumulative correct answers per domain). When locked (below threshold), the screen shows a motivational message with the threshold value, a gradient progress bar with percentage (capped at 100%), and a Back choice. When unlocked (at or above threshold), the screen renders the current domain slug locally via `figlet.textSync()` using a randomly selected font from a curated list of 14 FIGlet fonts. The screen uses the standard banner shell, displays the header `🎨 ASCII Art — <domain>`, colorizes the rendered rows with the cyan-to-magenta gradient system, and provides `🔄 Regenerate`, separator, and `↩️  Back` controls. Selecting Regenerate rerenders immediately using a different font from the curated list. Selecting Back or pressing Ctrl+C returns the user to the domain sub-menu. No AI provider, network call, or loading spinner is involved.
+
+FR49: The Settings screen includes an **ASCII Art Milestone** selector positioned before the Welcome & Exit Screen toggle. The selector offers three options via arrow key navigation: **Instant (0 questions)**, **Quick (10 questions)**, and **Classic (100 questions)** — default is Classic (100). The selected value is stored as `asciiArtMilestone` (number: `0` | `10` | `100`) in `settings.json` and determines the cumulative correct answer threshold required to unlock ASCII Art per domain (FR48). The setting is global and retroactive — changing the threshold immediately affects all domains. When set to 0, ASCII Art is unlocked from the start for all domains.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -190,7 +197,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 
 - **CI:** GitHub Actions workflow (`ci.yml`) running `tsc --noEmit` + `vitest` on push.
 
-- **Distribution:** `bin` field in `package.json` pointing to `dist/index.js`. `engines.node: ">=25.8.0"`. npx-compatible.
+- **Distribution:** `bin` field in `package.json` pointing to `dist/index.js`. `engines.node: ">=22.0.0"`. npx-compatible.
 
 - **Testing:** Co-located `*.test.ts` files alongside each source file. No separate `__tests__/` folder.
 
@@ -200,7 +207,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 |---|---|---|
 | FR1 | Epic 2 | Home screen — domain list with score + count; select opens domain sub-menu |
 | FR2 | Epic 2 | Create new domain via free-text input |
-| FR3 | Epic 2 | Domain sub-menu — Play/Challenge/History/Bookmarks/Stats/Archive/Delete/Back + motivational message on Play |
+| FR3 | Epic 2 | Domain sub-menu — Play/Challenge/History/Bookmarks/Statistics/ASCII Art/Archive/Delete/Back + motivational message on Play |
 | FR4 | Epic 2 | Archive domain from domain sub-menu (preserves all data) |
 | FR5 | Epic 2 | Archived domains + unarchive |
 | FR6 | Epic 3, Epic 7 | Multi-provider question generation + SHA-256 deduplication |
@@ -244,6 +251,8 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR44 | Epic 11 | Challenge action in domain sub-menu + sprint setup screen (sprint duration / sprint size presets) + question preloading |
 | FR45 | Epic 11 | Sprint execution — visible countdown timer, limited post-answer nav (Next/Back only), per-question speed tier |
 | FR46 | Epic 11 | Sprint termination (four conditions), auto-submit on timer expiry, history rules (answered only), sprint result in session summary |
+| FR48 | Epic 12 | ASCII Art screen — milestone-gated behind configurable threshold (FR49, default: 100 correct answers); locked state shows progress bar + motivational message; unlocked state renders FIGlet art with gradient coloring and Regenerate/Back navigation |
+| FR49 | Epic 5, Epic 12 | ASCII Art Milestone setting — three threshold options (Instant/0, Quick/10, Classic/100), default Classic; stored as `asciiArtMilestone` in settings.json; affects all ASCII Art unlock gating |
 | FR47 | Epic 2 | Duplicate domain name validation — slugified comparison against active and archived domains with context-specific messages |
 
 | NFR | Epic | Coverage |
@@ -264,7 +273,7 @@ Users can clone the repo, install dependencies, and run `tsx src/index.ts` to re
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
 
 ### Epic 2: Domain Management
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, History, Statistics, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24, FR47
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
@@ -318,6 +327,12 @@ Users can launch a timed sprint session from the domain sub-menu — configuring
 **FRs updated:** FR3 (Challenge added to domain sub-menu), FR39 (Sprint result field added)
 **NFRs covered:** NFR2 (AI provider error during preload), NFR5 (sprint setup screen in terminal reset list)
 
+### Epic 12: ASCII Art
+Users can select an ASCII Art option from the domain sub-menu to view their progress toward unlocking FIGlet ASCII art for the domain name. The art unlocks after reaching the configured ASCII Art Milestone threshold (default: 100 cumulative correct answers, configurable in Settings to 0 or 10) — until then, the menu label shows a gradient progress bar with percentage, and the screen displays a motivational message with progress. Once unlocked, the screen renders FIGlet ASCII art colored with the app's signature cyan-to-magenta gradient.
+**FRs covered:** FR48, FR49
+**FRs updated:** FR3 (ASCII Art label dynamic with configurable threshold), FR15 (Settings screen gains milestone selector), FR17 (settings defaults expanded)
+**NFRs covered:** none — local rendering only, with no provider or network dependency
+
 ---
 
 ## Epic 1: Project Foundation & Developer Infrastructure
@@ -346,7 +361,7 @@ So that I have a verified, runnable foundation to build all features on.
 
 **Given** the project structure  
 **When** I inspect the repo  
-**Then** `package.json` has `"type": "module"`, a `bin` field pointing to `dist/index.js`, `engines.node: ">=25.8.0"`, and all required scripts (`dev`, `build`, `start`, `typecheck`, `test`, `test:watch`)  
+**Then** `package.json` has `"type": "module"`, a `bin` field pointing to `dist/index.js`, `engines.node: ">=22.0.0"`, and all required scripts (`dev`, `build`, `start`, `typecheck`, `test`, `test:watch`)  
 **And** `tsconfig.json` has `strict: true`, `module: "nodenext"`, `moduleResolution: "nodenext"`, `target: "es2022"`  
 **And** the full `src/` directory tree exists (all files may be empty stubs): `index.ts`, `router.ts`, `screens/`, `ai/`, `domain/`, `utils/`  
 **And** `.gitignore` excludes `node_modules/` and `dist/`  
@@ -2328,3 +2343,121 @@ So that I always get accurate feedback and my progress is correctly recorded reg
 **Given** `screens/challenge.test.ts`, `screens/domain-menu.test.ts`, and `domain/scoring.test.ts` are updated  
 **When** I run `npm test`  
 **Then** all tests pass, covering: normal completion (all N answered) → green sprint result; timer-expired mid-question → auto-submit incorrect + red sprint result; timer-expired mid-post-answer → sprint ends, correct count unchanged; Back exit → sprint ends, answers so far recorded; unanswered preloaded questions not in history, hashes not stored; `writeDomain()` called per answered question; auto-submitted record has correct fields; session summary receives sprint config and renders Sprint result field correctly
+
+---
+
+## Epic 12: ASCII Art
+
+Users can select an ASCII Art option from the domain sub-menu to view their progress toward unlocking FIGlet ASCII art for the domain name. The art unlocks after 100 cumulative correct answers — until then, the menu label shows a gradient progress bar with percentage, and the screen displays a motivational message with progress. Once unlocked, the screen renders FIGlet ASCII art colored with the app's signature cyan-to-magenta gradient.
+
+### Story 12.1: ASCII Art Screen
+
+As a user,
+I want the ASCII Art option in the domain sub-menu to show my progress toward unlocking it, and once I've answered 100 questions correctly, I want to see a FIGlet-rendered ASCII art banner of my domain name colored in cyan-to-magenta gradient,
+So that I have a rewarding milestone to work toward and a fun, personalized visual once I've earned it.
+
+**Acceptance Criteria:**
+
+**Given** the domain sub-menu is displayed for a domain with fewer than 100 correct answers  
+**When** I view the list of actions  
+**Then** a `🎨 ASCII Art` option appears after `📊 Statistics` and before `🗄  Archive`  
+**And** the label includes a compact cyan-to-magenta gradient progress bar with percentage (e.g., `🎨 ASCII Art [████░░░░░░] 42%`)  
+
+**Given** the domain sub-menu is displayed for a domain with 100 or more correct answers  
+**When** I view the list of actions  
+**Then** the ASCII Art label displays `🎨 ASCII Art ✨`  
+
+**Given** I select `🎨 ASCII Art` from the domain sub-menu and the domain has fewer than 100 correct answers  
+**When** the screen renders  
+**Then** the screen clears and displays:
+  - A header: `🎨 ASCII Art — <domain>` (using `header()`, same pattern as Statistics)  
+  - A motivational message: `🔒 ASCII Art unlocks when you've answered 100 questions correctly in this domain!`  
+  - A progress line: `You're at X% — keep going!` where X is the current percentage  
+  - A larger gradient progress bar using `lerpColor` from cyan to magenta for filled blocks (`█`) and dim styling for unfilled blocks (`░`)  
+  - A separator and a `←  Back` choice  
+
+**Given** the locked ASCII Art screen is displayed  
+**When** I select `←  Back` or press Ctrl+C  
+**Then** I am returned to the domain sub-menu  
+
+**Given** I select `🎨 ASCII Art` from the domain sub-menu and the domain has 100 or more correct answers  
+**When** the screen renders  
+**Then** the domain name is rendered as ASCII art using `figlet.textSync()` with a randomly selected font from a curated list of 14 FIGlet fonts  
+**And** the screen clears and displays:
+  - A header: `🎨 ASCII Art — <domain>` (using `header()`, same pattern as Statistics)  
+  - The rendered ASCII art, colored row-by-row using `lerpColor` from cyan (top) to magenta (bottom)  
+  - A `🔄 Regenerate` choice  
+  - A separator  
+  - A `←  Back` choice  
+
+**Given** the unlocked ASCII art screen is displayed  
+**When** I select `🔄 Regenerate`  
+**Then** the domain name rerenders immediately using a different font from the same curated list  
+
+**Given** the unlocked ASCII art screen is displayed  
+**When** I select `←  Back` or press Ctrl+C  
+**Then** I am returned to the domain sub-menu  
+
+**Given** I select `🎨 ASCII Art`  
+**When** the screen renders (locked or unlocked)  
+**Then** rendering is local and instant — no network calls, no loading spinner, no AI dependency  
+
+**Given** `src/screens/ascii-art.ts` and related test files are created  
+**When** I run `npm test`  
+**Then** all tests pass, covering: ASCII Art label shows progress bar when locked; ASCII Art label shows sparkle when unlocked; selecting it when locked shows motivational message with progress bar; selecting it when unlocked renders FIGlet art with gradient coloring; Regenerate rerenders with a different font; Back returns to domain sub-menu; Ctrl+C returns to domain sub-menu
+
+### Story 12.3: ASCII Art Milestone Setting
+
+As a user,
+I want to configure the ASCII Art unlock milestone in Settings with three options — Instant (0 questions), Quick (10 questions), and Classic (100 questions) — so that I can choose how much effort is required to unlock ASCII Art for each domain.
+
+**Acceptance Criteria:**
+
+**Given** I open the Settings screen  
+**When** I view the list of settings  
+**Then** a `🎨 ASCII Art Milestone` selector is displayed before the `🎬 Welcome & Exit screen` toggle  
+**And** it shows the currently active option name (Instant / Quick / Classic)  
+
+**Given** I select the ASCII Art Milestone setting  
+**When** the selector opens  
+**Then** three options are shown: `Instant (0 questions)`, `Quick (10 questions)`, `Classic (100 questions)`  
+**And** the current value is pre-selected  
+
+**Given** I select `Classic (100 questions)` (the default)  
+**When** I save settings  
+**Then** `asciiArtMilestone` is stored as `100` in `settings.json`  
+**And** ASCII Art requires 100 cumulative correct answers to unlock per domain  
+
+**Given** I select `Instant (0 questions)`  
+**When** I save settings  
+**Then** `asciiArtMilestone` is stored as `0` in `settings.json`  
+**And** ASCII Art is immediately unlocked for all domains (label shows `🎨 ASCII Art ✨`)  
+
+**Given** I select `Quick (10 questions)`  
+**When** I save settings  
+**Then** `asciiArtMilestone` is stored as `10` in `settings.json`  
+**And** ASCII Art requires 10 cumulative correct answers to unlock per domain  
+
+**Given** a domain has 50 correct answers and I change the milestone from Classic (100) to Quick (10)  
+**When** the domain sub-menu renders  
+**Then** the ASCII Art label shows `🎨 ASCII Art ✨` (retroactively unlocked)  
+
+**Given** a domain has 50 correct answers and I change the milestone from Quick (10) to Classic (100)  
+**When** the domain sub-menu renders  
+**Then** the ASCII Art label shows the progress bar with 50% (retroactively re-locked)  
+
+**Given** the locked ASCII Art screen is displayed  
+**When** the motivational message renders  
+**Then** the message dynamically reflects the configured threshold, e.g., "🔒 ASCII Art unlocks when you've answered 10 questions correctly!" (not hardcoded to 100)  
+
+**Given** the progress bar is displayed (locked screen or domain sub-menu label)  
+**When** correctCount exceeds the configured threshold  
+**Then** the progress bar and percentage are capped at 100%  
+
+**Given** `asciiArtMilestone` is missing from `settings.json` (existing users upgrading)  
+**When** the settings file is loaded  
+**Then** the schema applies the default value of `100` — existing behavior is preserved  
+
+**Given** the Settings screen, ASCII Art screen, and domain menu are updated  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests cover: schema validation for `asciiArtMilestone` (0/10/100 accepted, other values rejected, default 100); settings screen shows milestone selector; ASCII Art locked/unlocked behavior with different thresholds; domain menu label adapts to threshold; motivational message reflects configured value; progress bar caps at 100%

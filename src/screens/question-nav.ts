@@ -22,7 +22,7 @@ export function buildNavChoices(
   if (currentIndex < totalItems - 1) choices.push({ name: '➡️  Next question', value: 'next' })
   if (currentIndex > 0) choices.push({ name: '⬅️  Previous question', value: 'prev' })
   if (choices.length > 0) choices.push(new Separator())
-  choices.push({ name: '←  Back', value: 'back' })
+  choices.push({ name: '↩️  Back', value: 'back' })
   return choices
 }
 

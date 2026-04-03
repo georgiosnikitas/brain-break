@@ -96,9 +96,9 @@ async function askTimedPostAnswerAction(remainingMs: number): Promise<PostAnswer
     const action = await select<'next' | 'back'>({
       message: 'Next action:',
       choices: [
-        { name: '▶️  Next question', value: 'next' as const },
+        { name: '▶️ Next question', value: 'next' as const },
         new Separator(),
-        { name: '←  Back', value: 'back' as const },
+        { name: '↩️  Back', value: 'back' as const },
       ],
       theme: menuTheme,
     }, { signal: controller.signal })

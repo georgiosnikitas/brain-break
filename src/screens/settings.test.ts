@@ -184,6 +184,14 @@ describe('showSettingsScreen', () => {
     )
   })
 
+  it('uses a taller page size on the main settings menu', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(mockSelect.mock.calls[0]?.[0]).toEqual(expect.objectContaining({ pageSize: 10 }))
+  })
+
   it('shows "Not set" label when provider is null', async () => {
     mockSelect.mockResolvedValueOnce('back')
 
@@ -219,6 +227,7 @@ describe('showSettingsScreen', () => {
       provider: 'openai',
       openaiModel: 'gpt-4o-mini',
     }))
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ pageSize: 10 }))
   })
 
   it('provider validation success displays LLM greeting', async () => {
@@ -370,6 +379,94 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ showWelcome: false }))
+  })
+
+  it('renders ASCII Art Milestone label with Classic when asciiArtMilestone is 100', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const milestoneChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'asciiArtMilestone')
+    expect(milestoneChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone: Classic') })
+    )
+  })
+
+  it('renders ASCII Art Milestone label with Instant when asciiArtMilestone is 0', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), asciiArtMilestone: 0 } })
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const milestoneChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'asciiArtMilestone')
+    expect(milestoneChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone: Instant') })
+    )
+  })
+
+  it('selecting asciiArtMilestone action triggers milestone selector prompt', async () => {
+    mockSelect
+      .mockResolvedValueOnce('asciiArtMilestone')
+      .mockResolvedValueOnce(10)
+      .mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      message: 'ASCII Art Milestone',
+      default: 100,
+    }))
+  })
+
+  it('ASCII Art Milestone selector includes a Back option after a separator', async () => {
+    mockSelect
+      .mockResolvedValueOnce('asciiArtMilestone')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const milestonePrompt = mockSelect.mock.calls[1]?.[0]
+    expect(milestonePrompt).toEqual(expect.objectContaining({ message: 'ASCII Art Milestone' }))
+    expect(milestonePrompt?.choices).toHaveLength(5)
+    expect(milestonePrompt?.choices[4]).toEqual({ name: '↩️  Back', value: 'back' })
+  })
+
+  it('saving settings includes asciiArtMilestone in written settings', async () => {
+    mockSelect
+      .mockResolvedValueOnce('asciiArtMilestone')
+      .mockResolvedValueOnce(10)
+      .mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ asciiArtMilestone: 10 }))
+  })
+
+  it('Back from the ASCII Art Milestone selector leaves the value unchanged', async () => {
+    mockSelect
+      .mockResolvedValueOnce('asciiArtMilestone')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ asciiArtMilestone: 100 }))
+  })
+
+  it('ASCII Art Milestone choice appears before Welcome & Exit screen choice', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const choices = firstCallArgs.choices.filter((c: { value?: string }) => c?.value)
+    const milestoneIdx = choices.findIndex((c: { value?: string }) => c?.value === 'asciiArtMilestone')
+    const welcomeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'showWelcome')
+    expect(milestoneIdx).toBeLessThan(welcomeIdx)
+    expect(milestoneIdx).toBeGreaterThanOrEqual(0)
   })
 })
 

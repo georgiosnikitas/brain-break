@@ -133,6 +133,7 @@ export const SettingsFileSchema = z.object({
   geminiModel: z.string().min(1).default(DEFAULT_GEMINI_MODEL),
   ollamaEndpoint: z.string().min(1).default(DEFAULT_OLLAMA_ENDPOINT),
   ollamaModel: z.string().min(1).default(DEFAULT_OLLAMA_MODEL),
+  asciiArtMilestone: z.union([z.literal(0), z.literal(10), z.literal(100)]).default(100),
   showWelcome: z.boolean().default(true),
 })
 export type SettingsFile = z.infer<typeof SettingsFileSchema>
@@ -147,6 +148,7 @@ export function defaultSettings(): SettingsFile {
     geminiModel: DEFAULT_GEMINI_MODEL,
     ollamaEndpoint: DEFAULT_OLLAMA_ENDPOINT,
     ollamaModel: DEFAULT_OLLAMA_MODEL,
+    asciiArtMilestone: 100,
     showWelcome: true,
   }
 }

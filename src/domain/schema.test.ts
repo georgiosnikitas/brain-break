@@ -391,6 +391,7 @@ describe('defaultSettings — provider fields', () => {
     const s = defaultSettings()
     expect(Object.keys(s).sort((a, b) => a.localeCompare(b))).toEqual([
       'anthropicModel',
+      'asciiArtMilestone',
       'geminiModel',
       'language',
       'ollamaEndpoint',
@@ -431,6 +432,38 @@ describe('showWelcome setting', () => {
     }
     const parsed = SettingsFileSchema.parse(oldSettings)
     expect(parsed.showWelcome).toBe(true)
+  })
+})
+
+describe('asciiArtMilestone setting', () => {
+  it('accepts asciiArtMilestone: 0', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), asciiArtMilestone: 0 })
+    expect(parsed.asciiArtMilestone).toBe(0)
+  })
+
+  it('accepts asciiArtMilestone: 10', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), asciiArtMilestone: 10 })
+    expect(parsed.asciiArtMilestone).toBe(10)
+  })
+
+  it('accepts asciiArtMilestone: 100', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), asciiArtMilestone: 100 })
+    expect(parsed.asciiArtMilestone).toBe(100)
+  })
+
+  it('rejects invalid asciiArtMilestone values', () => {
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), asciiArtMilestone: 50 }).success).toBe(false)
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), asciiArtMilestone: -1 }).success).toBe(false)
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), asciiArtMilestone: 'instant' }).success).toBe(false)
+  })
+
+  it('defaults asciiArtMilestone to 100 when omitted (existing users upgrading)', () => {
+    const parsed = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
+    expect(parsed.asciiArtMilestone).toBe(100)
+  })
+
+  it('returns asciiArtMilestone: 100 in defaultSettings()', () => {
+    expect(defaultSettings().asciiArtMilestone).toBe(100)
   })
 })
 

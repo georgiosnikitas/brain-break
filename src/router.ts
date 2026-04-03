@@ -11,6 +11,7 @@ import { showStats as showStatsScreen } from './screens/stats.js'
 import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSprintSetup } from './screens/sprint-setup.js'
 import { showChallengeExecution } from './screens/challenge.js'
+import { showAsciiArtScreen } from './screens/ascii-art.js'
 import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
@@ -60,7 +61,7 @@ export async function showChallenge(slug: string): Promise<SessionData | null> {
     try {
       await select({
         message: 'Something went wrong',
-        choices: [new Separator(), { name: '←  Back', value: 'back' as const }],
+        choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
         theme: menuTheme,
       })
     } catch (err) {
@@ -104,6 +105,10 @@ export async function showBookmarks(slug: string): Promise<void> {
 
 export async function showStats(slug: string): Promise<void> {
   await showStatsScreen(slug)
+}
+
+export async function showAsciiArt(slug: string, correctCount: number, threshold: number): Promise<void> {
+  await showAsciiArtScreen(slug, correctCount, threshold)
 }
 
 export async function deleteDomain(slug: string): Promise<void> {
