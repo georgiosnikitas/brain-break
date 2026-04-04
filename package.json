@@ -7,9 +7,6 @@
     "type": "git",
     "url": "git+https://github.com/georgiosnikitas/brain-break.git"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "bin": {
     "brain-break": "dist/index.js"
   },
@@ -20,7 +17,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "postinstall": "patch-package",
+    "prepare": "patch-package",
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
