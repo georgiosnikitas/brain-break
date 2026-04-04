@@ -163,7 +163,7 @@ jobs:
 
       - name: Publish to npm
         run: |
-          npm config delete //registry.npmjs.org/:_authToken
+          echo "registry=https://registry.npmjs.org/" > .npmrc
           VERSION=$(node -p "require('./package.json').version")
           if npm view brain-break@${VERSION} --registry=https://registry.npmjs.org 2>/dev/null; then
             echo "Version ${VERSION} already published to npm, skipping"
