@@ -126,8 +126,8 @@ export async function showSettings(): Promise<void> {
   await showSettingsScreen()
 }
 
-export async function showProviderSetup(settings: SettingsFile): Promise<void> {
-  await showProviderSetupScreen(settings)
+export async function showProviderSetup(settings: SettingsFile): Promise<boolean> {
+  return await showProviderSetupScreen(settings)
 }
 
 export async function showWelcome(): Promise<void> {

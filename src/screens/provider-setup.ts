@@ -1,37 +1,90 @@
-import { select } from '@inquirer/prompts'
+import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
+import ora from 'ora'
+import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
-import { PROVIDER_CHOICES, type AiProviderType, type SettingsFile } from '../domain/schema.js'
-import { menuTheme } from '../utils/format.js'
+import { PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type SettingsFile } from '../domain/schema.js'
+import { menuTheme, success, warn } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { promptForProviderSettings, testAndReport } from './provider-settings.js'
+import { promptForProviderSettings } from './provider-settings.js'
 
 const MESSAGE_DISPLAY_MS = 2000
 
-export async function showProviderSetupScreen(settings: SettingsFile): Promise<void> {
-  clearAndBanner()
-  console.log('\n🔧 First-Time Setup\n')
-  console.log('Select your preferred AI provider to get started.\n')
+async function saveSettings(settingsToSave: SettingsFile) {
+  const writeResult = await writeSettings(settingsToSave)
+  if (!writeResult.ok) {
+    console.error(`Failed to save settings: ${writeResult.error}`)
+  }
+}
 
+export async function showProviderSetupScreen(settings: SettingsFile): Promise<boolean> {
   try {
-    const provider = await select<AiProviderType>({
-      message: 'AI Provider',
-      choices: PROVIDER_CHOICES,
-      theme: menuTheme,
-    })
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      clearAndBanner()
+      console.log('\n🔧 First-Time Setup\n')
+      console.log('Select your preferred AI provider to get started.\n')
 
-    const updatedSettings = await promptForProviderSettings(provider, settings)
+      const provider = await select<AiProviderType | 'skip'>({
+        message: 'AI Provider',
+        choices: [
+          ...PROVIDER_CHOICES,
+          new Separator(),
+          { name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' as const },
+        ],
+        theme: menuTheme,
+      })
 
-    const message = await testAndReport(provider, updatedSettings)
-    console.log(`\n${message}`)
+      if (provider === 'skip') {
+        await saveSettings({ ...settings })
+        return true
+      }
 
-    await new Promise(resolve => setTimeout(resolve, MESSAGE_DISPLAY_MS))
+      const updatedSettings = await promptForProviderSettings(provider, settings)
+      const result = await runConnectionTest(provider, updatedSettings)
 
-    const writeResult = await writeSettings(updatedSettings)
-    if (!writeResult.ok) {
-      console.error(`Failed to save settings: ${writeResult.error}`)
+      if (!result.ok) {
+        console.log(`\n${warn(result.error)}`)
+
+        const action = await select<'retry' | 'skip'>({
+          message: 'What would you like to do?',
+          choices: [
+            { name: '🔄 Retry', value: 'retry' as const },
+            new Separator(),
+            { name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' as const },
+          ],
+          theme: menuTheme,
+        })
+
+        if (action === 'skip') {
+          await saveSettings({ ...updatedSettings, provider: null })
+          return true
+        }
+
+        continue
+      }
+
+      const providerLabel = PROVIDER_LABELS[provider]
+      const successTextParts = ['✓', providerLabel + ':', result.data]
+      const successMessage = success(successTextParts.join(' '))
+      console.log(`\n${successMessage}`)
+      await new Promise(resolve => setTimeout(resolve, MESSAGE_DISPLAY_MS))
+
+      await saveSettings(updatedSettings)
+      return false
     }
   } catch (err) {
     if (!(err instanceof ExitPromptError)) throw err
+    return false
   }
+}
+
+async function runConnectionTest(
+  provider: AiProviderType,
+  settings: SettingsFile,
+) {
+  const spinner = ora('Testing connection...').start()
+  const result = await testProviderConnection(provider, settings)
+  spinner.stop()
+  return result
 }

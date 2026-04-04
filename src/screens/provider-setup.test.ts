@@ -5,10 +5,14 @@ import { defaultSettings, type SettingsFile } from '../domain/schema.js'
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
-vi.mock('@inquirer/prompts', () => ({
-  select: vi.fn(),
-  input: vi.fn(),
-}))
+vi.mock('@inquirer/prompts', async () => {
+  const actual = await vi.importActual<typeof import('@inquirer/prompts')>('@inquirer/prompts')
+  return {
+    select: vi.fn(),
+    input: vi.fn(),
+    Separator: actual.Separator,
+  }
+})
 
 vi.mock('../ai/providers.js', () => ({
   testProviderConnection: vi.fn(),
@@ -35,7 +39,7 @@ vi.mock('../utils/format.js', () => ({
   menuTheme: {},
 }))
 
-import { select, input } from '@inquirer/prompts'
+import { Separator, select, input } from '@inquirer/prompts'
 import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
 import { clearAndBanner } from '../utils/screen.js'
@@ -49,6 +53,13 @@ const mockClearAndBanner = vi.mocked(clearAndBanner)
 
 let settings: SettingsFile
 let logSpy: ReturnType<typeof vi.spyOn>
+
+/** Run setup screen and advance fake timers past the success-message delay. */
+async function runSetup() {
+  const promise = showProviderSetupScreen(settings)
+  await vi.advanceTimersByTimeAsync(2000)
+  return promise
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -67,14 +78,12 @@ afterEach(() => {
 // Screen rendering
 // ---------------------------------------------------------------------------
 describe('showProviderSetupScreen', () => {
-  it('calls clearScreen as first operation', async () => {
+  it('calls clearAndBanner as first operation', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
     mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockClearAndBanner).toHaveBeenCalledOnce()
   })
@@ -84,33 +93,27 @@ describe('showProviderSetupScreen', () => {
     mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('First-Time Setup'))
   })
 
-  it('calls select with 5 provider choices in correct order', async () => {
+  it('calls select with 5 provider choices + separator + skip option', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
     mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
-    expect(mockSelect).toHaveBeenCalledWith(
-      expect.objectContaining({
-        choices: [
-          { name: 'GitHub Copilot', value: 'copilot' },
-          { name: 'OpenAI', value: 'openai' },
-          { name: 'Anthropic', value: 'anthropic' },
-          { name: 'Google Gemini', value: 'gemini' },
-          { name: 'Ollama', value: 'ollama' },
-        ],
-      }),
-    )
+    const choices = mockSelect.mock.calls[0]?.[0]?.choices
+    expect(choices).toHaveLength(7)
+    expect(choices?.[0]).toEqual({ name: 'GitHub Copilot', value: 'copilot' })
+    expect(choices?.[1]).toEqual({ name: 'OpenAI', value: 'openai' })
+    expect(choices?.[2]).toEqual({ name: 'Anthropic', value: 'anthropic' })
+    expect(choices?.[3]).toEqual({ name: 'Google Gemini', value: 'gemini' })
+    expect(choices?.[4]).toEqual({ name: 'Ollama', value: 'ollama' })
+    expect(choices?.[5]).toBeInstanceOf(Separator)
+    expect(choices?.[6]).toEqual({ name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' })
   })
 
   // -------------------------------------------------------------------------
@@ -121,9 +124,7 @@ describe('showProviderSetupScreen', () => {
     mockInput.mockResolvedValueOnce('gpt-4.1-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello from OpenAI!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: settings.openaiModel }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-4.1-mini' })
@@ -131,17 +132,19 @@ describe('showProviderSetupScreen', () => {
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-4.1-mini' })
   })
 
-  it('OpenAI selected + validation failure → warning message + settings still saved', async () => {
-    mockSelect.mockResolvedValueOnce('openai' as never)
+  it('OpenAI selected + validation failure → retry/skip shown, skip saves provider null', async () => {
+    mockSelect
+      .mockResolvedValueOnce('openai' as never)
+      .mockResolvedValueOnce('skip' as never)
     mockInput.mockResolvedValueOnce('gpt-4o-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    const result = await showProviderSetupScreen(settings)
 
+    expect(result).toBe(true)
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('API key missing'))
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai' })
+    expect(mockSelect).toHaveBeenCalledTimes(2)
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: null, openaiModel: 'gpt-4o-mini' })
   })
 
   it('OpenAI empty input resets to the default model', async () => {
@@ -150,9 +153,7 @@ describe('showProviderSetupScreen', () => {
     mockInput.mockResolvedValueOnce('')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-4o-mini' })
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-4o-mini' })
@@ -166,9 +167,7 @@ describe('showProviderSetupScreen', () => {
     mockInput.mockResolvedValueOnce('claude-3-5-haiku-latest')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Anthropic Model Name', default: settings.anthropicModel }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic', anthropicModel: 'claude-3-5-haiku-latest' })
@@ -183,9 +182,7 @@ describe('showProviderSetupScreen', () => {
     mockInput.mockResolvedValueOnce('gemini-2.5-flash')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Google Gemini Model Name', default: settings.geminiModel }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('gemini', { ...settings, provider: 'gemini', geminiModel: 'gemini-2.5-flash' })
@@ -199,9 +196,7 @@ describe('showProviderSetupScreen', () => {
     mockSelect.mockResolvedValueOnce('copilot' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockTestProviderConnection).toHaveBeenCalledWith('copilot', { ...settings, provider: 'copilot' })
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'copilot' })
@@ -217,9 +212,7 @@ describe('showProviderSetupScreen', () => {
       .mockResolvedValueOnce('mistral')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockInput).toHaveBeenCalledTimes(2)
     expect(mockInput).toHaveBeenCalledWith(
@@ -247,9 +240,7 @@ describe('showProviderSetupScreen', () => {
       .mockResolvedValueOnce('')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', {
       ...settings,
@@ -265,21 +256,100 @@ describe('showProviderSetupScreen', () => {
     })
   })
 
-  it('Ollama validation failure → warning message + settings still saved', async () => {
-    mockSelect.mockResolvedValueOnce('ollama' as never)
+  it('Ollama validation failure → retry/skip shown, skip saves provider null', async () => {
+    mockSelect
+      .mockResolvedValueOnce('ollama' as never)
+      .mockResolvedValueOnce('skip' as never)
     mockInput
       .mockResolvedValueOnce('http://localhost:11434')
       .mockResolvedValueOnce('llama3')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'Could not reach Ollama' })
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await showProviderSetupScreen(settings)
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Could not reach Ollama'))
     expect(mockWriteSettings).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'ollama' }),
+      expect.objectContaining({ provider: null, ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }),
     )
+  })
+
+  // -------------------------------------------------------------------------
+  // Skip from provider list
+  // -------------------------------------------------------------------------
+  it('Skip from provider list → saves provider null, no connection test', async () => {
+    mockSelect.mockResolvedValueOnce('skip' as never)
+
+    const result = await showProviderSetupScreen(settings)
+
+    expect(result).toBe(true)
+    expect(mockTestProviderConnection).not.toHaveBeenCalled()
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings })
+    expect(mockWriteSettings.mock.calls[0]?.[0]).toMatchObject({ provider: null })
+  })
+
+  // -------------------------------------------------------------------------
+  // Retry on failure then success
+  // -------------------------------------------------------------------------
+  it('Retry on failure → returns to provider selection, success saves provider', async () => {
+    mockSelect
+      .mockResolvedValueOnce('openai' as never)   // 1st: provider select
+      .mockResolvedValueOnce('retry' as never)     // 2nd: retry/skip
+      .mockResolvedValueOnce('openai' as never)    // 3rd: provider select again
+    mockInput
+      .mockResolvedValueOnce('gpt-4o-mini')        // 1st: model input
+      .mockResolvedValueOnce('gpt-4o-mini')        // 2nd: model input on retry
+    mockTestProviderConnection
+      .mockResolvedValueOnce({ ok: false, error: 'API key missing' })
+      .mockResolvedValueOnce({ ok: true, data: 'Hello from OpenAI!' })
+
+    const result = await runSetup()
+
+    expect(result).toBe(false)
+    expect(mockClearAndBanner).toHaveBeenCalledTimes(2)
+    expect(mockTestProviderConnection).toHaveBeenCalledTimes(2)
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Hello from OpenAI!'))
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-4o-mini' })
+  })
+
+  // -------------------------------------------------------------------------
+  // Retry on failure then skip
+  // -------------------------------------------------------------------------
+  it('Retry on failure then skip → saves provider null', async () => {
+    mockSelect
+      .mockResolvedValueOnce('openai' as never)   // 1st: provider select
+      .mockResolvedValueOnce('retry' as never)     // 2nd: retry/skip
+      .mockResolvedValueOnce('openai' as never)    // 3rd: provider select again
+      .mockResolvedValueOnce('skip' as never)      // 4th: retry/skip again
+    mockInput
+      .mockResolvedValueOnce('gpt-4o-mini')        // 1st: model input
+      .mockResolvedValueOnce('gpt-4o-mini')        // 2nd: model input on retry
+    mockTestProviderConnection
+      .mockResolvedValueOnce({ ok: false, error: 'API key missing' })
+      .mockResolvedValueOnce({ ok: false, error: 'Still missing' })
+
+    const result = await showProviderSetupScreen(settings)
+
+    expect(result).toBe(true)
+    expect(mockClearAndBanner).toHaveBeenCalledTimes(2)
+    expect(mockTestProviderConnection).toHaveBeenCalledTimes(2)
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: null, openaiModel: 'gpt-4o-mini' })
+  })
+
+  // -------------------------------------------------------------------------
+  // ExitPromptError during retry/skip select
+  // -------------------------------------------------------------------------
+  it('ExitPromptError during retry/skip select → no writeSettings, returns cleanly', async () => {
+    mockSelect
+      .mockResolvedValueOnce('openai' as never)
+      .mockRejectedValueOnce(new ExitPromptError())
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
+
+    const result = await showProviderSetupScreen(settings)
+
+    expect(result).toBe(false)
+    expect(mockWriteSettings).not.toHaveBeenCalled()
   })
 
   // -------------------------------------------------------------------------
@@ -293,9 +363,7 @@ describe('showProviderSetupScreen', () => {
 
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const promise = showProviderSetupScreen(settings)
-    await vi.advanceTimersByTimeAsync(2000)
-    await promise
+    await runSetup()
 
     expect(errorSpy).toHaveBeenCalledWith('Failed to save settings: disk full')
   })
@@ -306,8 +374,9 @@ describe('showProviderSetupScreen', () => {
   it('ExitPromptError during select → no writeSettings, returns cleanly', async () => {
     mockSelect.mockRejectedValueOnce(new ExitPromptError())
 
-    await showProviderSetupScreen(settings)
+    const result = await showProviderSetupScreen(settings)
 
+    expect(result).toBe(false)
     expect(mockWriteSettings).not.toHaveBeenCalled()
   })
 })

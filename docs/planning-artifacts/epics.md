@@ -4,6 +4,8 @@ lastEdited: '2026-04-04'
 status: 'complete'
 editHistory:
   - date: '2026-04-04'
+    changes: 'Provider Setup skip option: FR26 updated (provider list now ends with a line separator and ⏭️ Skip — set up later in ⚙️ Settings option). FR27 updated (validation failure now offers 🔄 Retry and ⏭️ Skip options instead of proceeding automatically; Skip saves provider: null). Story 7.4 ACs updated (skip option in provider list, skip AC, retry/skip on failure for OpenAI and Ollama paths, test coverage updated). Story 7.6 ACs updated (skip-after-failure and skip-from-list routing both save null provider and call showHome). Reflects PRD edit 2026-04-04 (Feature 8 First-Launch Provider Setup skip option).'
+  - date: '2026-04-04'
     changes: 'ASCII Art Milestone setting: FR49 added (configurable milestone threshold with three options — 0, 10, 100 — default 100; stored as asciiArtMilestone in settings.json). FR3 updated (ASCII Art label references configurable threshold via FR49). FR48 updated (milestone-gated behind configurable threshold instead of hardcoded 100). FR15 updated (Settings screen gains ASCII Art Milestone selector). FR17 updated (settings defaults expanded with asciiArtMilestone: 100). FR Coverage Map updated (FR49 → Epic 5, Epic 12). Epic 12 description and FRs covered updated. Story 12.3 added (ASCII Art Milestone Setting). Reflects PRD edit 2026-04-04 (Feature 8 and Feature 18 configurable threshold).'
     changes: 'ASCII Art milestone unlock gating: FR48 updated (ASCII Art locked behind 100 cumulative correct answers per domain; domain sub-menu label shows gradient progress bar when locked, sparkle when unlocked; locked screen shows motivational message with progress bar; unlocked screen renders FIGlet art as before). FR3 updated (ASCII Art label dynamic with unlock status). FR Coverage Map FR48 description updated. Epic 12 description and Story 12.1 ACs updated with locked/unlocked states. Reflects PRD edit 2026-04-03 (Feature 18 milestone unlock).'
   - date: '2026-04-03'
@@ -115,9 +117,9 @@ FR24: Users can permanently delete a domain from the domain sub-menu. Selecting 
 
 FR25: The home screen includes a "☕ Buy me a coffee" action positioned between the archived domains separator and the Exit action. Selecting it opens a dedicated screen displaying an ASCII QR code (small, indented) encoding the creator's support URL and the URL in plain text, with a single Back action that returns the user to the home screen.
 
-FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow key navigation.
+FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays what's needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
 FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the default). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
@@ -1630,12 +1632,19 @@ So that I can start using the app with my preferred provider without editing con
 **When** I inspect the screen  
 **Then** the terminal is cleared and a heading explains this is first-time setup  
 **And** a list of 5 providers is shown: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama — navigable with arrow keys  
+**And** below the provider list, a line separator is shown followed by a **⏭️ Skip — set up later in ⚙️ Settings** option  
+
+**Given** I select "⏭️ Skip" from the provider list  
+**When** the selection is confirmed  
+**Then** settings are saved with `provider: null` (no connection test is performed)  
+**And** the app navigates directly to the home screen  
+**And** all features except Play are accessible — attempting Play shows: "AI provider not ready. Go to Settings to configure."  
 
 **Given** I select "OpenAI" from the provider list  
 **When** the selection is confirmed  
 **Then** `validateProvider('openai', settings)` is called  
 **And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-4o-mini`; entering empty string resets to `gpt-4o-mini`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
-**And** if `OPENAI_API_KEY` env var is missing → message displayed: "Set the `OPENAI_API_KEY` environment variable and restart the app." — provider is still saved, app proceeds to home screen (non-blocking)  
+**And** if `OPENAI_API_KEY` env var is missing → message displayed: "Set the `OPENAI_API_KEY` environment variable and restart the app." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
 
 **Given** I select "Anthropic" from the provider list  
 **When** validation runs  
@@ -1654,11 +1663,12 @@ So that I can start using the app with my preferred provider without editing con
 **Then** I am prompted for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3`)  
 **And** the app tests connection to the endpoint  
 **And** if reachable → success message, settings saved (including `ollamaEndpoint` and `ollamaModel`), app proceeds to home screen  
-**And** if unreachable → message displayed: "Could not reach Ollama at [endpoint]. Ensure Ollama is running." — settings still saved, app proceeds to home screen (non-blocking)  
+**And** if unreachable → message displayed: "Could not reach Ollama at [endpoint]. Ensure Ollama is running." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
 
 **Given** validation fails for any provider  
-**When** the app proceeds to the home screen  
-**Then** all features except Play are accessible — attempting Play shows: "AI provider not ready. Go to Settings to configure." and returns to the domain sub-menu  
+**When** I select **⏭️ Skip**  
+**Then** settings are saved with `provider: null` and the app proceeds to the home screen  
+**And** all features except Play are accessible — attempting Play shows: "AI provider not ready. Go to Settings to configure." and returns to the domain sub-menu  
 
 **Given** the app is launched subsequently (settings.json exists with a non-null provider)  
 **When** the app starts  
@@ -1666,7 +1676,7 @@ So that I can start using the app with my preferred provider without editing con
 
 **Given** `screens/provider-setup.ts` has co-located tests  
 **When** I run `npm test`  
-**Then** all tests pass, covering: screen renders on null provider, all 5 provider selections, validation success and failure paths, Ollama endpoint/model prompts, settings saved after selection, non-blocking failure proceeds to home, `clearScreen()` called  
+**Then** all tests pass, covering: screen renders on null provider, all 5 provider selections, skip option present below separator, skip saves null provider and navigates to home, validation success and failure paths, retry on failure re-runs test, skip on failure saves null provider, Ollama endpoint/model prompts, settings saved after selection, `clearScreen()` called  
 
 ---
 
@@ -1744,8 +1754,12 @@ So that the first-launch flow is fully wired and subsequent launches skip setup 
 **Then** `router.showHome()` is called immediately — the home screen loads with the newly saved provider active  
 
 **Given** the startup flow is wired  
-**When** the Provider Setup screen fails validation but proceeds  
-**Then** `router.showHome()` is still called — the user sees the home screen and can explore all features except Play  
+**When** the Provider Setup screen fails validation and the user selects **⏭️ Skip**  
+**Then** settings are saved with `provider: null` and `router.showHome()` is called — the user sees the home screen and can explore all features except Play  
+
+**Given** the startup flow is wired  
+**When** the Provider Setup screen skip option is selected from the provider list (without selecting a provider)  
+**Then** settings are saved with `provider: null` and `router.showHome()` is called — same behavior as skip-after-failure  
 
 **Given** `router.ts` dependency rules are enforced  
 **When** I inspect `router.ts` imports  

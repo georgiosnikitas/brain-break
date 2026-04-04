@@ -4,7 +4,7 @@ status: complete
 project_name: brain-break
 user_name: George
 date: '2026-04-03'
-lastEdited: '2026-04-03'
+lastEdited: '2026-04-04'
 inputDocuments:
   - docs/planning-artifacts/product-brief.md
   - docs/planning-artifacts/prd.md
@@ -247,18 +247,21 @@ Layout and behavior:
 - Uses the standard bannered screen shell, not the branded Welcome shell
 - Displays `🔧 First-Time Setup` and a short instructional sentence
 - Prompts for provider selection from GitHub Copilot, OpenAI, Anthropic, Google Gemini, or Ollama
-- Immediately follows with provider-specific prompts:
+- Below the provider list, a line separator is shown followed by a **⏭️ Skip — set up later in ⚙️ Settings** option
+- Selecting a provider immediately follows with provider-specific prompts:
   - OpenAI, Anthropic, Gemini: model name input with sensible default
   - Ollama: endpoint URL and model name
   - Copilot: no model prompt
 - Runs a connection test spinner
-- Shows success or warning copy inline
-- Waits 2 seconds, saves settings, and continues startup
+- On success: shows success copy inline, saves settings with the selected provider, and continues startup
+- On failure: shows a provider-specific warning message, then presents **🔄 Retry** and **⏭️ Skip** options (separated by a line separator) — Retry re-runs the connection test for the same provider; Skip saves settings with `provider: null` and continues to the home screen
+- Selecting Skip (from either the provider list or after a failure) saves settings with `provider: null` and navigates directly to the home screen — all features except Play are accessible
 
 UX intent:
 
-- Non-blocking onboarding
-- Lets the user move forward even if validation fails
+- Non-blocking onboarding — the user is never stuck at setup
+- Skip provides an explicit escape hatch rather than silently proceeding after failure
+- Retry gives users who want to fix their config immediately a fast path back
 - Keeps setup narrow and practical rather than explanatory
 
 ### 2. Welcome
@@ -659,6 +662,7 @@ Provider flow:
 - Runs provider-specific subprompts
 - Tests connection with spinner
 - Displays a success or warning banner on the next render
+- Note: users who skipped Provider Setup on first launch will arrive at Settings with `provider: null` — this is the expected path for deferred provider configuration
 
 Other behavior:
 

@@ -6,11 +6,13 @@ import { defaultSettings } from './domain/schema.js'
 const settingsResult = await readSettings()
 const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
 
+let skippedProviderSetup = false
+
 if (settings.provider === null) {
-  await showProviderSetup(settings)
+  skippedProviderSetup = await showProviderSetup(settings)
 }
 
-if (settings.showWelcome) {
+if (!skippedProviderSetup && settings.showWelcome) {
   await showWelcome()
 }
 

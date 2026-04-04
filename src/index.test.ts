@@ -30,13 +30,27 @@ beforeEach(() => {
 })
 
 describe('startup flow', () => {
-  it('shows provider setup then home when provider is null', async () => {
+  it('shows provider setup, welcome, then home when provider is null and setup is not skipped', async () => {
     const settings = defaultSettings() // provider: null
     mockReadSettings.mockResolvedValueOnce({ ok: true, data: settings })
+    mockShowProviderSetup.mockResolvedValueOnce(false)
 
     await import('./index.js')
 
     expect(mockShowProviderSetup).toHaveBeenCalledWith(settings)
+    expect(mockShowWelcome).toHaveBeenCalledOnce()
+    expect(mockShowHome).toHaveBeenCalledOnce()
+  })
+
+  it('skips welcome and shows home directly when provider setup is skipped', async () => {
+    const settings = defaultSettings() // provider: null
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: settings })
+    mockShowProviderSetup.mockResolvedValueOnce(true)
+
+    await import('./index.js')
+
+    expect(mockShowProviderSetup).toHaveBeenCalledWith(settings)
+    expect(mockShowWelcome).not.toHaveBeenCalled()
     expect(mockShowHome).toHaveBeenCalledOnce()
   })
 
