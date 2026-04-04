@@ -24,9 +24,13 @@ vi.mock('../domain/store.js', () => ({
   writeDomain: mockWriteDomain,
 }))
 
-vi.mock('../domain/scoring.js', () => ({
-  applyAnswer: mockApplyAnswer,
-}))
+vi.mock('../domain/scoring.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../domain/scoring.js')>()
+  return {
+    ...actual,
+    applyAnswer: mockApplyAnswer,
+  }
+})
 
 vi.mock('../utils/hash.js', () => ({
   hashQuestion: mockHashQuestion,

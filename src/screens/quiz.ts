@@ -3,12 +3,12 @@ import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
 import { generateQuestion, generateExplanation, generateMicroLesson, type Question } from '../ai/client.js'
 import { readDomain, writeDomain, readSettings } from '../domain/store.js'
-import { applyAnswer } from '../domain/scoring.js'
+import { applyAnswer, buildQuestionRecord, accumulateDomain } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
 import { defaultDomainFile, defaultSettings, type QuestionRecord, type DomainFile, type AnswerOption, type SettingsFile, type SessionData } from '../domain/schema.js'
 import { colorIncorrect, warn, header, menuTheme, renderQuestionDetail } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { toggleBookmark } from './question-nav.js'
+import { toggleBookmark, buildAnswerChoices } from './question-nav.js'
 
 type NavResult = 'next' | 'exit' | null
 type PostAnswerAction = 'explain' | 'bookmark' | NavResult
@@ -20,12 +20,7 @@ async function askQuestion(
   try {
     const userAnswer = await select<AnswerOption>({
       message: question.question,
-      choices: [
-        { name: `A) ${question.options.A}`, value: 'A' as const },
-        { name: `B) ${question.options.B}`, value: 'B' as const },
-        { name: `C) ${question.options.C}`, value: 'C' as const },
-        { name: `D) ${question.options.D}`, value: 'D' as const },
-      ],
+      choices: buildAnswerChoices(question),
       theme: menuTheme,
     })
     const timeTakenMs = Date.now() - startTime
@@ -217,35 +212,16 @@ export async function showQuiz(domainSlug: string): Promise<SessionData | null> 
     const { userAnswer, timeTakenMs } = answered
 
     const isCorrect = userAnswer === question.correctAnswer
-    const { updatedMeta, scoreDelta, speedTier } = applyAnswer(
+    const applyResult = applyAnswer(
       domain.meta,
       isCorrect,
       timeTakenMs,
       question.speedThresholds,
     )
 
-    // Build record using difficultyLevel at the time the question was asked
     const hash = hashQuestion(question.question)
-    const record: QuestionRecord = {
-      question: question.question,
-      options: question.options,
-      correctAnswer: question.correctAnswer,
-      userAnswer,
-      isCorrect,
-      answeredAt: new Date().toISOString(),
-      timeTakenMs,
-      speedTier,
-      scoreDelta,
-      difficultyLevel: domain.meta.difficultyLevel,
-      bookmarked: false,
-    }
-
-    // Accumulate domain state — update lastSessionAt
-    domain = {
-      meta: { ...updatedMeta, lastSessionAt: new Date().toISOString() },
-      hashes: [...domain.hashes, hash],
-      history: [...domain.history, record],
-    }
+    const record = buildQuestionRecord(question, userAnswer, isCorrect, timeTakenMs, applyResult, domain.meta.difficultyLevel)
+    domain = accumulateDomain(domain, applyResult.updatedMeta, hash, record)
 
     sessionRecords.push(record)
 

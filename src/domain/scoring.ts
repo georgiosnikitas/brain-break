@@ -1,4 +1,4 @@
-import type { DomainMeta, SpeedTier } from './schema.js'
+import type { DomainMeta, SpeedTier, QuestionRecord, DomainFile, AnswerOption } from './schema.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,4 +86,44 @@ export function applyAnswer(
   }
 
   return { updatedMeta, scoreDelta, speedTier }
+}
+
+// ---------------------------------------------------------------------------
+// Record + domain accumulation helpers (shared by quiz and challenge screens)
+// ---------------------------------------------------------------------------
+
+export function buildQuestionRecord(
+  question: { question: string; options: { A: string; B: string; C: string; D: string }; correctAnswer: AnswerOption },
+  userAnswer: AnswerOption | 'TIMEOUT',
+  isCorrect: boolean,
+  timeTakenMs: number,
+  applyResult: ApplyAnswerResult,
+  difficultyLevel: number,
+): QuestionRecord {
+  return {
+    question: question.question,
+    options: question.options,
+    correctAnswer: question.correctAnswer,
+    userAnswer,
+    isCorrect,
+    answeredAt: new Date().toISOString(),
+    timeTakenMs,
+    speedTier: applyResult.speedTier,
+    scoreDelta: applyResult.scoreDelta,
+    difficultyLevel,
+    bookmarked: false,
+  }
+}
+
+export function accumulateDomain(
+  domain: DomainFile,
+  updatedMeta: DomainMeta,
+  hash: string,
+  record: QuestionRecord,
+): DomainFile {
+  return {
+    meta: { ...updatedMeta, lastSessionAt: new Date().toISOString() },
+    hashes: [...domain.hashes, hash],
+    history: [...domain.history, record],
+  }
 }

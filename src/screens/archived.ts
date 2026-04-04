@@ -3,18 +3,12 @@ import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, writeDomain, type DomainListEntry } from '../domain/store.js'
 import { dim, bold, warn, error as errorFmt, header, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import type { HomeEntry } from './home.js'
-import type { Result } from '../domain/schema.js'
+import { filterDomains, loadDomainEntries, type HomeEntry } from './home.js'
 
 export type ArchivedAction = { action: 'unarchive'; slug: string } | { action: 'back' }
 
-export function filterArchivedDomains(
-  entries: DomainListEntry[],
-): Extract<DomainListEntry, { corrupted: false }>[] {
-  return entries.filter(
-    (e): e is Extract<DomainListEntry, { corrupted: false }> => !e.corrupted && e.meta.archived,
-  )
-}
+/** @deprecated Use filterDomains({ archived: true }) */
+export const filterArchivedDomains = (entries: DomainListEntry[]) => filterDomains(entries, { archived: true })
 
 export function buildArchivedChoices(
   entries: HomeEntry[],
@@ -38,26 +32,6 @@ export function buildArchivedChoices(
   choices.push({ name: '↩️  Back', value: { action: 'back' } })
 
   return choices
-}
-
-async function loadArchivedEntries(
-  listResult: Awaited<Result<DomainListEntry[]>>,
-): Promise<HomeEntry[]> {
-  if (!listResult.ok) {
-    console.error(errorFmt(`Failed to load archived domains: ${listResult.error}`))
-    return []
-  }
-  const archived = filterArchivedDomains(listResult.data)
-  return Promise.all(
-    archived.map(async (entry) => {
-      const r = await readDomain(entry.slug)
-      return {
-        slug: entry.slug,
-        score: r.ok ? r.data.meta.score : entry.meta.score,
-        totalQuestions: r.ok ? r.data.history.length : 0,
-      }
-    }),
-  )
 }
 
 async function handleUnarchiveAction(slug: string): Promise<void> {
@@ -93,7 +67,7 @@ export async function showArchivedScreen(): Promise<void> {
     clearAndBanner()
     console.log(header('🗄  Archived domains'))
     const listResult = await listDomains()
-    const archivedEntries = await loadArchivedEntries(listResult)
+    const archivedEntries = await loadDomainEntries(listResult, { archived: true })
 
     if (archivedEntries.length === 0) {
       const answer = await promptArchivedSelection(archivedEntries)

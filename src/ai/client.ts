@@ -209,24 +209,25 @@ export async function preloadQuestions(
   return { ok: true, data: questions }
 }
 
-export async function generateMotivationalMessage(
-  trigger: MotivationalTrigger,
-  settings?: SettingsFile,
-): Promise<Result<string>> {
+async function callProvider(prompt: string, settings?: SettingsFile): Promise<Result<string>> {
   const effectiveSettings = settings ?? defaultSettings()
   const providerResult = createProvider(effectiveSettings)
   if (!providerResult.ok) {
     return { ok: false, error: providerResult.error }
   }
-  const provider = providerResult.data
-
   try {
-    const prompt = buildMotivationalPrompt(trigger, settings)
-    const message = (await provider.generateCompletion(prompt)).trim()
-    return { ok: true, data: message }
+    const text = (await providerResult.data.generateCompletion(prompt)).trim()
+    return { ok: true, data: text }
   } catch (err) {
     return { ok: false, error: classifyError(err, effectiveSettings) }
   }
+}
+
+export async function generateMotivationalMessage(
+  trigger: MotivationalTrigger,
+  settings?: SettingsFile,
+): Promise<Result<string>> {
+  return callProvider(buildMotivationalPrompt(trigger, settings), settings)
 }
 
 export async function generateExplanation(
@@ -234,20 +235,7 @@ export async function generateExplanation(
   userAnswer: AnswerOption,
   settings?: SettingsFile,
 ): Promise<Result<string>> {
-  const effectiveSettings = settings ?? defaultSettings()
-  const providerResult = createProvider(effectiveSettings)
-  if (!providerResult.ok) {
-    return { ok: false, error: providerResult.error }
-  }
-  const provider = providerResult.data
-
-  try {
-    const prompt = buildExplanationPrompt(question, userAnswer, settings)
-    const explanation = (await provider.generateCompletion(prompt)).trim()
-    return { ok: true, data: explanation }
-  } catch (err) {
-    return { ok: false, error: classifyError(err, effectiveSettings) }
-  }
+  return callProvider(buildExplanationPrompt(question, userAnswer, settings), settings)
 }
 
 export async function generateMicroLesson(
@@ -255,18 +243,5 @@ export async function generateMicroLesson(
   explanation: string,
   settings?: SettingsFile,
 ): Promise<Result<string>> {
-  const effectiveSettings = settings ?? defaultSettings()
-  const providerResult = createProvider(effectiveSettings)
-  if (!providerResult.ok) {
-    return { ok: false, error: providerResult.error }
-  }
-  const provider = providerResult.data
-
-  try {
-    const prompt = buildMicroLessonPrompt(question, explanation, settings)
-    const lesson = (await provider.generateCompletion(prompt)).trim()
-    return { ok: true, data: lesson }
-  } catch (err) {
-    return { ok: false, error: classifyError(err, effectiveSettings) }
-  }
+  return callProvider(buildMicroLessonPrompt(question, explanation, settings), settings)
 }

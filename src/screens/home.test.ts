@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildHomeChoices, filterActiveDomains, showHomeScreen, showCoffeeScreen, type HomeEntry, type HomeAction } from './home.js'
+import { buildHomeChoices, filterDomains, showHomeScreen, showCoffeeScreen, type HomeEntry, type HomeAction } from './home.js'
 import { makeMeta } from '../__test-helpers__/factories.js'
 
 // Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
@@ -163,7 +163,7 @@ describe('buildHomeChoices', () => {
 })
 
 // ---------------------------------------------------------------------------
-// filterActiveDomains
+// filterDomains
 // ---------------------------------------------------------------------------
 
 function activeEntry(slug: string): DomainListEntry {
@@ -178,25 +178,25 @@ function corruptedEntry(slug: string): DomainListEntry {
   return { slug, corrupted: true }
 }
 
-describe('filterActiveDomains', () => {
+describe('filterDomains', () => {
   it('returns empty array when input is empty', () => {
-    expect(filterActiveDomains([])).toHaveLength(0)
+    expect(filterDomains([], { archived: false })).toHaveLength(0)
   })
 
   it('includes active (non-archived, non-corrupted) entries', () => {
-    const result = filterActiveDomains([activeEntry('typescript')])
+    const result = filterDomains([activeEntry('typescript')], { archived: false })
     expect(result).toHaveLength(1)
     expect(result[0].slug).toBe('typescript')
   })
 
   it('excludes corrupted entries', () => {
-    const result = filterActiveDomains([activeEntry('a'), corruptedEntry('b')])
+    const result = filterDomains([activeEntry('a'), corruptedEntry('b')], { archived: false })
     expect(result).toHaveLength(1)
     expect(result[0].slug).toBe('a')
   })
 
   it('excludes archived entries', () => {
-    const result = filterActiveDomains([activeEntry('a'), archivedEntry('b')])
+    const result = filterDomains([activeEntry('a'), archivedEntry('b')], { archived: false })
     expect(result).toHaveLength(1)
     expect(result[0].slug).toBe('a')
   })
@@ -208,7 +208,7 @@ describe('filterActiveDomains', () => {
       archivedEntry('archived-1'),
       activeEntry('active-2'),
     ]
-    const result = filterActiveDomains(entries)
+    const result = filterDomains(entries, { archived: false })
     expect(result).toHaveLength(2)
     expect(result.map((e) => e.slug)).toEqual(['active-1', 'active-2'])
   })
@@ -353,6 +353,7 @@ describe('showHomeScreen — error paths', () => {
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
 
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('disk error'))
+    expect(errorSpy).toHaveBeenCalledTimes(1)
     errorSpy.mockRestore()
     exitSpy.mockRestore()
   })

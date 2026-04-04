@@ -1,12 +1,22 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
-import { type AnswerOption, type QuestionRecord, type SettingsFile, type DomainFile } from '../domain/schema.js'
-import { writeDomain } from '../domain/store.js'
-import { warn, menuTheme, renderQuestionDetail } from '../utils/format.js'
+import { type AnswerOption, type QuestionRecord, type SettingsFile, type DomainFile, defaultSettings } from '../domain/schema.js'
+import { writeDomain, readSettings } from '../domain/store.js'
+import { warn, header, menuTheme, renderQuestionDetail } from '../utils/format.js'
+import { clearAndBanner } from '../utils/screen.js'
 import { generateExplanation, generateMicroLesson, type Question } from '../ai/client.js'
 
 export type NavAction = 'next' | 'prev' | 'back' | 'explain' | 'teach' | 'bookmark'
+
+export function buildAnswerChoices(question: Question): Array<{ name: string; value: AnswerOption }> {
+  return [
+    { name: `A) ${question.options.A}`, value: 'A' as const },
+    { name: `B) ${question.options.B}`, value: 'B' as const },
+    { name: `C) ${question.options.C}`, value: 'C' as const },
+    { name: `D) ${question.options.D}`, value: 'D' as const },
+  ]
+}
 
 export function buildNavChoices(
   currentIndex: number,
@@ -94,4 +104,93 @@ export async function toggleBookmark(
   record.bookmarked = !record.bookmarked
   const writeResult = await writeDomain(domainSlug, domain)
   if (!writeResult.ok) console.warn(warn(`Failed to save bookmark: ${writeResult.error}`))
+}
+
+// ---------------------------------------------------------------------------
+// Shared record navigation loop (used by history and bookmarks)
+// ---------------------------------------------------------------------------
+
+export interface NavigateRecordsConfig {
+  headerText: string
+  itemLabel: string
+  onNavigate?: (
+    currentIndex: number,
+    direction: 'next' | 'prev',
+    currentRecord: QuestionRecord,
+    domain: DomainFile,
+  ) => { records: QuestionRecord[]; newIndex: number } | null
+}
+
+interface RecordNavState {
+  index: number
+  explainVisible: boolean
+  teachVisible: boolean
+  explanationText: string | null
+  skipClear: boolean
+  records: QuestionRecord[]
+}
+
+function resetRecordNavState(index: number, records: QuestionRecord[]): RecordNavState {
+  return { index, explainVisible: false, teachVisible: false, explanationText: null, skipClear: false, records }
+}
+
+async function processRecordNavAction(
+  nav: NavAction,
+  state: RecordNavState,
+  domain: DomainFile,
+  domainSlug: string,
+  settings: SettingsFile,
+  onNavigate?: NavigateRecordsConfig['onNavigate'],
+): Promise<RecordNavState | null> {
+  if (nav === 'explain') {
+    const result = await handleExplainAnswer(state.records[state.index], settings)
+    return { ...state, explainVisible: result.visible, skipClear: result.skipClear, explanationText: result.explanationText, teachVisible: false }
+  }
+  if (nav === 'teach') {
+    if (!state.explanationText) return state
+    const result = await handleTeachMeMoreAnswer(state.records[state.index], state.explanationText, settings)
+    return { ...state, teachVisible: result.teachShown, skipClear: result.skipClear }
+  }
+  if (nav === 'bookmark') {
+    await toggleBookmark(state.records[state.index], domainSlug, domain)
+    return { ...state, skipClear: true }
+  }
+  if (nav === 'back') return state
+
+  // next | prev
+  if (onNavigate) {
+    const result = onNavigate(state.index, nav, state.records[state.index], domain)
+    if (result === null) return null
+    return resetRecordNavState(result.newIndex, result.records)
+  }
+  const newIndex = nav === 'next' ? state.index + 1 : state.index - 1
+  return resetRecordNavState(newIndex, state.records)
+}
+
+export async function navigateRecords(
+  initialRecords: QuestionRecord[],
+  domain: DomainFile,
+  domainSlug: string,
+  config: NavigateRecordsConfig,
+): Promise<'back' | 'exhausted'> {
+  const settingsResult = await readSettings()
+  const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+  let state = resetRecordNavState(0, initialRecords)
+
+  while (true) {
+    if (!state.explainVisible && !state.skipClear) {
+      clearAndBanner()
+      console.log(header(config.headerText))
+      displayEntry(state.records[state.index])
+    }
+    state.skipClear = false
+
+    const choices = buildNavChoices(state.index, state.records.length, state.explainVisible, state.teachVisible, state.records[state.index].bookmarked)
+    const nav = await selectNavAction(`${config.itemLabel} ${state.index + 1} of ${state.records.length}`, choices)
+    if (nav === null || nav === 'back') return 'back'
+
+    const newState = await processRecordNavAction(nav, state, domain, domainSlug, settings, config.onNavigate)
+    if (newState === null) return 'exhausted'
+    state = newState
+  }
 }

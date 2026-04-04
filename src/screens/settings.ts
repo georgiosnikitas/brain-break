@@ -1,12 +1,10 @@
 import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import ora from 'ora'
-import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn, header } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { promptForProviderSettings } from './provider-settings.js'
+import { promptForProviderSettings, testAndReport } from './provider-settings.js'
 import * as router from '../router.js'
 
 const TONE_CHOICES: Array<{ name: string; value: ToneOfVoice }> = [
@@ -73,13 +71,7 @@ async function handleProviderAction(
     ollamaModel,
   })
 
-  const spinner = ora('Testing connection...').start()
-  const validationResult = await testProviderConnection(selectedProvider, updatedSettings)
-  spinner.stop()
-
-  const message = validationResult.ok
-    ? success(`✓ ${PROVIDER_LABELS[selectedProvider]}: ${validationResult.data}`)
-    : warn(validationResult.error)
+  const message = await testAndReport(selectedProvider, updatedSettings)
 
   return { ...updatedSettings, message }
 }

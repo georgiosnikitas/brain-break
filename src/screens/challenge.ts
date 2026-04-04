@@ -2,11 +2,12 @@ import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import type { Question } from '../ai/client.js'
 import { readDomain, writeDomain } from '../domain/store.js'
-import { applyAnswer } from '../domain/scoring.js'
+import { applyAnswer, buildQuestionRecord, accumulateDomain } from '../domain/scoring.js'
 import { hashQuestion } from '../utils/hash.js'
 import { defaultDomainFile, type QuestionRecord, type DomainFile, type AnswerOption, type SessionData } from '../domain/schema.js'
 import { header, dim, menuTheme, renderQuestionDetail, warn } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
+import { buildAnswerChoices } from './question-nav.js'
 import type { SprintConfig } from './sprint-setup.js'
 
 type AnswerPromptResult =
@@ -71,12 +72,7 @@ async function askTimedQuestion(question: Question, remainingMs: number): Promis
   try {
     const userAnswer = await select<AnswerOption>({
       message: question.question,
-      choices: [
-        { name: `A) ${question.options.A}`, value: 'A' as const },
-        { name: `B) ${question.options.B}`, value: 'B' as const },
-        { name: `C) ${question.options.C}`, value: 'C' as const },
-        { name: `D) ${question.options.D}`, value: 'D' as const },
-      ],
+      choices: buildAnswerChoices(question),
       theme: menuTheme,
     }, { signal: controller.signal })
     return { kind: 'answered', userAnswer, timeTakenMs: Date.now() - questionStartMs }
@@ -125,7 +121,7 @@ async function processAnsweredQuestion({
 }: ProcessAnsweredQuestionArgs): Promise<ProcessAnsweredQuestionResult> {
   const { userAnswer, timeTakenMs } = answered
   const isCorrect = userAnswer === question.correctAnswer
-  const { updatedMeta, scoreDelta, speedTier } = applyAnswer(
+  const applyResult = applyAnswer(
     domain.meta,
     isCorrect,
     timeTakenMs,
@@ -133,25 +129,8 @@ async function processAnsweredQuestion({
   )
 
   const hash = hashQuestion(question.question)
-  const record: QuestionRecord = {
-    question: question.question,
-    options: question.options,
-    correctAnswer: question.correctAnswer,
-    userAnswer,
-    isCorrect,
-    answeredAt: new Date().toISOString(),
-    timeTakenMs,
-    speedTier,
-    scoreDelta,
-    difficultyLevel: domain.meta.difficultyLevel,
-    bookmarked: false,
-  }
-
-  const nextDomain: DomainFile = {
-    meta: { ...updatedMeta, lastSessionAt: new Date().toISOString() },
-    hashes: [...domain.hashes, hash],
-    history: [...domain.history, record],
-  }
+  const record = buildQuestionRecord(question, userAnswer, isCorrect, timeTakenMs, applyResult, domain.meta.difficultyLevel)
+  const nextDomain = accumulateDomain(domain, applyResult.updatedMeta, hash, record)
 
   sessionRecords.push(record)
 
@@ -191,32 +170,15 @@ async function autoSubmitTimeoutQuestion(
   timeTakenMs: number,
   sessionRecords: QuestionRecord[],
 ): Promise<AutoSubmitResult> {
-  const { updatedMeta, scoreDelta, speedTier } = applyAnswer(
+  const applyResult = applyAnswer(
     domain.meta,
     false,
     Math.max(timeTakenMs, question.speedThresholds.slowMs),
     question.speedThresholds,
   )
   const hash = hashQuestion(question.question)
-  const record: QuestionRecord = {
-    question: question.question,
-    options: question.options,
-    correctAnswer: question.correctAnswer,
-    userAnswer: 'TIMEOUT',
-    isCorrect: false,
-    answeredAt: new Date().toISOString(),
-    timeTakenMs,
-    speedTier,
-    scoreDelta,
-    difficultyLevel: domain.meta.difficultyLevel,
-    bookmarked: false,
-  }
-
-  const nextDomain: DomainFile = {
-    meta: { ...updatedMeta, lastSessionAt: new Date().toISOString() },
-    hashes: [...domain.hashes, hash],
-    history: [...domain.history, record],
-  }
+  const record = buildQuestionRecord(question, 'TIMEOUT', false, timeTakenMs, applyResult, domain.meta.difficultyLevel)
+  const nextDomain = accumulateDomain(domain, applyResult.updatedMeta, hash, record)
   sessionRecords.push(record)
 
   const writeResult = await writeDomain(slug, nextDomain)

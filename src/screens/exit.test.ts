@@ -4,12 +4,12 @@ import { createFormatMock } from './__test-helpers__/format-mock.js'
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
 }))
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), renderBrandedScreen: vi.fn() }))
 vi.mock('../utils/format.js', () => createFormatMock())
 
 import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { clearScreen } from '../utils/screen.js'
+import * as screen from '../utils/screen.js'
 import { cancellableSleep } from '../utils/format.js'
 import { showExitScreen, getExitMessage } from './exit.js'
 
@@ -29,14 +29,14 @@ afterEach(() => {
 })
 
 describe('showExitScreen', () => {
-  it('clears the screen before rendering', async () => {
+  it('delegates rendering to renderBrandedScreen', async () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
 
     const promise = showExitScreen(0)
     await vi.runAllTimersAsync()
     await promise
 
-    expect(vi.mocked(clearScreen)).toHaveBeenCalledOnce()
+    expect(vi.mocked(screen.renderBrandedScreen)).toHaveBeenCalledOnce()
     expect(exitSpy).toHaveBeenCalledWith(0)
     exitSpy.mockRestore()
   })

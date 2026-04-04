@@ -12,6 +12,41 @@ const COFFEE_URL = 'https://www.buymeacoffee.com/georgiosnikitas'
 
 export type HomeEntry = { slug: string; score: number; totalQuestions: number }
 
+export function filterDomains(
+  entries: DomainListEntry[],
+  opts: { archived: boolean },
+): Extract<DomainListEntry, { corrupted: false }>[] {
+  return entries.filter(
+    (e): e is Extract<DomainListEntry, { corrupted: false }> => !e.corrupted && e.meta.archived === opts.archived,
+  )
+}
+
+/** @deprecated Use filterDomains({ archived: false }) */
+export const filterActiveDomains = (entries: DomainListEntry[]) => filterDomains(entries, { archived: false })
+
+export async function loadDomainEntries(
+  listResult: Awaited<Result<DomainListEntry[]>>,
+  opts: { archived: boolean; logErrors?: boolean },
+): Promise<HomeEntry[]> {
+  if (!listResult.ok) {
+    if (opts.logErrors ?? true) {
+      console.error(errorFmt(`Failed to load domains: ${listResult.error}`))
+    }
+    return []
+  }
+  const filtered = filterDomains(listResult.data, opts)
+  return Promise.all(
+    filtered.map(async (entry) => {
+      const r = await readDomain(entry.slug)
+      return {
+        slug: entry.slug,
+        score: r.ok ? r.data.meta.score : entry.meta.score,
+        totalQuestions: r.ok ? r.data.history.length : 0,
+      }
+    }),
+  )
+}
+
 export type HomeAction =
   | { action: 'select'; slug: string }
   | { action: 'create' }
@@ -19,14 +54,6 @@ export type HomeAction =
   | { action: 'settings' }
   | { action: 'coffee' }
   | { action: 'exit' }
-
-export function filterActiveDomains(
-  entries: DomainListEntry[],
-): Extract<DomainListEntry, { corrupted: false }>[] {
-  return entries.filter(
-    (e): e is Extract<DomainListEntry, { corrupted: false }> => !e.corrupted && !e.meta.archived,
-  )
-}
 
 export function buildHomeChoices(
   entries: HomeEntry[],
@@ -59,44 +86,14 @@ export function buildHomeChoices(
   return choices
 }
 
-async function loadHomeEntries(
-  listResult: Awaited<Result<DomainListEntry[]>>,
-): Promise<HomeEntry[]> {
-  if (listResult.ok) {
-    const activeEntries = filterActiveDomains(listResult.data)
-    return Promise.all(
-      activeEntries.map(async (entry) => {
-        const r = await readDomain(entry.slug)
-        return {
-          slug: entry.slug,
-          score: r.ok ? r.data.meta.score : entry.meta.score,
-          totalQuestions: r.ok ? r.data.history.length : 0,
-        }
-      }),
-    )
-  }
-  console.error(errorFmt(`Failed to load domains: ${listResult.error}`))
-  return []
-}
-
 async function handleHomeAction(answer: HomeAction, homeEntries: HomeEntry[], listResult: Awaited<Result<DomainListEntry[]>>): Promise<void> {
   if (answer.action === 'exit') {
     const settingsResult = await readSettings()
     const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
     if (settings.showWelcome) {
       let totalQuestions = homeEntries.reduce((sum, e) => sum + e.totalQuestions, 0)
-      if (listResult.ok) {
-        const archivedEntries = listResult.data.filter(
-          (e): e is Extract<DomainListEntry, { corrupted: false }> => !e.corrupted && e.meta.archived,
-        )
-        const archivedCounts = await Promise.all(
-          archivedEntries.map(async (e) => {
-            const r = await readDomain(e.slug)
-            return r.ok ? r.data.history.length : 0
-          }),
-        )
-        totalQuestions += archivedCounts.reduce((sum, n) => sum + n, 0)
-      }
+      const archivedEntries = await loadDomainEntries(listResult, { archived: true, logErrors: false })
+      totalQuestions += archivedEntries.reduce((sum, e) => sum + e.totalQuestions, 0)
       await router.showExit(totalQuestions)
     }
     process.exit(0)
@@ -135,7 +132,7 @@ export async function showHomeScreen(): Promise<void> {
   while (true) {
     clearAndBanner()
     const listResult = await listDomains()
-    const homeEntries = await loadHomeEntries(listResult)
+    const homeEntries = await loadDomainEntries(listResult, { archived: false })
 
     let answer: HomeAction
     try {

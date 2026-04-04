@@ -1,12 +1,16 @@
 import { input } from '@inquirer/prompts'
+import ora from 'ora'
+import { testProviderConnection } from '../ai/providers.js'
 import {
   DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_GEMINI_MODEL,
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENAI_MODEL,
+  PROVIDER_LABELS,
   type AiProviderType,
   type SettingsFile,
 } from '../domain/schema.js'
+import { success, warn } from '../utils/format.js'
 
 type HostedProviderType = Exclude<AiProviderType, 'copilot' | 'ollama'>
 
@@ -53,4 +57,17 @@ export async function promptForProviderSettings(provider: AiProviderType, settin
   }
 
   return updatedSettings
+}
+
+export async function testAndReport(
+  provider: AiProviderType,
+  settings: SettingsFile,
+): Promise<string> {
+  const spinner = ora('Testing connection...').start()
+  const result = await testProviderConnection(provider, settings)
+  spinner.stop()
+  if (result.ok) {
+    return success(`✓ ${PROVIDER_LABELS[provider]}: ${result.data}`)
+  }
+  return warn(result.error)
 }

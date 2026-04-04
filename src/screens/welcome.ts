@@ -1,37 +1,14 @@
-import { createRequire } from 'node:module'
 import { select } from '@inquirer/prompts'
 import { ExitPromptError, AbortPromptError } from '@inquirer/core'
-import { clearScreen } from '../utils/screen.js'
-import { ASCII_ART, gradientShadow, getGradientWidth, cancellableSleep, gradientText, typewriterPrint, menuTheme } from '../utils/format.js'
-
-const require = createRequire(import.meta.url)
-// Path is relative to compiled output depth; keep in sync with tsconfig outDir
-const { version } = require('../../package.json')
+import { renderBrandedScreen } from '../utils/screen.js'
+import { cancellableSleep, menuTheme } from '../utils/format.js'
 
 export const TAGLINE = 'Train your brain, one question at a time'
 
 const AUTO_EXIT_MS = 3000
 
 export async function showWelcomeScreen(): Promise<void> {
-  clearScreen()
-
-  const width = getGradientWidth()
-  const versionText = `v${version}`
-
-  const artLines = ASCII_ART.map((line, i) => gradientText(`  ${line}`, i, ASCII_ART.length))
-
-  console.log()
-  console.log(`  🧠🔨`)
-  for (const line of artLines) {
-    console.log(line)
-  }
-  console.log()
-  process.stdout.write(`  > `)
-  await typewriterPrint(TAGLINE)
-  console.log(`  ${versionText}`)
-  console.log()
-  console.log(gradientShadow(width))
-  console.log()
+  await renderBrandedScreen(TAGLINE)
 
   const abortController = new AbortController()
   const { promise: sleepPromise, cancel: cancelSleep } = cancellableSleep(AUTO_EXIT_MS)

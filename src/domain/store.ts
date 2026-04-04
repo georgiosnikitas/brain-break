@@ -180,3 +180,20 @@ export async function writeSettings(settings: SettingsFile): Promise<Result<void
     return { ok: false, error: `Failed to write settings: ${message}` }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Convenience loaders — read-or-default with optional warning
+// ---------------------------------------------------------------------------
+
+export async function loadDomainOrDefault(slug: string, warnOnError = true): Promise<DomainFile> {
+  const result = await readDomain(slug)
+  if (!result.ok && warnOnError) {
+    console.warn(`Domain data for ${slug} appears corrupted and cannot be loaded. Starting fresh.`)
+  }
+  return result.ok ? result.data : defaultDomainFile()
+}
+
+export async function loadSettingsOrDefault(): Promise<SettingsFile> {
+  const result = await readSettings()
+  return result.ok ? result.data : defaultSettings()
+}

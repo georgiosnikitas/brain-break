@@ -1,12 +1,10 @@
 import { select } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import ora from 'ora'
-import { testProviderConnection } from '../ai/providers.js'
 import { writeSettings } from '../domain/store.js'
-import { PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type SettingsFile } from '../domain/schema.js'
-import { menuTheme, success, warn } from '../utils/format.js'
+import { PROVIDER_CHOICES, type AiProviderType, type SettingsFile } from '../domain/schema.js'
+import { menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { promptForProviderSettings } from './provider-settings.js'
+import { promptForProviderSettings, testAndReport } from './provider-settings.js'
 
 const MESSAGE_DISPLAY_MS = 2000
 
@@ -24,15 +22,8 @@ export async function showProviderSetupScreen(settings: SettingsFile): Promise<v
 
     const updatedSettings = await promptForProviderSettings(provider, settings)
 
-    const spinner = ora('Testing connection...').start()
-    const validationResult = await testProviderConnection(provider, updatedSettings)
-    spinner.stop()
-
-    if (validationResult.ok) {
-      console.log(success(`\n✓ ${PROVIDER_LABELS[provider]}: ${validationResult.data}`))
-    } else {
-      console.log(warn(`\n${validationResult.error}`))
-    }
+    const message = await testAndReport(provider, updatedSettings)
+    console.log(`\n${message}`)
 
     await new Promise(resolve => setTimeout(resolve, MESSAGE_DISPLAY_MS))
 

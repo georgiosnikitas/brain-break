@@ -4,22 +4,20 @@ import { createFormatMock } from './__test-helpers__/format-mock.js'
 vi.mock('@inquirer/prompts', () => ({
   select: vi.fn(),
 }))
-vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
+vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn(), renderBrandedScreen: vi.fn() }))
 vi.mock('../utils/format.js', () => createFormatMock())
 
 import { showWelcomeScreen, TAGLINE } from './welcome.js'
 import { select } from '@inquirer/prompts'
-import { clearScreen } from '../utils/screen.js'
+import { renderBrandedScreen } from '../utils/screen.js'
 import { ExitPromptError } from '@inquirer/core'
-import { menuTheme, typewriterPrint, cancellableSleep } from '../utils/format.js'
+import { menuTheme, cancellableSleep } from '../utils/format.js'
 
 const mockSelect = vi.mocked(select)
-let logSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
-  logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   mockSelect.mockResolvedValueOnce('continue' as unknown as string)
 })
 
@@ -35,34 +33,14 @@ async function runScreen(): Promise<void> {
 }
 
 describe('showWelcomeScreen', () => {
-  it('clears the screen before rendering', async () => {
+  it('delegates rendering to renderBrandedScreen', async () => {
     await runScreen()
-    expect(vi.mocked(clearScreen)).toHaveBeenCalledOnce()
+    expect(vi.mocked(renderBrandedScreen)).toHaveBeenCalledOnce()
   })
 
-  it('prints the ASCII art and version lines via console.log', async () => {
+  it('renders branded screen with the tagline', async () => {
     await runScreen()
-    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n')
-    expect(output).toContain('| __ )')
-    expect(output).toContain('____')
-    expect(output).toMatch(/v\d+\.\d+\.\d+/)
-  })
-
-  it('prints the tagline via typewriterPrint', async () => {
-    await runScreen()
-    expect(vi.mocked(typewriterPrint)).toHaveBeenCalledWith(TAGLINE)
-  })
-
-  it('displays the version from package.json', async () => {
-    await runScreen()
-    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n')
-    expect(output).toMatch(/v\d+\.\d+\.\d+/)
-  })
-
-  it('displays the emoji branding', async () => {
-    await runScreen()
-    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n')
-    expect(output).toContain('🧠🔨')
+    expect(vi.mocked(renderBrandedScreen)).toHaveBeenCalledWith(TAGLINE)
   })
 
   it('presents a select prompt to dismiss', async () => {
@@ -101,10 +79,9 @@ describe('showWelcomeScreen', () => {
     await assertion
   })
 
-  it('prints a gradient shadow separator', async () => {
+  it('delegates gradient shadow to renderBrandedScreen', async () => {
     await runScreen()
-    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n')
-    expect(output).toContain('[shadow:60]')
+    expect(vi.mocked(renderBrandedScreen)).toHaveBeenCalledOnce()
   })
 
   it('auto-dismisses after 3 seconds when no keypress is provided', async () => {

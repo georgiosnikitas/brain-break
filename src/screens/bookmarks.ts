@@ -1,7 +1,7 @@
 import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
-import { readDomain, readSettings } from '../domain/store.js'
-import { defaultSettings, type QuestionRecord, type DomainFile } from '../domain/schema.js'
+import { readDomain } from '../domain/store.js'
+import { type QuestionRecord, type DomainFile } from '../domain/schema.js'
 import {
   warn,
   dim,
@@ -9,7 +9,7 @@ import {
   menuTheme,
 } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { handleExplainAnswer, handleTeachMeMoreAnswer, toggleBookmark, buildNavChoices, displayEntry, selectNavAction, type NavAction } from './question-nav.js'
+import { buildNavChoices, navigateRecords, type NavAction } from './question-nav.js'
 import * as router from '../router.js'
 
 export { buildNavChoices as buildBookmarkChoices } from './question-nav.js'
@@ -37,90 +37,6 @@ async function showEmptyBookmarksState(domainSlug: string): Promise<void> {
   await router.showDomainMenu(domainSlug)
 }
 
-function resetNavState(): { explainVisible: boolean; teachVisible: boolean; explanationText: string | null } {
-  return { explainVisible: false, teachVisible: false, explanationText: null }
-}
-
-interface NavState {
-  index: number
-  explainVisible: boolean
-  teachVisible: boolean
-  explanationText: string | null
-  skipClear: boolean
-  bookmarks: QuestionRecord[]
-}
-
-async function processNavAction(
-  nav: NavAction,
-  state: NavState,
-  domain: DomainFile,
-  domainSlug: string,
-  settings: ReturnType<typeof defaultSettings>,
-): Promise<NavState> {
-  if (nav === 'explain') {
-    const result = await handleExplainAnswer(state.bookmarks[state.index], settings)
-    return { ...state, explainVisible: result.visible, skipClear: result.skipClear, explanationText: result.explanationText, teachVisible: false }
-  }
-  if (nav === 'teach') {
-    if (!state.explanationText) return state
-    const result = await handleTeachMeMoreAnswer(state.bookmarks[state.index], state.explanationText, settings)
-    return { ...state, teachVisible: result.teachShown, skipClear: result.skipClear }
-  }
-  if (nav === 'bookmark') {
-    await toggleBookmark(state.bookmarks[state.index], domainSlug, domain)
-    return { ...state, skipClear: true }
-  }
-  if (nav === 'back') return state
-
-  // nav is now 'next' | 'prev' — refresh bookmark list after potential unbookmark
-  const _exhaustive: 'next' | 'prev' = nav
-  const currentRecord = state.bookmarks[state.index]
-  const newBookmarks = getBookmarkedHistory(domain)
-  if (newBookmarks.length === 0) {
-    return { ...state, bookmarks: newBookmarks, index: 0, ...resetNavState(), skipClear: false }
-  }
-  const currentPosInNew = newBookmarks.indexOf(currentRecord)
-  let newIndex: number
-  if (nav === 'next') {
-    newIndex = currentPosInNew >= 0
-      ? Math.min(currentPosInNew + 1, newBookmarks.length - 1)
-      : Math.min(state.index, newBookmarks.length - 1)
-  } else {
-    newIndex = currentPosInNew >= 0
-      ? Math.max(currentPosInNew - 1, 0)
-      : Math.max(state.index - 1, 0)
-  }
-  return { ...state, index: newIndex, bookmarks: newBookmarks, ...resetNavState(), skipClear: false }
-}
-
-async function navigateBookmarks(bookmarks: QuestionRecord[], domain: DomainFile, domainSlug: string): Promise<void> {
-  const settingsResult = await readSettings()
-  const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
-  let state: NavState = { index: 0, explainVisible: false, teachVisible: false, explanationText: null, skipClear: false, bookmarks }
-
-  while (true) {
-    if (!state.explainVisible && !state.skipClear) {
-      clearAndBanner()
-      console.log(header(`⭐ Bookmarks — ${domainSlug}`))
-      displayEntry(state.bookmarks[state.index])
-    }
-    state.skipClear = false
-
-    const choices = buildNavChoices(state.index, state.bookmarks.length, state.explainVisible, state.teachVisible, state.bookmarks[state.index].bookmarked)
-    const nav = await selectNavAction(`Bookmark ${state.index + 1} of ${state.bookmarks.length}`, choices)
-    if (nav === null || nav === 'back') {
-      await router.showDomainMenu(domainSlug)
-      return
-    }
-
-    state = await processNavAction(nav, state, domain, domainSlug, settings)
-    if (state.bookmarks.length === 0) {
-      await showEmptyBookmarksState(domainSlug)
-      return
-    }
-  }
-}
-
 export async function showBookmarks(domainSlug: string): Promise<void> {
   const readResult = await readDomain(domainSlug)
   if (!readResult.ok) {
@@ -129,7 +45,6 @@ export async function showBookmarks(domainSlug: string): Promise<void> {
     return
   }
   const domain = readResult.data
-  // Bookmarks is a filtered History view, so it follows the same newest-first order.
   const bookmarks = getBookmarkedHistory(domain)
 
   if (bookmarks.length === 0) {
@@ -137,5 +52,30 @@ export async function showBookmarks(domainSlug: string): Promise<void> {
     return
   }
 
-  await navigateBookmarks(bookmarks, domain, domainSlug)
+  const result = await navigateRecords(bookmarks, domain, domainSlug, {
+    headerText: `⭐ Bookmarks — ${domainSlug}`,
+    itemLabel: 'Bookmark',
+    onNavigate: (currentIndex, direction, currentRecord, domain) => {
+      const newBookmarks = getBookmarkedHistory(domain)
+      if (newBookmarks.length === 0) return null
+      const currentPosInNew = newBookmarks.indexOf(currentRecord)
+      let newIndex: number
+      if (direction === 'next') {
+        newIndex = currentPosInNew >= 0
+          ? Math.min(currentPosInNew + 1, newBookmarks.length - 1)
+          : Math.min(currentIndex, newBookmarks.length - 1)
+      } else {
+        newIndex = currentPosInNew >= 0
+          ? Math.max(currentPosInNew - 1, 0)
+          : Math.max(currentIndex - 1, 0)
+      }
+      return { records: newBookmarks, newIndex }
+    },
+  })
+
+  if (result === 'exhausted') {
+    await showEmptyBookmarksState(domainSlug)
+    return
+  }
+  await router.showDomainMenu(domainSlug)
 }
