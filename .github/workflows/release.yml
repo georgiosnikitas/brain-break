@@ -155,6 +155,11 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Prepare package for npm publish
+        run: |
+          npm pkg set name=brain-break
+          npm pkg delete publishConfig
+
       - name: Install dependencies
         run: npm ci
 
@@ -167,6 +172,5 @@ jobs:
           if npm view brain-break@${VERSION} --registry=https://registry.npmjs.org 2>/dev/null; then
             echo "Version ${VERSION} already published to npm, skipping"
           else
-            npm pkg set name=brain-break
             npm publish --access public
           fi
