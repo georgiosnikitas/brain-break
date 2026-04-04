@@ -43,7 +43,7 @@ async function askPostAnswerAction(bookmarked: boolean): Promise<'explain' | 'bo
       choices: [
         { name: '💡 Explain answer', value: 'explain' as const },
         { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' as const },
-        { name: '▶️ Next question', value: 'next' as const },
+        { name: '▶️  Next question', value: 'next' as const },
         new Separator(),
         { name: '↩️  Back', value: 'exit' as const },
       ],
@@ -60,7 +60,7 @@ async function askNextOrExit(): Promise<NavResult> {
     return await select<'next' | 'exit'>({
       message: 'Next action:',
       choices: [
-        { name: '▶️ Next question', value: 'next' as const },
+        { name: '▶️  Next question', value: 'next' as const },
         new Separator(),
         { name: '↩️  Back', value: 'exit' as const },
       ],
@@ -79,7 +79,7 @@ async function askPostExplainAction(bookmarked: boolean): Promise<'teach' | 'boo
       choices: [
         { name: '📚 Teach me more', value: 'teach' as const },
         { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' as const },
-        { name: '▶️ Next question', value: 'next' as const },
+        { name: '▶️  Next question', value: 'next' as const },
         new Separator(),
         { name: '↩️  Back', value: 'exit' as const },
       ],
@@ -97,7 +97,7 @@ async function askPostTeachAction(bookmarked: boolean): Promise<'bookmark' | Nav
       message: 'Next action:',
       choices: [
         { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' as const },
-        { name: '▶️ Next question', value: 'next' as const },
+        { name: '▶️  Next question', value: 'next' as const },
         new Separator(),
         { name: '↩️  Back', value: 'exit' as const },
       ],
