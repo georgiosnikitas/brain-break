@@ -151,7 +151,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
@@ -163,11 +163,10 @@ jobs:
 
       - name: Publish to npm
         run: |
-          echo "registry=https://registry.npmjs.org/" > .npmrc
           VERSION=$(node -p "require('./package.json').version")
           if npm view brain-break@${VERSION} --registry=https://registry.npmjs.org 2>/dev/null; then
             echo "Version ${VERSION} already published to npm, skipping"
           else
             npm pkg set name=brain-break
-            npm publish --access public --registry=https://registry.npmjs.org --provenance
+            npm publish --access public
           fi

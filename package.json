@@ -5,7 +5,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/georgiosnikitas/brain-break"
+    "url": "git+https://github.com/georgiosnikitas/brain-break.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
