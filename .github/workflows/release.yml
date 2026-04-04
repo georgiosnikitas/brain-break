@@ -170,5 +170,3 @@ jobs:
             npm pkg set name=brain-break
             npm publish --access public --registry=https://registry.npmjs.org --provenance
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
