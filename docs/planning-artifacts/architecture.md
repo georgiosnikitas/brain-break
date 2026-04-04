@@ -131,7 +131,7 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - `figlet` — local ASCII art banner rendering for the ASCII Art Screen (Feature 15)
 
 **Dependency Patching:**
-- `patch-package` (devDependency) — applies patches via `postinstall` script
+- `patch-package` (devDependency) — applies patches via `prepare` script (runs only in dev, not for consumers)
 - `patches/vscode-jsonrpc+8.2.1.patch` — patches `vscode-jsonrpc` (transitive dependency of `@github/copilot-sdk`)
 
 **AI Provider SDKs (via Vercel AI SDK):**
@@ -153,7 +153,7 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 
 **CI/CD:**
 - CI pipeline (`.github/workflows/ci.yml`) — runs on every branch push and pull request: typecheck → test
-- Release pipeline (`.github/workflows/release.yml`) — triggered on `v*.*.*` tags: typecheck → test → build → GitHub Release (auto-generated notes) → publish to GitHub Packages
+- Release pipeline (`.github/workflows/release.yml`) — triggered on `v*.*.*` tags: typecheck → test → build → GitHub Release (auto-generated notes) → publish to GitHub Packages → update Homebrew tap → publish to npmjs.org (OIDC trusted publishing)
 
 **Code Organization:**
 - `src/` — all TypeScript source
