@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import type { CopilotClient } from '@github/copilot-sdk'
-import type { SettingsFile } from '../domain/schema.js'
 import { createProvider, validateProvider, testProviderConnection, AI_ERRORS, _setCopilotClient } from './providers.js'
 import type { AiProvider } from './providers.js'
+import { makeSettings } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Mock all provider SDKs — prevent real SDK loading
@@ -26,20 +26,6 @@ vi.mock('@ai-sdk/google', () => ({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function makeSettings(overrides: Partial<SettingsFile> = {}): SettingsFile {
-  return {
-    provider: null,
-    language: 'English',
-    tone: 'natural',
-    openaiModel: 'gpt-4o-mini',
-    anthropicModel: 'claude-sonnet-4-20250514',
-    geminiModel: 'gemini-2.0-flash',
-    ollamaEndpoint: 'http://localhost:11434',
-    ollamaModel: 'llama3',
-    ...overrides,
-  }
-}
-
 const mockSendAndWait = vi.fn()
 const mockDisconnect = vi.fn()
 const mockCreateSession = vi.fn()

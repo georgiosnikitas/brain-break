@@ -1,23 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { DomainMeta } from './schema.js'
 import { applyAnswer, getSpeedTier } from './scoring.js'
+import { makeMeta as _makeMeta } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function makeMeta(overrides: Partial<DomainMeta> = {}): DomainMeta {
-  return {
-    score: 0,
-    difficultyLevel: 3,
-    streakCount: 0,
-    streakType: 'none',
-    totalTimePlayedMs: 0,
-    createdAt: '2026-03-12T00:00:00.000Z',
-    lastSessionAt: null,
-    archived: false,
-    ...overrides,
-  }
-}
+const makeMeta = (overrides: Partial<import('./schema.js').DomainMeta> = {}) =>
+  _makeMeta({ difficultyLevel: 3, ...overrides })
 
 const thresholds = { fastMs: 10_000, slowMs: 30_000 }
 

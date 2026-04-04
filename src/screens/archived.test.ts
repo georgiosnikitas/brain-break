@@ -12,8 +12,8 @@ import {
 import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import type { DomainListEntry } from '../domain/store.js'
-import type { DomainMeta } from '../domain/schema.js'
 import { clearAndBanner } from '../utils/screen.js'
+import { makeMeta } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Mock @inquirer/prompts
@@ -29,20 +29,6 @@ vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function makeMeta(overrides: Partial<DomainMeta> = {}): DomainMeta {
-  return {
-    score: 0,
-    difficultyLevel: 2,
-    streakCount: 0,
-    streakType: 'none',
-    totalTimePlayedMs: 0,
-    createdAt: new Date().toISOString(),
-    lastSessionAt: null,
-    archived: false,
-    ...overrides,
-  }
-}
-
 function isActionChoice(c: unknown): c is { name: string; value: ArchivedAction } {
   return typeof c === 'object' && c !== null && 'value' in c
 }

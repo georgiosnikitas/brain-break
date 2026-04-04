@@ -27,7 +27,7 @@ import {
   MAGENTA,
   renderQuestionDetail,
 } from './format.js'
-import type { QuestionRecord } from '../domain/schema.js'
+import { makeRecord } from '../__test-helpers__/factories.js'
 
 // chalk can produce empty strings in test environments when colors are disabled.
 // We test that each helper returns a string containing the expected text content.
@@ -414,23 +414,6 @@ describe('gradientShadow — truecolor branch', () => {
 // ---------------------------------------------------------------------------
 // renderQuestionDetail
 // ---------------------------------------------------------------------------
-
-function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
-  return {
-    question: 'What is TypeScript?',
-    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
-    correctAnswer: 'A',
-    userAnswer: 'A',
-    isCorrect: true,
-    answeredAt: '2026-03-26T10:00:00.000Z',
-    timeTakenMs: 5000,
-    speedTier: 'fast',
-    scoreDelta: 60,
-    difficultyLevel: 3,
-    bookmarked: false,
-    ...overrides,
-  }
-}
 
 describe('renderQuestionDetail', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>

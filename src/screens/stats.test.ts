@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
-import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
+import { defaultDomainFile } from '../domain/schema.js'
+import { makeRecord } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -39,26 +40,6 @@ import {
 const mockReadDomain = vi.mocked(readDomain)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
-  return {
-    question: 'What is TypeScript?',
-    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
-    correctAnswer: 'A',
-    userAnswer: 'A',
-    isCorrect: true,
-    answeredAt: '2026-03-12T10:00:00.000Z',
-    timeTakenMs: 5000,
-    speedTier: 'fast',
-    scoreDelta: 30,
-    difficultyLevel: 2,
-    bookmarked: false,
-    ...overrides,
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Setup

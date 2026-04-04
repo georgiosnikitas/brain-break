@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { defaultDomainFile, type DomainFile, type QuestionRecord, type DifficultyLevel } from './domain/schema.js'
 import { applyAnswer } from './domain/scoring.js'
 import { computeScoreTrend, daysSinceFirstSession, computeReturnStreak, showStats } from './screens/stats.js'
+import { makeRecord } from './__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted — must appear before the imports they affect)
@@ -39,23 +40,6 @@ const FIXED_NOW = new Date('2026-03-15T12:00:00.000Z').getTime()
 
 /** Remove ANSI escape codes so snapshots are readable plain text. */
 const stripAnsi = (s: string) => s.replaceAll(/\u001b\[[0-9;]*[mGKHF]/g, '')
-
-/** Factory for QuestionRecord with sensible defaults — override only what matters. */
-function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
-  return {
-    question: 'Test question?',
-    options: { A: 'Opt A', B: 'Opt B', C: 'Opt C', D: 'Opt D' },
-    correctAnswer: 'A',
-    userAnswer: 'A',
-    isCorrect: true,
-    answeredAt: '2026-03-15T10:00:00.000Z',
-    timeTakenMs: 5_000,
-    speedTier: 'fast',
-    scoreDelta: 40,
-    difficultyLevel: 2,
-    ...overrides,
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Fixed domain data for the stats output snapshot

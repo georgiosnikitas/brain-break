@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { buildHomeChoices, filterActiveDomains, showHomeScreen, showCoffeeScreen, type HomeEntry, type HomeAction } from './home.js'
+import { makeMeta } from '../__test-helpers__/factories.js'
 
 // Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
 vi.mock('@github/copilot-sdk', () => ({ CopilotClient: vi.fn(), approveAll: vi.fn() }))
@@ -28,7 +29,6 @@ vi.mock('qrcode-terminal', () => ({
 }))
 
 import type { DomainListEntry } from '../domain/store.js'
-import type { DomainMeta } from '../domain/schema.js'
 import { select } from '@inquirer/prompts'
 import { listDomains, readDomain, readSettings } from '../domain/store.js'
 import * as router from '../router.js'
@@ -46,7 +46,7 @@ beforeEach(() => {
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockReadSettings.mockResolvedValue({ ok: true, data: defaultSettings() })
   vi.mocked(router.showDomainMenu).mockResolvedValue(undefined)
-  vi.mocked(router.showQuiz).mockResolvedValue(undefined)
+  vi.mocked(router.showQuiz).mockResolvedValue(null)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.showCreateDomain).mockResolvedValue(undefined)
   vi.mocked(router.showArchived).mockResolvedValue(undefined)
@@ -165,20 +165,6 @@ describe('buildHomeChoices', () => {
 // ---------------------------------------------------------------------------
 // filterActiveDomains
 // ---------------------------------------------------------------------------
-
-function makeMeta(overrides: Partial<DomainMeta> = {}): DomainMeta {
-  return {
-    score: 0,
-    difficultyLevel: 2,
-    streakCount: 0,
-    streakType: 'none',
-    totalTimePlayedMs: 0,
-    createdAt: new Date().toISOString(),
-    lastSessionAt: null,
-    archived: false,
-    ...overrides,
-  }
-}
 
 function activeEntry(slug: string): DomainListEntry {
   return { slug, corrupted: false, meta: makeMeta() }

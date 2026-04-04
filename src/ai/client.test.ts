@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { hashQuestion } from '../utils/hash.js'
 import type { AiProvider } from './providers.js'
-import type { SettingsFile } from '../domain/schema.js'
+import { makeSettings } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Mock providers module — intercept createProvider, keep real AI_ERRORS
@@ -35,20 +35,6 @@ const mockCreateProvider = vi.mocked(createProvider)
 // ---------------------------------------------------------------------------
 function makeMockProvider(): AiProvider {
   return { generateCompletion: mockGenerateCompletion }
-}
-
-function makeSettings(provider: SettingsFile['provider'] = 'openai'): SettingsFile {
-  return {
-    provider,
-    language: 'English',
-    tone: 'natural',
-    openaiModel: 'gpt-4o-mini',
-    anthropicModel: 'claude-sonnet-4-20250514',
-    geminiModel: 'gemini-2.0-flash',
-    ollamaEndpoint: 'http://localhost:11434',
-    ollamaModel: 'llama3',
-    showWelcome: true,
-  }
 }
 
 function makeValidResponse(question = 'What is 2+2?') {
@@ -88,7 +74,7 @@ beforeEach(() => {
 // generateQuestion
 // ---------------------------------------------------------------------------
 describe('generateQuestion', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
 
   it('returns ok:true with a valid Question on success', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
@@ -138,7 +124,7 @@ describe('generateQuestion', () => {
   it('returns NO_PROVIDER error when provider is not configured', async () => {
     mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
-    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings(null))
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings())
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -148,7 +134,7 @@ describe('generateQuestion', () => {
   it('returns provider-specific NETWORK error on generic error (openai)', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('openai'))
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings({ provider: 'openai' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -158,7 +144,7 @@ describe('generateQuestion', () => {
   it('returns provider-specific NETWORK error on generic error (copilot)', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('socket hang up'))
 
-    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('copilot'))
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings({ provider: 'copilot' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -173,7 +159,7 @@ describe('generateQuestion', () => {
   ])('returns provider-specific AUTH error when error message contains "%s"', async (_, errorMsg) => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error(errorMsg))
 
-    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('anthropic'))
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings({ provider: 'anthropic' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -229,7 +215,7 @@ describe('settings injection', () => {
   it('injects voice instruction into prompt when settings are non-default', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
     mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
-    const settings = makeSettings('openai')
+    const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Greek'
     settings.tone = 'pirate'
 
@@ -242,7 +228,7 @@ describe('settings injection', () => {
   it('no voice instruction in prompt when settings are English/natural', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
     mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
-    const settings = makeSettings('openai')
+    const settings = makeSettings({ provider: 'openai' })
 
     await generateQuestion('typescript', 2, new Set(), [], settings)
 
@@ -258,7 +244,7 @@ describe('settings injection', () => {
       .mockResolvedValueOnce(makeVerificationResponse('C'))
       .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
       .mockResolvedValueOnce(makeVerificationResponse('C'))
-    const settings = makeSettings('openai')
+    const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Spanish'
     settings.tone = 'expressive'
 
@@ -273,7 +259,7 @@ describe('settings injection', () => {
 // generateMotivationalMessage
 // ---------------------------------------------------------------------------
 describe('generateMotivationalMessage', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
 
   it('returns ok:true with message string on success', async () => {
     mockGenerateCompletion.mockResolvedValueOnce('Great job coming back!')
@@ -298,7 +284,7 @@ describe('generateMotivationalMessage', () => {
   it('returns NO_PROVIDER error when provider is not configured', async () => {
     mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
-    const result = await generateMotivationalMessage('returning', makeSettings(null))
+    const result = await generateMotivationalMessage('returning', makeSettings())
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -308,7 +294,7 @@ describe('generateMotivationalMessage', () => {
   it('returns provider-specific error on network error', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    const result = await generateMotivationalMessage('trending', makeSettings('gemini'))
+    const result = await generateMotivationalMessage('trending', makeSettings({ provider: 'gemini' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -318,7 +304,7 @@ describe('generateMotivationalMessage', () => {
   it('returns provider-specific error on auth error', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
 
-    const result = await generateMotivationalMessage('returning', makeSettings('copilot'))
+    const result = await generateMotivationalMessage('returning', makeSettings({ provider: 'copilot' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -327,7 +313,7 @@ describe('generateMotivationalMessage', () => {
 
   it('passes settings to the prompt (voice instruction injected)', async () => {
     mockGenerateCompletion.mockResolvedValueOnce('Kalimera!')
-    const settings = makeSettings('openai')
+    const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Greek'
     settings.tone = 'pirate'
 
@@ -342,7 +328,7 @@ describe('generateMotivationalMessage', () => {
 // generateExplanation
 // ---------------------------------------------------------------------------
 describe('generateExplanation', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
   const question = {
     question: 'What is TypeScript?',
     options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
@@ -374,7 +360,7 @@ describe('generateExplanation', () => {
   it('returns NO_PROVIDER error when provider is not configured', async () => {
     mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
-    const result = await generateExplanation(question, 'A', makeSettings(null))
+    const result = await generateExplanation(question, 'A', makeSettings())
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -384,7 +370,7 @@ describe('generateExplanation', () => {
   it('returns provider-specific error on network error', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    const result = await generateExplanation(question, 'A', makeSettings('gemini'))
+    const result = await generateExplanation(question, 'A', makeSettings({ provider: 'gemini' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -394,7 +380,7 @@ describe('generateExplanation', () => {
   it('returns provider-specific error on auth error', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
 
-    const result = await generateExplanation(question, 'A', makeSettings('copilot'))
+    const result = await generateExplanation(question, 'A', makeSettings({ provider: 'copilot' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -403,7 +389,7 @@ describe('generateExplanation', () => {
 
   it('passes settings to the prompt (voice instruction injected)', async () => {
     mockGenerateCompletion.mockResolvedValueOnce('Explanation in Greek!')
-    const settings = makeSettings('openai')
+    const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Greek'
     settings.tone = 'pirate'
 
@@ -439,7 +425,7 @@ describe('generateExplanation', () => {
 // generateMicroLesson
 // ---------------------------------------------------------------------------
 describe('generateMicroLesson', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
   const question = {
     question: 'What is TypeScript?',
     options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
@@ -472,7 +458,7 @@ describe('generateMicroLesson', () => {
   it('returns NO_PROVIDER error when provider is not configured', async () => {
     mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
 
-    const result = await generateMicroLesson(question, explanation, makeSettings(null))
+    const result = await generateMicroLesson(question, explanation, makeSettings())
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -482,7 +468,7 @@ describe('generateMicroLesson', () => {
   it('returns provider-specific error on network error', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
-    const result = await generateMicroLesson(question, explanation, makeSettings('gemini'))
+    const result = await generateMicroLesson(question, explanation, makeSettings({ provider: 'gemini' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -492,7 +478,7 @@ describe('generateMicroLesson', () => {
   it('returns provider-specific error on auth error', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
 
-    const result = await generateMicroLesson(question, explanation, makeSettings('copilot'))
+    const result = await generateMicroLesson(question, explanation, makeSettings({ provider: 'copilot' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -501,7 +487,7 @@ describe('generateMicroLesson', () => {
 
   it('passes settings to the prompt (voice instruction injected)', async () => {
     mockGenerateCompletion.mockResolvedValueOnce('Micro-lesson in Greek!')
-    const settings = makeSettings('openai')
+    const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Greek'
     settings.tone = 'pirate'
 
@@ -563,7 +549,7 @@ describe('isAuthErrorMessage', () => {
 // edge cases
 // ---------------------------------------------------------------------------
 describe('edge cases', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
 
   it('returns NETWORK error when a non-Error value is thrown', async () => {
     mockGenerateCompletion.mockRejectedValueOnce('plain string error')
@@ -586,7 +572,7 @@ describe('edge cases', () => {
   })
 
   it('returns NETWORK_OLLAMA with custom endpoint', async () => {
-    const ollamaSettings = makeSettings('ollama')
+    const ollamaSettings = makeSettings({ provider: 'ollama' })
     ollamaSettings.ollamaEndpoint = 'http://custom:9999'
     mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
 
@@ -600,7 +586,7 @@ describe('edge cases', () => {
   it('classifies auth error per provider for ollama', async () => {
     mockGenerateCompletion.mockRejectedValueOnce(new Error('401 unauthorized'))
 
-    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings('ollama'))
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings({ provider: 'ollama' }))
 
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -638,7 +624,7 @@ describe('edge cases', () => {
 // shuffleOptions (deterministic via randomInt mock)
 // ---------------------------------------------------------------------------
 describe('shuffleOptions', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
 
   it('shuffles option positions while preserving correctAnswer mapping', async () => {
     // Mock randomInt to always return 0:
@@ -703,7 +689,7 @@ describe('shuffleOptions', () => {
 // answer verification (self-consistency check)
 // ---------------------------------------------------------------------------
 describe('answer verification', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
 
   it('regenerates question when verification disagrees with correctAnswer', async () => {
     // First question: correctAnswer C, but verification says A → mismatch
@@ -800,7 +786,7 @@ describe('answer verification', () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
       .mockResolvedValueOnce(makeVerificationResponse('C'))
-    const greekSettings = makeSettings('openai')
+    const greekSettings = makeSettings({ provider: 'openai' })
     greekSettings.language = 'Greek'
     greekSettings.tone = 'pirate'
 
@@ -834,7 +820,7 @@ describe('answer verification', () => {
 // preloadQuestions
 // ---------------------------------------------------------------------------
 describe('preloadQuestions', () => {
-  const settings = makeSettings('openai')
+  const settings = makeSettings({ provider: 'openai' })
 
   it('returns ok:true with Question[] of length N on success', async () => {
     mockSuccessfulGeneration('Q1')
