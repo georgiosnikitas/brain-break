@@ -9,7 +9,7 @@ import {
   menuTheme,
 } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { buildNavChoices, navigateRecords, type NavAction } from './question-nav.js'
+import { navigateRecords, type NavAction } from './question-nav.js'
 import * as router from '../router.js'
 
 export { buildNavChoices as buildBookmarkChoices } from './question-nav.js'

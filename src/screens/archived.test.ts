@@ -4,11 +4,11 @@ import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  filterArchivedDomains,
   buildArchivedChoices,
   showArchivedScreen,
   type ArchivedAction,
 } from './archived.js'
+import { filterDomains } from './home.js'
 import { writeDomain, readDomain, _setDataDir } from '../domain/store.js'
 import { defaultDomainFile } from '../domain/schema.js'
 import type { DomainListEntry } from '../domain/store.js'
@@ -40,14 +40,14 @@ function actionChoices(choices: ReturnType<typeof buildArchivedChoices>) {
 // ---------------------------------------------------------------------------
 // filterArchivedDomains
 // ---------------------------------------------------------------------------
-describe('filterArchivedDomains', () => {
+describe('filterDomains (archived)', () => {
   it('returns only archived non-corrupted entries', () => {
     const entries: DomainListEntry[] = [
       { slug: 'active', meta: makeMeta({ archived: false }), corrupted: false },
       { slug: 'archived', meta: makeMeta({ archived: true }), corrupted: false },
       { slug: 'broken', corrupted: true },
     ]
-    const result = filterArchivedDomains(entries)
+    const result = filterDomains(entries, { archived: true })
     expect(result).toHaveLength(1)
     expect(result[0].slug).toBe('archived')
   })
@@ -56,7 +56,7 @@ describe('filterArchivedDomains', () => {
     const entries: DomainListEntry[] = [
       { slug: 'active', meta: makeMeta({ archived: false }), corrupted: false },
     ]
-    expect(filterArchivedDomains(entries)).toHaveLength(0)
+    expect(filterDomains(entries, { archived: true })).toHaveLength(0)
   })
 })
 
