@@ -216,13 +216,12 @@ describe('showSettingsScreen', () => {
   })
 
   it('selecting provider opens provider selector and calls validateProvider', async () => {
-    // Main menu → provider, provider selector → openai, then back
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-4o-mini')
+    // Main menu → provider, provider selector → openai, model select → gpt-4o-mini, then back
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('gpt-4o-mini').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name' }))
+    expect(mockSelect).toHaveBeenNthCalledWith(3, expect.objectContaining({ message: 'OpenAI Model' }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({
       provider: 'openai',
       openaiModel: 'gpt-4o-mini',
@@ -232,8 +231,7 @@ describe('showSettingsScreen', () => {
 
   it('provider validation success displays LLM greeting', async () => {
     mockTestProviderConnection.mockResolvedValue({ ok: true, data: 'Hello from OpenAI!' })
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-4o-mini')
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('gpt-4o-mini').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
@@ -243,35 +241,54 @@ describe('showSettingsScreen', () => {
 
   it('provider validation failure displays warning message (non-blocking)', async () => {
     mockTestProviderConnection.mockResolvedValue({ ok: false, error: 'API key missing' })
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('claude-sonnet-4-20250514')
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('claude-opus-4-6').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('API key missing'))
   })
 
-  it('selecting OpenAI prompts for model name', async () => {
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-4.1-mini')
+  it('selecting OpenAI prompts for model select', async () => {
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('gpt-5.4-mini').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: 'gpt-5.4' }))
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-4.1-mini' }))
+    expect(mockSelect).toHaveBeenNthCalledWith(3, expect.objectContaining({ message: 'OpenAI Model', default: 'gpt-5.4' }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-5.4-mini' }))
   })
 
-  it('OpenAI empty input resets to the default model', async () => {
-    mockReadSettings.mockResolvedValue({
-      ok: true,
-      data: { ...defaultSettings(), provider: 'openai', openaiModel: 'gpt-4.1-mini' },
-    })
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('   ')
+  it('OpenAI back from model select returns to settings without connection test', async () => {
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-5.4' }))
+    expect(mockTestProviderConnection).not.toHaveBeenCalled()
+  })
+
+  it('selecting custom model prompts for free-text input', async () => {
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('custom').mockResolvedValueOnce('back')
+    mockInput.mockResolvedValueOnce('o3-mini')
+
+    await showSettingsScreen()
+
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'OpenAI Model Name',
+      validate: expect.any(Function),
+    }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'o3-mini' }))
+  })
+
+  it('custom model pre-selects when saved model is not in predefined list', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), provider: 'openai', openaiModel: 'o3-mini' } })
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('custom').mockResolvedValueOnce('back')
+    mockInput.mockResolvedValueOnce('o3-mini')
+
+    await showSettingsScreen()
+
+    const modelSelectCall = mockSelect.mock.calls[2]?.[0]
+    expect(modelSelectCall?.default).toBe('custom')
+    const customChoice = (modelSelectCall?.choices as Array<{ value?: string; description?: string }>)?.find(c => c?.value === 'custom')
+    expect(customChoice?.description).toBe('Current: o3-mini')
   })
 
   it('selecting Ollama prompts for endpoint and model', async () => {
@@ -289,25 +306,8 @@ describe('showSettingsScreen', () => {
     }))
   })
 
-  it('Ollama empty model input resets to the default model', async () => {
-    mockReadSettings.mockResolvedValue({
-      ok: true,
-      data: { ...defaultSettings(), provider: 'ollama', ollamaModel: 'mistral' },
-    })
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('ollama').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('  ').mockResolvedValueOnce('')
-
-    await showSettingsScreen()
-
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', expect.objectContaining({
-      ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama4',
-    }))
-  })
-
   it('Save after provider change persists provider fields', async () => {
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('save')
-    mockInput.mockResolvedValueOnce('claude-3-5-haiku-latest')
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('claude-haiku-4-5').mockResolvedValueOnce('save')
 
     await showSettingsScreen()
 
@@ -316,7 +316,7 @@ describe('showSettingsScreen', () => {
       language: 'English',
       tone: 'natural',
       openaiModel: 'gpt-5.4',
-      anthropicModel: 'claude-3-5-haiku-latest',
+      anthropicModel: 'claude-haiku-4-5',
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama4',
@@ -324,8 +324,7 @@ describe('showSettingsScreen', () => {
   })
 
   it('Back after provider change does NOT call writeSettings', async () => {
-    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-4o-mini')
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('gpt-5.4-mini').mockResolvedValueOnce('back')
 
     await showSettingsScreen()
 

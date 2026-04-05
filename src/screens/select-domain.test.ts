@@ -51,7 +51,7 @@ vi.mock('../domain/store.js', async (importOriginal) => {
         language: 'English',
         tone: 'natural',
         openaiModel: 'gpt-5.4',
-        anthropicModel: 'claude-sonnet-4.6-latest',
+        anthropicModel: 'claude-opus-4-6',
         geminiModel: 'gemini-2.5-pro',
         ollamaEndpoint: 'http://localhost:11434',
         ollamaModel: 'llama4',

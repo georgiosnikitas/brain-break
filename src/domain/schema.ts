@@ -119,10 +119,30 @@ export const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntrie
 ) as Record<AiProviderType, string>
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5.4'
-export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4.6-latest'
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-opus-4-6'
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-pro'
 export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434'
 export const DEFAULT_OLLAMA_MODEL = 'llama4'
+
+export type ModelChoice = { name: string; value: string; description: string }
+
+export const OPENAI_MODEL_CHOICES: ModelChoice[] = [
+  { name: 'GPT-5.4', value: 'gpt-5.4', description: 'Complex — best intelligence, 1M context' },
+  { name: 'GPT-5.4 Mini', value: 'gpt-5.4-mini', description: 'Normal — balanced speed & quality, 400K context' },
+  { name: 'GPT-5.4 Nano', value: 'gpt-5.4-nano', description: 'Fast — cheapest, high-volume tasks, 400K context' },
+]
+
+export const ANTHROPIC_MODEL_CHOICES: ModelChoice[] = [
+  { name: 'Claude Opus 4.6', value: 'claude-opus-4-6', description: 'Complex — most intelligent, agents & coding' },
+  { name: 'Claude Sonnet 4.6', value: 'claude-sonnet-4-6', description: 'Normal — best speed & intelligence balance' },
+  { name: 'Claude Haiku 4.5', value: 'claude-haiku-4-5', description: 'Fast — fastest, near-frontier intelligence' },
+]
+
+export const GEMINI_MODEL_CHOICES: ModelChoice[] = [
+  { name: 'Gemini 2.5 Pro', value: 'gemini-2.5-pro', description: 'Complex — deep reasoning & coding' },
+  { name: 'Gemini 2.5 Flash', value: 'gemini-2.5-flash', description: 'Normal — best price-performance, reasoning' },
+  { name: 'Gemini 2.5 Flash-Lite', value: 'gemini-2.5-flash-lite', description: 'Fast — fastest, most budget-friendly' },
+]
 
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),

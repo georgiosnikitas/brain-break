@@ -41,6 +41,11 @@ export async function showProviderSetupScreen(settings: SettingsFile): Promise<b
       }
 
       const updatedSettings = await promptForProviderSettings(provider, settings)
+
+      if (!updatedSettings) {
+        continue
+      }
+
       const result = await runConnectionTest(provider, updatedSettings)
 
       if (!result.ok) {

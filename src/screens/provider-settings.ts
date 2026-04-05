@@ -1,36 +1,37 @@
-import { input } from '@inquirer/prompts'
+import { select, input, Separator } from '@inquirer/prompts'
 import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
 import {
-  DEFAULT_ANTHROPIC_MODEL,
-  DEFAULT_GEMINI_MODEL,
   DEFAULT_OLLAMA_MODEL,
-  DEFAULT_OPENAI_MODEL,
+  OPENAI_MODEL_CHOICES,
+  ANTHROPIC_MODEL_CHOICES,
+  GEMINI_MODEL_CHOICES,
   PROVIDER_LABELS,
   type AiProviderType,
+  type ModelChoice,
   type SettingsFile,
 } from '../domain/schema.js'
-import { success, warn } from '../utils/format.js'
+import { menuTheme, success, warn } from '../utils/format.js'
 
 type HostedProviderType = Exclude<AiProviderType, 'copilot' | 'ollama'>
 
-const HOSTED_PROVIDER_MODEL_PROMPTS: Record<HostedProviderType, string> = {
-  openai: 'OpenAI Model Name',
-  anthropic: 'Anthropic Model Name',
-  gemini: 'Google Gemini Model Name',
+const HOSTED_PROVIDER_MODEL_CHOICES: Record<HostedProviderType, ModelChoice[]> = {
+  openai: OPENAI_MODEL_CHOICES,
+  anthropic: ANTHROPIC_MODEL_CHOICES,
+  gemini: GEMINI_MODEL_CHOICES,
 }
 
-const HOSTED_PROVIDER_DEFAULT_MODELS: Record<HostedProviderType, string> = {
-  openai: DEFAULT_OPENAI_MODEL,
-  anthropic: DEFAULT_ANTHROPIC_MODEL,
-  gemini: DEFAULT_GEMINI_MODEL,
+const HOSTED_PROVIDER_MODEL_PROMPTS: Record<HostedProviderType, string> = {
+  openai: 'OpenAI Model',
+  anthropic: 'Anthropic Model',
+  gemini: 'Google Gemini Model',
 }
 
 function isHostedProvider(provider: AiProviderType): provider is HostedProviderType {
   return provider === 'openai' || provider === 'anthropic' || provider === 'gemini'
 }
 
-export async function promptForProviderSettings(provider: AiProviderType, settings: SettingsFile): Promise<SettingsFile> {
+export async function promptForProviderSettings(provider: AiProviderType, settings: SettingsFile): Promise<SettingsFile | null> {
   const updatedSettings: SettingsFile = { ...settings, provider }
 
   if (provider === 'ollama') {
@@ -49,11 +50,31 @@ export async function promptForProviderSettings(provider: AiProviderType, settin
 
   if (isHostedProvider(provider)) {
     const modelField = `${provider}Model` as const
-    const enteredModel = await input({
+    const choices = HOSTED_PROVIDER_MODEL_CHOICES[provider]
+    const currentModel = settings[modelField]
+    const isCustom = !choices.some(c => c.value === currentModel)
+    const selectedModel = await select<string>({
       message: HOSTED_PROVIDER_MODEL_PROMPTS[provider],
-      default: settings[modelField],
+      choices: [
+        ...choices,
+        { name: '🧙 Custom model', value: 'custom', description: isCustom ? `Current: ${currentModel}` : 'Enter a model name manually' },
+        new Separator(),
+        { name: '↩️  Back', value: 'back' },
+      ],
+      default: isCustom ? 'custom' : currentModel,
+      theme: menuTheme,
     })
-    updatedSettings[modelField] = (enteredModel ?? '').trim() || HOSTED_PROVIDER_DEFAULT_MODELS[provider]
+    if (selectedModel === 'back') return null
+    if (selectedModel === 'custom') {
+      const customModel = (await input({
+        message: `${HOSTED_PROVIDER_MODEL_PROMPTS[provider]} Name`,
+        default: currentModel,
+        validate: (value: string) => value.trim() ? true : 'Model name cannot be empty',
+      })).trim()
+      updatedSettings[modelField] = customModel
+    } else {
+      updatedSettings[modelField] = selectedModel
+    }
   }
 
   return updatedSettings

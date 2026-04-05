@@ -330,7 +330,7 @@ describe('SettingsFileSchema — provider fields', () => {
     const result = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
     expect(result.provider).toBeNull()
     expect(result.openaiModel).toBe('gpt-5.4')
-    expect(result.anthropicModel).toBe('claude-sonnet-4.6-latest')
+    expect(result.anthropicModel).toBe('claude-opus-4-6')
     expect(result.geminiModel).toBe('gemini-2.5-pro')
     expect(result.ollamaEndpoint).toBe('http://localhost:11434')
     expect(result.ollamaModel).toBe('llama4')
@@ -371,8 +371,8 @@ describe('defaultSettings — provider fields', () => {
     expect(defaultSettings().openaiModel).toBe('gpt-5.4')
   })
 
-  it('returns anthropicModel: claude-sonnet-4.6-latest', () => {
-    expect(defaultSettings().anthropicModel).toBe('claude-sonnet-4.6-latest')
+  it('returns anthropicModel: claude-opus-4-6', () => {
+    expect(defaultSettings().anthropicModel).toBe('claude-opus-4-6')
   })
 
   it('returns geminiModel: gemini-2.5-pro', () => {
@@ -425,7 +425,7 @@ describe('showWelcome setting', () => {
       language: 'English',
       tone: 'natural',
       openaiModel: 'gpt-5.4',
-      anthropicModel: 'claude-sonnet-4.6-latest',
+      anthropicModel: 'claude-opus-4-6',
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama4',

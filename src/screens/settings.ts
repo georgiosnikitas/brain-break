@@ -73,6 +73,10 @@ async function handleProviderAction(
     ollamaModel,
   })
 
+  if (!updatedSettings) {
+    return { ...settings, provider, openaiModel, anthropicModel, geminiModel, ollamaEndpoint, ollamaModel, message: '' }
+  }
+
   const spinner = ora('Testing connection...').start()
   const validationResult = await testProviderConnection(selectedProvider, updatedSettings)
   spinner.stop()

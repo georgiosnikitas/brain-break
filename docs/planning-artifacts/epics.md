@@ -14,6 +14,8 @@ editHistory:
     changes: 'Duplicate domain name validation added: FR47 added to Requirements Inventory (slugified comparison against active and archived domains with context-specific messages). FR Coverage Map updated (FR47 → Epic 2). Epic 2 FRs covered updated to include FR47. Story 2.2 duplicate AC replaced — previously a single vague AC ("informs me the domain already exists and returns to home screen"); now two explicit ACs: active duplicate shows "already exists" and returns to name prompt; archived duplicate shows "already exists in your archived domains" and returns to name prompt. Both cases keep the user in the create flow. Reflects PRD edit 2026-04-03 (Feature 1 duplicate-domain validation).'
   - date: '2026-04-01'
     changes: 'Label alignment pass (synced with PRD 2026-04-01 update): Domain sub-menu actions renamed from "View History" / "View Bookmarks" / "View Stats" to "History" / "Bookmarks" / "Statistics". Home screen "View archived domains" renamed to "Archived domains". Settings "Question Language" shortened to "Language". Sprint setup "Time budget" / "Question count" renamed to "Sprint duration" / "Sprint size". FR8/FR35 post-answer option order corrected to Explain → Bookmark → Next → Back. FRs updated: FR3, FR5, FR8, FR15, FR35, FR39, FR43, FR44. FR Coverage Map updated. Epic descriptions updated: Epic 2, 5, 10, 11. Story ACs updated: 2.1, 2.4, 2.5, 4.1, 4.2, 5.2, 7.5, 9.x session summary, 10.4, 11.1, 11.3. Historical editHistory entries preserved as-is.'
+  - date: '2026-04-02'
+    changes: 'Model selection UX updated: for hosted providers (OpenAI, Anthropic, Gemini), model input changed from free-text prompt to a select box with 3 predefined models per provider (Fast / Normal / Complex) plus a "🧙 Custom model" free-text option and a "↩️ Back" option. Default Anthropic model changed from `claude-sonnet-4.6-latest` to `claude-opus-4-6`. FR17 defaults updated. FR27 and FR28 model prompt descriptions updated. Story 7.1 defaultSettings() AC updated. Story 7.4 OpenAI/Anthropic/Gemini model prompt ACs updated. Story 7.5 model prompt AC updated.'
   - date: '2026-03-31'
     changes: 'Feature 17 (Challenge Mode — Sprint) added: FR44 (Sprint Setup Screen — Challenge action in domain sub-menu, sprint setup screen with time budget and question count presets, Confirm/Back, question preloading with dedup and self-consistency rules), FR45 (Sprint Execution — visible countdown timer that never pauses, limited post-answer nav to Next/Back only, per-question speed tier by individual answer time), FR46 (Sprint Termination & History — four termination conditions, auto-submit on timer expiry, only answered questions in history, preloaded unanswered questions discarded, sprint result in session summary). FR3 updated (Challenge added to domain sub-menu actions). FR39 updated (Sprint result field 9 added to session summary for Challenge sessions). FR Coverage Map updated (FR44/45/46 → Epic 11, FR3/FR39 cross-reference updated). Epic 11 (Challenge Mode — Sprint) added with 4 stories (11.1–11.4). Epic 2 and Epic 9 headers updated with Challenge Mode references.'
   - date: '2026-03-30'
@@ -101,7 +103,7 @@ FR15: The Settings screen allows configuring: AI Provider (selectable from 5 pro
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-sonnet-4.6-latest", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, showWelcome: true }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, showWelcome: true }`.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -121,9 +123,9 @@ FR25: The home screen includes a "☕ Buy me a coffee" action positioned between
 
 FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-5.4` for OpenAI, `claude-sonnet-4.6-latest` for Anthropic, `gemini-2.5-pro` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and present a select box with 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
-FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the default). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
+FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is presented with a select box offering 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
 FR29: If no provider is configured or the configured provider is unreachable, Play displays: "AI provider not ready. Go to Settings to configure." and returns the user to the domain sub-menu. All other app features remain functional.
 
@@ -1496,7 +1498,7 @@ So that the settings store and all downstream modules have a single, type-safe s
 
 **Given** `domain/schema.ts` is updated  
 **When** I call `defaultSettings()`  
-**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-sonnet-4.6-latest', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4' }`  
+**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4' }`  
 
 **Given** `domain/store.ts` already handles `readSettings()` and `writeSettings()`  
 **When** the expanded schema is deployed  
@@ -1647,16 +1649,16 @@ So that I can start using the app with my preferred provider without editing con
 **Given** I select "OpenAI" from the provider list  
 **When** the selection is confirmed  
 **Then** `validateProvider('openai', settings)` is called  
-**And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-5.4`; entering empty string resets to `gpt-5.4`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
+**And** if `OPENAI_API_KEY` env var is present → the user is presented with a select box offering 3 predefined models (pre-selected default `gpt-5.4`) plus a "🧙 Custom model" option and a "↩️ Back" option → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
 **And** if `OPENAI_API_KEY` env var is missing → message displayed: "Set the `OPENAI_API_KEY` environment variable and restart the app." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
 
 **Given** I select "Anthropic" from the provider list  
 **When** validation runs  
-**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model prompt pre-filled with `claude-sonnet-4.6-latest`  
+**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model select box pre-selecting `claude-opus-4-6`  
 
 **Given** I select "Google Gemini" from the provider list  
 **When** validation runs  
-**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.5-pro`  
+**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model select box pre-selecting `gemini-2.5-pro`  
 
 **Given** I select "GitHub Copilot" from the provider list  
 **When** validation runs  
@@ -1704,7 +1706,7 @@ So that I can switch providers or fix configuration issues without restarting th
 **Given** I select a new provider (e.g., "Anthropic")  
 **When** the selection is confirmed  
 **Then** `validateProvider('anthropic', settings)` is called  
-**And** the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the provider's default)  
+**And** the user is presented with a select box offering 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (pre-selects the current or default model)
 **And** a success or failure message is displayed (same validation as first-launch setup)  
 **And** the provider selection and model are updated in the in-memory settings (persisted on Save)  
 

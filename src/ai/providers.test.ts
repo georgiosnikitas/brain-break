@@ -179,7 +179,7 @@ describe('Anthropic adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('anthropic response')
-    expect(mockAnthropic).toHaveBeenCalledWith('claude-sonnet-4.6-latest')
+    expect(mockAnthropic).toHaveBeenCalledWith('claude-opus-4-6')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'anthropic-model',
       prompt: 'test prompt',

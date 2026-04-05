@@ -80,7 +80,7 @@ afterEach(() => {
 describe('showProviderSetupScreen', () => {
   it('calls clearAndBanner as first operation', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockSelect.mockResolvedValueOnce('gpt-5.4-mini' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     await runSetup()
@@ -90,7 +90,7 @@ describe('showProviderSetupScreen', () => {
 
   it('displays first-time setup heading', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockSelect.mockResolvedValueOnce('gpt-5.4-mini' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     await runSetup()
@@ -100,7 +100,7 @@ describe('showProviderSetupScreen', () => {
 
   it('calls select with 5 provider choices + separator + skip option', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockSelect.mockResolvedValueOnce('gpt-5.4-mini' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     await runSetup()
@@ -121,12 +121,12 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('OpenAI selected + validation success → success message + settings saved', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockSelect.mockResolvedValueOnce('gpt-5.4-mini' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello from OpenAI!' })
 
     await runSetup()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: settings.openaiModel }))
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ message: 'OpenAI Model', default: settings.openaiModel }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-5.4-mini' })
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Hello from OpenAI!'))
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-5.4-mini' })
@@ -135,28 +135,16 @@ describe('showProviderSetupScreen', () => {
   it('OpenAI selected + validation failure → retry/skip shown, skip saves provider null', async () => {
     mockSelect
       .mockResolvedValueOnce('openai' as never)
+      .mockResolvedValueOnce('gpt-5.4-mini' as never)
       .mockResolvedValueOnce('skip' as never)
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
 
     const result = await showProviderSetupScreen(settings)
 
     expect(result).toBe(true)
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('API key missing'))
-    expect(mockSelect).toHaveBeenCalledTimes(2)
+    expect(mockSelect).toHaveBeenCalledTimes(3)
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: null, openaiModel: 'gpt-5.4-mini' })
-  })
-
-  it('OpenAI empty input resets to the default model', async () => {
-    settings = { ...settings, openaiModel: 'gpt-5.4-mini' }
-    mockSelect.mockResolvedValueOnce('openai' as never)
-    mockInput.mockResolvedValueOnce('')
-    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
-
-    await runSetup()
-
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-5.4' })
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-5.4' })
   })
 
   // -------------------------------------------------------------------------
@@ -164,14 +152,14 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('Anthropic selected → validateProvider called with correct args', async () => {
     mockSelect.mockResolvedValueOnce('anthropic' as never)
-    mockInput.mockResolvedValueOnce('claude-3-5-haiku-latest')
+    mockSelect.mockResolvedValueOnce('claude-haiku-4-5' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     await runSetup()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Anthropic Model Name', default: settings.anthropicModel }))
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic', anthropicModel: 'claude-3-5-haiku-latest' })
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'anthropic', anthropicModel: 'claude-3-5-haiku-latest' })
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ message: 'Anthropic Model', default: settings.anthropicModel }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('anthropic', { ...settings, provider: 'anthropic', anthropicModel: 'claude-haiku-4-5' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'anthropic', anthropicModel: 'claude-haiku-4-5' })
   })
 
   // -------------------------------------------------------------------------
@@ -179,14 +167,63 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('Gemini selected → validateProvider called with correct args', async () => {
     mockSelect.mockResolvedValueOnce('gemini' as never)
-    mockInput.mockResolvedValueOnce('gemini-2.5-flash')
+    mockSelect.mockResolvedValueOnce('gemini-2.5-flash' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
 
     await runSetup()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Google Gemini Model Name', default: settings.geminiModel }))
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ message: 'Google Gemini Model', default: settings.geminiModel }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('gemini', { ...settings, provider: 'gemini', geminiModel: 'gemini-2.5-flash' })
     expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'gemini', geminiModel: 'gemini-2.5-flash' })
+  })
+
+  // -------------------------------------------------------------------------
+  // Custom model via free text
+  // -------------------------------------------------------------------------
+  it('OpenAI custom model → prompts for free-text input and saves', async () => {
+    mockSelect.mockResolvedValueOnce('openai' as never)
+    mockSelect.mockResolvedValueOnce('custom' as never)
+    mockInput.mockResolvedValueOnce('o3-mini')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
+
+    await runSetup()
+
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'OpenAI Model Name',
+      default: settings.openaiModel,
+      validate: expect.any(Function),
+    }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'o3-mini' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'o3-mini' })
+  })
+
+  it('Custom model input has validation that rejects empty strings', async () => {
+    mockSelect.mockResolvedValueOnce('openai' as never)
+    mockSelect.mockResolvedValueOnce('custom' as never)
+    mockInput.mockResolvedValueOnce('o3-mini')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
+
+    await runSetup()
+
+    const validateFn = mockInput.mock.calls[0]?.[0]?.validate as (value: string) => boolean | string
+    expect(validateFn('gpt-5.4')).toBe(true)
+    expect(validateFn('   ')).toBe('Model name cannot be empty')
+    expect(validateFn('')).toBe('Model name cannot be empty')
+  })
+
+  it('Custom model pre-selects when saved model is not in predefined list', async () => {
+    settings = { ...settings, openaiModel: 'o3-mini' }
+    mockSelect.mockResolvedValueOnce('openai' as never)
+    mockSelect.mockResolvedValueOnce('custom' as never)
+    mockInput.mockResolvedValueOnce('o3-mini')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
+
+    await runSetup()
+
+    const modelSelectCall = mockSelect.mock.calls[1]?.[0]
+    expect(modelSelectCall?.default).toBe('custom')
+    const customChoice = (modelSelectCall?.choices as Array<{ value?: string; description?: string }>)?.find(c => c?.value === 'custom')
+    expect(customChoice?.description).toBe('Current: o3-mini')
   })
 
   // -------------------------------------------------------------------------
@@ -294,11 +331,10 @@ describe('showProviderSetupScreen', () => {
   it('Retry on failure → returns to provider selection, success saves provider', async () => {
     mockSelect
       .mockResolvedValueOnce('openai' as never)   // 1st: provider select
-      .mockResolvedValueOnce('retry' as never)     // 2nd: retry/skip
-      .mockResolvedValueOnce('openai' as never)    // 3rd: provider select again
-    mockInput
-      .mockResolvedValueOnce('gpt-5.4-mini')        // 1st: model input
-      .mockResolvedValueOnce('gpt-5.4-mini')        // 2nd: model input on retry
+      .mockResolvedValueOnce('gpt-5.4-mini' as never) // 2nd: model select
+      .mockResolvedValueOnce('retry' as never)     // 3rd: retry/skip
+      .mockResolvedValueOnce('openai' as never)    // 4th: provider select again
+      .mockResolvedValueOnce('gpt-5.4-mini' as never) // 5th: model select again
     mockTestProviderConnection
       .mockResolvedValueOnce({ ok: false, error: 'API key missing' })
       .mockResolvedValueOnce({ ok: true, data: 'Hello from OpenAI!' })
@@ -318,12 +354,11 @@ describe('showProviderSetupScreen', () => {
   it('Retry on failure then skip → saves provider null', async () => {
     mockSelect
       .mockResolvedValueOnce('openai' as never)   // 1st: provider select
-      .mockResolvedValueOnce('retry' as never)     // 2nd: retry/skip
-      .mockResolvedValueOnce('openai' as never)    // 3rd: provider select again
-      .mockResolvedValueOnce('skip' as never)      // 4th: retry/skip again
-    mockInput
-      .mockResolvedValueOnce('gpt-5.4-mini')        // 1st: model input
-      .mockResolvedValueOnce('gpt-5.4-mini')        // 2nd: model input on retry
+      .mockResolvedValueOnce('gpt-5.4-mini' as never) // 2nd: model select
+      .mockResolvedValueOnce('retry' as never)     // 3rd: retry/skip
+      .mockResolvedValueOnce('openai' as never)    // 4th: provider select again
+      .mockResolvedValueOnce('gpt-5.4-mini' as never) // 5th: model select again
+      .mockResolvedValueOnce('skip' as never)      // 6th: retry/skip again
     mockTestProviderConnection
       .mockResolvedValueOnce({ ok: false, error: 'API key missing' })
       .mockResolvedValueOnce({ ok: false, error: 'Still missing' })
@@ -342,8 +377,8 @@ describe('showProviderSetupScreen', () => {
   it('ExitPromptError during retry/skip select → no writeSettings, returns cleanly', async () => {
     mockSelect
       .mockResolvedValueOnce('openai' as never)
+      .mockResolvedValueOnce('gpt-5.4-mini' as never)
       .mockRejectedValueOnce(new ExitPromptError())
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
     mockTestProviderConnection.mockResolvedValueOnce({ ok: false, error: 'API key missing' })
 
     const result = await showProviderSetupScreen(settings)
@@ -357,7 +392,7 @@ describe('showProviderSetupScreen', () => {
   // -------------------------------------------------------------------------
   it('logs console.error when writeSettings fails', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockSelect.mockResolvedValueOnce('gpt-5.4-mini' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
     mockWriteSettings.mockResolvedValueOnce({ ok: false, error: 'disk full' })
 

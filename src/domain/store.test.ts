@@ -226,7 +226,7 @@ describe('writeSettings + readSettings', () => {
       geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
-      asciiArtMilestone: 100,
+      asciiArtMilestone: 100 as const,
       showWelcome: true,
     }
     const writeResult = await writeSettings(settings)
@@ -301,7 +301,7 @@ describe('writeSettings + readSettings', () => {
     expect(result.data.tone).toBe('pirate')
     expect(result.data.provider).toBeNull()
     expect(result.data.openaiModel).toBe('gpt-5.4')
-    expect(result.data.anthropicModel).toBe('claude-sonnet-4.6-latest')
+    expect(result.data.anthropicModel).toBe('claude-opus-4-6')
     expect(result.data.geminiModel).toBe('gemini-2.5-pro')
     expect(result.data.ollamaEndpoint).toBe('http://localhost:11434')
     expect(result.data.ollamaModel).toBe('llama4')
@@ -313,11 +313,11 @@ describe('writeSettings + readSettings', () => {
       language: 'Greek',
       tone: 'pirate' as const,
       openaiModel: 'gpt-5.4',
-      anthropicModel: 'claude-sonnet-4.6-latest',
+      anthropicModel: 'claude-opus-4-6',
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://custom:1234',
       ollamaModel: 'mistral',
-      asciiArtMilestone: 100,
+      asciiArtMilestone: 100 as const,
       showWelcome: true,
     }
     const writeResult = await writeSettings(full)
