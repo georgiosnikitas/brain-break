@@ -300,11 +300,11 @@ describe('writeSettings + readSettings', () => {
     expect(result.data.language).toBe('French')
     expect(result.data.tone).toBe('pirate')
     expect(result.data.provider).toBeNull()
-    expect(result.data.openaiModel).toBe('gpt-4o-mini')
-    expect(result.data.anthropicModel).toBe('claude-sonnet-4-20250514')
-    expect(result.data.geminiModel).toBe('gemini-2.0-flash')
+    expect(result.data.openaiModel).toBe('gpt-5.4-mini')
+    expect(result.data.anthropicModel).toBe('claude-haiku-4-latest')
+    expect(result.data.geminiModel).toBe('gemini-2.5-flash')
     expect(result.data.ollamaEndpoint).toBe('http://localhost:11434')
-    expect(result.data.ollamaModel).toBe('llama3')
+    expect(result.data.ollamaModel).toBe('llama3.3')
   })
 
   it('roundtrips expanded settings with all provider fields', async () => {
@@ -312,8 +312,8 @@ describe('writeSettings + readSettings', () => {
       provider: 'openai' as const,
       language: 'Greek',
       tone: 'pirate' as const,
-      openaiModel: 'gpt-4.1-mini',
-      anthropicModel: 'claude-sonnet-4-20250514',
+      openaiModel: 'gpt-5.4-mini',
+      anthropicModel: 'claude-haiku-4-latest',
       geminiModel: 'gemini-2.5-flash',
       ollamaEndpoint: 'http://custom:1234',
       ollamaModel: 'mistral',

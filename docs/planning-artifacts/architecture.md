@@ -264,11 +264,11 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "provider": "copilot",        // Enum: copilot | openai | anthropic | gemini | ollama — null on first launch
   "language": "English",        // Free-text — any language name
   "tone": "natural",            // Enum: natural | expressive | calm | humorous | sarcastic | robot | pirate
-  "openaiModel": "gpt-4o-mini",           // OpenAI — preferred model name
-  "anthropicModel": "claude-sonnet-4-20250514", // Anthropic — preferred model name
-  "geminiModel": "gemini-2.0-flash",       // Gemini — preferred model name
+  "openaiModel": "gpt-5.4-mini",           // OpenAI — preferred model name
+  "anthropicModel": "claude-haiku-4-latest", // Anthropic — preferred model name
+  "geminiModel": "gemini-2.5-flash",       // Gemini — preferred model name
   "ollamaEndpoint": "http://localhost:11434",  // Ollama only — endpoint URL
-  "ollamaModel": "llama3",      // Ollama only — model name
+  "ollamaModel": "llama3.3",      // Ollama only — model name
   "showWelcome": true            // Boolean — show animated welcome screen on startup and exit screen on quit
 }
 ```
@@ -295,7 +295,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-4o-mini'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-sonnet-4-20250514'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.0-flash'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama3'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit.
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4-mini'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-haiku-4-latest'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-flash'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama3.3'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4-mini', anthropicModel: 'claude-haiku-4-latest', geminiModel: 'gemini-2.5-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3.3', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit.
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -307,7 +307,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 **First-launch provider setup:** `screens/provider-setup.ts` displays a one-time provider selection screen on first launch (when `provider` is `null`). The user selects a provider via arrow keys; the app validates readiness:
 - **Copilot:** checks Copilot authentication
-- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default)
+- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-5.4-mini` for OpenAI, `claude-haiku-4-latest` for Anthropic, `gemini-2.5-flash` for Gemini — entering an empty string resets to the default)
 - **Ollama:** prompts for endpoint URL + model name, tests connection
 
 If validation fails, the app displays what’s needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
@@ -369,7 +369,7 @@ import { openai } from '@ai-sdk/openai'
 const adapter: AiProvider = {
   async generateCompletion(prompt: string): Promise<string> {
     const { text } = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-5.4-mini'),
       prompt,
     })
     return text
@@ -1236,7 +1236,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 **Resolution:** `domain/schema.ts` exports a `defaultDomainFile(startingDifficulty?)` factory function returning a valid `DomainFile` at the specified starting difficulty level (defaults to level 2 — Elementary), score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller. `screens/create-domain.ts` calls `defaultDomainFile(selectedDifficulty)` when creating a new domain with the user's chosen starting difficulty.
 
 **Missing settings file = defaults (F8):**
-`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
+`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4-mini', anthropicModel: 'claude-haiku-4-latest', geminiModel: 'gemini-2.5-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3.3', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
 
 ### Architecture Completeness Checklist
 

@@ -32,8 +32,19 @@ const MILESTONE_CHOICES: Array<{ name: string; value: 0 | 10 | 100 }> = [
 const MILESTONE_LABELS: Record<number, string> = { 0: 'Instant', 10: 'Quick', 100: 'Classic' }
 const SETTINGS_PAGE_SIZE = 10
 
-export function getProviderLabel(provider: AiProviderType | null): string {
-  return provider ? PROVIDER_LABELS[provider] : 'Not set'
+export function getProviderLabel(provider: AiProviderType | null, settings?: SettingsFile): string {
+  if (!provider) return 'Not set'
+  const label = PROVIDER_LABELS[provider]
+  if (!settings) return label
+  const modelMap: Record<AiProviderType, string> = {
+    copilot: '',
+    openai: settings.openaiModel,
+    anthropic: settings.anthropicModel,
+    gemini: settings.geminiModel,
+    ollama: settings.ollamaModel,
+  }
+  const model = modelMap[provider]
+  return model ? `${label} (${model})` : label
 }
 
 async function handleProviderAction(
@@ -103,11 +114,12 @@ async function selectSettingsAction(
   tone: ToneOfVoice,
   asciiArtMilestone: 0 | 10 | 100,
   showWelcome: boolean,
+  settings: SettingsFile,
 ): Promise<SettingsAction> {
   return select<SettingsAction>({
     message: 'Choose a setting:',
     choices: [
-      { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
+      { name: `🤖 AI Provider:   ${getProviderLabel(provider, settings)}`, value: 'provider' as const },
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
       { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
       { name: `🎨 ASCII Art Milestone: ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
@@ -146,7 +158,8 @@ export async function showSettingsScreen(): Promise<void> {
         banner = ''
       }
       
-        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, showWelcome)
+        const liveSettings: SettingsFile = { ...currentSettings, provider, language, tone, openaiModel, anthropicModel, geminiModel, ollamaEndpoint, ollamaModel, showWelcome, asciiArtMilestone }
+        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, showWelcome, liveSettings)
 
       switch (action) {
         case 'provider': {

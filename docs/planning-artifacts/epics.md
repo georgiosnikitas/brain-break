@@ -99,7 +99,7 @@ FR15: The Settings screen allows configuring: AI Provider (selectable from 5 pro
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-4o-mini", anthropicModel: "claude-sonnet-4-20250514", geminiModel: "gemini-2.0-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3", asciiArtMilestone: 100, showWelcome: true }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4-mini", anthropicModel: "claude-haiku-4-latest", geminiModel: "gemini-2.5-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3.3", asciiArtMilestone: 100, showWelcome: true }`.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -119,7 +119,7 @@ FR25: The home screen includes a "☕ Buy me a coffee" action positioned between
 
 FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-4o-mini` for OpenAI, `claude-sonnet-4-20250514` for Anthropic, `gemini-2.0-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-5.4-mini` for OpenAI, `claude-haiku-4-latest` for Anthropic, `gemini-2.5-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
 FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the default). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
@@ -1492,7 +1492,7 @@ So that the settings store and all downstream modules have a single, type-safe s
 
 **Given** `domain/schema.ts` is updated  
 **When** I call `defaultSettings()`  
-**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-4o-mini', anthropicModel: 'claude-sonnet-4-20250514', geminiModel: 'gemini-2.0-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3' }`  
+**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4-mini', anthropicModel: 'claude-haiku-4-latest', geminiModel: 'gemini-2.5-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3.3' }`  
 
 **Given** `domain/store.ts` already handles `readSettings()` and `writeSettings()`  
 **When** the expanded schema is deployed  
@@ -1643,16 +1643,16 @@ So that I can start using the app with my preferred provider without editing con
 **Given** I select "OpenAI" from the provider list  
 **When** the selection is confirmed  
 **Then** `validateProvider('openai', settings)` is called  
-**And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-4o-mini`; entering empty string resets to `gpt-4o-mini`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
+**And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-5.4-mini`; entering empty string resets to `gpt-5.4-mini`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
 **And** if `OPENAI_API_KEY` env var is missing → message displayed: "Set the `OPENAI_API_KEY` environment variable and restart the app." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
 
 **Given** I select "Anthropic" from the provider list  
 **When** validation runs  
-**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model prompt pre-filled with `claude-sonnet-4-20250514`  
+**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model prompt pre-filled with `claude-haiku-4-latest`  
 
 **Given** I select "Google Gemini" from the provider list  
 **When** validation runs  
-**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.0-flash`  
+**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.5-flash`  
 
 **Given** I select "GitHub Copilot" from the provider list  
 **When** validation runs  
@@ -1660,7 +1660,7 @@ So that I can start using the app with my preferred provider without editing con
 
 **Given** I select "Ollama" from the provider list  
 **When** the selection is confirmed  
-**Then** I am prompted for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3`)  
+**Then** I am prompted for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3.3`)  
 **And** the app tests connection to the endpoint  
 **And** if reachable → success message, settings saved (including `ollamaEndpoint` and `ollamaModel`), app proceeds to home screen  
 **And** if unreachable → message displayed: "Could not reach Ollama at [endpoint]. Ensure Ollama is running." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  

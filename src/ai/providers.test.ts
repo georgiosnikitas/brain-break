@@ -137,7 +137,7 @@ describe('OpenAI adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('response text')
-    expect(mockOpenai).toHaveBeenCalledWith('gpt-4o-mini')
+    expect(mockOpenai).toHaveBeenCalledWith('gpt-5.4-mini')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'openai-model',
       prompt: 'test prompt',
@@ -146,12 +146,12 @@ describe('OpenAI adapter', () => {
 
   it('uses a custom OpenAI model from settings', async () => {
     mockGenerateText.mockResolvedValueOnce({ text: 'response text' })
-    const result = createProvider(makeSettings({ provider: 'openai', openaiModel: 'gpt-4.1-mini' }))
+    const result = createProvider(makeSettings({ provider: 'openai', openaiModel: 'gpt-5.4-mini' }))
     if (!result.ok) throw new Error('expected ok')
 
     await result.data.generateCompletion('test prompt')
 
-    expect(mockOpenai).toHaveBeenCalledWith('gpt-4.1-mini')
+    expect(mockOpenai).toHaveBeenCalledWith('gpt-5.4-mini')
   })
 
   it('propagates errors from generateText', async () => {
@@ -179,7 +179,7 @@ describe('Anthropic adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('anthropic response')
-    expect(mockAnthropic).toHaveBeenCalledWith('claude-sonnet-4-20250514')
+    expect(mockAnthropic).toHaveBeenCalledWith('claude-haiku-4-latest')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'anthropic-model',
       prompt: 'test prompt',
@@ -215,7 +215,7 @@ describe('Gemini adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('gemini response')
-    expect(mockGoogle).toHaveBeenCalledWith('gemini-2.0-flash')
+    expect(mockGoogle).toHaveBeenCalledWith('gemini-2.5-flash')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'google-model',
       prompt: 'test prompt',
@@ -277,7 +277,7 @@ describe('Ollama adapter', () => {
     await result.data.generateCompletion('prompt')
 
     expect(fetch).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.objectContaining({
-      body: JSON.stringify({ model: 'llama3', prompt: 'prompt', stream: false }),
+      body: JSON.stringify({ model: 'llama3.3', prompt: 'prompt', stream: false }),
     }))
   })
 
