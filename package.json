@@ -32,7 +32,7 @@
     "@ai-sdk/google": "^3.0.52",
     "@ai-sdk/openai": "^3.0.47",
     "@github/copilot-sdk": "^0.2.1",
-    "@inquirer/prompts": "7.10.1",
+    "@inquirer/prompts": "^8.3.2",
     "ai": "^6.0.134",
     "chalk": "^5.0.0",
     "figlet": "^1.11.0",
