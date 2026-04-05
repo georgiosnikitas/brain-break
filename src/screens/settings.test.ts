@@ -257,7 +257,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: 'gpt-5.4-mini' }))
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: 'gpt-5.4' }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-4.1-mini' }))
   })
 
@@ -271,7 +271,7 @@ describe('showSettingsScreen', () => {
 
     await showSettingsScreen()
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-5.4-mini' }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-5.4' }))
   })
 
   it('selecting Ollama prompts for endpoint and model', async () => {
@@ -301,7 +301,7 @@ describe('showSettingsScreen', () => {
 
     expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', expect.objectContaining({
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama4',
     }))
   })
 
@@ -315,11 +315,11 @@ describe('showSettingsScreen', () => {
       provider: 'anthropic',
       language: 'English',
       tone: 'natural',
-      openaiModel: 'gpt-5.4-mini',
+      openaiModel: 'gpt-5.4',
       anthropicModel: 'claude-3-5-haiku-latest',
-      geminiModel: 'gemini-2.5-flash',
+      geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama4',
     }))
   })
 

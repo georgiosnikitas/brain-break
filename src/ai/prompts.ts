@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AnswerOptionSchema, type SettingsFile } from '../domain/schema.js'
+import { AnswerOptionSchema, type AnswerOption, type SettingsFile } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
 // Zod schema for the structured JSON the model must return
@@ -12,7 +12,6 @@ export const QuestionResponseSchema = z.object({
     C: z.string().min(1),
     D: z.string().min(1),
   }),
-  correctAnswer: AnswerOptionSchema,
   difficultyLevel: z.number().int().min(1).max(5),
   speedThresholds: z.object({
     fastMs: z.number().int().positive(),
@@ -24,10 +23,12 @@ export const QuestionResponseSchema = z.object({
 
 export type QuestionResponse = z.infer<typeof QuestionResponseSchema>
 
+export type VerifiedQuestion = QuestionResponse & { correctAnswer: AnswerOption }
+
 // ---------------------------------------------------------------------------
 // Prompt builders
 // ---------------------------------------------------------------------------
-function sanitizeInput(input: string): string {
+export function sanitizeInput(input: string): string {
   return input.replaceAll(/[\r\n]+/g, ' ').replaceAll('"', "'")
 }
 
@@ -39,10 +40,20 @@ function buildVoiceInstruction(settings: SettingsFile): string {
   return `Respond in ${safeLanguage}${toneClause}.\n\n`
 }
 
+function voicePrefix(settings?: SettingsFile): string {
+  return settings ? buildVoiceInstruction(settings) : ''
+}
+
+function formatOptions(options: QuestionResponse['options']): string {
+  return `  A) ${sanitizeInput(options.A)}
+  B) ${sanitizeInput(options.B)}
+  C) ${sanitizeInput(options.C)}
+  D) ${sanitizeInput(options.D)}`
+}
+
 export function buildQuestionPrompt(domain: string, difficultyLevel: number, settings?: SettingsFile): string {
   const safeDomain = sanitizeInput(domain)
-  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
-  return `${voiceInstruction}You are a quiz engine. Generate a single multiple-choice question on the topic of "${safeDomain}" at difficulty level ${difficultyLevel} (scale 1–5, where 1=beginner and 5=expert).
+  return `${voicePrefix(settings)}You are a quiz engine. Generate a single multiple-choice question on the topic of "${safeDomain}" at difficulty level ${difficultyLevel} (scale 1–5, where 1=beginner and 5=expert).
 
 Respond with ONLY a JSON object in this exact shape — no markdown fences, no extra text:
 {
@@ -53,7 +64,6 @@ Respond with ONLY a JSON object in this exact shape — no markdown fences, no e
     "C": "<option C>",
     "D": "<option D>"
   },
-  "correctAnswer": "<A, B, C, or D>",
   "difficultyLevel": ${difficultyLevel},
   "speedThresholds": {
     "fastMs": <milliseconds for a fast response>,
@@ -64,7 +74,6 @@ Respond with ONLY a JSON object in this exact shape — no markdown fences, no e
 Rules:
 - The question must be unambiguous with exactly one correct answer.
 - All four options must be plausible.
-- correctAnswer must be exactly one of: "A", "B", "C", or "D".
 - fastMs should be between 5000 and 15000; slowMs must be greater than fastMs and between 20000 and 45000.
 - Do NOT include any text outside the JSON object.`
 }
@@ -90,60 +99,54 @@ Generate a completely different question.`
 // ---------------------------------------------------------------------------
 export const VerificationResponseSchema = z.object({
   correctAnswer: AnswerOptionSchema,
+  correctOptionText: z.string().min(1),
 })
 
 export type VerificationResponse = z.infer<typeof VerificationResponseSchema>
 
 export function buildVerificationPrompt(question: QuestionResponse, settings?: SettingsFile): string {
-  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
   const safeQuestion = sanitizeInput(question.question)
-  return `${voiceInstruction}You are an answer-verification engine. Given the following multiple-choice question, determine which option is the correct answer.
+  return `${voicePrefix(settings)}You are an answer-verification engine. Given the following multiple-choice question, determine which option is the correct answer.
 
 Question: "${safeQuestion}"
 Options:
-  A) ${sanitizeInput(question.options.A)}
-  B) ${sanitizeInput(question.options.B)}
-  C) ${sanitizeInput(question.options.C)}
-  D) ${sanitizeInput(question.options.D)}
+${formatOptions(question.options)}
 
 Respond with ONLY a JSON object in this exact shape — no markdown fences, no extra text:
 {
-  "correctAnswer": "<A, B, C, or D>"
+  "correctAnswer": "<A, B, C, or D>",
+  "correctOptionText": "<the exact text of the correct option>"
 }
 
 Rules:
 - Think carefully and verify facts before answering.
 - correctAnswer must be exactly one of: "A", "B", "C", or "D".
+- correctOptionText must be the exact text of the option you chose as correct.
 - Do NOT include any text outside the JSON object.`
 }
 
 export type MotivationalTrigger = 'returning' | 'trending'
 
 export function buildMotivationalPrompt(trigger: MotivationalTrigger, settings?: SettingsFile): string {
-  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
   const triggerInstruction = trigger === 'returning'
     ? 'The user has returned to practise again within the last 7 days. Write a 1–2 sentence motivational message acknowledging their return and encouraging them to keep going.'
     : 'The user\'s quiz score is trending upward. Write a 1–2 sentence motivational message congratulating them on improving their score.'
-  return `${voiceInstruction}${triggerInstruction}
+  return `${voicePrefix(settings)}${triggerInstruction}
 
 Reply with ONLY the motivational message — no JSON, no quotes, no extra text.`
 }
 
 export function buildExplanationPrompt(
-  question: QuestionResponse,
+  question: VerifiedQuestion,
   userAnswer: 'A' | 'B' | 'C' | 'D',
   settings?: SettingsFile,
 ): string {
-  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
   const safeQuestion = sanitizeInput(question.question)
-  return `${voiceInstruction}The user just answered a multiple-choice quiz question. Explain why the correct answer is correct in 2–4 sentences. Optionally note why common wrong choices are incorrect.
+  return `${voicePrefix(settings)}The user just answered a multiple-choice quiz question. Explain why the correct answer is correct in 2–4 sentences. Optionally note why common wrong choices are incorrect.
 
 Question: "${safeQuestion}"
 Options:
-  A) ${sanitizeInput(question.options.A)}
-  B) ${sanitizeInput(question.options.B)}
-  C) ${sanitizeInput(question.options.C)}
-  D) ${sanitizeInput(question.options.D)}
+${formatOptions(question.options)}
 Correct answer: ${question.correctAnswer}
 User's answer: ${userAnswer}
 
@@ -151,21 +154,17 @@ Reply with ONLY the explanation — no JSON, no quotes, no extra text.`
 }
 
 export function buildMicroLessonPrompt(
-  question: QuestionResponse,
+  question: VerifiedQuestion,
   explanation: string,
   settings?: SettingsFile,
 ): string {
-  const voiceInstruction = settings ? buildVoiceInstruction(settings) : ''
   const safeQuestion = sanitizeInput(question.question)
   const safeExplanation = sanitizeInput(explanation)
-  return `${voiceInstruction}The user answered a quiz question and has already seen an explanation. Now generate a deeper micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept. Cover foundational principles, related concepts, and practical context. Go beyond the explanation already provided.
+  return `${voicePrefix(settings)}The user answered a quiz question and has already seen an explanation. Now generate a deeper micro-lesson (~1-minute read, 3–5 paragraphs) on the underlying concept. Cover foundational principles, related concepts, and practical context. Go beyond the explanation already provided.
 
 Question: "${safeQuestion}"
 Options:
-  A) ${sanitizeInput(question.options.A)}
-  B) ${sanitizeInput(question.options.B)}
-  C) ${sanitizeInput(question.options.C)}
-  D) ${sanitizeInput(question.options.D)}
+${formatOptions(question.options)}
 Correct answer: ${question.correctAnswer}
 Explanation already provided: "${safeExplanation}"
 

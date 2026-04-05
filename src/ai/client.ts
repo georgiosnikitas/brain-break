@@ -1,44 +1,22 @@
 import { randomInt } from 'node:crypto'
-import { createProvider, AI_ERRORS } from './providers.js'
+import { createProvider, AI_ERRORS, classifyProviderError } from './providers.js'
 import type { AiProvider } from './providers.js'
 import type { Result, SettingsFile, AnswerOption } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildMicroLessonPrompt, buildVerificationPrompt, QuestionResponseSchema, VerificationResponseSchema } from './prompts.js'
-import type { QuestionResponse, MotivationalTrigger } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildMicroLessonPrompt, buildVerificationPrompt, QuestionResponseSchema, VerificationResponseSchema, sanitizeInput } from './prompts.js'
+import type { QuestionResponse, VerifiedQuestion, MotivationalTrigger } from './prompts.js'
 
 // Re-export AI_ERRORS so downstream consumers keep working without import path changes
 export { AI_ERRORS } from './providers.js'
 
-export type Question = QuestionResponse
+export type Question = VerifiedQuestion
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function classifyError(err: unknown, settings?: SettingsFile): string {
-  const provider = settings?.provider ?? null
-  const isAuth = err instanceof Error
-    && /401|unauthorized|unauthenticated|authentication|api key|invalid key/i.test(err.message)
-
-  if (isAuth) {
-    switch (provider) {
-      case 'copilot': return AI_ERRORS.AUTH_COPILOT
-      case 'openai': return AI_ERRORS.AUTH_OPENAI
-      case 'anthropic': return AI_ERRORS.AUTH_ANTHROPIC
-      case 'gemini': return AI_ERRORS.AUTH_GEMINI
-      case 'ollama': return AI_ERRORS.AUTH_OLLAMA
-      default: return AI_ERRORS.NO_PROVIDER
-    }
-  }
-
-  switch (provider) {
-    case 'copilot': return AI_ERRORS.NETWORK_COPILOT
-    case 'openai': return AI_ERRORS.NETWORK_OPENAI
-    case 'anthropic': return AI_ERRORS.NETWORK_ANTHROPIC
-    case 'gemini': return AI_ERRORS.NETWORK_GEMINI
-    case 'ollama': return AI_ERRORS.NETWORK_OLLAMA(settings?.ollamaEndpoint ?? 'http://localhost:11434')
-    default: return AI_ERRORS.NO_PROVIDER
-  }
+  return classifyProviderError(err, settings?.provider ?? null, settings?.ollamaEndpoint)
 }
 
 export function isAuthErrorMessage(error: string): boolean {
@@ -61,23 +39,22 @@ function stripJsonFences(text: string): string {
   return result.trim()
 }
 
-function parseAndValidate(raw: string): Result<Question> {
+function parseAndValidate<T>(raw: string, schema: { safeParse(data: unknown): { success: true; data: T } | { success: false } }): Result<T> {
   let parsed: unknown
   try {
     parsed = JSON.parse(stripJsonFences(raw))
   } catch {
     return { ok: false, error: AI_ERRORS.PARSE }
   }
-  const result = QuestionResponseSchema.safeParse(parsed)
+  const result = schema.safeParse(parsed)
   if (!result.success) {
     return { ok: false, error: AI_ERRORS.PARSE }
   }
   return { ok: true, data: result.data }
 }
 
-function shuffleOptions(question: Question): Question {
+function shuffleOptions(question: QuestionResponse): QuestionResponse {
   const keys = ['A', 'B', 'C', 'D'] as const
-  const correctText = question.options[question.correctAnswer]
 
   // Fisher-Yates shuffle
   const indices = [0, 1, 2, 3]
@@ -93,25 +70,22 @@ function shuffleOptions(question: Question): Question {
     D: question.options[keys[indices[3]]],
   }
 
-  const newCorrectAnswer = keys.find((k) => newOptions[k] === correctText) ?? question.correctAnswer
-  return { ...question, options: newOptions, correctAnswer: newCorrectAnswer }
+  return { ...question, options: newOptions }
 }
 
-async function verifyAnswer(question: Question, provider: AiProvider, settings?: SettingsFile): Promise<boolean> {
+async function verifyAnswer(question: QuestionResponse, provider: AiProvider, settings?: SettingsFile): Promise<Result<Question>> {
   try {
     const prompt = buildVerificationPrompt(question, settings)
     const raw = await provider.generateCompletion(prompt)
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(stripJsonFences(raw))
-    } catch {
-      return true // parsing failed — skip verification, don't block the quiz
+    const parseResult = parseAndValidate(raw, VerificationResponseSchema)
+    if (!parseResult.ok) return parseResult
+    // Local proof: the letter must point to the same text the verifier chose
+    if (sanitizeInput(question.options[parseResult.data.correctAnswer]) !== sanitizeInput(parseResult.data.correctOptionText)) {
+      return { ok: false, error: AI_ERRORS.PARSE }
     }
-    const result = VerificationResponseSchema.safeParse(parsed)
-    if (!result.success) return true // schema mismatch — skip verification
-    return result.data.correctAnswer === question.correctAnswer
-  } catch {
-    return true // network/provider error — skip verification, don't block the quiz
+    return { ok: true, data: { ...question, correctAnswer: parseResult.data.correctAnswer } }
+  } catch (err) {
+    return { ok: false, error: classifyError(err, settings) }
   }
 }
 
@@ -132,52 +106,47 @@ export async function generateQuestion(
   }
   const provider = providerResult.data
 
+  const MAX_ATTEMPTS = 3
+  let lastError: string = AI_ERRORS.PARSE
+
   try {
-    // First attempt
-    const prompt = buildQuestionPrompt(domain, difficultyLevel, settings)
-    const raw = await provider.generateCompletion(prompt)
-    const firstResult = parseAndValidate(raw)
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Build prompt — use dedup prompt if we have previous questions to avoid
+      const collectedPrevious = [...previousQuestions]
+      const prompt = collectedPrevious.length > 0
+        ? buildDeduplicationPrompt(domain, difficultyLevel, collectedPrevious, effectiveSettings)
+        : buildQuestionPrompt(domain, difficultyLevel, effectiveSettings)
 
-    if (!firstResult.ok) {
-      return firstResult
+      const raw = await provider.generateCompletion(prompt)
+      const parseResult = parseAndValidate(raw, QuestionResponseSchema)
+      if (!parseResult.ok) {
+        lastError = parseResult.error
+        continue
+      }
+
+      const candidate = parseResult.data
+
+      // Check for duplicate
+      const hash = hashQuestion(candidate.question)
+      if (existingHashes.has(hash)) {
+        // Duplicate — add to previousQuestions and retry with dedup prompt
+        lastError = AI_ERRORS.DUPLICATE
+        previousQuestions = [...previousQuestions, candidate.question]
+        continue
+      }
+
+      // Shuffle options, then verify
+      const shuffled = shuffleOptions(candidate)
+      const verifyResult = await verifyAnswer(shuffled, provider, effectiveSettings)
+      if (!verifyResult.ok) {
+        lastError = verifyResult.error
+        continue
+      }
+
+      return { ok: true, data: verifyResult.data }
     }
 
-    // Self-consistency check: ask the AI to independently verify the correct answer
-    const firstVerified = await verifyAnswer(firstResult.data, provider, settings)
-    if (!firstVerified) {
-      // Answer inconsistency — regenerate once (best effort, no further verification)
-      const retryRaw = await provider.generateCompletion(prompt)
-      const retryResult = parseAndValidate(retryRaw)
-      if (!retryResult.ok) return retryResult
-      return { ok: true, data: shuffleOptions(retryResult.data) }
-    }
-
-    const hash = hashQuestion(firstResult.data.question)
-    if (!existingHashes.has(hash)) {
-      return { ok: true, data: shuffleOptions(firstResult.data) }
-    }
-
-    // Duplicate — retry once
-    const retryPrompt = buildDeduplicationPrompt(
-      domain,
-      difficultyLevel,
-      [...previousQuestions, firstResult.data.question],
-      settings,
-    )
-    const retryRaw = await provider.generateCompletion(retryPrompt)
-    const retryResult = parseAndValidate(retryRaw)
-    if (!retryResult.ok) return retryResult
-
-    // Verify the dedup question; if inconsistent, regenerate once more
-    const dedupVerified = await verifyAnswer(retryResult.data, provider, settings)
-    if (!dedupVerified) {
-      const finalRaw = await provider.generateCompletion(retryPrompt)
-      const finalResult = parseAndValidate(finalRaw)
-      if (!finalResult.ok) return finalResult
-      return { ok: true, data: shuffleOptions(finalResult.data) }
-    }
-
-    return { ok: true, data: shuffleOptions(retryResult.data) }
+    return { ok: false, error: lastError }
   } catch (err) {
     return { ok: false, error: classifyError(err, effectiveSettings) }
   }

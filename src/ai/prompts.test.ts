@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt, buildMicroLessonPrompt } from './prompts.js'
 import { defaultSettings, type SettingsFile } from '../domain/schema.js'
+import { makeVerifiedQuestion } from '../__test-helpers__/factories.js'
 
 const englishNaturalSettings = defaultSettings()
 const greekPirateSettings: SettingsFile = { ...defaultSettings(), language: 'Greek', tone: 'pirate' }
@@ -146,13 +147,7 @@ describe('buildMotivationalPrompt', () => {
 // ---------------------------------------------------------------------------
 // buildExplanationPrompt
 // ---------------------------------------------------------------------------
-const sampleQuestion = {
-  question: 'What is TypeScript?',
-  options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
-  correctAnswer: 'A' as const,
-  difficultyLevel: 2,
-  speedThresholds: { fastMs: 8000, slowMs: 20000 },
-}
+const sampleQuestion = makeVerifiedQuestion()
 
 describe('buildExplanationPrompt', () => {
   it('includes question text, all options, correct answer, and user answer', () => {
@@ -235,11 +230,27 @@ describe('buildVerificationPrompt', () => {
     expect(prompt).toContain('Think carefully and verify facts')
   })
 
+  it('requests both correctAnswer and correctOptionText in response', () => {
+    const prompt = buildVerificationPrompt(sampleQuestion)
+    expect(prompt).toContain('"correctAnswer"')
+    expect(prompt).toContain('"correctOptionText"')
+  })
+
   it('sanitizes newlines in question text', () => {
     const q = { ...sampleQuestion, question: 'What is\nTypeScript?' }
     const prompt = buildVerificationPrompt(q)
     expect(prompt).toContain('What is TypeScript?')
     expect(prompt).not.toContain('What is\nTypeScript?')
+  })
+
+  it('sanitizes option text in the verification prompt', () => {
+    const q = {
+      ...sampleQuestion,
+      options: { A: 'line one\n"line two"', B: 'B option', C: 'C option', D: 'D option' },
+    }
+    const prompt = buildVerificationPrompt(q)
+    expect(prompt).toContain("A) line one 'line two'")
+    expect(prompt).not.toContain('line one\n"line two"')
   })
 
   it('no voice instruction when no settings provided', () => {

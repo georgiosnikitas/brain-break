@@ -4,6 +4,7 @@
  */
 import type { QuestionRecord, DomainMeta, SettingsFile } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
+import type { VerifiedQuestion } from '../ai/prompts.js'
 
 export function makeRecord(overrides: Partial<QuestionRecord> = {}): QuestionRecord {
   return {
@@ -39,4 +40,15 @@ export function makeMeta(overrides: Partial<DomainMeta> = {}): DomainMeta {
 
 export function makeSettings(overrides: Partial<SettingsFile> = {}): SettingsFile {
   return { ...defaultSettings(), ...overrides }
+}
+
+export function makeVerifiedQuestion(overrides: Partial<VerifiedQuestion> = {}): VerifiedQuestion {
+  return {
+    question: 'What is TypeScript?',
+    options: { A: 'A typed JS superset', B: 'A framework', C: 'A runtime', D: 'A test tool' },
+    correctAnswer: 'A',
+    difficultyLevel: 2,
+    speedThresholds: { fastMs: 8000, slowMs: 20000 },
+    ...overrides,
+  }
 }

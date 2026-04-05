@@ -41,20 +41,19 @@ function makeValidResponse(question = 'What is 2+2?') {
   return JSON.stringify({
     question,
     options: { A: '1', B: '2', C: '4', D: '8' },
-    correctAnswer: 'C',
     difficultyLevel: 2,
     speedThresholds: { fastMs: 8000, slowMs: 20000 },
   })
 }
 
-function makeVerificationResponse(correctAnswer: 'A' | 'B' | 'C' | 'D' = 'C') {
-  return JSON.stringify({ correctAnswer })
+function makeVerificationResponse(correctAnswer: 'A' | 'B' | 'C' | 'D' = 'C', correctOptionText = '4') {
+  return JSON.stringify({ correctAnswer, correctOptionText })
 }
 
 function mockSuccessfulGeneration(question = 'What is 2+2?') {
   mockGenerateCompletion
     .mockResolvedValueOnce(makeValidResponse(question))
-    .mockResolvedValueOnce(makeVerificationResponse('C'))
+    .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 }
 
 // ---------------------------------------------------------------------------
@@ -66,8 +65,8 @@ beforeEach(() => {
   mockRandomInt.mockReset()
   // Default: provider creation succeeds
   mockCreateProvider.mockReturnValue({ ok: true, data: makeMockProvider() })
-  // Default: real-ish random for non-deterministic tests
-  mockRandomInt.mockImplementation((max: number) => Math.floor(0.5 * max))
+  // Default: identity shuffle for straightforward tests
+  mockRandomInt.mockImplementation((max: number) => max - 1)
 })
 
 // ---------------------------------------------------------------------------
@@ -78,7 +77,7 @@ describe('generateQuestion', () => {
 
   it('returns ok:true with a valid Question on success', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
@@ -95,7 +94,7 @@ describe('generateQuestion', () => {
   it('strips ```json fences before parsing', async () => {
     const wrapped = '```json\n' + makeValidResponse() + '\n```'
     mockGenerateCompletion.mockResolvedValueOnce(wrapped)
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('typescript', 2, new Set(), [], settings)
     expect(result.ok).toBe(true)
@@ -166,16 +165,35 @@ describe('generateQuestion', () => {
     expect(result.error).toBe(AI_ERRORS.AUTH_ANTHROPIC)
   })
 
+  it('returns provider-specific AUTH error on 403 Forbidden', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('403 Forbidden: API key not valid'))
+
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings({ provider: 'gemini' }))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH_GEMINI)
+  })
+
+  it('returns QUOTA error when provider throws quota/rate-limit error', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('429 Too Many Requests'))
+
+    const result = await generateQuestion('typescript', 2, new Set(), [], makeSettings({ provider: 'openai' }))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.QUOTA)
+  })
+
   it('retries with deduplication prompt when first question is a duplicate', async () => {
     const firstQ = 'What is 2+2?'
     const secondQ = 'What is 3+3?'
     const existingHash = hashQuestion(firstQ)
 
     mockGenerateCompletion
-      .mockResolvedValueOnce(makeValidResponse(firstQ))
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
-      .mockResolvedValueOnce(makeValidResponse(secondQ))
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
+      .mockResolvedValueOnce(makeValidResponse(firstQ))       // attempt 1: generates duplicate
+      .mockResolvedValueOnce(makeValidResponse(secondQ))       // attempt 2: dedup retry
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4')) // attempt 2: verification
 
     const result = await generateQuestion('typescript', 2, new Set([existingHash]), [], settings)
 
@@ -184,12 +202,12 @@ describe('generateQuestion', () => {
     expect(result.data.question).toBe(secondQ)
     expect(Object.values(result.data.options).sort((a, b) => a.localeCompare(b))).toEqual(['1', '2', '4', '8'])
     expect(result.data.options[result.data.correctAnswer]).toBe('4')
-    expect(mockGenerateCompletion).toHaveBeenCalledTimes(4)
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(3)
   })
 
   it('does not retry when first question is not a duplicate', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     await generateQuestion('typescript', 2, new Set(), [], settings)
 
@@ -214,7 +232,7 @@ describe('generateQuestion', () => {
 describe('settings injection', () => {
   it('injects voice instruction into prompt when settings are non-default', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
     const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Greek'
     settings.tone = 'pirate'
@@ -227,7 +245,7 @@ describe('settings injection', () => {
 
   it('no voice instruction in prompt when settings are English/natural', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
     const settings = makeSettings({ provider: 'openai' })
 
     await generateQuestion('typescript', 2, new Set(), [], settings)
@@ -240,17 +258,16 @@ describe('settings injection', () => {
     const firstQ = 'What is 2+2?'
     const existingHash = hashQuestion(firstQ)
     mockGenerateCompletion
-      .mockResolvedValueOnce(makeValidResponse(firstQ))
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
-      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
+      .mockResolvedValueOnce(makeValidResponse(firstQ))         // attempt 1: dup
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?')) // attempt 2: dedup
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))  // attempt 2: verify
     const settings = makeSettings({ provider: 'openai' })
     settings.language = 'Spanish'
     settings.tone = 'expressive'
 
     await generateQuestion('typescript', 2, new Set([existingHash]), [], settings)
 
-    const retryPrompt: string = mockGenerateCompletion.mock.calls[2][0]
+    const retryPrompt: string = mockGenerateCompletion.mock.calls[1][0]
     expect(retryPrompt).toContain('Respond in Spanish using an expressive tone of voice.')
   })
 })
@@ -564,7 +581,7 @@ describe('edge cases', () => {
   it('handles ``` fence with no newline after language tag', async () => {
     const noNewlineFence = '```' + makeValidResponse() + '```'
     mockGenerateCompletion.mockResolvedValueOnce(noNewlineFence)
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('typescript', 2, new Set(), [], settings)
 
@@ -638,11 +655,12 @@ describe('shuffleOptions', () => {
     mockGenerateCompletion.mockResolvedValueOnce(JSON.stringify({
       question: 'Capital of France?',
       options: { A: 'Berlin', B: 'Paris', C: 'Rome', D: 'Madrid' },
-      correctAnswer: 'B',
       difficultyLevel: 1,
       speedThresholds: { fastMs: 8000, slowMs: 25000 },
     }))
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('B'))
+    // After shuffle with indices [1,2,3,0]: A=Paris, B=Rome, C=Madrid, D=Berlin
+    // Verifier says Paris (now at A) is correct
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('A', 'Paris'))
 
     const result = await generateQuestion('geography', 1, new Set(), [], settings)
 
@@ -651,13 +669,13 @@ describe('shuffleOptions', () => {
     // With all-zero randomInt: indices become [1,2,3,0]
     // A=options[keys[1]]=B(Paris), B=options[keys[2]]=C(Rome), C=options[keys[3]]=D(Madrid), D=options[keys[0]]=A(Berlin)
     expect(result.data.options).toEqual({ A: 'Paris', B: 'Rome', C: 'Madrid', D: 'Berlin' })
-    expect(result.data.correctAnswer).toBe('A') // Paris moved from B to A
+    expect(result.data.correctAnswer).toBe('A') // Verifier said A=Paris is correct
     expect(result.data.options[result.data.correctAnswer]).toBe('Paris')
   })
 
   it('preserves all option values after shuffle', async () => {
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
@@ -673,7 +691,7 @@ describe('shuffleOptions', () => {
     mockRandomInt.mockImplementation((max: number) => max - 1)
 
     mockGenerateCompletion.mockResolvedValueOnce(makeValidResponse())
-    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C'))
+    mockGenerateCompletion.mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
@@ -691,26 +709,27 @@ describe('shuffleOptions', () => {
 describe('answer verification', () => {
   const settings = makeSettings({ provider: 'openai' })
 
-  it('regenerates question when verification disagrees with correctAnswer', async () => {
-    // First question: correctAnswer C, but verification says A → mismatch
+  it('regenerates question when verification disagrees with option text', async () => {
+    // First attempt: verification returns letter+text that don't match the shuffled options
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse('What is 2+2?'))
-      .mockResolvedValueOnce(makeVerificationResponse('A'))
-      // Regenerated question
+      .mockResolvedValueOnce(makeVerificationResponse('A', 'wrong text'))
+      // Second attempt succeeds
       .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.question).toBe('What is 3+3?')
-    expect(mockGenerateCompletion).toHaveBeenCalledTimes(3)
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(4)
   })
 
   it('proceeds normally when verification agrees', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
@@ -720,48 +739,76 @@ describe('answer verification', () => {
     expect(mockGenerateCompletion).toHaveBeenCalledTimes(2)
   })
 
-  it('skips verification when verification response is not valid JSON', async () => {
+  it('rejects candidate when verification response is not valid JSON', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
       .mockResolvedValueOnce('not json')
+      // Retry succeeds
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.data.question).toBe('What is 2+2?')
-    expect(mockGenerateCompletion).toHaveBeenCalledTimes(2)
+    expect(result.data.question).toBe('What is 3+3?')
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(4)
   })
 
-  it('skips verification when verification response does not match schema', async () => {
+  it('rejects candidate when verification response does not match schema', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
       .mockResolvedValueOnce(JSON.stringify({ answer: 'C' }))
+      // Retry succeeds
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.data.question).toBe('What is 2+2?')
+    expect(result.data.question).toBe('What is 3+3?')
   })
 
-  it('skips verification when verification call throws', async () => {
+  it('rejects candidate when verification call throws', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
       .mockRejectedValueOnce(new Error('network error'))
+      // Retry succeeds
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.data.question).toBe('What is 2+2?')
+    expect(result.data.question).toBe('What is 3+3?')
   })
 
-  it('returns PARSE error when regenerated question after verification failure is invalid', async () => {
+  it('returns provider-specific verification error when the verification call exhausts the budget', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
-      .mockResolvedValueOnce(makeVerificationResponse('A')) // disagree
-      .mockResolvedValueOnce('not json') // regeneration fails
+      .mockRejectedValueOnce(new Error('Connection refused'))
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockRejectedValueOnce(new Error('Connection refused'))
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockRejectedValueOnce(new Error('Connection refused'))
+
+    const result = await generateQuestion('math', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_OPENAI)
+  })
+
+  it('returns error when all 3 attempts exhaust verification budget', async () => {
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockResolvedValueOnce('not json')             // attempt 1 verification fails
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockResolvedValueOnce('not json')             // attempt 2 verification fails
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockResolvedValueOnce('not json')             // attempt 3 verification fails
 
     const result = await generateQuestion('math', 2, new Set(), [], settings)
 
@@ -770,10 +817,58 @@ describe('answer verification', () => {
     expect(result.error).toBe(AI_ERRORS.PARSE)
   })
 
+  it('returns PARSE error when all retries after verification failure produce invalid candidates', async () => {
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockResolvedValueOnce(makeVerificationResponse('A', 'wrong text')) // mismatch
+      .mockResolvedValueOnce('not json')                                   // parse fails
+      .mockResolvedValueOnce('not json')                                   // parse fails
+
+    const result = await generateQuestion('math', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.PARSE)
+  })
+
+  it('rejects candidate when verification correctAnswer letter does not match correctOptionText', async () => {
+    // Verifier says B is correct with text '4', but B='2' in identity-shuffled options
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse())
+      .mockResolvedValueOnce(makeVerificationResponse('B', '4'))
+      // Retry succeeds
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
+
+    const result = await generateQuestion('math', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.question).toBe('What is 3+3?')
+  })
+
+  it('accepts verification when quoted or multiline option text matches the sanitized prompt text', async () => {
+    mockGenerateCompletion
+      .mockResolvedValueOnce(JSON.stringify({
+        question: 'Pick the exact phrase.',
+        options: { A: 'alpha', B: 'line one\n"line two"', C: 'gamma', D: 'delta' },
+        difficultyLevel: 2,
+        speedThresholds: { fastMs: 8000, slowMs: 20000 },
+      }))
+      .mockResolvedValueOnce(makeVerificationResponse('B', "line one 'line two'"))
+
+    const result = await generateQuestion('strings', 2, new Set(), [], settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.correctAnswer).toBe('B')
+    expect(result.data.options.B).toBe('line one\n"line two"')
+  })
+
   it('verification prompt does not reveal the original correct answer', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
 
     await generateQuestion('math', 2, new Set(), [], settings)
 
@@ -785,7 +880,7 @@ describe('answer verification', () => {
   it('includes voice instruction in verification prompt when settings are non-default', async () => {
     mockGenerateCompletion
       .mockResolvedValueOnce(makeValidResponse())
-      .mockResolvedValueOnce(makeVerificationResponse('C'))
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))
     const greekSettings = makeSettings({ provider: 'openai' })
     greekSettings.language = 'Greek'
     greekSettings.tone = 'pirate'
@@ -796,16 +891,16 @@ describe('answer verification', () => {
     expect(verifyPrompt).toContain('Respond in Greek using a pirate tone of voice.')
   })
 
-  it('verifies dedup question and regenerates on inconsistency', async () => {
+  it('verifies dedup question and retries on inconsistency', async () => {
     const firstQ = 'What is 2+2?'
     const existingHash = hashQuestion(firstQ)
 
     mockGenerateCompletion
-      .mockResolvedValueOnce(makeValidResponse(firstQ))       // first question (duplicate)
-      .mockResolvedValueOnce(makeVerificationResponse('C'))    // first verification (passes)
-      .mockResolvedValueOnce(makeValidResponse('What is 3+3?')) // dedup question
-      .mockResolvedValueOnce(makeVerificationResponse('A'))    // dedup verification (disagrees)
-      .mockResolvedValueOnce(makeValidResponse('What is 5+5?')) // regenerated dedup
+      .mockResolvedValueOnce(makeValidResponse(firstQ))          // attempt 1: dup
+      .mockResolvedValueOnce(makeValidResponse('What is 3+3?'))   // attempt 2: dedup gen
+      .mockResolvedValueOnce(makeVerificationResponse('A', 'wrong')) // attempt 2: verify fails
+      .mockResolvedValueOnce(makeValidResponse('What is 5+5?'))   // attempt 3: retry gen
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4'))    // attempt 3: verify ok
 
     const result = await generateQuestion('math', 2, new Set([existingHash]), [], settings)
 
@@ -843,10 +938,9 @@ describe('preloadQuestions', () => {
     mockSuccessfulGeneration('Q1')
     // Q2 returns same text as Q1 → triggers dedup → retry returns unique Q
     mockGenerateCompletion
-      .mockResolvedValueOnce(makeValidResponse('Q1'))       // Q2 first attempt (dup of Q1)
-      .mockResolvedValueOnce(makeVerificationResponse('C'))  // Q2 verification
-      .mockResolvedValueOnce(makeValidResponse('Q2-unique')) // Q2 dedup retry
-      .mockResolvedValueOnce(makeVerificationResponse('C'))  // Q2 retry verification
+      .mockResolvedValueOnce(makeValidResponse('Q1'))            // Q2 first attempt (dup of Q1)
+      .mockResolvedValueOnce(makeValidResponse('Q2-unique'))     // Q2 dedup retry
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4')) // Q2 retry verification
 
     const result = await preloadQuestions(2, 'typescript', 2, new Set(), settings)
 
@@ -855,8 +949,8 @@ describe('preloadQuestions', () => {
     expect(result.data).toHaveLength(2)
     expect(result.data[0].question).toBe('Q1')
     expect(result.data[1].question).toBe('Q2-unique')
-    // 2 completions for Q1 + 4 completions for Q2 (gen+verify+dedup+verify) = 6
-    expect(mockGenerateCompletion).toHaveBeenCalledTimes(6)
+    // 2 completions for Q1 + 3 completions for Q2 (dup gen + dedup gen + verify) = 5
+    expect(mockGenerateCompletion).toHaveBeenCalledTimes(5)
   })
 
   it('passes growing previousQuestions array to each call', async () => {
@@ -864,16 +958,30 @@ describe('preloadQuestions', () => {
     mockSuccessfulGeneration('Q1')
     // Q2 returns same as Q1 → dedup retry fires with previousQuestions containing Q1
     mockGenerateCompletion
-      .mockResolvedValueOnce(makeValidResponse('Q1'))       // Q2 dup
-      .mockResolvedValueOnce(makeVerificationResponse('C'))  // Q2 verify
-      .mockResolvedValueOnce(makeValidResponse('Q2-unique')) // Q2 dedup retry
-      .mockResolvedValueOnce(makeVerificationResponse('C'))  // verify
+      .mockResolvedValueOnce(makeValidResponse('Q1'))            // Q2 dup
+      .mockResolvedValueOnce(makeValidResponse('Q2-unique'))     // Q2 dedup retry
+      .mockResolvedValueOnce(makeVerificationResponse('C', '4')) // verify
 
     await preloadQuestions(2, 'typescript', 2, new Set(), settings)
 
-    // The dedup prompt (3rd call to generateCompletion) should contain Q1
-    const dedupPrompt: string = mockGenerateCompletion.mock.calls[4][0]
+    // The dedup prompt (call index 3: Q1 gen, Q1 verify, Q2 dup, Q2 dedup)
+    const dedupPrompt: string = mockGenerateCompletion.mock.calls[3][0]
     expect(dedupPrompt).toContain('Q1')
+  })
+
+  it('returns DUPLICATE when every candidate attempt is a duplicate', async () => {
+    const existingHash = hashQuestion('Q1')
+
+    mockGenerateCompletion
+      .mockResolvedValueOnce(makeValidResponse('Q1'))
+      .mockResolvedValueOnce(makeValidResponse('Q1'))
+      .mockResolvedValueOnce(makeValidResponse('Q1'))
+
+    const result = await preloadQuestions(1, 'typescript', 2, new Set([existingHash]), settings)
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.DUPLICATE)
   })
 
   it('returns failure immediately on any generateQuestion error — no further calls', async () => {

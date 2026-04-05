@@ -298,11 +298,11 @@ describe('SettingsFileSchema — provider fields', () => {
     provider: null as string | null,
     language: 'English',
     tone: 'natural',
-    openaiModel: 'gpt-5.4-mini',
-    anthropicModel: 'claude-haiku-4-latest',
-    geminiModel: 'gemini-2.5-flash',
+    openaiModel: 'gpt-5.4',
+    anthropicModel: 'claude-sonnet-4.6-latest',
+    geminiModel: 'gemini-2.5-pro',
     ollamaEndpoint: 'http://localhost:11434',
-    ollamaModel: 'llama3.3',
+    ollamaModel: 'llama4',
   }
 
   function parseSettings(overrides: Record<string, unknown> = {}) {
@@ -329,11 +329,11 @@ describe('SettingsFileSchema — provider fields', () => {
   it('fills defaults for missing provider and model fields (backward compat)', () => {
     const result = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
     expect(result.provider).toBeNull()
-    expect(result.openaiModel).toBe('gpt-5.4-mini')
-    expect(result.anthropicModel).toBe('claude-haiku-4-latest')
-    expect(result.geminiModel).toBe('gemini-2.5-flash')
+    expect(result.openaiModel).toBe('gpt-5.4')
+    expect(result.anthropicModel).toBe('claude-sonnet-4.6-latest')
+    expect(result.geminiModel).toBe('gemini-2.5-pro')
     expect(result.ollamaEndpoint).toBe('http://localhost:11434')
-    expect(result.ollamaModel).toBe('llama3.3')
+    expect(result.ollamaModel).toBe('llama4')
   })
 
   it('rejects empty ollamaEndpoint string', () => {
@@ -367,24 +367,24 @@ describe('defaultSettings — provider fields', () => {
     expect(defaultSettings().provider).toBeNull()
   })
 
-  it('returns openaiModel: gpt-5.4-mini', () => {
-    expect(defaultSettings().openaiModel).toBe('gpt-5.4-mini')
+  it('returns openaiModel: gpt-5.4', () => {
+    expect(defaultSettings().openaiModel).toBe('gpt-5.4')
   })
 
-  it('returns anthropicModel: claude-haiku-4-latest', () => {
-    expect(defaultSettings().anthropicModel).toBe('claude-haiku-4-latest')
+  it('returns anthropicModel: claude-sonnet-4.6-latest', () => {
+    expect(defaultSettings().anthropicModel).toBe('claude-sonnet-4.6-latest')
   })
 
-  it('returns geminiModel: gemini-2.5-flash', () => {
-    expect(defaultSettings().geminiModel).toBe('gemini-2.5-flash')
+  it('returns geminiModel: gemini-2.5-pro', () => {
+    expect(defaultSettings().geminiModel).toBe('gemini-2.5-pro')
   })
 
   it('returns ollamaEndpoint: http://localhost:11434', () => {
     expect(defaultSettings().ollamaEndpoint).toBe('http://localhost:11434')
   })
 
-  it('returns ollamaModel: llama3.3', () => {
-    expect(defaultSettings().ollamaModel).toBe('llama3.3')
+  it('returns ollamaModel: llama4', () => {
+    expect(defaultSettings().ollamaModel).toBe('llama4')
   })
 
   it('returns all settings fields', () => {
@@ -424,11 +424,11 @@ describe('showWelcome setting', () => {
       provider: 'openai',
       language: 'English',
       tone: 'natural',
-      openaiModel: 'gpt-5.4-mini',
-      anthropicModel: 'claude-haiku-4-latest',
-      geminiModel: 'gemini-2.5-flash',
+      openaiModel: 'gpt-5.4',
+      anthropicModel: 'claude-sonnet-4.6-latest',
+      geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama4',
     }
     const parsed = SettingsFileSchema.parse(oldSettings)
     expect(parsed.showWelcome).toBe(true)

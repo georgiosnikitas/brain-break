@@ -18,6 +18,7 @@ export interface AiProvider {
 export const AI_ERRORS = {
   NO_PROVIDER: 'AI provider not ready. Go to Settings to configure.',
   PARSE: 'Received an unexpected response from the AI provider. Please try again.',
+  DUPLICATE: 'Could not generate a unique question. Please try again.',
   // Network errors
   NETWORK_COPILOT: 'Could not reach the Copilot API. Check your connection and try again.',
   NETWORK_OPENAI: 'Could not reach OpenAI API. Check your connection and try again.',
@@ -33,6 +34,43 @@ export const AI_ERRORS = {
   // Quota errors
   QUOTA: 'API quota exceeded. Check your plan and billing details with your provider.',
 } as const
+
+// ---------------------------------------------------------------------------
+// Shared error classifier — maps provider errors to user-facing messages
+// ---------------------------------------------------------------------------
+export function classifyProviderError(
+  err: unknown,
+  providerType: AiProviderType | null,
+  ollamaEndpoint = 'http://localhost:11434',
+): string {
+  const msg = err instanceof Error ? err.message : ''
+
+  if (/quota|rate.?limit|too many requests|429/i.test(msg)) {
+    return AI_ERRORS.QUOTA
+  }
+
+  const isAuth = /401|403|unauthorized|unauthenticated|authentication|api key|invalid key/i.test(msg)
+
+  if (isAuth) {
+    switch (providerType) {
+      case 'copilot': return AI_ERRORS.AUTH_COPILOT
+      case 'openai': return AI_ERRORS.AUTH_OPENAI
+      case 'anthropic': return AI_ERRORS.AUTH_ANTHROPIC
+      case 'gemini': return AI_ERRORS.AUTH_GEMINI
+      case 'ollama': return AI_ERRORS.AUTH_OLLAMA
+      default: return AI_ERRORS.NO_PROVIDER
+    }
+  }
+
+  switch (providerType) {
+    case 'copilot': return AI_ERRORS.NETWORK_COPILOT
+    case 'openai': return AI_ERRORS.NETWORK_OPENAI
+    case 'anthropic': return AI_ERRORS.NETWORK_ANTHROPIC
+    case 'gemini': return AI_ERRORS.NETWORK_GEMINI
+    case 'ollama': return AI_ERRORS.NETWORK_OLLAMA(ollamaEndpoint)
+    default: return AI_ERRORS.NO_PROVIDER
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Copilot adapter — custom implementation (not supported by Vercel AI SDK)
@@ -184,34 +222,7 @@ export async function testProviderConnection(
     const response = await providerResult.data.generateCompletion('Say a short, one-sentence greeting to confirm you are working.')
     return { ok: true, data: response }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : ''
-
-    const isQuota = /quota|rate.?limit|too many requests|429/i.test(msg)
-    if (isQuota) {
-      return { ok: false, error: AI_ERRORS.QUOTA }
-    }
-
-    const isAuth = /401|403|unauthorized|unauthenticated|authentication|api key|invalid key/i.test(msg)
-
-    if (isAuth) {
-      const authErrors: Record<AiProviderType, string> = {
-        copilot: AI_ERRORS.AUTH_COPILOT,
-        openai: AI_ERRORS.AUTH_OPENAI,
-        anthropic: AI_ERRORS.AUTH_ANTHROPIC,
-        gemini: AI_ERRORS.AUTH_GEMINI,
-        ollama: AI_ERRORS.AUTH_OLLAMA,
-      }
-      return { ok: false, error: authErrors[providerType] }
-    }
-
-    const networkErrors: Record<AiProviderType, string> = {
-      copilot: AI_ERRORS.NETWORK_COPILOT,
-      openai: AI_ERRORS.NETWORK_OPENAI,
-      anthropic: AI_ERRORS.NETWORK_ANTHROPIC,
-      gemini: AI_ERRORS.NETWORK_GEMINI,
-      ollama: AI_ERRORS.NETWORK_OLLAMA(settings.ollamaEndpoint),
-    }
-    return { ok: false, error: networkErrors[providerType] }
+    return { ok: false, error: classifyProviderError(err, providerType, settings.ollamaEndpoint) }
   }
 }
 

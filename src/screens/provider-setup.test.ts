@@ -155,8 +155,8 @@ describe('showProviderSetupScreen', () => {
 
     await runSetup()
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-5.4-mini' })
-    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-5.4-mini' })
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', { ...settings, provider: 'openai', openaiModel: 'gpt-5.4' })
+    expect(mockWriteSettings).toHaveBeenCalledWith({ ...settings, provider: 'openai', openaiModel: 'gpt-5.4' })
   })
 
   // -------------------------------------------------------------------------
@@ -246,13 +246,13 @@ describe('showProviderSetupScreen', () => {
       ...settings,
       provider: 'ollama',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama4',
     })
     expect(mockWriteSettings).toHaveBeenCalledWith({
       ...settings,
       provider: 'ollama',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama4',
     })
   })
 

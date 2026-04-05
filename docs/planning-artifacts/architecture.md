@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-04-03'
+lastEdited: '2026-04-05'
 editHistory:
+  - date: '2026-04-05'
+    changes: 'Answer verification redesign synced from planning: Technical Constraints, Response Validation, ai/client.ts role, error handling, module descriptions, preload flow, and Question Cycle data flow now describe fail-closed verification. Generation returns question text plus options only, verification returns explicit `correctAnswer` and `correctOptionText`, local letter-text alignment is mandatory, and each question has a bounded budget of 3 candidate attempts total (initial attempt + 2 retries) before rejection.'
   - date: '2026-04-03'
     changes: 'ASCII Art sync with implemented codebase (PRD Feature 18, Epic 12): Requirements Overview updated (13→15 features, ASCII Art added and stale feature count corrected). Estimated components updated (16–18→17–19). Technical constraints updated with `figlet` dependency. New ASCII Art Screen architecture section added. Module Architecture src/ tree updated (ascii-art.ts added, domain-menu comments expanded). Complete Project Directory Structure updated (ascii-art.ts + ascii-art.test.ts added, domain-menu comment expanded). Terminal UI navigation flow updated with the ASCII Art route. Feature to Structure Mapping updated (F15 row added). Requirements Coverage Validation updated (F15 row added). Coherence Validation updated with `figlet` mention. All changes additive — no architectural decisions changed.'
   - date: '2026-03-31'
@@ -71,7 +73,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - Runtime: Node.js v22.0.0
 - Interface: Terminal only — no web UI, no GUI
-- AI: 5 interchangeable providers — OpenAI (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`), Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK (`ai`), Ollama via raw HTTP fetch, plus GitHub Copilot SDK (`@github/copilot-sdk`) as a custom adapter wrapping the `AiProvider` interface. All providers receive identical prompts and must return the same JSON schema (question text, options A–D, correct answer, difficulty, speed tier thresholds). API keys read from environment variables at runtime — never stored in settings
+- AI: 5 interchangeable providers — OpenAI (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`), Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK (`ai`), Ollama via raw HTTP fetch, plus GitHub Copilot SDK (`@github/copilot-sdk`) as a custom adapter wrapping the `AiProvider` interface. All providers receive identical generation and verification prompt structures and must support the same JSON contracts: generation returns question text, options A–D, difficulty, and speed tier thresholds; verification returns `correctAnswer` and `correctOptionText`. API keys read from environment variables at runtime — never stored in settings
 - Storage: `~/.brain-break/<domain-slug>.json` — one file per domain; `~/.brain-break/settings.json` — global settings (includes provider selection)
 - Distribution: npm / npx — must reach home screen in ≤ 2s cold start
 - Platform: Unix-like only (macOS, Linux, WSL)
@@ -172,12 +174,12 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - Domain file schema structure (split meta + history)
 - Atomic write strategy (write-then-rename)
 - Deduplication hash in-memory representation (Set<string>)
-- AI response validation (Zod) — same schema enforced for all 5 providers (Vercel AI SDK `generateText()` for 4 providers + Copilot SDK custom adapter)
+- AI response validation (Zod) — the same generation and verification schemas enforced for all 5 providers (Vercel AI SDK `generateText()` for 4 providers + Copilot SDK custom adapter)
 - Module/directory structure
 
 **Important Decisions (Shape Architecture):**
 - Terminal UI navigation pattern (sequential prompts + thin router)
-- API error handling strategy (no retry, fail-to-home)
+- API error handling strategy (bounded verification retries, fail-to-domain-menu)
 
 **Deferred Decisions (Post-MVP):**
 - Fuzzy/similarity-based deduplication (explicitly noted in PRD as future enhancement)
@@ -264,11 +266,11 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "provider": "openai",        // Enum: openai | anthropic | gemini | copilot | ollama — null on first launch
   "language": "English",        // Free-text — any language name
   "tone": "natural",            // Enum: natural | expressive | calm | humorous | sarcastic | robot | pirate
-  "openaiModel": "gpt-5.4-mini",           // OpenAI — preferred model name
-  "anthropicModel": "claude-haiku-4-latest", // Anthropic — preferred model name
-  "geminiModel": "gemini-2.5-flash",       // Gemini — preferred model name
+  "openaiModel": "gpt-5.4",           // OpenAI — preferred model name
+  "anthropicModel": "claude-sonnet-4.6-latest", // Anthropic — preferred model name
+  "geminiModel": "gemini-2.5-pro",       // Gemini — preferred model name
   "ollamaEndpoint": "http://localhost:11434",  // Ollama only — endpoint URL
-  "ollamaModel": "llama3.3",      // Ollama only — model name
+  "ollamaModel": "llama4",      // Ollama only — model name
   "showWelcome": true            // Boolean — show animated welcome screen on startup and exit screen on quit
 }
 ```
@@ -295,7 +297,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4-mini'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-haiku-4-latest'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-flash'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama3.3'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4-mini', anthropicModel: 'claude-haiku-4-latest', geminiModel: 'gemini-2.5-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3.3', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit.
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-sonnet-4.6-latest'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-pro'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama4'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-sonnet-4.6-latest', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit.
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -307,7 +309,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 **First-launch provider setup:** `screens/provider-setup.ts` displays a one-time provider selection screen on first launch (when `provider` is `null`). The user selects a provider via arrow keys; the app validates readiness:
 - **Copilot:** checks Copilot authentication
-- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-5.4-mini` for OpenAI, `claude-haiku-4-latest` for Anthropic, `gemini-2.5-flash` for Gemini — entering an empty string resets to the default)
+- **OpenAI / Anthropic / Gemini:** checks for the corresponding env var (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`); if present, prompts for a preferred model name (pre-filled with the provider's default: `gpt-5.4` for OpenAI, `claude-sonnet-4.6-latest` for Anthropic, `gemini-2.5-pro` for Gemini — entering an empty string resets to the default)
 - **Ollama:** prompts for endpoint URL + model name, tests connection
 
 If validation fails, the app displays what’s needed and proceeds to the home screen anyway — all features except Play are accessible. If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
@@ -369,7 +371,7 @@ import { openai } from '@ai-sdk/openai'
 const adapter: AiProvider = {
   async generateCompletion(prompt: string): Promise<string> {
     const { text } = await generateText({
-      model: openai('gpt-5.4-mini'),
+      model: openai('gpt-5.4'),
       prompt,
     })
     return text
@@ -382,37 +384,40 @@ The Anthropic, Gemini, and Ollama adapters follow the same pattern — only the 
 **Response Validation**
 
 - All providers return raw text (Vercel AI SDK's `generateText()` returns `{ text }` directly; Copilot custom adapter returns raw content); `ai/client.ts` strips JSON fences and validates with the same Zod `QuestionResponseSchema`
-- Schema covers: `question` (string), `options` (A–D strings), `correctAnswer` (enum), `difficultyLevel` (1–5 int), `speedThresholds` (`{ fastMs: number, slowMs: number }`)
+- Generation schema covers: `question` (string), `options` (A–D strings), `difficultyLevel` (1–5 int), `speedThresholds` (`{ fastMs: number, slowMs: number }`) — generation does **not** return the trusted answer key
+- Verification schema covers: `correctAnswer` (`A`–`D`) and `correctOptionText` (string copied verbatim from the chosen option)
 - Provider-agnostic: if any provider returns malformed JSON, the same `AI_ERRORS.PARSE` path is taken
-- **Answer self-consistency verification:** After Zod validation and option shuffling, a separate verification prompt presents the same question and options to the AI **without revealing the original `correctAnswer`** and asks it to independently determine the correct answer. The verification response is validated against `VerificationResponseSchema` (Zod: `{ correctAnswer: AnswerOptionSchema }`). If the verification answer disagrees with the generated answer, the question is discarded and regenerated once. This applies to both the primary generation path and the deduplication regeneration path. The mechanism is **fail-open**: verification errors (network, JSON parse, schema mismatch) silently pass through — the original question is accepted. The verification prompt includes the active language/tone voice instruction when settings are provided.
+- **Answer verification gate:** After Zod validation and option shuffling, a separate verification prompt presents the finalized question and options to the AI **without revealing any pre-selected answer** and asks it to return both `correctAnswer` and `correctOptionText`. The candidate is accepted only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`. Any verification mismatch, network error, JSON parse error, or schema mismatch discards the candidate and triggers a fresh generation cycle. This applies to both the primary generation path and the deduplication regeneration path. The mechanism is **fail-closed** with a bounded budget of **3 candidate attempts total** (initial attempt + 2 retries); exhausting the budget returns an error and no question is shown to the user. The verification prompt includes the active language/tone voice instruction when settings are provided.
 
 **`ai/client.ts` Role (Refactored)**
 
 `client.ts` no longer imports any provider SDK directly. It:
 1. Calls `createProvider(settings)` to get the active adapter
-2. Calls `provider.generateCompletion(prompt)` to get the raw response
-3. Validates with Zod
-4. Shuffles answer options via Fisher-Yates (using `crypto.randomInt` for unbiased distribution) to mitigate LLM positional bias toward option B; remaps `correctAnswer` to the new position
-5. Returns `Result<Question>`
-6. Classifies errors (auth/network/parse/quota) and returns per-provider error messages
+2. Calls `provider.generateCompletion(prompt)` to get the raw generation response
+3. Validates the candidate with Zod and shuffles answer options via Fisher-Yates (using `crypto.randomInt` for unbiased distribution)
+4. Calls the verification prompt on the finalized question and validates `correctAnswer` plus `correctOptionText` against the shuffled options
+5. Retries with a fresh candidate when verification cannot be proven locally, up to 3 candidate attempts total
+6. Returns `Result<Question>` only for verified questions and returns an error when the candidate budget is exhausted
+7. Classifies errors (auth/network/parse/quota) and returns per-provider error messages
 
 **Public exports:**
-- `generateQuestion(domain, difficulty, hashes, prev, settings?)` — full generation + verification + dedup cycle
+- `generateQuestion(domain, difficulty, hashes, prev, settings?)` — full generation + fail-closed verification + dedup cycle
 - `generateMotivationalMessage(trigger, settings?)` — motivational one-liner for domain selection screen
 - `generateExplanation(question, userAnswer, settings?)` — explains why the correct answer is right and the user's answer (if wrong) is wrong; returns `Result<string>` (raw text)
 - `isAuthErrorMessage(error)` — returns `true` if the error string matches any `AI_ERRORS.AUTH_*` constant; allows callers to distinguish auth failures from network/parse errors without importing `AI_ERRORS` directly
 - `AI_ERRORS` — re-exported from `providers.ts` for downstream consumers
 
-**Error Handling Strategy — No retry, fail-to-domain-menu**
+**Error Handling Strategy — bounded verification retries, fail-to-domain-menu**
 
 | Error Type | Behavior |
 |---|---|
 | No provider configured | Display: *“AI provider not ready. Go to Settings to configure.”* — return to domain sub-menu |
 | Network/API unavailable | Display provider-specific network message — return to domain sub-menu |
 | Authentication / API key failure | Display provider-specific auth message — return to domain sub-menu |
-| Malformed response (Zod fail) | Display generic parse error — return to domain sub-menu |
+| Malformed generation response (Zod fail) | Discard candidate, retry fresh generation up to 2 additional times; on exhaustion display generation error and return to domain sub-menu |
+| Verification mismatch / parse / schema / provider error | Discard candidate, retry fresh generation + verification up to 2 additional times; on exhaustion display generation error and return to domain sub-menu |
 
-No retry loop for MVP. The app remains running and the user can navigate to Settings to reconfigure.
+The retry loop is bounded at **3 candidate attempts total** per question (initial attempt + 2 retries). The app remains running and the user can navigate to Settings to reconfigure after any terminal failure.
 
 **Per-Provider Error Messages:**
 
@@ -616,9 +621,9 @@ export async function preloadQuestions(
 ```
 
 - Sequential generation loop — accumulates each question's hash into a running `Set` (union of `existingHashes` + all hashes generated so far in this batch) to prevent intra-batch duplicates in addition to domain-history duplicates
-- Each question goes through the same `generateQuestion()` pipeline: prompt → AI call → Zod parse → Fisher-Yates shuffle → self-consistency verification → dedup check → result
+- Each question goes through the same `generateQuestion()` pipeline: prompt → AI call → Zod parse → Fisher-Yates shuffle → fail-closed verification gate (`correctAnswer` + `correctOptionText`) → dedup check → result
 - An `ora` spinner is shown by the calling screen during preload; the spinner text updates with progress (e.g., `"Generating questions (3/10)..."`)
-- If the AI provider is unreachable or an unrecoverable error occurs during any question generation, the entire preload fails — returns `{ ok: false, error: <provider-specific message> }`; no partial results are returned
+- If the AI provider is unreachable or any question exhausts its 3-attempt candidate budget during generation, the entire preload fails — returns `{ ok: false, error: <provider-specific or generation error> }`; no partial results are returned
 - On failure, the calling screen displays the error (same `AI_ERRORS` messages as Play mode) and returns the user to the domain sub-menu — no sprint is started
 - Preloaded questions are passed to the execution screen in memory — not written to disk until answered
 
@@ -724,9 +729,9 @@ src/
 │   ├── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
 │   └── exit.ts           # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 ├── ai/
-│   ├── client.ts         # F2/F14: provider-agnostic AI client + error handling + preloadQuestions()
+│   ├── client.ts         # F2/F14: provider-agnostic AI client + fail-closed verification gating + error handling + preloadQuestions()
 │   ├── providers.ts      # F2: AiProvider interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot)
-│   └── prompts.ts        # F2: prompt templates + Zod response schema + voice injection
+│   └── prompts.ts        # F2: generation + verification prompt templates + Zod response schemas + voice injection
 ├── domain/
 │   ├── store.ts          # F5: read/write domain + settings files (atomic)
 │   ├── schema.ts         # F5/F8: types + Zod schemas (DomainFile, SettingsFile, AiProviderType, ToneOfVoice)
@@ -903,6 +908,8 @@ meta.streakCount++
 - Place all disk writes in `domain/store.ts` exclusively
 - Place all provider SDK imports in `ai/providers.ts` exclusively
 - Route all AI completions through `ai/client.ts` — screens never call providers directly
+- Treat verification as a mandatory approval gate — questions without a successful verification response must never be returned to callers
+- Enforce the bounded retry budget of 3 candidate attempts total (initial attempt + 2 retries) for both quiz and preload flows
 - Use `applyAnswer()` for all difficulty/streak/score mutations
 - Store timestamps as ISO 8601 strings
 - Use `utils/slugify.ts` for all domain name → slug conversions
@@ -1019,7 +1026,7 @@ brain-break/
 | Feature | Primary Module(s) |
 |---|---|
 | F1 — Domain Management | `screens/home.ts`, `screens/create-domain.ts`, `screens/domain-menu.ts`, `screens/select-domain.ts`, `screens/archived.ts`, `domain/store.ts`, `utils/slugify.ts` |
-| F2 — AI Question Generation | `ai/client.ts`, `ai/providers.ts`, `ai/prompts.ts`, `domain/scoring.ts` (difficulty input) |
+| F2 — AI Question Generation | `ai/client.ts` (candidate loop + fail-closed verification gate), `ai/providers.ts`, `ai/prompts.ts` (generation + verification schemas), `domain/scoring.ts` (difficulty input) |
 | F3 — Interactive Quiz | `screens/quiz.ts`, `ai/client.ts`, `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F4 — Scoring System | `domain/scoring.ts` (pure logic), `domain/store.ts` (persist) |
 | F5 — Persistent History | `domain/store.ts`, `domain/schema.ts` |
@@ -1047,6 +1054,7 @@ brain-break/
 | Domain slug derivation | `utils/slugify.ts` exclusively |
 | Terminal screen clearing | `utils/screen.ts` → `clearScreen()` — called as first operation in every screen render path; **exception:** post-answer feedback (both quiz and challenge mode) renders inline on the question screen (no `clearScreen()` between question and feedback) |
 | Language & tone injection | `ai/prompts.ts` → voice instruction prepended to all AI prompts when non-default settings active |
+| Answer verification gating | `ai/client.ts` → `generateQuestion()` requires successful verification with aligned `correctAnswer` + `correctOptionText`; retries are bounded at 3 candidate attempts total |
 | Provider abstraction | `ai/providers.ts` → `AiProvider` interface + 5 adapters (4 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter); `ai/client.ts` → `createProvider()` factory |
 | Semantic color vocabulary | `utils/format.ts` → `colorCorrect()`, `colorIncorrect()`, `colorSpeedTier()`, `colorDifficultyLevel()`, `colorScoreDelta()`, `menuTheme`, gradient rendering (`lerpColor`, `gradientBg`, `gradientShadow`) |
 | Question detail rendering | `utils/format.ts` → `renderQuestionDetail()` — unified options + feedback block (markers, correct/incorrect status, time/speed/difficulty, score delta, optional timestamp) consumed by `screens/quiz.ts`, `screens/history.ts`, `screens/bookmarks.ts`, and `screens/challenge.ts` |
@@ -1062,18 +1070,17 @@ screens/quiz.ts
   → domain/store.ts.readSettings()                     [reads ~/.brain-break/settings.json]
   → ai/client.ts.generateQuestion(domain, difficulty, hashes, prev, settings)
     → ai/providers.ts.createProvider(settings)          [instantiates active provider adapter]
-    → ai/prompts.ts (prompt + voice injection)
-    → provider.generateCompletion(prompt)               [calls active AI provider API]
-    → ai/client.ts (strip fences + Zod parse + shuffle options)
-    → ai/client.ts.verifyAnswer(question, provider, settings)  [2nd AI call]
-      → ai/prompts.ts.buildVerificationPrompt(question, settings)
-      → provider.generateCompletion(verificationPrompt)
+    → candidateAttempt loop (max 3 total attempts)
+      → ai/prompts.ts (generation prompt + voice injection)
+      → provider.generateCompletion(generationPrompt)    [calls active AI provider API]
+      → ai/client.ts (strip fences + Zod parse + shuffle options)
+      → ai/prompts.ts.buildVerificationPrompt(candidate, settings)
+      → provider.generateCompletion(verificationPrompt)  [2nd AI call]
       → Zod parse VerificationResponseSchema
-      → compare verification.correctAnswer vs question.correctAnswer
-      → mismatch? → regenerate question once (repeat generate + parse + shuffle)
-      → verify error (network/parse/schema)? → silently accept original
-    → dedup check (hash ∈ hashes Set?)
-      → duplicate? → regenerate → verifyAnswer again → accept
+      → validate verification.correctAnswer maps to candidate.options[letter] === verification.correctOptionText
+      → mismatch / network / parse / schema? → discard candidate and retry fresh
+    → dedup check (hash ∈ hashes Set?) on verified candidate only
+      → duplicate? → restart candidate loop with dedup prompt while attempt budget remains
   → returns Result<Question>
   → domain/scoring.ts.applyAnswer(meta, isCorrect, timeTakenMs, thresholds)
   → returns { updatedMeta, scoreDelta, speedTier }
@@ -1236,7 +1243,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 **Resolution:** `domain/schema.ts` exports a `defaultDomainFile(startingDifficulty?)` factory function returning a valid `DomainFile` at the specified starting difficulty level (defaults to level 2 — Elementary), score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller. `screens/create-domain.ts` calls `defaultDomainFile(selectedDifficulty)` when creating a new domain with the user's chosen starting difficulty.
 
 **Missing settings file = defaults (F8):**
-`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4-mini', anthropicModel: 'claude-haiku-4-latest', geminiModel: 'gemini-2.5-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3.3', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
+`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-sonnet-4.6-latest', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
 
 ### Architecture Completeness Checklist
 

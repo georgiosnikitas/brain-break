@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-04-04'
+lastEdited: '2026-04-05'
 status: 'complete'
 editHistory:
+  - date: '2026-04-05'
+    changes: 'Answer verification redesign synced from PRD: FR6 now defines a fail-closed approval gate where generation returns question text plus four options, verification returns explicit `correctAnswer` and `correctOptionText`, and the app accepts questions only when those values align locally. FR44 and Story 11.2 updated for the same bounded verification budget during Challenge preload. Story 3.1 generation schema and Story 3.5 verification flow rewritten around 3 total candidate attempts (initial attempt + 2 retries) with no fail-open passthrough.'
   - date: '2026-04-04'
     changes: 'Provider Setup skip option: FR26 updated (provider list now ends with a line separator and ⏭️ Skip — set up later in ⚙️ Settings option). FR27 updated (validation failure now offers 🔄 Retry and ⏭️ Skip options instead of proceeding automatically; Skip saves provider: null). Story 7.4 ACs updated (skip option in provider list, skip AC, retry/skip on failure for OpenAI and Ollama paths, test coverage updated). Story 7.6 ACs updated (skip-after-failure and skip-from-list routing both save null provider and call showHome). Reflects PRD edit 2026-04-04 (Feature 8 First-Launch Provider Setup skip option).'
   - date: '2026-04-04'
@@ -77,7 +79,7 @@ FR4: Domains can be archived from the domain sub-menu — archived domains are r
 
 FR5: The home screen includes an "Archived domains" action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off.
 
-FR6: Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama) as multiple-choice (4 options: A–D). The app sends identical prompt structures to all providers and expects the same JSON response schema — provider differences are abstracted behind a unified provider adapter layer. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
+FR6: Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama) as multiple-choice (4 options: A–D). The generation prompt returns question text plus four answer options, difficulty level, and speed thresholds; it does not provide the trusted answer key. A second verification prompt independently returns `correctAnswer` and `correctOptionText`, and the app accepts the question only when those two values align locally on the same option. Verification is fail-closed with a bounded budget of 3 candidate attempts total (initial attempt + 2 retries); if no verified answer is obtained, the question is rejected. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
@@ -99,7 +101,7 @@ FR15: The Settings screen allows configuring: AI Provider (selectable from 5 pro
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4-mini", anthropicModel: "claude-haiku-4-latest", geminiModel: "gemini-2.5-flash", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama3.3", asciiArtMilestone: 100, showWelcome: true }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-sonnet-4.6-latest", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, showWelcome: true }`.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -119,7 +121,7 @@ FR25: The home screen includes a "☕ Buy me a coffee" action positioned between
 
 FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-5.4-mini` for OpenAI, `claude-haiku-4-latest` for Anthropic, `gemini-2.5-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-5.4` for OpenAI, `claude-sonnet-4.6-latest` for Anthropic, `gemini-2.5-pro` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
 FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is prompted to enter a preferred model name (pre-filled with the current or default value; entering an empty string resets to the default). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
@@ -153,7 +155,7 @@ FR42: The quiz post-answer screen and post-explanation navigation include a **Bo
 
 FR43: The domain sub-menu includes a **Bookmarks** action positioned after History. Selecting it opens a bookmarks navigation screen that displays only bookmarked questions for the active domain. Navigation is identical to History (Feature 6): single-question display with Previous/Next/Explain answer/Remove bookmark/Back controls and a progress indicator (e.g., "Bookmark 2 of 8"). Explain answer and Teach me more follow the same flow as History. Selecting Remove bookmark removes the flag, updates the domain file, and navigates to the next bookmarked question (or previous if it was the last); if no bookmarks remain, the user is returned to the domain sub-menu with a message: "No bookmarked questions." If the domain has no bookmarked questions when Bookmarks is selected, the screen displays "No bookmarked questions." with a Back action.
 
-FR44: The domain sub-menu includes a **Challenge** action positioned after Play. Selecting Challenge opens a sprint setup screen with two parameter selectors navigated via arrow keys: **Sprint duration** (2 min / 5 min / 10 min) and **Sprint size N** (5 / 10 / 20). The setup screen provides Confirm and Back actions; Back returns to the domain sub-menu without starting a sprint. On Confirm, all N questions are preloaded before the sprint starts — applying the same SHA-256 deduplication and self-consistency verification rules as FR6. A loading spinner is shown during preload. If the AI provider is unreachable during preload, the provider-specific error message from NFR2 is displayed and the user is returned to the domain sub-menu; no sprint starts.
+FR44: The domain sub-menu includes a **Challenge** action positioned after Play. Selecting Challenge opens a sprint setup screen with two parameter selectors navigated via arrow keys: **Sprint duration** (2 min / 5 min / 10 min) and **Sprint size N** (5 / 10 / 20). The setup screen provides Confirm and Back actions; Back returns to the domain sub-menu without starting a sprint. On Confirm, all N questions are preloaded before the sprint starts — applying the same SHA-256 deduplication and fail-closed verification rules as FR6, including the same bounded budget of 3 candidate attempts total per question. A loading spinner is shown during preload. If the AI provider is unreachable or any question exhausts its verification budget during preload, the corresponding provider-specific or generation error message is displayed and the user is returned to the domain sub-menu; no sprint starts.
 
 FR45: Challenge Mode sprint execution — the sprint starts immediately after all N questions are preloaded. A visible countdown timer in `M:SS` format (e.g., `4:32`) is rendered prominently on every screen during the sprint (question display and post-answer screens). The timer **never pauses** — it runs continuously through question display, answer selection, and post-answer review. Questions are displayed and scored identically to FR8 (same post-answer inline feedback: correct/incorrect status, correct answer reveal, time taken, speed tier, score delta). Per-question speed tier is measured by the individual answer time (time from question display to answer selection) — not the sprint clock. Post-answer navigation in Challenge Mode is limited to two options only: **Next question** and **Back** — no Explain answer, Bookmark, Remove bookmark, or Teach me more options are available during a sprint.
 
@@ -760,7 +762,7 @@ So that any screen can request a question and always receive either a valid resu
 
 **Given** `ai/prompts.ts` is implemented  
 **When** I call `buildQuestionPrompt(domain, difficultyLevel, settings)`  
-**Then** it returns a structured prompt string instructing the model to return a JSON object with: `question`, `options` (A–D), `correctAnswer`, `difficultyLevel`, and `speedThresholds` (`{ fastMs, slowMs }`)  
+**Then** it returns a structured prompt string instructing the model to return a JSON object with: `question`, `options` (A–D), `difficultyLevel`, and `speedThresholds` (`{ fastMs, slowMs }`)  
 **And** the prompt includes the active language and tone voice instruction from `settings`  
 **And** `QuestionResponseSchema` (Zod) is exported and validates this exact shape  
 
@@ -921,7 +923,7 @@ So that I can learn from every question immediately instead of having to look it
 
 ---
 
-### Story 3.5: Answer Self-Consistency Verification
+### Story 3.5: Answer Verification Gate (Fail-Closed)
 
 As a user,
 I want the system to independently verify the AI's correct answer before presenting the question to me,
@@ -931,33 +933,35 @@ So that I can trust the quiz results and not be penalized for choosing the right
 
 **Given** `ai/prompts.ts` exports `buildVerificationPrompt(question, settings?)`  
 **When** called with a generated question  
-**Then** it returns a structured prompt that presents the question text and all four options without revealing the original `correctAnswer`  
-**And** instructs the AI to independently determine which option is correct  
+**Then** it returns a structured prompt that presents the finalized question text and all four options without revealing any pre-selected answer  
+**And** instructs the AI to return both `correctAnswer` and `correctOptionText` for the selected option  
 **And** includes the active language and tone voice instruction when settings are provided  
-**And** `VerificationResponseSchema` (Zod) is exported and validates the response shape `{ correctAnswer: "A" | "B" | "C" | "D" }`  
+**And** `VerificationResponseSchema` (Zod) is exported and validates the response shape `{ correctAnswer: "A" | "B" | "C" | "D", correctOptionText: string }`  
 
 **Given** `ai/client.ts` implements `verifyAnswer(question, provider, settings?)`  
 **When** called after a question is generated  
-**Then** it sends the verification prompt to the same provider and compares the returned `correctAnswer` with the question's `correctAnswer`  
-**And** returns `true` if they agree (consistent) or `false` if they disagree (inconsistent)  
+**Then** it sends the verification prompt to the same provider and validates the returned `correctAnswer` and `correctOptionText` against the candidate question's finalized options  
+**And** accepts the verification result only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`  
+**And** explicitly marks the candidate as retry-required whenever the verification response cannot be proven consistent locally  
 
 **Given** the verification response is not valid JSON, does not match the schema, or the verification call throws a network/provider error  
 **When** `verifyAnswer()` encounters the failure  
-**Then** it returns `true` (fail-open) to avoid blocking the quiz experience  
+**Then** the candidate question is rejected and `generateQuestion()` starts a fresh generation + shuffle + verification cycle  
 
 **Given** `generateQuestion()` receives a valid question from the AI  
-**When** `verifyAnswer()` returns `false` (inconsistent)  
-**Then** the question is discarded and regenerated once using the same prompt  
-**And** the regenerated question is returned without further verification (best effort, single retry)  
+**When** the verification response's `correctAnswer` and `correctOptionText` do not align on the same option  
+**Then** the question is discarded and regenerated with a fresh prompt  
+**And** the full candidate cycle is retried with a bounded budget of 3 candidate attempts total (initial attempt + 2 retries)  
+**And** if all attempts fail, `generateQuestion()` returns `{ ok: false, error: <generation/verification error> }` and no question is shown to the user  
 
 **Given** a duplicate question triggers the deduplication retry path  
 **When** the dedup question is generated  
 **Then** it is also verified via `verifyAnswer()` before being returned  
-**And** if verification fails, the dedup question is discarded and regenerated once  
+**And** the same fail-closed candidate budget applies to the dedup path  
 
 **Given** `ai/client.test.ts` and `ai/prompts.test.ts` are updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: verification agrees (proceeds normally), verification disagrees (regenerates), verification parse/schema/network failures (fail-open), verification prompt does not reveal correct answer, voice instruction injected into verification prompt, dedup path verification  
+**Then** all tests pass, covering: verification accepts only aligned `correctAnswer` + `correctOptionText`, verification parse/schema/network failures trigger retries, retry budget exhaustion returns `{ ok: false }`, verification prompt does not reveal a pre-selected answer, voice instruction injected into verification prompt, and dedup path verification uses the same fail-closed budget  
 
 ---
 
@@ -1492,7 +1496,7 @@ So that the settings store and all downstream modules have a single, type-safe s
 
 **Given** `domain/schema.ts` is updated  
 **When** I call `defaultSettings()`  
-**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4-mini', anthropicModel: 'claude-haiku-4-latest', geminiModel: 'gemini-2.5-flash', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama3.3' }`  
+**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-sonnet-4.6-latest', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4' }`  
 
 **Given** `domain/store.ts` already handles `readSettings()` and `writeSettings()`  
 **When** the expanded schema is deployed  
@@ -1643,16 +1647,16 @@ So that I can start using the app with my preferred provider without editing con
 **Given** I select "OpenAI" from the provider list  
 **When** the selection is confirmed  
 **Then** `validateProvider('openai', settings)` is called  
-**And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-5.4-mini`; entering empty string resets to `gpt-5.4-mini`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
+**And** if `OPENAI_API_KEY` env var is present → the user is prompted for a model name (pre-filled with `gpt-5.4`; entering empty string resets to `gpt-5.4`) → success message displayed, provider and model saved to `settings.json`, app proceeds to home screen  
 **And** if `OPENAI_API_KEY` env var is missing → message displayed: "Set the `OPENAI_API_KEY` environment variable and restart the app." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
 
 **Given** I select "Anthropic" from the provider list  
 **When** validation runs  
-**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model prompt pre-filled with `claude-haiku-4-latest`  
+**Then** it checks for `ANTHROPIC_API_KEY` — same success/failure pattern as OpenAI, with model prompt pre-filled with `claude-sonnet-4.6-latest`  
 
 **Given** I select "Google Gemini" from the provider list  
 **When** validation runs  
-**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.5-flash`  
+**Then** it checks for `GOOGLE_GENERATIVE_AI_API_KEY` — same success/failure pattern, with model prompt pre-filled with `gemini-2.5-pro`  
 
 **Given** I select "GitHub Copilot" from the provider list  
 **When** validation runs  
@@ -1660,7 +1664,7 @@ So that I can start using the app with my preferred provider without editing con
 
 **Given** I select "Ollama" from the provider list  
 **When** the selection is confirmed  
-**Then** I am prompted for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama3.3`)  
+**Then** I am prompted for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama4`)  
 **And** the app tests connection to the endpoint  
 **And** if reachable → success message, settings saved (including `ollamaEndpoint` and `ollamaModel`), app proceeds to home screen  
 **And** if unreachable → message displayed: "Could not reach Ollama at [endpoint]. Ensure Ollama is running." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
@@ -2247,9 +2251,9 @@ So that the full question set is ready before the countdown begins and the sprin
 
 **Given** `ai/client.ts` exports `preloadQuestions(N, domain, difficultyLevel, existingHashes, settings)`  
 **When** called  
-**Then** it generates N questions sequentially using the same `generateQuestion()` logic as the quiz loop (same deduplication hash check, same self-consistency verification)  
+**Then** it generates N questions sequentially using the same `generateQuestion()` logic as the quiz loop (same deduplication hash check, same fail-closed verification gate, same 3-attempt candidate budget per question)  
 **And** returns `Result<Question[]>` — `{ ok: true, data: Question[] }` when all N questions are ready  
-**And** returns `{ ok: false, error: <provider-specific message> }` if the AI provider is unreachable for any question during preloading  
+**And** returns `{ ok: false, error: <provider-specific or generation error> }` if any question exhausts its verification budget or the AI provider is unreachable during preloading  
 
 **Given** the sprint setup screen receives a Confirm selection  
 **When** preloading begins  
@@ -2258,7 +2262,7 @@ So that the full question set is ready before the countdown begins and the sprin
 
 **Given** `preloadQuestions()` returns `{ ok: false }` (provider error during preload)  
 **When** the error is received in the sprint setup screen  
-**Then** the provider-specific error message (from NFR2 / `AI_ERRORS`) is displayed  
+**Then** the provider-specific or generation error message (from NFR2 / `AI_ERRORS`) is displayed  
 **And** the user is returned to the domain sub-menu — no sprint is started  
 
 **Given** `preloadQuestions()` completes successfully  
@@ -2267,7 +2271,7 @@ So that the full question set is ready before the countdown begins and the sprin
 
 **Given** `ai/client.test.ts` is updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: `preloadQuestions()` returns N valid questions, dedup and verification applied to each, provider error mid-preload returns `{ ok: false }`, spinner displayed during preload, error returns user to domain sub-menu  
+**Then** all tests pass, covering: `preloadQuestions()` returns N valid verified questions, fail-closed verification and bounded retries applied to each, retry exhaustion mid-preload returns `{ ok: false }`, spinner displayed during preload, and the error returns the user to the domain sub-menu  
 
 ---
 

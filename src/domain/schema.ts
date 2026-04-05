@@ -118,11 +118,11 @@ export const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntrie
   PROVIDER_CHOICES.map(c => [c.value, c.name]),
 ) as Record<AiProviderType, string>
 
-export const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini'
-export const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-latest'
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
+export const DEFAULT_OPENAI_MODEL = 'gpt-5.4'
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4.6-latest'
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-pro'
 export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434'
-export const DEFAULT_OLLAMA_MODEL = 'llama3.3'
+export const DEFAULT_OLLAMA_MODEL = 'llama4'
 
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),

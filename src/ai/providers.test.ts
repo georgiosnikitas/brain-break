@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import type { CopilotClient } from '@github/copilot-sdk'
-import { createProvider, validateProvider, testProviderConnection, AI_ERRORS, _setCopilotClient } from './providers.js'
+import { createProvider, validateProvider, testProviderConnection, classifyProviderError, AI_ERRORS, _setCopilotClient } from './providers.js'
 import type { AiProvider } from './providers.js'
 import { makeSettings } from '../__test-helpers__/factories.js'
 
@@ -137,7 +137,7 @@ describe('OpenAI adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('response text')
-    expect(mockOpenai).toHaveBeenCalledWith('gpt-5.4-mini')
+    expect(mockOpenai).toHaveBeenCalledWith('gpt-5.4')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'openai-model',
       prompt: 'test prompt',
@@ -179,7 +179,7 @@ describe('Anthropic adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('anthropic response')
-    expect(mockAnthropic).toHaveBeenCalledWith('claude-haiku-4-latest')
+    expect(mockAnthropic).toHaveBeenCalledWith('claude-sonnet-4.6-latest')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'anthropic-model',
       prompt: 'test prompt',
@@ -215,7 +215,7 @@ describe('Gemini adapter', () => {
     const text = await provider.generateCompletion('test prompt')
 
     expect(text).toBe('gemini response')
-    expect(mockGoogle).toHaveBeenCalledWith('gemini-2.5-flash')
+    expect(mockGoogle).toHaveBeenCalledWith('gemini-2.5-pro')
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: 'google-model',
       prompt: 'test prompt',
@@ -277,7 +277,7 @@ describe('Ollama adapter', () => {
     await result.data.generateCompletion('prompt')
 
     expect(fetch).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.objectContaining({
-      body: JSON.stringify({ model: 'llama3.3', prompt: 'prompt', stream: false }),
+      body: JSON.stringify({ model: 'llama4', prompt: 'prompt', stream: false }),
     }))
   })
 
@@ -506,6 +506,55 @@ describe('validateProvider', () => {
 })
 
 // ---------------------------------------------------------------------------
+// classifyProviderError
+// ---------------------------------------------------------------------------
+describe('classifyProviderError', () => {
+  it('returns QUOTA for 429 error', () => {
+    expect(classifyProviderError(new Error('429 Too Many Requests'), 'openai')).toBe(AI_ERRORS.QUOTA)
+  })
+
+  it('returns QUOTA for rate limit error', () => {
+    expect(classifyProviderError(new Error('rate limit exceeded'), 'anthropic')).toBe(AI_ERRORS.QUOTA)
+  })
+
+  it('returns QUOTA for quota exceeded error', () => {
+    expect(classifyProviderError(new Error('You exceeded your current quota'), 'gemini')).toBe(AI_ERRORS.QUOTA)
+  })
+
+  it('returns provider-specific AUTH for 401 error', () => {
+    expect(classifyProviderError(new Error('401 Unauthorized'), 'openai')).toBe(AI_ERRORS.AUTH_OPENAI)
+  })
+
+  it('returns provider-specific AUTH for 403 error', () => {
+    expect(classifyProviderError(new Error('403 Forbidden'), 'gemini')).toBe(AI_ERRORS.AUTH_GEMINI)
+  })
+
+  it('returns provider-specific AUTH for invalid key error', () => {
+    expect(classifyProviderError(new Error('invalid api key'), 'anthropic')).toBe(AI_ERRORS.AUTH_ANTHROPIC)
+  })
+
+  it('returns provider-specific NETWORK for generic error', () => {
+    expect(classifyProviderError(new Error('Connection refused'), 'copilot')).toBe(AI_ERRORS.NETWORK_COPILOT)
+  })
+
+  it('returns NETWORK_OLLAMA with custom endpoint', () => {
+    expect(classifyProviderError(new Error('ECONNREFUSED'), 'ollama', 'http://myhost:11434')).toBe(AI_ERRORS.NETWORK_OLLAMA('http://myhost:11434'))
+  })
+
+  it('returns NO_PROVIDER when providerType is null', () => {
+    expect(classifyProviderError(new Error('something'), null)).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+
+  it('returns NO_PROVIDER for auth error when providerType is null', () => {
+    expect(classifyProviderError(new Error('401 Unauthorized'), null)).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+
+  it('returns NETWORK for non-Error values', () => {
+    expect(classifyProviderError('string error', 'openai')).toBe(AI_ERRORS.NETWORK_OPENAI)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // testProviderConnection
 // ---------------------------------------------------------------------------
 describe('testProviderConnection', () => {
@@ -695,6 +744,10 @@ describe('AI_ERRORS', () => {
 
   it('has PARSE message', () => {
     expect(AI_ERRORS.PARSE).toBe('Received an unexpected response from the AI provider. Please try again.')
+  })
+
+  it('has DUPLICATE message', () => {
+    expect(AI_ERRORS.DUPLICATE).toBe('Could not generate a unique question. Please try again.')
   })
 
   it('has all network error messages', () => {
