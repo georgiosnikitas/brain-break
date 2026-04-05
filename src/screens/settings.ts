@@ -3,7 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
-import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile, type Theme } from '../domain/schema.js'
+import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type AsciiArtMilestone, type ToneOfVoice, type SettingsFile, type Theme } from '../domain/schema.js'
 import { menuTheme, success, warn, header, setTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import { promptForProviderSettings } from './provider-settings.js'
@@ -27,7 +27,7 @@ type SettingsAction = 'provider' | 'language' | 'tone' | 'asciiArtMilestone' | '
 
 const THEME_LABELS: Record<Theme, string> = { dark: 'Dark', light: 'Light' }
 
-const MILESTONE_CHOICES: Array<{ name: string; value: 0 | 10 | 100 }> = [
+const MILESTONE_CHOICES: Array<{ name: string; value: AsciiArtMilestone }> = [
   { name: 'Instant (0 questions)', value: 0 },
   { name: 'Quick (10 questions)', value: 10 },
   { name: 'Classic (100 questions)', value: 100 },
@@ -115,7 +115,7 @@ async function selectSettingsAction(
   provider: AiProviderType | null,
   language: string,
   tone: ToneOfVoice,
-  asciiArtMilestone: 0 | 10 | 100,
+  asciiArtMilestone: AsciiArtMilestone,
   theme: Theme,
   showWelcome: boolean,
 ): Promise<SettingsAction> {
@@ -137,8 +137,18 @@ async function selectSettingsAction(
   })
 }
 
-async function handleAsciiArtMilestoneAction(current: 0 | 10 | 100): Promise<{ value: 0 | 10 | 100; banner: string }> {
-  const selectedMilestone = await select<0 | 10 | 100 | 'back'>({
+function toggleTheme(current: Theme): { theme: Theme; banner: string } {
+  const next: Theme = current === 'dark' ? 'light' : 'dark'
+  return { theme: next, banner: success(`Theme set to ${THEME_LABELS[next]}`) }
+}
+
+function toggleShowWelcome(current: boolean): { showWelcome: boolean; banner: string } {
+  const next = !current
+  return { showWelcome: next, banner: next ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled') }
+}
+
+async function handleAsciiArtMilestoneAction(current: AsciiArtMilestone): Promise<{ value: AsciiArtMilestone; banner: string }> {
+  const selectedMilestone = await select<AsciiArtMilestone | 'back'>({
     message: 'ASCII Art Milestone',
     choices: [
       ...MILESTONE_CHOICES,
@@ -207,14 +217,18 @@ export async function showSettingsScreen(): Promise<void> {
         case 'tone':
           tone = await handleToneAction(tone)
           break
-        case 'theme':
-          theme = theme === 'dark' ? 'light' : 'dark'
-          banner = success(`Theme set to ${THEME_LABELS[theme]}`)
+        case 'theme': {
+          const themeResult = toggleTheme(theme)
+          theme = themeResult.theme
+          banner = themeResult.banner
           break
-        case 'showWelcome':
-          showWelcome = !showWelcome
-          banner = showWelcome ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled')
+        }
+        case 'showWelcome': {
+          const welcomeResult = toggleShowWelcome(showWelcome)
+          showWelcome = welcomeResult.showWelcome
+          banner = welcomeResult.banner
           break
+        }
         case 'asciiArtMilestone': {
           const milestoneResult = await handleAsciiArtMilestoneAction(asciiArtMilestone)
           asciiArtMilestone = milestoneResult.value

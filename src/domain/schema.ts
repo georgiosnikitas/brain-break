@@ -147,6 +147,9 @@ export const GEMINI_MODEL_CHOICES: ModelChoice[] = [
 export const ThemeSchema = z.enum(['dark', 'light'])
 export type Theme = z.infer<typeof ThemeSchema>
 
+export const AsciiArtMilestoneSchema = z.union([z.literal(0), z.literal(10), z.literal(100)])
+export type AsciiArtMilestone = z.infer<typeof AsciiArtMilestoneSchema>
+
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),
   language: z.string().min(1),
@@ -156,7 +159,7 @@ export const SettingsFileSchema = z.object({
   geminiModel: z.string().min(1).default(DEFAULT_GEMINI_MODEL),
   ollamaEndpoint: z.string().min(1).default(DEFAULT_OLLAMA_ENDPOINT),
   ollamaModel: z.string().min(1).default(DEFAULT_OLLAMA_MODEL),
-  asciiArtMilestone: z.union([z.literal(0), z.literal(10), z.literal(100)]).default(100),
+  asciiArtMilestone: AsciiArtMilestoneSchema.default(100),
   theme: ThemeSchema.default('dark'),
   showWelcome: z.boolean().default(true),
 })
