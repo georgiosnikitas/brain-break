@@ -185,7 +185,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 
 - **Language & Configuration:** TypeScript strict mode, `"type": "module"` in package.json, NodeNext module resolution, target ES2022. All ESM imports MUST include `.js` extension.
 
-- **Runtime Dependencies:** `inquirer` v12 (prompts), `ora` v8 (spinner), `chalk` v5 (styling); all ESM-native.
+- **Runtime Dependencies:** `@inquirer/prompts` v8 (prompts), `ora` v9 (spinner), `chalk` v5 (styling); all ESM-native.
 
 - **Dev Dependencies:** `typescript`, `tsx`, `@types/node`, `vitest`.
 
@@ -351,7 +351,7 @@ So that I have a verified, runnable foundation to build all features on.
 
 **Given** a fresh clone of the repo  
 **When** I run `npm install`  
-**Then** all runtime deps (`inquirer@12`, `ora@8`, `chalk@5`, `zod`) and dev deps (`typescript`, `tsx`, `@types/node`, `vitest`) are installed without errors  
+**Then** all runtime deps (`@inquirer/prompts@8`, `ora@9`, `chalk@5`, `zod@4`) and dev deps (`typescript@6`, `tsx`, `@types/node`, `vitest`) are installed without errors  
 
 **Given** the project is installed  
 **When** I run `npm run typecheck`  

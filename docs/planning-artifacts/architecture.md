@@ -124,8 +124,8 @@ npx tsc --init --module nodenext --moduleResolution nodenext --target es2022
 - `tsx` for development execution; `tsc` for production build to `dist/`
 
 **Interactive Terminal:**
-- `inquirer` v12 + `@inquirer/prompts` — interactive prompts (menus, free-text input, confirmations), ESM-native
-- `ora` v8 — loading spinner during question generation
+- `@inquirer/prompts` v8 — interactive prompts (menus, free-text input, confirmations), ESM-native
+- `ora` v9 — loading spinner during question generation
 - `chalk` v5 — terminal color and styling, ESM-native
 - `qrcode-terminal` — ASCII QR code rendering for Coffee Supporter Screen (Feature 10)
 - `figlet` — local ASCII art banner rendering for the ASCII Art Screen (Feature 15)
