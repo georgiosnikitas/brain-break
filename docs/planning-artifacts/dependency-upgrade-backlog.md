@@ -10,6 +10,19 @@ author: George
 
 ---
 
+## Recommended Execution Order
+
+| Order | Upgrade | Rationale |
+|-------|---------|-----------|
+| 1 | TypeScript 5.x → 6.x | Foundational — establishes type baseline for all other upgrades. Zero runtime risk. |
+| 2 | ora 8.x → 9.x | Quick win — tiny API surface, builds momentum. |
+| 3 | @github/copilot-sdk 0.1.x → 0.2.x | Isolated to AI layer, high priority to stay current. |
+| 4 | @inquirer/prompts 7.x → 8.x | High-touch UI testing, no cross-cutting risk. |
+| 5 | zod 3.x → 4.x | Heaviest lift — ripples through domain layer. Do last on a stable base. |
+| 6 | @types/node 22.x → 25.x | Deferred — matches current engine requirement. |
+
+---
+
 ## Priority: High
 
 ### 1. Upgrade `@github/copilot-sdk` from 0.1.x to 0.2.x
