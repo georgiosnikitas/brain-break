@@ -186,7 +186,7 @@ export async function showSettingsScreen(): Promise<void> {
           showWelcome = !showWelcome
           banner = showWelcome ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled')
           break
-        case 'asciiArtMilestone':
+        case 'asciiArtMilestone': {
           const selectedMilestone = await select<0 | 10 | 100 | 'back'>({
             message: 'ASCII Art Milestone',
             choices: [
@@ -204,6 +204,7 @@ export async function showSettingsScreen(): Promise<void> {
           asciiArtMilestone = selectedMilestone
           banner = success(`ASCII Art Milestone set to ${MILESTONE_LABELS[asciiArtMilestone]}`)
           break
+        }
         case 'save':
           await handleSaveAction({
             ...currentSettings,
