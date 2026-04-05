@@ -21,14 +21,14 @@ export type AnswerOption = z.infer<typeof AnswerOptionSchema>
 // Domain meta
 // ---------------------------------------------------------------------------
 export const DomainMetaSchema = z.object({
-  score: z.number().finite(),
+  score: z.number().refine(v => Number.isFinite(v)),
   difficultyLevel: z.number().int().min(1).max(5),
   startingDifficulty: z.number().int().min(1).max(5).default(2),
   streakCount: z.number().int().min(0),
   streakType: z.enum(['correct', 'incorrect', 'none']),
-  totalTimePlayedMs: z.number().min(0).finite(),
-  createdAt: z.string().datetime(),
-  lastSessionAt: z.string().datetime().nullable(),
+  totalTimePlayedMs: z.number().min(0).refine(v => Number.isFinite(v)),
+  createdAt: z.iso.datetime(),
+  lastSessionAt: z.iso.datetime().nullable(),
   archived: z.boolean(),
 })
 export type DomainMeta = z.infer<typeof DomainMetaSchema>
@@ -48,10 +48,10 @@ export const QuestionRecordSchema = z.object({
   correctAnswer: AnswerOptionSchema,
   userAnswer: z.enum(['A', 'B', 'C', 'D', 'TIMEOUT']),
   isCorrect: z.boolean(),
-  answeredAt: z.string().datetime(),
-  timeTakenMs: z.number().min(0).finite(),
+  answeredAt: z.iso.datetime(),
+  timeTakenMs: z.number().min(0).refine(v => Number.isFinite(v)),
   speedTier: SpeedTierSchema,
-  scoreDelta: z.number().finite(),
+  scoreDelta: z.number().refine(v => Number.isFinite(v)),
   difficultyLevel: z.number().int().min(1).max(5),
   bookmarked: z.boolean().default(false),
 })
@@ -144,6 +144,9 @@ export const GEMINI_MODEL_CHOICES: ModelChoice[] = [
   { name: 'Gemini 2.5 Flash-Lite', value: 'gemini-2.5-flash-lite', description: 'Fast — fastest, most budget-friendly' },
 ]
 
+export const ThemeSchema = z.enum(['dark', 'light'])
+export type Theme = z.infer<typeof ThemeSchema>
+
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),
   language: z.string().min(1),
@@ -154,6 +157,7 @@ export const SettingsFileSchema = z.object({
   ollamaEndpoint: z.string().min(1).default(DEFAULT_OLLAMA_ENDPOINT),
   ollamaModel: z.string().min(1).default(DEFAULT_OLLAMA_MODEL),
   asciiArtMilestone: z.union([z.literal(0), z.literal(10), z.literal(100)]).default(100),
+  theme: ThemeSchema.default('dark'),
   showWelcome: z.boolean().default(true),
 })
 export type SettingsFile = z.infer<typeof SettingsFileSchema>
@@ -169,6 +173,7 @@ export function defaultSettings(): SettingsFile {
     ollamaEndpoint: DEFAULT_OLLAMA_ENDPOINT,
     ollamaModel: DEFAULT_OLLAMA_MODEL,
     asciiArtMilestone: 100,
+    theme: 'dark' as const,
     showWelcome: true,
   }
 }

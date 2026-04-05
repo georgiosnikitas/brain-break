@@ -7,6 +7,7 @@ import {
   dim,
   bold,
   header,
+  accent,
   formatDuration,
   formatAccuracy,
   typewrite,
@@ -25,6 +26,12 @@ import {
   lerpColor,
   CYAN,
   MAGENTA,
+  LIGHT_START,
+  LIGHT_END,
+  gradientStart,
+  gradientEnd,
+  setTheme,
+  getTheme,
   renderQuestionDetail,
 } from './format.js'
 import { makeRecord } from '../__test-helpers__/factories.js'
@@ -55,6 +62,10 @@ describe('basic chalk wrappers', () => {
 
   it('header returns a string containing the input', () => {
     expect(header('Title')).toContain('Title')
+  })
+
+  it('accent returns a string containing the input', () => {
+    expect(accent('>')).toContain('>')
   })
 })
 
@@ -206,6 +217,74 @@ describe('colorScoreDelta', () => {
   })
 })
 
+describe('theme-aware semantic helpers', () => {
+  let origLevel: typeof chalk.level
+
+  beforeEach(() => {
+    origLevel = chalk.level
+    chalk.level = 1
+  })
+
+  afterEach(() => {
+    chalk.level = origLevel
+    setTheme('dark')
+  })
+
+  it('uses dark and light variants for success and warn', () => {
+    expect(success('ok')).toBe(chalk.green('ok'))
+    expect(warn('warn')).toBe(chalk.yellow('warn'))
+
+    setTheme('light')
+
+    expect(success('ok')).toBe(chalk.bold.green('ok'))
+    expect(warn('warn')).toBe(chalk.bold.yellow('warn'))
+  })
+
+  it('uses cyan/blue variants for header and accent', () => {
+    expect(header('Title')).toBe(chalk.bold.cyan('Title'))
+    expect(accent('>')).toBe(chalk.cyan('>'))
+
+    setTheme('light')
+
+    expect(header('Title')).toBe(chalk.bold.blue('Title'))
+    expect(accent('>')).toBe(chalk.blue('>'))
+  })
+
+  it('uses green variants for colorCorrect and positive score delta', () => {
+    expect(colorCorrect('yes')).toBe(chalk.green('yes'))
+    expect(colorScoreDelta(4)).toBe(chalk.green('+4'))
+
+    setTheme('light')
+
+    expect(colorCorrect('yes')).toBe(chalk.bold.green('yes'))
+    expect(colorScoreDelta(4)).toBe(chalk.bold.green('+4'))
+  })
+
+  it('uses theme-aware variants for speed tiers', () => {
+    expect(colorSpeedTier('fast')).toBe(chalk.green('Fast'))
+    expect(colorSpeedTier('normal')).toBe(chalk.yellow('Normal'))
+    expect(colorSpeedTier('slow')).toBe(chalk.red('Slow'))
+
+    setTheme('light')
+
+    expect(colorSpeedTier('fast')).toBe(chalk.bold.green('Fast'))
+    expect(colorSpeedTier('normal')).toBe(chalk.bold.yellow('Normal'))
+    expect(colorSpeedTier('slow')).toBe(chalk.bold.red('Slow'))
+  })
+
+  it('uses theme-aware variants for difficulty labels', () => {
+    expect(colorDifficultyLevel(1)).toBe(chalk.cyan('Beginner'))
+    expect(colorDifficultyLevel(2)).toBe(chalk.green('Elementary'))
+    expect(colorDifficultyLevel(3)).toBe(chalk.yellow('Intermediate'))
+
+    setTheme('light')
+
+    expect(colorDifficultyLevel(1)).toBe(chalk.blue('Beginner'))
+    expect(colorDifficultyLevel(2)).toBe(chalk.bold.green('Elementary'))
+    expect(colorDifficultyLevel(3)).toBe(chalk.bold.yellow('Intermediate'))
+  })
+})
+
 describe('menuTheme', () => {
   it('highlight returns a string containing the input text', () => {
     const result = menuTheme.style.highlight('selected item')
@@ -274,6 +353,115 @@ describe('lerpColor', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Theme-aware gradient and color tests (Story 6.4)
+// ---------------------------------------------------------------------------
+describe('setTheme / getTheme', () => {
+  afterEach(() => { setTheme('dark') })
+
+  it('defaults to dark', () => {
+    expect(getTheme()).toBe('dark')
+  })
+
+  it('round-trips light theme', () => {
+    setTheme('light')
+    expect(getTheme()).toBe('light')
+  })
+
+  it('round-trips dark theme', () => {
+    setTheme('light')
+    setTheme('dark')
+    expect(getTheme()).toBe('dark')
+  })
+})
+
+describe('gradientStart / gradientEnd', () => {
+  afterEach(() => { setTheme('dark') })
+
+  it('returns CYAN for dark theme start', () => {
+    expect(gradientStart()).toEqual(CYAN)
+  })
+
+  it('returns MAGENTA for dark theme end', () => {
+    expect(gradientEnd()).toEqual(MAGENTA)
+  })
+
+  it('returns LIGHT_START for light theme start', () => {
+    setTheme('light')
+    expect(gradientStart()).toEqual(LIGHT_START)
+  })
+
+  it('returns LIGHT_END for light theme end', () => {
+    setTheme('light')
+    expect(gradientEnd()).toEqual(LIGHT_END)
+  })
+})
+
+describe('lerpColor — theme-aware', () => {
+  afterEach(() => { setTheme('dark') })
+
+  it('returns LIGHT_START at t=0 for light theme', () => {
+    setTheme('light')
+    expect(lerpColor(0)).toEqual(LIGHT_START)
+  })
+
+  it('returns LIGHT_END at t=1 for light theme', () => {
+    setTheme('light')
+    expect(lerpColor(1)).toEqual(LIGHT_END)
+  })
+
+  it('returns CYAN at t=0 for dark theme', () => {
+    expect(lerpColor(0)).toEqual(CYAN)
+  })
+
+  it('returns MAGENTA at t=1 for dark theme', () => {
+    expect(lerpColor(1)).toEqual(MAGENTA)
+  })
+})
+
+describe('gradientText — theme-aware fallback', () => {
+  let origLevel: typeof chalk.level
+
+  beforeEach(() => { origLevel = chalk.level })
+  afterEach(() => {
+    chalk.level = origLevel
+    setTheme('dark')
+  })
+
+  it('uses bold cyan fallback for dark theme when chalk.level < 3', () => {
+    chalk.level = 1
+    const result = gradientText('Hello', 0, 3)
+    expect(result).toContain('Hello')
+    // chalk.bold.cyan produces ANSI codes with cyan color (36m)
+    expect(result).toMatch(/\x1B\[.*36/)
+  })
+
+  it('uses bold blue fallback for light theme when chalk.level < 3', () => {
+    chalk.level = 1
+    setTheme('light')
+    const result = gradientText('Hello', 0, 3)
+    expect(result).toContain('Hello')
+    // chalk.bold.blue produces ANSI codes with blue color (34m)
+    expect(result).toMatch(/\x1B\[.*34/)
+  })
+})
+
+describe('dim — theme-aware', () => {
+  let origLevel: typeof chalk.level
+
+  beforeEach(() => { origLevel = chalk.level; chalk.level = 1 })
+  afterEach(() => { chalk.level = origLevel; setTheme('dark') })
+
+  it('returns different output for dark and light themes', () => {
+    const darkResult = dim('test')
+    setTheme('light')
+    const lightResult = dim('test')
+    expect(darkResult).not.toBe(lightResult)
+    expect(darkResult).toContain('test')
+    expect(lightResult).toContain('test')
+  })
+})
+
 describe('cancellableSleep', () => {
   afterEach(() => {
     vi.useRealTimers()
@@ -326,6 +514,7 @@ describe('gradientText', () => {
 describe('typewriterPrint', () => {
   afterEach(() => {
     vi.useRealTimers()
+    setTheme('dark')
   })
 
   it('writes characters and a trailing newline to stdout', async () => {
@@ -353,6 +542,24 @@ describe('typewriterPrint', () => {
 
     const written = writeSpy.mock.calls.map((c) => String(c[0])).join('')
     expect(written).toContain('\n')
+    writeSpy.mockRestore()
+  })
+
+  it('uses a blueBright cursor on light theme', async () => {
+    vi.useFakeTimers()
+    const origLevel = chalk.level
+    chalk.level = 1
+    setTheme('light')
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+
+    const p = typewriterPrint('a')
+    await vi.runAllTimersAsync()
+    await p
+
+    const written = writeSpy.mock.calls.map((c) => String(c[0])).join('')
+    expect(written).toContain(chalk.bold.blueBright('_'))
+
+    chalk.level = origLevel
     writeSpy.mockRestore()
   })
 })

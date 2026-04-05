@@ -227,6 +227,7 @@ describe('writeSettings + readSettings', () => {
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
       asciiArtMilestone: 100 as const,
+      theme: 'dark' as const,
       showWelcome: true,
     }
     const writeResult = await writeSettings(settings)
@@ -318,6 +319,7 @@ describe('writeSettings + readSettings', () => {
       ollamaEndpoint: 'http://custom:1234',
       ollamaModel: 'mistral',
       asciiArtMilestone: 100 as const,
+      theme: 'dark' as const,
       showWelcome: true,
     }
     const writeResult = await writeSettings(full)

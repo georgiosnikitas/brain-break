@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
+import chalk from 'chalk'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -19,6 +20,7 @@ vi.mock('../utils/format.js', () => ({
   gradientText: vi.fn((text: string) => `[gradient]${text}`),
   dim: vi.fn((s: string) => `[dim]${s}`),
   lerpColor: vi.fn(() => ({ r: 100, g: 100, b: 100 })),
+  getTheme: vi.fn(() => 'dark'),
 }))
 
 vi.mock('../utils/screen.js', () => ({
@@ -33,7 +35,7 @@ vi.mock('../router.js', () => ({
 // Imports after mocks
 // ---------------------------------------------------------------------------
 import figlet from 'figlet'
-import { gradientText } from '../utils/format.js'
+import { gradientText, getTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 import { select } from '@inquirer/prompts'
@@ -41,6 +43,7 @@ import { colorAsciiArt, FIGLET_FONTS, showAsciiArtScreen, pickRandomFont, render
 
 const mockTextSync = vi.mocked(figlet.textSync)
 const mockGradientText = vi.mocked(gradientText)
+const mockGetTheme = vi.mocked(getTheme)
 const mockClearAndBanner = vi.mocked(clearAndBanner)
 const mockShowDomainMenu = vi.mocked(router.showDomainMenu)
 const mockSelect = vi.mocked(select)
@@ -148,6 +151,41 @@ describe('renderProgressBar', () => {
     const inner = result.slice(1, -1)
     expect(inner).not.toContain('█')
     expect((inner.match(/░/g) || []).length).toBe(10)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// renderProgressBar — theme-aware fallback (chalk.level < 3)
+// ---------------------------------------------------------------------------
+describe('renderProgressBar — theme-aware fallback', () => {
+  let origLevel: typeof chalk.level
+
+  beforeEach(() => {
+    origLevel = chalk.level
+    chalk.level = 1
+  })
+
+  afterEach(() => {
+    chalk.level = origLevel
+    mockGetTheme.mockReturnValue('dark')
+  })
+
+  it('uses cyan filled blocks for dark theme on low chalk level', () => {
+    mockGetTheme.mockReturnValue('dark')
+    const result = renderProgressBar(50, 100, 10)
+    const inner = result.slice(1, -1)
+    expect((inner.match(/█/g) || []).length).toBe(5)
+    // ANSI cyan = 36m
+    expect(result).toMatch(/\x1B\[.*36/)
+  })
+
+  it('uses blue filled blocks for light theme on low chalk level', () => {
+    mockGetTheme.mockReturnValue('light')
+    const result = renderProgressBar(50, 100, 10)
+    const inner = result.slice(1, -1)
+    expect((inner.match(/█/g) || []).length).toBe(5)
+    // ANSI blue = 34m
+    expect(result).toMatch(/\x1B\[.*34/)
   })
 })
 

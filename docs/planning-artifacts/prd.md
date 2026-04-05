@@ -20,8 +20,13 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
 lastEdited: '2026-04-05'
 editHistory:
+  - date: '2026-04-05'
+    changes: 'Theme setting added: new 🌓 Theme selector in Feature 8 (Dark/Light, default Dark) controls the application''s color palette for readability on both dark and light terminal backgrounds. Feature 9 updated with dual color palettes — Dark theme uses standard cyan, yellow, green, dim; Light theme substitutes blue for cyan, bold green for green, gray for dim, bold yellow for yellow, and darker gradient endpoints. Features 11, 12, 15, 18 updated to reference active theme gradient and accent colors. NFR 6 updated to document dual palette support. Implementation Decisions settings persistence updated with `theme` field. User Journeys Settings updated with theme switching example. Theme takes effect immediately — no restart required.'
   - date: '2026-04-05'
     changes: 'Answer verification redesign documented: Project-Type Requirements and Feature 2 now describe fail-closed verification where generation returns question text plus four options, verification returns explicit `correctAnswer` and `correctOptionText`, and the app accepts a question only when those values align locally. Added bounded retry budget of 3 candidate attempts total (initial attempt + 2 retries), rejection of unverified questions after budget exhaustion, quiz clarification that displayed answers are verified, and Challenge preload alignment with the same verification budget and abort behavior.'
   - date: '2026-04-04'
@@ -261,7 +266,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **"Aha!" Moment:** Gets a question wrong on something they thought they knew. Score dips. They hit "Explain answer" and immediately understand *why* the correct answer is right. Intrigued, they hit "Teach me more" and get a one-minute micro-lesson on the concept — connecting the question to deeper principles they hadn't considered. They bookmark the question to revisit it later. They come back and get it right next time. The score rises. *That feedback loop is the product.*
 
-**Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. Changing settings takes effect on the next AI call — no restart required.
+**Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. User switches Theme from Dark to Light because they're using a terminal with a white background — all colors immediately adapt for readability. Changing settings takes effect on the next AI call (language, tone) or next screen render (theme) — no restart required.
 
 **Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via Bookmarks for targeted review. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
@@ -313,7 +318,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the generation prompt returns a **JSON structured response** with question text, answer options (A–D), difficulty level, and speed tier time thresholds (fast / normal / slow in ms). The generation step does **not** supply the trusted answer key
 - **Language and tone injection:** Every AI prompt (questions, motivational messages, answer explanations) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "showWelcome": true }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "theme": "dark", "showWelcome": true }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Answer verification mechanism:** After generating and shuffling a candidate question, a separate verification prompt asks the AI to determine the correct answer for the finalized question **without seeing any pre-selected answer**. The verification response must return both `correctAnswer` (`A` | `B` | `C` | `D`) and `correctOptionText` (the exact copied text of the selected option). The app accepts the candidate only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`. Verification is **fail-closed**: any mismatch, network error, JSON parse error, or schema mismatch discards the entire candidate and triggers a fresh generation cycle. Each question has a bounded retry budget of **3 candidate attempts total** (initial attempt + 2 retries); if all attempts fail, the question is rejected and never shown to the user
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`). Duplicate validation compares the slugified form against existing domain files — ensuring visually distinct inputs that normalize to the same slug (e.g. `Python 3` and `python-3`) are detected as duplicates
@@ -466,10 +471,10 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure five global preferences: **AI Provider**, **Language**, **Tone of Voice**, **ASCII Art Milestone**, and **Welcome & Exit Screen** toggle
+- Selecting Settings opens a settings screen where the user can configure six global preferences: **AI Provider**, **Language**, **Tone of Voice**, **ASCII Art Milestone**, **Theme**, and **Welcome & Exit Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
-- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, asciiArtMilestone = `100`, showWelcome = `true`
+- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, asciiArtMilestone = `100`, theme = `dark`, showWelcome = `true`
 
 **First-Launch Provider Setup**
 
@@ -520,6 +525,14 @@ User can view a summary dashboard for the active domain:
 - The setting is global — it applies to all domains; changing the threshold is retroactive (domains that already meet the new threshold immediately unlock, domains that no longer meet it re-lock)
 - The selected value is stored as `asciiArtMilestone` (number: `0` | `10` | `100`) in `settings.json`
 
+**Theme**
+- A 🌓 Theme toggle (displayed as Dark/Light) controls the application's color palette to ensure readability on both dark and light terminal backgrounds
+- Default is Dark — optimized for dark terminal backgrounds; uses standard cyan, yellow, green, and dim styling
+- When set to Light — optimized for light terminal backgrounds; substitutes low-contrast colors with readable alternatives (blue for cyan, bold green for green, gray for dim, bold yellow for yellow) as defined in Feature 9
+- The setting is global — it applies to all screens and all color output across the application
+- Changing the theme takes effect immediately — no restart required; the next screen render uses the new palette
+- The selected value is stored as `theme` (string: `"dark"` | `"light"`) in `settings.json`
+
 **Welcome & Exit Screen**
 - A 🎬 Welcome & Exit screen toggle (displayed as ON/OFF) controls whether the branded Welcome Screen (Feature 11) is shown on launch and whether the branded Exit Message screen (Feature 15) is shown on explicit home-screen Exit
 - Default is ON — when disabled, the app skips the Welcome Screen and also skips the Exit Message screen (explicit Exit terminates immediately)
@@ -531,27 +544,42 @@ User can view a summary dashboard for the active domain:
 
 All interactive menus throughout the application use full-row background highlight to indicate the currently focused option — navigated with arrow keys (↑↓), confirmed with Enter. No existing input mechanism (e.g., typing A/B/C/D for quiz answers) is removed; arrow key navigation is additive.
 
+The application ships two color palettes — **Dark** and **Light** — controlled by the 🌓 Theme setting (Feature 8, default: Dark). The active palette determines all semantic colors used throughout the app. The theme takes effect immediately on change — no restart required.
+
 **Menu highlighting (all menus)**
 - The focused menu item renders with inverted foreground/background colors — white text on a colored background (e.g., white-on-cyan) for the selected row; unfocused items render in default terminal colors
+- Inverted colors are inherently adaptive to both themes — no palette adjustment needed
 - Applies to: home screen, domain sub-menu, settings screen, archived domains list, history navigation controls, and post-quiz navigation
 
 **Post-answer feedback colors**
-- Correct answer: displayed in **green**
+- Correct answer: displayed in **green** (Dark) / **bold green** (Light)
 - User's wrong answer: displayed in **red**
-- Correct answer reveal (when user answers wrongly): displayed in **green**
-- Score delta positive: displayed in **green**; score delta negative: displayed in **red**
+- Correct answer reveal (when user answers wrongly): displayed in **green** (Dark) / **bold green** (Light)
+- Score delta positive: displayed in **green** (Dark) / **bold green** (Light); score delta negative: displayed in **red**
 
 **Speed tier badge colors**
-- Fast: **green**
-- Normal: **yellow**
+- Fast: **green** (Dark) / **bold green** (Light)
+- Normal: **yellow** (Dark) / **yellow bold** (Light)
 - Slow: **red**
 
 **Difficulty level badge colors**
-- Level 1 (Beginner): **cyan**
-- Level 2 (Elementary): **green**
-- Level 3 (Intermediate): **yellow**
+- Level 1 (Beginner): **cyan** (Dark) / **blue** (Light)
+- Level 2 (Elementary): **green** (Dark) / **bold green** (Light)
+- Level 3 (Intermediate): **yellow** (Dark) / **yellow bold** (Light)
 - Level 4 (Advanced): **magenta**
 - Level 5 (Expert): **red**
+
+**Dim text**
+- Dark theme: `chalk.dim` (standard dim attribute)
+- Light theme: `chalk.gray` — ensures separators, hints, and secondary text remain readable against a light background
+
+**Header text**
+- Dark theme: `chalk.bold.cyan`
+- Light theme: `chalk.bold.blue`
+
+**Gradient colors (Welcome Screen, Exit Message, Static Banner, ASCII Art)**
+- Dark theme: cyan `rgb(0, 180, 200)` → magenta `rgb(200, 0, 120)`
+- Light theme: teal `rgb(0, 140, 160)` → magenta `rgb(180, 0, 100)` — darker endpoints for contrast against light backgrounds
 
 ### Feature 10 — Coffee Supporter Screen
 
@@ -564,9 +592,9 @@ All interactive menus throughout the application use full-row background highlig
 - On every launch where the `showWelcome` setting is `true` (default), a branded Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen
 - The Welcome Screen renders the following content in order:
   1. The app emoji branding (`🧠🔨`)
-  2. A gradient-colored ASCII art rendering of "Brain Break" — the text interpolates from cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan
-  3. A styled subtitle line: `>` rendered in **cyan**, the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
-  4. The current app version (e.g., `v1.2.0`) rendered in dim white
+  2. A gradient-colored ASCII art rendering of "Brain Break" — the text interpolates from cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row in the Dark theme, or from teal `rgb(0, 140, 160)` to magenta `rgb(180, 0, 100)` in the Light theme (see Feature 9 — gradient colors); on terminals with limited color support (chalk level < 3), the art renders in bold cyan (Dark) or bold blue (Light)
+  3. A styled subtitle line: `>` rendered in **cyan** (Dark) / **blue** (Light), the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
+  4. The current app version (e.g., `v1.2.0`) rendered in dim white (Dark) / gray (Light)
   5. A gradient shadow bar spanning the terminal width (same cyan-to-magenta gradient)
 - The user dismisses the Welcome Screen by pressing Enter (via a single "Press enter to continue..." prompt)
 - Pressing Ctrl+C on the Welcome Screen exits the app cleanly with code 0
@@ -580,7 +608,7 @@ All interactive menus throughout the application use full-row background highlig
 - Every screen in the app (except the Welcome Screen and Provider Setup screen) renders a persistent static banner at the top of the terminal after clearing the viewport
 - The banner consists of:
   1. A bold text line: `🧠🔨 Brain Break`
-  2. A gradient shadow bar immediately below — the same cyan-to-magenta gradient used in the Welcome Screen, spanning the terminal width (capped at 80 columns)
+  2. A gradient shadow bar immediately below — using the active theme's gradient endpoints (see Feature 9 — gradient colors), spanning the terminal width (capped at 80 columns)
 - The banner is rendered via a shared `clearAndBanner()` utility in `utils/screen.ts` that calls `clearScreen()` followed by `banner()`
 - The banner applies to: home screen, domain sub-menu, quiz question display, post-answer feedback, history navigation, stats dashboard, archived domains list, settings screen, and coffee supporter screen
 - The Welcome Screen and Provider Setup screen use `clearScreen()` instead (no banner) — they render their own branded header layout
@@ -619,8 +647,8 @@ All interactive menus throughout the application use full-row background highlig
 - The Exit Message screen uses `clearScreen()` (not `clearAndBanner()`) so it renders as a full-screen branded layout, consistent with the Welcome Screen behavior
 - The Exit Message screen renders the following content in order:
   1. The app emoji branding (`🧠🔨`)
-  2. A gradient-colored ASCII art rendering of "Brain Break" identical to the Welcome Screen — cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)` row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan
-  3. A styled subtitle line identical to the Welcome Screen: `>` rendered in **cyan**, the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
+  2. A gradient-colored ASCII art rendering of "Brain Break" identical to the Welcome Screen — using the active theme's gradient endpoints (see Feature 9 — gradient colors) row-by-row; on terminals with limited color support (chalk level < 3), the art renders in bold cyan (Dark) or bold blue (Light)
+  3. A styled subtitle line identical to the Welcome Screen: `>` rendered in **cyan** (Dark) / **blue** (Light), the text `Train your brain, one question at a time`, and `_` rendered in **magenta**
   4. A dynamic exit message based on total questions answered in the session — e.g., *"Break's over, see you next round"* (0 questions), *"X questions smashed, not bad for a break"* (1–9), *"X questions? Your brain's showing off"* (10–49), *"X questions deep, absolute brain breaker"* (50–99), *"X questions mastered, certified brain breaker"* (100+) — rendered via typewriter animation
   5. The current app version (e.g., `v1.2.0`) rendered in dim white
   6. A gradient shadow bar spanning the terminal width (same cyan-to-magenta gradient)
@@ -708,7 +736,7 @@ The sprint ends on whichever condition occurs first:
 - ASCII Art is gated behind a configurable milestone: the domain must have cumulative correct answers equal to or exceeding the **ASCII Art Milestone** setting (Feature 8) to unlock the FIGlet rendering — the default threshold is 100
 - The correct answer count is computed on demand by filtering the domain's `history` array for `isCorrect: true` records — no new aggregate field is added to the domain schema
 - The domain sub-menu **ASCII Art label dynamically reflects unlock status:**
-  - **Locked (below threshold):** The label displays `🎨 ASCII Art` followed by a compact cyan-to-magenta gradient progress bar and percentage (e.g., `🎨 ASCII Art [████░░░░░░] 42%`) — the bar uses filled blocks (`█`) colored via the app's `lerpColor` gradient and dim unfilled blocks (`░`); the percentage and progress bar are capped at 100% even if `correctCount` exceeds the threshold
+  - **Locked (below threshold):** The label displays `🎨 ASCII Art` followed by a compact gradient progress bar and percentage (e.g., `🎨 ASCII Art [████░░░░░░] 42%`) — the bar uses filled blocks (`█`) colored via the app's `lerpColor` gradient (using the active theme's gradient endpoints — see Feature 9) and dim unfilled blocks (`░`) rendered with the active theme's dim style; the percentage and progress bar are capped at 100% even if `correctCount` exceeds the threshold
   - **Unlocked (≥ threshold):** The label displays `🎨 ASCII Art ✨`
 
 **Locked screen (below threshold)**
@@ -717,7 +745,7 @@ The sprint ends on whichever condition occurs first:
 - The screen displays:
   1. A header: `🎨 ASCII Art — <domain>` (using `header()`, same pattern as Statistics)
   2. A motivational message explaining the milestone goal — dynamically reflecting the configured threshold, e.g., *"🔒 ASCII Art unlocks when you've answered N questions correctly!"* where N is the threshold value
-  3. A gradient progress bar with percentage on a single line — same `lerpColor` gradient styling as the menu label, rendered at a wider width for visual impact; capped at 100%
+  3. A gradient progress bar with percentage on a single line — same `lerpColor` gradient styling as the menu label (using the active theme's gradient endpoints), rendered at a wider width for visual impact; capped at 100%
   4. A separator and a `↩️  Back` choice
 - Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
 
@@ -726,7 +754,7 @@ The sprint ends on whichever condition occurs first:
 - Selecting ASCII Art when unlocked opens the FIGlet rendering screen
 - Each render randomly selects one font from a curated list of 14 FIGlet fonts
 - The screen displays a header (`🎨 ASCII Art — <domain>`) following the same header pattern as the Statistics screen
-- The rendered ASCII art is displayed below the header, colored using the app's cyan-to-magenta gradient system (`lerpColor`) — color is interpolated row-by-row from cyan (top) to magenta (bottom); any combination or pattern of the two colors is acceptable
+- The rendered ASCII art is displayed below the header, colored using the app's gradient system (`lerpColor`) with the active theme's gradient endpoints (see Feature 9) — color is interpolated row-by-row from the starting gradient color (top) to the ending gradient color (bottom); any combination or pattern of the two colors is acceptable
 - Below the art, a **🔄 Regenerate** choice, a separator, and a **↩️  Back** choice are displayed
 - Selecting **Regenerate** rerenders the art immediately using a different font from the curated list
 - Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
@@ -762,6 +790,6 @@ The app must reach the home screen within **≤ 2 seconds** of launch (`npx brai
 All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, statistics dashboard, welcome screen, exit message screen, settings screen, and sprint setup screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. This exception applies to both Play mode (Feature 3) and Challenge Mode (Feature 17). A terminal reset occurs only when the user selects Next question (loading the next question) or exits the session. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
-All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
+All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application ships two color palettes (Dark and Light) to ensure readability across both dark and light terminal backgrounds; the active palette is determined by the 🌓 Theme setting in Feature 8 (default: Dark). All semantic color mappings are defined in Feature 9. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
 ---

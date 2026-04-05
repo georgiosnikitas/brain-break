@@ -3,8 +3,8 @@ import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
-import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
-import { menuTheme, success, warn, header } from '../utils/format.js'
+import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile, type Theme } from '../domain/schema.js'
+import { menuTheme, success, warn, header, setTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import { promptForProviderSettings } from './provider-settings.js'
 import * as router from '../router.js'
@@ -23,7 +23,9 @@ const TONE_LABELS: Record<string, string> = Object.fromEntries(
   TONE_CHOICES.map(c => [c.value, c.name])
 )
 
-type SettingsAction = 'provider' | 'language' | 'tone' | 'asciiArtMilestone' | 'showWelcome' | 'save' | 'back'
+type SettingsAction = 'provider' | 'language' | 'tone' | 'asciiArtMilestone' | 'theme' | 'showWelcome' | 'save' | 'back'
+
+const THEME_LABELS: Record<Theme, string> = { dark: 'Dark', light: 'Light' }
 
 const MILESTONE_CHOICES: Array<{ name: string; value: 0 | 10 | 100 }> = [
   { name: 'Instant (0 questions)', value: 0 },
@@ -114,6 +116,7 @@ async function selectSettingsAction(
   language: string,
   tone: ToneOfVoice,
   asciiArtMilestone: 0 | 10 | 100,
+  theme: Theme,
   showWelcome: boolean,
 ): Promise<SettingsAction> {
   return select<SettingsAction>({
@@ -123,6 +126,7 @@ async function selectSettingsAction(
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
       { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
       { name: `🎨 ASCII Art Milestone: ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
+      { name: `🌓 Theme:         ${THEME_LABELS[theme]}`, value: 'theme' as const },
       { name: `🎬 Welcome & Exit screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
       new Separator(),
       { name: '💾 Save', value: 'save' as const },
@@ -131,6 +135,24 @@ async function selectSettingsAction(
     theme: menuTheme,
     pageSize: SETTINGS_PAGE_SIZE,
   })
+}
+
+async function handleAsciiArtMilestoneAction(current: 0 | 10 | 100): Promise<{ value: 0 | 10 | 100; banner: string }> {
+  const selectedMilestone = await select<0 | 10 | 100 | 'back'>({
+    message: 'ASCII Art Milestone',
+    choices: [
+      ...MILESTONE_CHOICES,
+      new Separator(),
+      { name: '↩️  Back', value: 'back' as const },
+    ],
+    default: current,
+    theme: menuTheme,
+    pageSize: SETTINGS_PAGE_SIZE,
+  })
+  if (selectedMilestone === 'back') {
+    return { value: current, banner: '' }
+  }
+  return { value: selectedMilestone, banner: success(`ASCII Art Milestone set to ${MILESTONE_LABELS[selectedMilestone]}`) }
 }
 
 export async function showSettingsScreen(): Promise<void> {
@@ -147,18 +169,17 @@ export async function showSettingsScreen(): Promise<void> {
   let ollamaModel = currentSettings.ollamaModel
   let showWelcome = currentSettings.showWelcome
   let asciiArtMilestone = currentSettings.asciiArtMilestone
+  let theme = currentSettings.theme
   let banner = ''
 
   try {
     while (true) {
       clearAndBanner()
       console.log(header('⚙️  Settings'))
-      if (banner) {
-        console.log(banner + '\n')
-        banner = ''
-      }
+      if (banner) console.log(banner + '\n')
+      banner = ''
       
-        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, showWelcome)
+        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, theme, showWelcome)
 
       switch (action) {
         case 'provider': {
@@ -186,31 +207,22 @@ export async function showSettingsScreen(): Promise<void> {
         case 'tone':
           tone = await handleToneAction(tone)
           break
+        case 'theme':
+          theme = theme === 'dark' ? 'light' : 'dark'
+          banner = success(`Theme set to ${THEME_LABELS[theme]}`)
+          break
         case 'showWelcome':
           showWelcome = !showWelcome
           banner = showWelcome ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled')
           break
         case 'asciiArtMilestone': {
-          const selectedMilestone = await select<0 | 10 | 100 | 'back'>({
-            message: 'ASCII Art Milestone',
-            choices: [
-              ...MILESTONE_CHOICES,
-              new Separator(),
-              { name: '↩️  Back', value: 'back' as const },
-            ],
-            default: asciiArtMilestone,
-            theme: menuTheme,
-            pageSize: SETTINGS_PAGE_SIZE,
-          })
-          if (selectedMilestone === 'back') {
-            break
-          }
-          asciiArtMilestone = selectedMilestone
-          banner = success(`ASCII Art Milestone set to ${MILESTONE_LABELS[asciiArtMilestone]}`)
+          const milestoneResult = await handleAsciiArtMilestoneAction(asciiArtMilestone)
+          asciiArtMilestone = milestoneResult.value
+          if (milestoneResult.banner) banner = milestoneResult.banner
           break
         }
-        case 'save':
-          await handleSaveAction({
+        case 'save': {
+          const settings: SettingsFile = {
             ...currentSettings,
             language,
             tone,
@@ -221,9 +233,13 @@ export async function showSettingsScreen(): Promise<void> {
             ollamaEndpoint,
             ollamaModel,
             asciiArtMilestone,
+            theme,
             showWelcome,
-          })
+          }
+          await handleSaveAction(settings)
+          setTheme(theme)
           return await router.showHome()
+        }
         case 'back':
           return await router.showHome()
       }

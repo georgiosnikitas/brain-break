@@ -3,7 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import * as crypto from 'node:crypto'
 import chalk from 'chalk'
 import figlet from 'figlet'
-import { header, menuTheme, gradientText, dim, lerpColor } from '../utils/format.js'
+import { header, menuTheme, gradientText, dim, lerpColor, getTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -52,7 +52,7 @@ export function renderProgressBar(correctCount: number, total: number, width: nu
     const t = width <= 1 ? 0 : i / (width - 1)
     const c = lerpColor(t)
     if (chalk.level < 3) {
-      filled += chalk.bold.cyan('█')
+      filled += getTheme() === 'dark' ? chalk.bold.cyan('█') : chalk.bold.blue('█')
     } else {
       filled += chalk.rgb(c.r, c.g, c.b)('█')
     }

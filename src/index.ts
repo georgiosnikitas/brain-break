@@ -2,9 +2,12 @@
 import { showHome, showProviderSetup, showWelcome } from './router.js'
 import { readSettings } from './domain/store.js'
 import { defaultSettings } from './domain/schema.js'
+import { setTheme } from './utils/format.js'
 
 const settingsResult = await readSettings()
 const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+
+setTheme(settings.theme)
 
 let skippedProviderSetup = false
 

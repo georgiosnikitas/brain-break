@@ -1,39 +1,53 @@
 import chalk from 'chalk'
-import type { SpeedTier, QuestionRecord } from '../domain/schema.js'
+import type { SpeedTier, QuestionRecord, Theme } from '../domain/schema.js'
+
+// ---------------------------------------------------------------------------
+// Theme state
+// ---------------------------------------------------------------------------
+let _theme: Theme = 'dark'
+export function setTheme(t: Theme): void { _theme = t }
+export function getTheme(): Theme { return _theme }
 
 // Basic chalk wrappers
-export const success = (s: string) => chalk.green(s)
-export const error = (s: string) => chalk.red(s)
-export const warn = (s: string) => chalk.yellow(s)
-export const dim = (s: string) => chalk.dim(s)
+export const success = (s: string) => _theme === 'dark' ? chalk.green(s) : chalk.bold.green(s)
+export const error = (s: string) => _theme === 'dark' ? chalk.red(s) : chalk.bold.red(s)
+export const warn = (s: string) => _theme === 'dark' ? chalk.yellow(s) : chalk.bold.yellow(s)
+export const dim = (s: string) => _theme === 'dark' ? chalk.dim(s) : chalk.gray(s)
 export const bold = (s: string) => chalk.bold(s)
-export const header = (s: string) => chalk.bold.cyan(s)
+export const header = (s: string) => _theme === 'dark' ? chalk.bold.cyan(s) : chalk.bold.blue(s)
+export const accent = (s: string) => _theme === 'dark' ? chalk.cyan(s) : chalk.blue(s)
 
 // Semantic color helpers (FR20–FR23)
-export const colorCorrect = (text: string) => chalk.green(text)
-export const colorIncorrect = (text: string) => chalk.red(text)
+export const colorCorrect = (text: string) => _theme === 'dark' ? chalk.green(text) : chalk.bold.green(text)
+export const colorIncorrect = (text: string) => _theme === 'dark' ? chalk.red(text) : chalk.bold.red(text)
 
 export function colorSpeedTier(tier: SpeedTier): string {
   switch (tier) {
-    case 'fast': return chalk.green('Fast')
-    case 'normal': return chalk.yellow('Normal')
-    case 'slow': return chalk.red('Slow')
+    case 'fast': return _theme === 'dark' ? chalk.green('Fast') : chalk.bold.green('Fast')
+    case 'normal': return _theme === 'dark' ? chalk.yellow('Normal') : chalk.bold.yellow('Normal')
+    case 'slow': return _theme === 'dark' ? chalk.red('Slow') : chalk.bold.red('Slow')
   }
 }
 
 export function colorDifficultyLevel(level: number): string {
   switch (level) {
-    case 1: return chalk.cyan('Beginner')
-    case 2: return chalk.green('Elementary')
-    case 3: return chalk.yellow('Intermediate')
-    case 4: return chalk.magenta('Advanced')
-    case 5: return chalk.red('Expert')
+    case 1: return _theme === 'dark' ? chalk.cyan('Beginner') : chalk.blue('Beginner')
+    case 2: return _theme === 'dark' ? chalk.green('Elementary') : chalk.bold.green('Elementary')
+    case 3: return _theme === 'dark' ? chalk.yellow('Intermediate') : chalk.bold.yellow('Intermediate')
+    case 4: return _theme === 'dark' ? chalk.magenta('Advanced') : chalk.bold.blueBright('Advanced')
+    case 5: return _theme === 'dark' ? chalk.red('Expert') : chalk.bold.red('Expert')
     default: return String(level)
   }
 }
 
 export function colorScoreDelta(delta: number): string {
-  return delta >= 0 ? chalk.green(`+${delta}`) : chalk.red(`${delta}`)
+  if (delta >= 0) {
+    const text = `+${delta}`
+    if (_theme === 'dark') return chalk.green(text)
+    return chalk.bold.green(text)
+  }
+  if (_theme === 'dark') return chalk.red(`${delta}`)
+  return chalk.bold.red(`${delta}`)
 }
 
 // Menu highlight theme for all inquirer select prompts (FR20)
@@ -78,7 +92,7 @@ export function gradientText(text: string, row: number, totalRows: number): stri
   const t = totalRows <= 1 ? 0 : row / (totalRows - 1)
   const c = lerpColor(t)
   if (chalk.level < 3) {
-    return chalk.bold.cyan(text)
+    return _theme === 'dark' ? chalk.bold.cyan(text) : chalk.bold.blue(text)
   }
   return chalk.bold.rgb(c.r, c.g, c.b)(text)
 }
@@ -87,17 +101,18 @@ export async function typewriterPrint(text: string): Promise<void> {
   const CHAR_DELAY_MS = 30
   const BLINK_DELAY_MS = 300
   const BLINK_COUNT = 3
+  const cursor = _theme === 'dark' ? chalk.magenta('_') : chalk.bold.blueBright('_')
   for (const char of text) {
-    process.stdout.write(chalk.dim.white(char) + chalk.bold.cyan('_'))
+    process.stdout.write((_theme === 'dark' ? chalk.dim.white(char) : chalk.gray(char)) + cursor)
     await SLEEP_MS(CHAR_DELAY_MS)
     process.stdout.write('\b \b')
   }
-  process.stdout.write(chalk.bold.cyan('_'))
+  process.stdout.write(cursor)
   for (let i = 0; i < BLINK_COUNT; i++) {
     await SLEEP_MS(BLINK_DELAY_MS)
     process.stdout.write('\b ')
     await SLEEP_MS(BLINK_DELAY_MS)
-    process.stdout.write('\b' + chalk.bold.cyan('_'))
+    process.stdout.write('\b' + cursor)
   }
   process.stdout.write('\n')
 }
@@ -114,12 +129,24 @@ export const ASCII_ART = [
 // Gradient utilities for banner and welcome screen
 export const CYAN = { r: 0, g: 180, b: 200 }
 export const MAGENTA = { r: 200, g: 0, b: 120 }
+export const LIGHT_START = { r: 0, g: 140, b: 160 }
+export const LIGHT_END = { r: 180, g: 0, b: 100 }
+
+export function gradientStart(): { r: number; g: number; b: number } {
+  return _theme === 'dark' ? CYAN : LIGHT_START
+}
+
+export function gradientEnd(): { r: number; g: number; b: number } {
+  return _theme === 'dark' ? MAGENTA : LIGHT_END
+}
 
 export function lerpColor(t: number): { r: number; g: number; b: number } {
+  const start = gradientStart()
+  const end = gradientEnd()
   return {
-    r: Math.round(CYAN.r + (MAGENTA.r - CYAN.r) * t),
-    g: Math.round(CYAN.g + (MAGENTA.g - CYAN.g) * t),
-    b: Math.round(CYAN.b + (MAGENTA.b - CYAN.b) * t),
+    r: Math.round(start.r + (end.r - start.r) * t),
+    g: Math.round(start.g + (end.g - start.g) * t),
+    b: Math.round(start.b + (end.b - start.b) * t),
   }
 }
 
@@ -130,7 +157,9 @@ export function getGradientWidth(): number {
 export function gradientBg(text: string, width: number): string {
   if (chalk.level < 3) {
     const padded = text.padEnd(width)
-    return chalk.bgCyan(chalk.bold.white(padded))
+    return _theme === 'dark'
+      ? chalk.bgCyan(chalk.bold.white(padded))
+      : chalk.bgBlue(chalk.bold.white(padded))
   }
   // Smooth gradient across the full width.
   // Text portion uses one chalk call (emoji-safe) at its visual midpoint color.

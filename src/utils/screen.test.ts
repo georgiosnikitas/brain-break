@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('./format.js', () => ({
+  accent: vi.fn((text: string) => `[accent:${text}]`),
   bold: vi.fn((text: string) => `[bold:${text}]`),
   gradientShadow: vi.fn((width: number) => `[shadow:${width}]`),
   getGradientWidth: vi.fn(() => 60),
@@ -52,7 +53,7 @@ describe('renderBrandedScreen', () => {
     await renderBrandedScreen('Train your brain')
 
     expect(writeSpy).toHaveBeenCalledWith('\x1Bc')
-    expect(writeSpy).toHaveBeenCalledWith('  > ')
+    expect(writeSpy).toHaveBeenCalledWith('  [accent:>] ')
     expect(vi.mocked(gradientText)).toHaveBeenCalledTimes(ASCII_ART.length)
     expect(vi.mocked(typewriterPrint)).toHaveBeenCalledWith('Train your brain')
     expect(vi.mocked(gradientShadow)).toHaveBeenCalledWith(60)

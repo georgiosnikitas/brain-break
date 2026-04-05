@@ -75,6 +75,17 @@ So that I can personalise how questions and AI responses are delivered to me.
   - [x] Add test: selecting `settings` from home calls `router.showSettings`
   - [x] Mock `router.showSettings` in home screen tests
 
+- [x] Add 🌓 Theme toggle to settings screen (AC: theme toggle — epics FR50)
+  - [x] Import `Theme` type from schema and `setTheme` from format
+  - [x] Add `'theme'` to `SettingsAction` union type
+  - [x] Add `THEME_LABELS` mapping (`dark` → `Dark`, `light` → `Light`)
+  - [x] Add `🌓 Theme` menu item between ASCII Art Milestone and Welcome & Exit screen
+  - [x] Track `theme` state variable in `showSettingsScreen`
+  - [x] Handle `'theme'` action — toggle between `'dark'` and `'light'`
+  - [x] Include `theme` in save payload passed to `writeSettings()`
+  - [x] Call `setTheme(theme)` after successful save (takes effect immediately)
+  - [x] Add 7 tests: label dark/light, toggle dark→light, toggle light→dark, save persists + calls setTheme, back discards, menu position
+
 ## Dev Notes
 
 ### Files to create
@@ -138,6 +149,7 @@ After this story, `buildHomeChoices` produces (for non-empty domain list):
 ### Completion Notes
 - All tests pass (307/307)
 - Full regression suite passes after review fixes
+- Theme toggle added (1005 total tests, all passing) — Dark/Light toggle positioned before Welcome & Exit screen, calls setTheme() on save for immediate effect
 
 ## File List
 - src/screens/settings.ts
@@ -147,3 +159,4 @@ After this story, `buildHomeChoices` produces (for non-empty domain list):
 
 ## Change Log
 - 2026-03-15: Story 5.2 implemented — Settings screen, home menu entry, router wiring
+- 2026-04-05: Added 🌓 Theme toggle (Dark/Light) to settings screen with setTheme() on save

@@ -100,6 +100,7 @@ development_status:
   6-1-semantic-color-helpers: done
   6-2-menu-highlight-theme: done
   6-3-quiz-feedback-colors: done
+  6-4-theme-aware-gradient-colors: done
   epic-6-retrospective: optional
 
   # Epic 7: Multi-Provider AI Integration
@@ -139,7 +140,7 @@ development_status:
   epic-11-retrospective: optional
 
   # Epic 12: ASCII Art
-  epic-12: in-progress
+  epic-12: done
   12-1-ascii-art-screen: done
   12-2-ascii-art-milestone-unlock: done
   12-3-ascii-art-milestone-setting: done

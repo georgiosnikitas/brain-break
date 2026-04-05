@@ -399,6 +399,7 @@ describe('defaultSettings — provider fields', () => {
       'openaiModel',
       'provider',
       'showWelcome',
+      'theme',
       'tone',
     ])
   })
@@ -464,6 +465,48 @@ describe('asciiArtMilestone setting', () => {
 
   it('returns asciiArtMilestone: 100 in defaultSettings()', () => {
     expect(defaultSettings().asciiArtMilestone).toBe(100)
+  })
+})
+
+describe('theme setting', () => {
+  it('defaults theme to dark in defaultSettings', () => {
+    expect(defaultSettings().theme).toBe('dark')
+  })
+
+  it('defaults theme to dark when parsing settings without theme field', () => {
+    const parsed = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
+    expect(parsed.theme).toBe('dark')
+  })
+
+  it('accepts theme: light', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), theme: 'light' })
+    expect(parsed.theme).toBe('light')
+  })
+
+  it('accepts theme: dark', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), theme: 'dark' })
+    expect(parsed.theme).toBe('dark')
+  })
+
+  it('rejects invalid theme value', () => {
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), theme: 'blue' }).success).toBe(false)
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), theme: '' }).success).toBe(false)
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), theme: 123 }).success).toBe(false)
+  })
+
+  it('defaults theme when old settings file lacks the field', () => {
+    const oldSettings = {
+      provider: 'openai',
+      language: 'English',
+      tone: 'natural',
+      openaiModel: 'gpt-5.4',
+      anthropicModel: 'claude-opus-4-6',
+      geminiModel: 'gemini-2.5-pro',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama4',
+    }
+    const parsed = SettingsFileSchema.parse(oldSettings)
+    expect(parsed.theme).toBe('dark')
   })
 })
 

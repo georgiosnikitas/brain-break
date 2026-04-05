@@ -30,6 +30,7 @@ vi.mock('../utils/format.js', () => ({
   success: (t: string) => `[success]${t}`,
   warn: (t: string) => `[warn]${t}`,
   header: (t: string) => `[header]${t}`,
+  setTheme: vi.fn(),
 }))
 
 import { select, input } from '@inquirer/prompts'
@@ -38,6 +39,7 @@ import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import * as router from '../router.js'
 import { clearAndBanner } from '../utils/screen.js'
+import { setTheme } from '../utils/format.js'
 import { defaultSettings } from '../domain/schema.js'
 
 const mockSelect = vi.mocked(select)
@@ -45,6 +47,7 @@ const mockInput = vi.mocked(input)
 const mockReadSettings = vi.mocked(readSettings)
 const mockWriteSettings = vi.mocked(writeSettings)
 const mockTestProviderConnection = vi.mocked(testProviderConnection)
+const mockSetTheme = vi.mocked(setTheme)
 
 let logSpy: ReturnType<typeof vi.spyOn>
 
@@ -466,6 +469,82 @@ describe('showSettingsScreen', () => {
     const welcomeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'showWelcome')
     expect(milestoneIdx).toBeLessThan(welcomeIdx)
     expect(milestoneIdx).toBeGreaterThanOrEqual(0)
+  })
+
+  it('renders Theme toggle label with Dark when theme is dark', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const themeChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'theme')
+    expect(themeChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('Theme:         Dark') })
+    )
+  })
+
+  it('renders Theme toggle label with Light when theme is light', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), theme: 'light' } })
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const themeChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'theme')
+    expect(themeChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('Theme:         Light') })
+    )
+  })
+
+  it('theme toggle flips dark to light and shows success banner', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), theme: 'dark' } })
+    mockSelect.mockResolvedValueOnce('theme').mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Theme set to Light'))
+  })
+
+  it('theme toggle flips light to dark and shows success banner', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), theme: 'light' } })
+    mockSelect.mockResolvedValueOnce('theme').mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Theme set to Dark'))
+  })
+
+  it('Save after theme toggle persists theme and calls setTheme', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), theme: 'dark' } })
+    mockSelect.mockResolvedValueOnce('theme').mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ theme: 'light' }))
+    expect(mockSetTheme).toHaveBeenCalledWith('light')
+  })
+
+  it('Back after theme toggle does NOT call setTheme or writeSettings', async () => {
+    mockSelect.mockResolvedValueOnce('theme').mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).not.toHaveBeenCalled()
+    expect(mockSetTheme).not.toHaveBeenCalled()
+  })
+
+  it('Theme choice appears between ASCII Art Milestone and Welcome & Exit screen', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const choices = firstCallArgs.choices.filter((c: { value?: string }) => c?.value)
+    const milestoneIdx = choices.findIndex((c: { value?: string }) => c?.value === 'asciiArtMilestone')
+    const themeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'theme')
+    const welcomeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'showWelcome')
+    expect(themeIdx).toBeGreaterThan(milestoneIdx)
+    expect(themeIdx).toBeLessThan(welcomeIdx)
   })
 })
 

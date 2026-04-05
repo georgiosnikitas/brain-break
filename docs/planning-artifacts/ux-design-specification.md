@@ -4,7 +4,7 @@ status: complete
 project_name: brain-break
 user_name: George
 date: '2026-04-03'
-lastEdited: '2026-04-04'
+lastEdited: '2026-04-05'
 inputDocuments:
   - docs/planning-artifacts/product-brief.md
   - docs/planning-artifacts/prd.md
@@ -170,7 +170,7 @@ Domain Menu
 
 ### Headers
 
-- Most screen titles use `header()`, which renders bold cyan text
+- Most screen titles use `header()`, which renders bold cyan text (Dark theme) or bold blue text (Light theme)
 - Typical pattern: `<emoji> <screen name> — <slug>`
 - Domain Menu is slightly different: `Domain — <slug>` with dim score metadata on the same line
 
@@ -182,22 +182,26 @@ Domain Menu
 
 ### Semantic color system
 
-- Green: success, correct answers, positive score deltas, fast speed tier
-- Red: errors, incorrect answers, negative score deltas, slow speed tier
-- Yellow: warnings, normal speed tier
+The app ships two color palettes — **Dark** (default) and **Light** — controlled by the 🌓 Theme toggle in Settings. The active palette determines all semantic colors. The theme takes effect immediately on change.
+
+- Green (Dark) / Bold green (Light): success, correct answers, positive score deltas, fast speed tier
+- Red: errors, incorrect answers, negative score deltas, slow speed tier (same for both themes)
+- Yellow (Dark) / Bold yellow (Light): warnings, normal speed tier
 - Cyan to red difficulty palette:
-  - 1 = Beginner = cyan
-  - 2 = Elementary = green
-  - 3 = Intermediate = yellow
+  - 1 = Beginner = cyan (Dark) / blue (Light)
+  - 2 = Elementary = green (Dark) / bold green (Light)
+  - 3 = Intermediate = yellow (Dark) / bold yellow (Light)
   - 4 = Advanced = magenta
   - 5 = Expert = red
-- Dim gray is used for metadata, separators, timestamps, empty-state labels, and timer text
+- Dim (Dark) / Gray (Light): metadata, separators, timestamps, empty-state labels, and timer text
 
 ### Gradient usage
 
-- Welcome and Exit ASCII art use per-line cyan-to-magenta interpolation
+- Welcome and Exit ASCII art use per-line gradient interpolation
+- Dark theme: cyan `rgb(0, 180, 200)` to magenta `rgb(200, 0, 120)`
+- Light theme: teal `rgb(0, 140, 160)` to magenta `rgb(180, 0, 100)` — darker endpoints for contrast on light backgrounds
 - Gradient width is capped at 80 columns
-- If truecolor is unavailable, the app falls back to bold cyan text
+- If truecolor is unavailable, the app falls back to bold cyan (Dark) or bold blue (Light)
 
 ### Copy style
 
@@ -651,7 +655,9 @@ Menu items in implemented order:
 - `🤖 AI Provider:   <value>`
 - `🌍 Language:      <value>`
 - `🎭 Tone of Voice: <value>`
-- `🎬  Welcome & Exit screen: ON|OFF`
+- `� ASCII Art Milestone: <value>`
+- `🌓 Theme:         Dark|Light`
+- `�🎬  Welcome & Exit screen: ON|OFF`
 - separator
 - `💾  Save`
 - `←  Back`
@@ -807,7 +813,8 @@ Prioritized remediation plan: [ux-cleanup-backlog.md](ux-cleanup-backlog.md).
 ## Design Implications For New Work
 
 - Additions should feel like extensions of a terminal command center, not like standalone mini-apps.
-- The most important continuity points are: banner, cyan header, inverse menu highlight, explicit Back, spinner for async work, and inline learning depth.
+- The most important continuity points are: banner, cyan/blue header (theme-dependent), inverse menu highlight, explicit Back, spinner for async work, and inline learning depth.
+- If a feature adds new color semantics, it must respect the active Dark/Light theme palette — use the existing theme-aware helpers in `utils/format.ts` rather than hardcoding chalk colors.
 - If a feature belongs to a specific domain, it should usually live under Domain Menu.
 - If a feature deepens understanding of one question, it should probably stay in the current screen rather than creating a new route.
 - If a feature changes global AI behavior, it should live in Settings.

@@ -4,6 +4,8 @@ lastEdited: '2026-04-05'
 status: 'complete'
 editHistory:
   - date: '2026-04-05'
+    changes: 'Theme setting added: FR50 added (🌓 Theme toggle — Dark/Light, default Dark — controls color palette for readability on dark and light terminal backgrounds; stored as `theme` in settings.json; takes effect immediately). FR15 updated (Settings screen gains Theme toggle). FR17 updated (settings defaults expanded with `theme: "dark"`). FR21–FR23 updated with Dark/Light color variants (bold green, bold yellow, blue substitutions for Light theme). NFR6 updated (dual Dark/Light palette support). FR Coverage Map updated (FR50 → Epic 5, Epic 6). Epic 5 FRs covered updated (FR50 added). Epic 6 description and FRs covered updated (FR50, dual palette, NFR6). Story 5.1 schema updated with `theme` field and default. Story 5.2 settings screen updated with Theme toggle. Story 6.1 rewritten as theme-aware semantic color helpers with Dark/Light branching for all helpers. Story 6.3 test coverage updated for both themes. Story 6.4 added (Theme-Aware Gradient Colors — gradient endpoints adapt per theme for Welcome/Exit/Banner/ASCII Art screens). Story 7.1 defaultSettings() updated with `theme: "dark"`. Reflects PRD edit 2026-04-05 (Feature 8, Feature 9 Theme support).'
+  - date: '2026-04-05'
     changes: 'Answer verification redesign synced from PRD: FR6 now defines a fail-closed approval gate where generation returns question text plus four options, verification returns explicit `correctAnswer` and `correctOptionText`, and the app accepts questions only when those values align locally. FR44 and Story 11.2 updated for the same bounded verification budget during Challenge preload. Story 3.1 generation schema and Story 3.5 verification flow rewritten around 3 total candidate attempts (initial attempt + 2 retries) with no fail-open passthrough.'
   - date: '2026-04-04'
     changes: 'Provider Setup skip option: FR26 updated (provider list now ends with a line separator and ⏭️ Skip — set up later in ⚙️ Settings option). FR27 updated (validation failure now offers 🔄 Retry and ⏭️ Skip options instead of proceeding automatically; Skip saves provider: null). Story 7.4 ACs updated (skip option in provider list, skip AC, retry/skip on failure for OpenAI and Ollama paths, test coverage updated). Story 7.6 ACs updated (skip-after-failure and skip-from-list routing both save null provider and call showHome). Reflects PRD edit 2026-04-04 (Feature 8 First-Launch Provider Setup skip option).'
@@ -99,11 +101,11 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), and Welcome & Exit Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), Theme (toggle: Dark/Light; default: Dark), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, showWelcome: true }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, theme: "dark", showWelcome: true }`.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -111,11 +113,11 @@ FR19: Settings screen provides Save (persist + return home) and Back (discard ch
 
 FR20: All interactive menus render the focused item with inverted foreground/background colors (white text on colored background); unfocused items render in default terminal colors. Applies to: home screen, domain sub-menu, settings screen, archived domains list, history navigation controls, and post-quiz navigation.
 
-FR21: Post-answer feedback colors: correct answer = green; user's wrong answer = red; correct answer reveal = green; score delta positive = green; score delta negative = red.
+FR21: Post-answer feedback colors: correct answer = green (Dark) / bold green (Light); user's wrong answer = red; correct answer reveal = green (Dark) / bold green (Light); score delta positive = green (Dark) / bold green (Light); score delta negative = red.
 
-FR22: Speed tier badge colors: Fast = green, Normal = yellow, Slow = red.
+FR22: Speed tier badge colors: Fast = green (Dark) / bold green (Light), Normal = yellow (Dark) / yellow bold (Light), Slow = red.
 
-FR23: Difficulty level badge colors: L1 = cyan, L2 = green, L3 = yellow, L4 = magenta, L5 = red.
+FR23: Difficulty level badge colors: L1 = cyan (Dark) / blue (Light), L2 = green (Dark) / bold green (Light), L3 = yellow (Dark) / yellow bold (Light), L4 = magenta, L5 = red.
 
 FR24: Users can permanently delete a domain from the domain sub-menu. Selecting Delete presents a blocking confirmation dialog ("Delete '[domain]' permanently? This cannot be undone.") — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu.
 
@@ -169,6 +171,8 @@ FR48: The domain sub-menu includes an **ASCII Art** action positioned after **St
 
 FR49: The Settings screen includes an **ASCII Art Milestone** selector positioned before the Welcome & Exit Screen toggle. The selector offers three options via arrow key navigation: **Instant (0 questions)**, **Quick (10 questions)**, and **Classic (100 questions)** — default is Classic (100). The selected value is stored as `asciiArtMilestone` (number: `0` | `10` | `100`) in `settings.json` and determines the cumulative correct answer threshold required to unlock ASCII Art per domain (FR48). The setting is global and retroactive — changing the threshold immediately affects all domains. When set to 0, ASCII Art is unlocked from the start for all domains.
 
+FR50: The Settings screen includes a **🌓 Theme** toggle (displayed as Dark/Light) positioned before the Welcome & Exit Screen toggle. Default is Dark — optimized for dark terminal backgrounds; uses standard cyan, yellow, green, and dim styling. When set to Light — optimized for light terminal backgrounds; substitutes low-contrast colors with readable alternatives (blue for cyan, bold green for green, gray for dim, bold yellow for yellow) as defined in FR21–FR23. The setting is global, applies to all screens and all color output. Changing the theme takes effect immediately — no restart required; the next screen render uses the new palette. The selected value is stored as `theme` (string: `"dark"` | `"light"`) in `settings.json`. Gradient colors (Welcome Screen, Exit Message, Static Banner, ASCII Art) use darker endpoints in Light theme: teal `rgb(0, 140, 160)` → magenta `rgb(180, 0, 100)`. Dim text uses `chalk.gray` in Light theme instead of `chalk.dim`. Header text uses `chalk.bold.blue` in Light theme instead of `chalk.bold.cyan`.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -181,7 +185,7 @@ NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a sta
 
 NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
-NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application is interactive-only; non-TTY and piped execution modes are out of scope.
+NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application ships two color palettes (Dark and Light) to ensure readability across both dark and light terminal backgrounds; the active palette is determined by the 🌓 Theme setting (FR50, default: Dark). All semantic color mappings are defined in FR20–FR23. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
 ### Additional Requirements
 
@@ -260,6 +264,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR48 | Epic 12 | ASCII Art screen — milestone-gated behind configurable threshold (FR49, default: 100 correct answers); locked state shows progress bar + motivational message; unlocked state renders FIGlet art with gradient coloring and Regenerate/Back navigation |
 | FR49 | Epic 5, Epic 12 | ASCII Art Milestone setting — three threshold options (Instant/0, Quick/10, Classic/100), default Classic; stored as `asciiArtMilestone` in settings.json; affects all ASCII Art unlock gating |
 | FR47 | Epic 2 | Duplicate domain name validation — slugified comparison against active and archived domains with context-specific messages |
+| FR50 | Epic 5, Epic 6 | Theme toggle (Dark/Light, default Dark) — controls color palette for readability on dark and light terminal backgrounds |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -268,7 +273,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | NFR3 | Epic 2 | ENOENT → defaultDomainFile(); corrupted → warn + reset |
 | NFR4 | Epic 2 | ≤ 2s startup to home screen |
 | NFR5 | Story 1.6, Epic 8 | Full terminal reset (viewport + scroll-back buffer) + static banner via `clearAndBanner()` before every screen render (cross-cutting); Welcome/Exit Message/Provider Setup use `clearScreen()` only |
-| NFR6 | Epic 6 | ANSI 8/16-color baseline; interactive-only |
+| NFR6 | Epic 6 | ANSI 8/16-color baseline; dual Dark/Light palettes; interactive-only |
 
 ## Epic List
 
@@ -293,15 +298,15 @@ Users can review their complete question history for any domain (single-question
 **FRs covered:** FR12, FR13, FR37, FR38, FR42
 ### Epic 5: Global Settings
 Users can configure their preferred language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
-**FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19
+**FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19, FR50
 **FRs updated:** FR3 (motivational message → AI-generated with language/tone), FR6/FR18 (language + tone injected into all AI calls)
 **NFRs covered:** none directly
 **Additional requirements covered:** SettingsFile schema + Zod validation, settings store (read/write `~/.brain-break/settings.json`), prompt builder updated to accept `{ language, tone }` context
 
 ### Epic 6: Terminal UI Highlighting & Color System
-Every menu in the application renders the focused item with a full-row inverted highlight navigable by arrow keys; post-answer feedback, score deltas, speed-tier badges, and difficulty badges are color-coded with semantic ANSI colors — making the app feel polished and the feedback loop immediately readable.
-**FRs covered:** FR20, FR21, FR22, FR23
-**NFRs covered:** NFR6 (ANSI baseline color compatibility)
+Every menu in the application renders the focused item with a full-row inverted highlight navigable by arrow keys; post-answer feedback, score deltas, speed-tier badges, and difficulty badges are color-coded with semantic ANSI colors using the active theme’s palette (Dark or Light) — making the app feel polished and the feedback loop immediately readable on any terminal background.
+**FRs covered:** FR20, FR21, FR22, FR23, FR50
+**NFRs covered:** NFR6 (ANSI baseline color compatibility, dual Dark/Light palettes)
 **Additional requirements covered:** `utils/format.ts` semantic color helpers, `inquirer` select theme configuration across all screens
 
 ### Epic 7: Multi-Provider AI Integration
@@ -1232,8 +1237,8 @@ So that all modules have a single, type-safe, tested source of truth for user se
 
 **Given** `domain/schema.ts` (or a new `settings/schema.ts`) is updated  
 **When** I import `SettingsFileSchema`  
-**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["natural", "expressive", "calm", "humorous", "sarcastic", "robot", "pirate"]) }`  
-**And** `defaultSettings()` returns `{ language: "English", tone: "natural" }`  
+**Then** it is a Zod schema validating `{ language: string, tone: z.enum(["natural", "expressive", "calm", "humorous", "sarcastic", "robot", "pirate"]), theme: z.enum(["dark", "light"]) }`  
+**And** `defaultSettings()` returns `{ language: "English", tone: "natural", theme: "dark" }`  
 
 **Given** `domain/store.ts` (or a new `settings/store.ts`) exports `readSettings()` and `writeSettings(settings)`  
 **When** I call `readSettings()` and `~/.brain-break/settings.json` exists and is valid  
@@ -1273,7 +1278,7 @@ So that I can personalise how questions and AI responses are delivered to me.
 **Given** I select "⚙️  Settings" from the home screen  
 **When** the settings screen loads  
 **Then** the terminal is cleared and current settings are read from disk via `readSettings()`  
-**And** the screen displays the current values for Language and Tone of Voice  
+**And** the screen displays the current values for Language, Tone of Voice, and Theme  
 
 **Given** the settings screen is open  
 **When** I edit the Language field  
@@ -1282,6 +1287,11 @@ So that I can personalise how questions and AI responses are delivered to me.
 **Given** the settings screen is open  
 **When** I navigate the Tone of Voice selector  
 **Then** I can choose from: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate — navigated with arrow keys  
+
+**Given** the settings screen is open  
+**When** I toggle the 🌓 Theme setting  
+**Then** the value switches between Dark and Light  
+**And** the change takes effect immediately on the next screen render — no restart required  
 
 **Given** I have made changes on the settings screen  
 **When** I select "Save"  
@@ -1367,36 +1377,56 @@ Every menu in the application renders the focused item with a full-row inverted 
 ### Story 6.1: Semantic Color Helpers
 
 As a developer,
-I want `utils/format.ts` extended with semantic color helper functions for all UI feedback states,
-So that every screen can apply consistent, tested color semantics without duplicating chalk logic.
+I want `utils/format.ts` extended with theme-aware semantic color helper functions for all UI feedback states,
+So that every screen can apply consistent, tested color semantics that adapt to the active Dark/Light theme without duplicating chalk logic.
 
 **Acceptance Criteria:**
 
 **Given** `utils/format.ts` is updated  
-**When** I call `colorCorrect(text)`  
+**When** I call `colorCorrect(text)` with the Dark theme active  
 **Then** it returns the text styled in ANSI green  
 
 **Given** `utils/format.ts` is updated  
+**When** I call `colorCorrect(text)` with the Light theme active  
+**Then** it returns the text styled in bold green  
+
+**Given** `utils/format.ts` is updated  
 **When** I call `colorIncorrect(text)`  
-**Then** it returns the text styled in ANSI red  
+**Then** it returns the text styled in ANSI red (same for both themes)  
 
 **Given** `utils/format.ts` exports `colorSpeedTier(tier)`  
 **When** called with `"fast"`, `"normal"`, or `"slow"`  
-**Then** it returns the text in green, yellow, or red respectively  
+**Then** it returns the text in green/yellow/red respectively (Dark theme) or bold green/bold yellow/red (Light theme)  
 
 **Given** `utils/format.ts` exports `colorDifficultyLevel(level)`  
 **When** called with levels 1–5  
-**Then** it returns the label styled in: cyan (1), green (2), yellow (3), magenta (4), red (5)  
+**Then** it returns the label styled in: cyan/green/yellow/magenta/red (Dark theme) or blue/bold green/bold yellow/magenta/red (Light theme)  
 
 **Given** `utils/format.ts` exports `colorScoreDelta(delta)`  
 **When** called with a positive number  
-**Then** it returns the formatted delta string in green  
+**Then** it returns the formatted delta string in green (Dark) / bold green (Light)  
 **When** called with a negative number  
-**Then** it returns the formatted delta string in red  
+**Then** it returns the formatted delta string in red (same for both themes)  
+
+**Given** `utils/format.ts` exports `dim(text)`  
+**When** called with the Dark theme active  
+**Then** it returns the text styled with `chalk.dim`  
+**When** called with the Light theme active  
+**Then** it returns the text styled with `chalk.gray`  
+
+**Given** `utils/format.ts` exports `header(text)`  
+**When** called with the Dark theme active  
+**Then** it returns the text styled with `chalk.bold.cyan`  
+**When** called with the Light theme active  
+**Then** it returns the text styled with `chalk.bold.blue`  
+
+**Given** the active theme is determined by reading `settings.theme` from the current settings  
+**When** any color helper is called  
+**Then** it uses the active theme's palette without requiring the caller to pass the theme explicitly  
 
 **Given** co-located tests exist in `utils/format.test.ts`  
 **When** I run `npm test`  
-**Then** all new color helper tests pass for all branches  
+**Then** all new color helper tests pass for all branches — covering both Dark and Light theme outputs for each helper  
 
 ---
 
@@ -1471,7 +1501,47 @@ I want the post-answer feedback panel to use semantic colors — green for corre
 
 **Given** `screens/quiz.ts` tests are updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: correct answer path uses colorCorrect, incorrect path uses colorIncorrect + colorCorrect reveal, score delta uses colorScoreDelta, speed tier uses colorSpeedTier, difficulty uses colorDifficultyLevel  
+**Then** all tests pass, covering: correct answer path uses colorCorrect, incorrect path uses colorIncorrect + colorCorrect reveal, score delta uses colorScoreDelta, speed tier uses colorSpeedTier, difficulty uses colorDifficultyLevel — all color helpers produce the correct output for both Dark and Light themes  
+
+---
+
+### Story 6.4: Theme-Aware Gradient Colors
+
+As a user,
+I want the gradient colors used in the Welcome Screen, Exit Message, Static Banner, and ASCII Art to adapt to my chosen theme,
+So that gradient visuals remain readable and vibrant on both dark and light terminal backgrounds.
+
+**Acceptance Criteria:**
+
+**Given** `utils/format.ts` defines gradient start/end color constants  
+**When** the Dark theme is active  
+**Then** the gradient uses cyan `rgb(0, 180, 200)` → magenta `rgb(200, 0, 120)`  
+
+**Given** `utils/format.ts` defines gradient start/end color constants  
+**When** the Light theme is active  
+**Then** the gradient uses teal `rgb(0, 140, 160)` → magenta `rgb(180, 0, 100)` — darker endpoints for contrast against light backgrounds  
+
+**Given** the Welcome Screen renders its gradient ASCII art (FR31)  
+**When** the Light theme is active  
+**Then** the art uses the Light theme gradient endpoints instead of the Dark theme defaults  
+**And** the fallback for limited color support (chalk level < 3) renders in bold blue (Light) instead of bold cyan (Dark)  
+
+**Given** the Static Banner renders its gradient shadow bar (FR34)  
+**When** any theme is active  
+**Then** the shadow bar uses the active theme's gradient endpoints  
+
+**Given** the Exit Message renders its gradient ASCII art (FR40)  
+**When** any theme is active  
+**Then** it uses the active theme's gradient endpoints and fallback color  
+
+**Given** the ASCII Art screen renders the FIGlet art or progress bar (FR48)  
+**When** any theme is active  
+**Then** `lerpColor` uses the active theme's gradient endpoints  
+**And** unfilled progress bar blocks (`░`) use the active theme's dim style (dim for Dark, gray for Light)  
+
+**Given** `utils/format.test.ts` is updated  
+**When** I run `npm test`  
+**Then** all tests pass, covering: gradient constants return correct RGB values for each theme; fallback color is cyan (Dark) or blue (Light)
 
 ---
 
@@ -1498,7 +1568,7 @@ So that the settings store and all downstream modules have a single, type-safe s
 
 **Given** `domain/schema.ts` is updated  
 **When** I call `defaultSettings()`  
-**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4' }`  
+**Then** it returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', theme: 'dark' }`  
 
 **Given** `domain/store.ts` already handles `readSettings()` and `writeSettings()`  
 **When** the expanded schema is deployed  

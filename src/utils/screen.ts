@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import { bold, gradientShadow, getGradientWidth, gradientText, typewriterPrint, ASCII_ART } from './format.js'
+import { accent, bold, gradientShadow, getGradientWidth, gradientText, typewriterPrint, ASCII_ART } from './format.js'
 
 const require = createRequire(import.meta.url)
 // Path is relative to compiled output depth; keep in sync with tsconfig outDir
@@ -33,7 +33,7 @@ export async function renderBrandedScreen(message: string): Promise<void> {
     console.log(line)
   }
   console.log()
-  process.stdout.write(`  > `)
+  process.stdout.write(`  ${accent('>')} `)
   await typewriterPrint(message)
   console.log(`  ${versionText}`)
   console.log()
