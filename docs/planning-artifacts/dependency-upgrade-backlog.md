@@ -17,8 +17,8 @@ author: George
 | 1 | TypeScript 5.x → 6.x | ✅ Done | Foundational — establishes type baseline for all other upgrades. Zero runtime risk. |
 | 2 | ora 8.x → 9.x | ✅ Done | Quick win — tiny API surface, builds momentum. |
 | 3 | @github/copilot-sdk 0.1.x → 0.2.x | ✅ Done | Isolated to AI layer, high priority to stay current. |
-| 4 | @inquirer/prompts 7.x → 8.x | 🔄 Next | High-touch UI testing, no cross-cutting risk. |
-| 5 | zod 3.x → 4.x | ⬚ | Heaviest lift — ripples through domain layer. Do last on a stable base. |
+| 4 | @inquirer/prompts 7.x → 8.x | ✅ Done | High-touch UI testing, no cross-cutting risk. |
+| 5 | zod 3.x → 4.x | 🔄 Next | Heaviest lift — ripples through domain layer. Do last on a stable base. |
 | 6 | @types/node 22.x → 25.x | ⬚ | Deferred — matches current engine requirement. |
 
 ---
@@ -31,19 +31,9 @@ author: George
 
 ---
 
-### 2. Upgrade `@inquirer/prompts` from 7.x to 8.x
+### 2. ~~Upgrade `@inquirer/prompts` from 7.x to 8.x~~ ✅ Completed (2026-04-05)
 
-**Current:** 7.10.1 | **Latest:** 8.3.2
-
-**Risk:** Medium — major version bump on a core UI dependency.
-
-**Why prioritize:** Prompt flows are central to the app (domain creation, quiz, settings). Staying on 7.x may block future features.
-
-**Upgrade steps:**
-- Review changelog for breaking API changes
-- Upgrade on a feature branch
-- Test all interactive screens (home, domain, quiz, settings, history)
-- Pay attention to select/confirm/input prompt APIs
+**Upgraded:** 7.10.1 → 8.3.2 — Breaking changes (ESM-only, Node 20+, removed helpMode/instructions/cancel) do not affect this codebase. No code changes needed. All 947 tests passed.
 
 ---
 
