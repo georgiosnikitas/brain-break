@@ -1,6 +1,6 @@
 {
   "name": "@georgiosnikitas/brain-break",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "An AI-powered terminal quiz app",
   "type": "module",
   "repository": {
@@ -11,13 +11,15 @@
     "brain-break": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "patches"
   ],
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
     "prepare": "patch-package",
+    "postinstall": "patch-package",
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
@@ -35,6 +37,7 @@
     "chalk": "^5.0.0",
     "figlet": "^1.11.0",
     "ora": "^8.0.0",
+    "patch-package": "^8.0.1",
     "qrcode-terminal": "^0.12.0",
     "zod": "^3.0.0"
   },
@@ -43,7 +46,6 @@
     "@types/node": "^22.19.15",
     "@types/qrcode-terminal": "^0.12.2",
     "@vitest/coverage-v8": "^4.1.0",
-    "patch-package": "^8.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
