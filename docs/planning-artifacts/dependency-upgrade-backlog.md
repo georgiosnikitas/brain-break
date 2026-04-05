@@ -12,14 +12,14 @@ author: George
 
 ## Recommended Execution Order
 
-| Order | Upgrade | Rationale |
-|-------|---------|-----------|
-| 1 | TypeScript 5.x → 6.x | Foundational — establishes type baseline for all other upgrades. Zero runtime risk. |
-| 2 | ora 8.x → 9.x | Quick win — tiny API surface, builds momentum. |
-| 3 | @github/copilot-sdk 0.1.x → 0.2.x | Isolated to AI layer, high priority to stay current. |
-| 4 | @inquirer/prompts 7.x → 8.x | High-touch UI testing, no cross-cutting risk. |
-| 5 | zod 3.x → 4.x | Heaviest lift — ripples through domain layer. Do last on a stable base. |
-| 6 | @types/node 22.x → 25.x | Deferred — matches current engine requirement. |
+| Order | Upgrade | Status | Rationale |
+|-------|---------|--------|-----------|
+| 1 | TypeScript 5.x → 6.x | ✅ Done | Foundational — establishes type baseline for all other upgrades. Zero runtime risk. |
+| 2 | ora 8.x → 9.x | ✅ Done | Quick win — tiny API surface, builds momentum. |
+| 3 | @github/copilot-sdk 0.1.x → 0.2.x | 🔄 Next | Isolated to AI layer, high priority to stay current. |
+| 4 | @inquirer/prompts 7.x → 8.x | ⬚ | High-touch UI testing, no cross-cutting risk. |
+| 5 | zod 3.x → 4.x | ⬚ | Heaviest lift — ripples through domain layer. Do last on a stable base. |
+| 6 | @types/node 22.x → 25.x | ⬚ | Deferred — matches current engine requirement. |
 
 ---
 
@@ -75,30 +75,15 @@ author: George
 
 ---
 
-### 4. Upgrade `typescript` from 5.x to 6.x
+### 4. ~~Upgrade `typescript` from 5.x to 6.x~~ ✅ Completed (2026-04-05)
 
-**Current:** 5.9.3 | **Latest:** 6.0.2
-
-**Risk:** Medium — new major may surface stricter type errors.
-
-**Upgrade steps:**
-- Upgrade on a feature branch
-- Run `tsc --noEmit` and fix any new errors
-- Run full test suite
-- Verify build output (`npm run build`)
+**Upgraded:** 5.9.3 → 6.0.2 — zero type errors, all 947 tests passed, clean build. No code changes required.
 
 ---
 
-### 5. Upgrade `ora` from 8.x to 9.x
+### 5. ~~Upgrade `ora` from 8.x to 9.x~~ ✅ Completed (2026-04-05)
 
-**Current:** 8.2.0 | **Latest:** 9.3.0
-
-**Risk:** Low-Medium — small API surface (spinner only).
-
-**Upgrade steps:**
-- Review changelog for breaking changes
-- Upgrade on a feature branch
-- Test spinner behavior in quiz and AI generation flows
+**Upgraded:** 8.2.0 → 9.3.0 — only breaking change was Node.js 20 minimum (project requires ≥22). No code changes required. All 947 tests passed.
 
 ---
 
