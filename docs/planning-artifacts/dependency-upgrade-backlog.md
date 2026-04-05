@@ -18,7 +18,7 @@ author: George
 | 2 | ora 8.x → 9.x | ✅ Done | Quick win — tiny API surface, builds momentum. |
 | 3 | @github/copilot-sdk 0.1.x → 0.2.x | ✅ Done | Isolated to AI layer, high priority to stay current. |
 | 4 | @inquirer/prompts 7.x → 8.x | ✅ Done | High-touch UI testing, no cross-cutting risk. |
-| 5 | zod 3.x → 4.x | 🔄 Next | Heaviest lift — ripples through domain layer. Do last on a stable base. |
+| 5 | zod 3.x → 4.x | ✅ Done | Heaviest lift — ripples through domain layer. Do last on a stable base. |
 | 6 | @types/node 22.x → 25.x | ⬚ | Deferred — matches current engine requirement. |
 
 ---
@@ -39,19 +39,9 @@ author: George
 
 ## Priority: Medium
 
-### 3. Upgrade `zod` from 3.x to 4.x
+### 3. ~~Upgrade `zod` from 3.x to 4.x~~ ✅ Completed (2026-04-05)
 
-**Current:** 3.25.76 | **Latest:** 4.3.6
-
-**Risk:** High — Zod 4 is a significant rewrite with schema API changes.
-
-**Why prioritize (eventually):** Validation is used across domain types and file storage. Performance improvements in v4 are worthwhile long-term.
-
-**Upgrade steps:**
-- Review Zod 4 migration guide thoroughly
-- Audit all `z.object()`, `z.enum()`, `z.array()` usages across `src/domain/`
-- Upgrade on a feature branch
-- Run full test suite — expect type-level breakage
+**Upgraded:** 3.25.76 → 4.3.6 — Despite being a significant rewrite, no breaking changes affected this codebase. Some APIs deprecated (z.string().datetime(), .refine({ message }), z.number().finite()) but all still functional. No code changes needed. All 947 tests passed.
 
 ---
 
