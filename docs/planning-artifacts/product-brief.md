@@ -27,7 +27,7 @@ editHistory:  - date: '2026-04-04'
 
 ## Executive Summary
 
-`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or a local Ollama instance. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
+`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or a local Ollama instance. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
 
 ---
 
@@ -56,7 +56,7 @@ No existing CLI-first tool combines AI question generation, user-defined open-en
 `brain-break` is a terminal CLI tool that:
 - On every launch, displays a home screen listing all configured domains with their current score and progress; if no domains exist, the only available action is to create a new one
 - Allows the user to resume an existing domain or add a new one from the home screen at any time; domains can be anything — `algebra-second-degree-polynomial-equations`, `english-grammar`, `greek-mythology`, `music-90s-hits`, `thai-cuisine`, or `java-programming`
-- Supports 5 AI providers (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, Ollama) to generate fresh, non-repeating multiple-choice questions on demand for any domain
+- Supports 5 AI providers (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama) to generate fresh, non-repeating multiple-choice questions on demand for any domain
 - Presents questions interactively in the terminal with a response timer
 - Scores answers based on correctness and response speed — producing an honest, evolving knowledge signal
 - Persists a full history of questions, answers, timestamps, durations, and scores locally — reviewable at any point alongside total score and total time played
@@ -120,7 +120,7 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 The MVP delivers sixteen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
-- **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama), with adaptive difficulty based on consecutive answer streaks
+- **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama), with adaptive difficulty based on consecutive answer streaks
 - **Interactive terminal quiz** — one question at a time, silent per-question timer, immediate correctness feedback with score delta and speed tier, and an on-demand AI explanation of the correct answer
 - **Challenge mode (sprint)** — a timed sprint from the domain sub-menu; select a question count (5/10/20) and time budget (2/5/10 min); all N questions preloaded upfront; a visible countdown runs continuously without pausing; post-answer nav limited to Next and Back; sprint ends when questions run out or time expires
 - **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets

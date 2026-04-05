@@ -203,7 +203,7 @@ describe('showSettingsScreen', () => {
     )
   })
 
-  it('shows current provider name with model when provider is set', async () => {
+  it('shows current provider name when provider is set', async () => {
     mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), provider: 'openai' } })
     mockSelect.mockResolvedValueOnce('back')
 
@@ -211,21 +211,21 @@ describe('showSettingsScreen', () => {
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
     expect(firstCallArgs.choices[0]).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('OpenAI (gpt-5.4-mini)') })
+      expect.objectContaining({ name: expect.stringContaining('OpenAI') })
     )
   })
 
   it('selecting provider opens provider selector and calls validateProvider', async () => {
     // Main menu → provider, provider selector → openai, then back
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
 
     await showSettingsScreen()
 
     expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name' }))
     expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({
       provider: 'openai',
-      openaiModel: 'gpt-5.4-mini',
+      openaiModel: 'gpt-4o-mini',
     }))
     expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ pageSize: 10 }))
   })
@@ -233,7 +233,7 @@ describe('showSettingsScreen', () => {
   it('provider validation success displays LLM greeting', async () => {
     mockTestProviderConnection.mockResolvedValue({ ok: true, data: 'Hello from OpenAI!' })
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
 
     await showSettingsScreen()
 
@@ -244,7 +244,7 @@ describe('showSettingsScreen', () => {
   it('provider validation failure displays warning message (non-blocking)', async () => {
     mockTestProviderConnection.mockResolvedValue({ ok: false, error: 'API key missing' })
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('claude-haiku-4-latest')
+    mockInput.mockResolvedValueOnce('claude-sonnet-4-20250514')
 
     await showSettingsScreen()
 
@@ -253,25 +253,25 @@ describe('showSettingsScreen', () => {
 
   it('selecting OpenAI prompts for model name', async () => {
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockInput.mockResolvedValueOnce('gpt-4.1-mini')
 
     await showSettingsScreen()
 
-    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: 'gpt-5.4-mini' }))
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-5.4-mini' }))
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'OpenAI Model Name', default: 'gpt-4o-mini' }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-4.1-mini' }))
   })
 
   it('OpenAI empty input resets to the default model', async () => {
     mockReadSettings.mockResolvedValue({
       ok: true,
-      data: { ...defaultSettings(), provider: 'openai', openaiModel: 'gpt-5.4-mini' },
+      data: { ...defaultSettings(), provider: 'openai', openaiModel: 'gpt-4.1-mini' },
     })
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
     mockInput.mockResolvedValueOnce('   ')
 
     await showSettingsScreen()
 
-    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-5.4-mini' }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai', expect.objectContaining({ openaiModel: 'gpt-4o-mini' }))
   })
 
   it('selecting Ollama prompts for endpoint and model', async () => {
@@ -301,7 +301,7 @@ describe('showSettingsScreen', () => {
 
     expect(mockTestProviderConnection).toHaveBeenCalledWith('ollama', expect.objectContaining({
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama3',
     }))
   })
 
@@ -315,17 +315,17 @@ describe('showSettingsScreen', () => {
       provider: 'anthropic',
       language: 'English',
       tone: 'natural',
-      openaiModel: 'gpt-5.4-mini',
+      openaiModel: 'gpt-4o-mini',
       anthropicModel: 'claude-3-5-haiku-latest',
-      geminiModel: 'gemini-2.5-flash',
+      geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama3.3',
+      ollamaModel: 'llama3',
     }))
   })
 
   it('Back after provider change does NOT call writeSettings', async () => {
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai').mockResolvedValueOnce('back')
-    mockInput.mockResolvedValueOnce('gpt-5.4-mini')
+    mockInput.mockResolvedValueOnce('gpt-4o-mini')
 
     await showSettingsScreen()
 
@@ -481,18 +481,5 @@ describe('getProviderLabel', () => {
     expect(getProviderLabel('anthropic')).toBe('Anthropic')
     expect(getProviderLabel('gemini')).toBe('Google Gemini')
     expect(getProviderLabel('ollama')).toBe('Ollama')
-  })
-
-  it('appends model in parentheses when settings are provided', () => {
-    const settings = { ...defaultSettings(), provider: 'openai' as const }
-    expect(getProviderLabel('openai', settings)).toBe('OpenAI (gpt-5.4-mini)')
-    expect(getProviderLabel('anthropic', settings)).toBe('Anthropic (claude-haiku-4-latest)')
-    expect(getProviderLabel('gemini', settings)).toBe('Google Gemini (gemini-2.5-flash)')
-    expect(getProviderLabel('ollama', settings)).toBe('Ollama (llama3.3)')
-  })
-
-  it('omits model for copilot even when settings are provided', () => {
-    const settings = { ...defaultSettings(), provider: 'copilot' as const }
-    expect(getProviderLabel('copilot', settings)).toBe('GitHub Copilot')
   })
 })

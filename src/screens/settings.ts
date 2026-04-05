@@ -1,10 +1,12 @@
 import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
+import ora from 'ora'
+import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type ToneOfVoice, type SettingsFile } from '../domain/schema.js'
 import { menuTheme, success, warn, header } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { promptForProviderSettings, testAndReport } from './provider-settings.js'
+import { promptForProviderSettings } from './provider-settings.js'
 import * as router from '../router.js'
 
 const TONE_CHOICES: Array<{ name: string; value: ToneOfVoice }> = [
@@ -32,19 +34,8 @@ const MILESTONE_CHOICES: Array<{ name: string; value: 0 | 10 | 100 }> = [
 const MILESTONE_LABELS: Record<number, string> = { 0: 'Instant', 10: 'Quick', 100: 'Classic' }
 const SETTINGS_PAGE_SIZE = 10
 
-export function getProviderLabel(provider: AiProviderType | null, settings?: SettingsFile): string {
-  if (!provider) return 'Not set'
-  const label = PROVIDER_LABELS[provider]
-  if (!settings) return label
-  const modelMap: Record<AiProviderType, string> = {
-    copilot: '',
-    openai: settings.openaiModel,
-    anthropic: settings.anthropicModel,
-    gemini: settings.geminiModel,
-    ollama: settings.ollamaModel,
-  }
-  const model = modelMap[provider]
-  return model ? `${label} (${model})` : label
+export function getProviderLabel(provider: AiProviderType | null): string {
+  return provider ? PROVIDER_LABELS[provider] : 'Not set'
 }
 
 async function handleProviderAction(
@@ -82,7 +73,13 @@ async function handleProviderAction(
     ollamaModel,
   })
 
-  const message = await testAndReport(selectedProvider, updatedSettings)
+  const spinner = ora('Testing connection...').start()
+  const validationResult = await testProviderConnection(selectedProvider, updatedSettings)
+  spinner.stop()
+
+  const message = validationResult.ok
+    ? success(`✓ ${PROVIDER_LABELS[selectedProvider]}: ${validationResult.data}`)
+    : warn(validationResult.error)
 
   return { ...updatedSettings, message }
 }
@@ -114,12 +111,11 @@ async function selectSettingsAction(
   tone: ToneOfVoice,
   asciiArtMilestone: 0 | 10 | 100,
   showWelcome: boolean,
-  settings: SettingsFile,
 ): Promise<SettingsAction> {
   return select<SettingsAction>({
     message: 'Choose a setting:',
     choices: [
-      { name: `🤖 AI Provider:   ${getProviderLabel(provider, settings)}`, value: 'provider' as const },
+      { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
       { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
       { name: `🎨 ASCII Art Milestone: ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
@@ -158,8 +154,7 @@ export async function showSettingsScreen(): Promise<void> {
         banner = ''
       }
       
-        const liveSettings: SettingsFile = { ...currentSettings, provider, language, tone, openaiModel, anthropicModel, geminiModel, ollamaEndpoint, ollamaModel, showWelcome, asciiArtMilestone }
-        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, showWelcome, liveSettings)
+        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, showWelcome)
 
       switch (action) {
         case 'provider': {
@@ -191,7 +186,7 @@ export async function showSettingsScreen(): Promise<void> {
           showWelcome = !showWelcome
           banner = showWelcome ? success('Welcome & Exit screen enabled') : warn('Welcome & Exit screen disabled')
           break
-        case 'asciiArtMilestone': {
+        case 'asciiArtMilestone':
           const selectedMilestone = await select<0 | 10 | 100 | 'back'>({
             message: 'ASCII Art Milestone',
             choices: [
@@ -209,7 +204,6 @@ export async function showSettingsScreen(): Promise<void> {
           asciiArtMilestone = selectedMilestone
           banner = success(`ASCII Art Milestone set to ${MILESTONE_LABELS[asciiArtMilestone]}`)
           break
-        }
         case 'save':
           await handleSaveAction({
             ...currentSettings,

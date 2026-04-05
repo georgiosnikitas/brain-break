@@ -107,10 +107,10 @@ describe('showProviderSetupScreen', () => {
 
     const choices = mockSelect.mock.calls[0]?.[0]?.choices
     expect(choices).toHaveLength(7)
-    expect(choices?.[0]).toEqual({ name: 'GitHub Copilot', value: 'copilot' })
-    expect(choices?.[1]).toEqual({ name: 'OpenAI', value: 'openai' })
-    expect(choices?.[2]).toEqual({ name: 'Anthropic', value: 'anthropic' })
-    expect(choices?.[3]).toEqual({ name: 'Google Gemini', value: 'gemini' })
+    expect(choices?.[0]).toEqual({ name: 'OpenAI', value: 'openai' })
+    expect(choices?.[1]).toEqual({ name: 'Anthropic', value: 'anthropic' })
+    expect(choices?.[2]).toEqual({ name: 'Google Gemini', value: 'gemini' })
+    expect(choices?.[3]).toEqual({ name: 'GitHub Copilot', value: 'copilot' })
     expect(choices?.[4]).toEqual({ name: 'Ollama', value: 'ollama' })
     expect(choices?.[5]).toBeInstanceOf(Separator)
     expect(choices?.[6]).toEqual({ name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' })

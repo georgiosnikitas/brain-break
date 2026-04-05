@@ -246,7 +246,7 @@ Layout and behavior:
 
 - Uses the standard bannered screen shell, not the branded Welcome shell
 - Displays `🔧 First-Time Setup` and a short instructional sentence
-- Prompts for provider selection from GitHub Copilot, OpenAI, Anthropic, Google Gemini, or Ollama
+- Prompts for provider selection from OpenAI, Anthropic, Google Gemini, GitHub Copilot, or Ollama
 - Below the provider list, a line separator is shown followed by a **⏭️ Skip — set up later in ⚙️ Settings** option
 - Selecting a provider immediately follows with provider-specific prompts:
   - OpenAI, Anthropic, Gemini: model name input with sensible default

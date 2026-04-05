@@ -32,7 +32,7 @@ editHistory:
   - date: '2026-03-21'
     changes: 'Adopted Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for multi-provider abstraction. Replaced 4 individual provider SDKs (`openai`, `@anthropic-ai/sdk`, `@google/generative-ai`, Ollama via fetch) with unified `generateText()` from Vercel AI SDK + thin `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `ollama-ai-provider` provider packages. GitHub Copilot SDK remains a custom adapter (not supported by Vercel AI SDK). Updated: Technical Constraints, AI Provider SDKs section, Multi-Provider Architecture (adapter table + usage example), Response Validation, dependency rules, module structure comments, enforcement guidelines, boundary tables, coherence validation.'
   - date: '2026-03-17'
-    changes: 'Multi-provider AI integration: replaced Copilot-only AI backend with 5-provider abstraction (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama). Added ai/providers.ts (AiProvider interface + 5 adapters), screens/provider-setup.ts (first-launch provider selection with non-blocking validation). Expanded settings schema with provider, ollamaEndpoint, ollamaModel fields. Rewrote Authentication & Security, API & Communication Patterns, and Error Handling sections for provider-agnostic architecture. Updated navigation flow with first-launch provider setup. Updated all dependency rules, boundaries, feature mapping, integration points, and validation tables. Flagged PRD Feature 8 tone list inconsistency (4 vs 7 tones — architecture keeps 7).'
+    changes: 'Multi-provider AI integration: replaced Copilot-only AI backend with 5-provider abstraction (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama). Added ai/providers.ts (AiProvider interface + 5 adapters), screens/provider-setup.ts (first-launch provider selection with non-blocking validation). Expanded settings schema with provider, ollamaEndpoint, ollamaModel fields. Rewrote Authentication & Security, API & Communication Patterns, and Error Handling sections for provider-agnostic architecture. Updated navigation flow with first-launch provider setup. Updated all dependency rules, boundaries, feature mapping, integration points, and validation tables. Flagged PRD Feature 8 tone list inconsistency (4 vs 7 tones — architecture keeps 7).'
   - date: '2026-03-17'
     changes: 'Architecture sync with PRD 2026-03-15 and implemented codebase: added Feature 8 (Global Settings — settings schema, store functions, settings screen, prompt injection, tone migration), Feature 9 (Terminal UI Highlighting & Color System — semantic color helpers, menuTheme), Feature 10 (Coffee Supporter Screen — qrcode-terminal), Feature 1 Delete action; expanded screens list (archived, create-domain, domain-menu, select-domain, settings); updated navigation model to two-level menu; added qrcode-terminal and @inquirer/prompts dependencies; updated Requirements Overview, feature-to-structure mapping, cross-cutting concerns, NFR coverage, and validation sections'
   - date: '2026-03-14'
@@ -51,7 +51,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-15 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, and a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls.
+15 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, and a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -78,7 +78,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Cross-Cutting Concerns Identified
 
-- **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 5 supported backends (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine and the challenge mode batch-preload path
+- **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 5 supported backends (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine and the challenge mode batch-preload path
 - **File I/O with integrity guarantees:** Read/write/permission enforcement is needed everywhere domain state is touched — must be centralized, not scattered
 - **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer; bookmark status can be toggled from post-answer, history, and bookmark screens — all must be atomically persisted
 - **Terminal rendering:** All user-facing output (home screen, quiz, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output. **Exception:** the post-answer quiz feedback panel renders inline on the same screen as the question — `clearScreen()` is **not** called between the question display and the feedback panel. A terminal reset occurs only when the user selects Next question (loading a new question) or exits the quiz
@@ -261,7 +261,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 ```jsonc
 {
-  "provider": "copilot",        // Enum: copilot | openai | anthropic | gemini | ollama — null on first launch
+  "provider": "openai",        // Enum: openai | anthropic | gemini | copilot | ollama — null on first launch
   "language": "English",        // Free-text — any language name
   "tone": "natural",            // Enum: natural | expressive | calm | humorous | sarcastic | robot | pirate
   "openaiModel": "gpt-5.4-mini",           // OpenAI — preferred model name
@@ -277,10 +277,10 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 | Value | Label | Auth Mechanism |
 |---|---|---|
-| `copilot` | GitHub Copilot | Copilot SDK auth (existing Copilot credentials) |
 | `openai` | OpenAI | `OPENAI_API_KEY` env var |
 | `anthropic` | Anthropic | `ANTHROPIC_API_KEY` env var |
 | `gemini` | Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` env var |
+| `copilot` | GitHub Copilot | Copilot SDK auth (existing Copilot credentials) |
 | `ollama` | Ollama | Local endpoint (no API key) |
 
 **Tone of Voice Enum:**

@@ -107,10 +107,10 @@ export const AiProviderTypeSchema = z.enum(['copilot', 'openai', 'anthropic', 'g
 export type AiProviderType = z.infer<typeof AiProviderTypeSchema>
 
 export const PROVIDER_CHOICES: Array<{ name: string; value: AiProviderType }> = [
-  { name: 'GitHub Copilot', value: 'copilot' },
   { name: 'OpenAI', value: 'openai' },
   { name: 'Anthropic', value: 'anthropic' },
   { name: 'Google Gemini', value: 'gemini' },
+  { name: 'GitHub Copilot', value: 'copilot' },
   { name: 'Ollama', value: 'ollama' },
 ]
 

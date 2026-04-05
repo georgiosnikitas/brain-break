@@ -77,7 +77,7 @@ FR4: Domains can be archived from the domain sub-menu — archived domains are r
 
 FR5: The home screen includes an "Archived domains" action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off.
 
-FR6: Questions are generated on demand via the user's configured AI provider (GitHub Copilot SDK, OpenAI, Anthropic, Google Gemini, or Ollama) as multiple-choice (4 options: A–D). The app sends identical prompt structures to all providers and expects the same JSON response schema — provider differences are abstracted behind a unified provider adapter layer. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
+FR6: Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama) as multiple-choice (4 options: A–D). The app sends identical prompt structures to all providers and expects the same JSON response schema — provider differences are abstracted behind a unified provider adapter layer. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
@@ -95,7 +95,7 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), and Welcome & Exit Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
@@ -117,7 +117,7 @@ FR24: Users can permanently delete a domain from the domain sub-menu. Selecting 
 
 FR25: The home screen includes a "☕ Buy me a coffee" action positioned between the archived domains separator and the Exit action. Selecting it opens a dedicated screen displaying an ASCII QR code (small, indented) encoding the creator's support URL and the URL in plain text, with a single Back action that returns the user to the home screen.
 
-FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
+FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
 FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and prompt the user to enter a preferred model name (pre-filled with the provider's default: `gpt-5.4-mini` for OpenAI, `claude-haiku-4-latest` for Anthropic, `gemini-2.5-flash` for Gemini — entering an empty string resets to the default); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
@@ -301,7 +301,7 @@ Every menu in the application renders the focused item with a full-row inverted 
 **Additional requirements covered:** `utils/format.ts` semantic color helpers, `inquirer` select theme configuration across all screens
 
 ### Epic 7: Multi-Provider AI Integration
-Users can select their preferred AI provider (GitHub Copilot, OpenAI, Anthropic, Google Gemini, or Ollama) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
+Users can select their preferred AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, or Ollama) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
 **FRs covered:** FR26, FR27, FR28, FR29, FR30
 **FRs updated:** FR6 (Copilot-only → multi-provider), FR15 (4 tones → 7 tones + provider selector), FR17 (settings defaults expanded with provider fields)
 **NFRs covered:** NFR2 (per-provider error handling)
@@ -1471,7 +1471,7 @@ I want the post-answer feedback panel to use semantic colors — green for corre
 
 ## Epic 7: Multi-Provider AI Integration
 
-Users can select their preferred AI provider (GitHub Copilot, OpenAI, Anthropic, Google Gemini, or Ollama) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer powered by the Vercel AI SDK, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
+Users can select their preferred AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, or Ollama) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer powered by the Vercel AI SDK, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
 
 ### Story 7.1: Settings Schema — Provider Fields
 

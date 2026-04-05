@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/github/license/georgiosnikitas/brain-break)](LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/georgiosnikitas)
 
-Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including Anthropic, OpenAI, Google Gemini, GitHub Copilot and Ollama for local models.
+Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including OpenAI, Anthropic, Google Gemini, GitHub Copilot, and Ollama for local models.
 
 ```
   🧠🔨
@@ -24,7 +24,7 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 
 ## ✨ Features
 
-- **Multiple AI providers** — Anthropic, OpenAI, Google Gemini, GitHub Copilot, and Ollama (local LLMs)
+- **Multiple AI providers** — OpenAI, Anthropic, Google Gemini, GitHub Copilot, and Ollama (local LLMs)
 - **Domain-based quiz sessions** — create any topic like `java-programming`, `greek-mythology`, or `thai-cuisine`
 - **AI-generated questions** — multiple-choice questions with automatic deduplication
 - **Explain answer** — ask the AI to explain why the correct answer is right after any question
