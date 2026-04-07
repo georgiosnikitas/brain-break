@@ -32,6 +32,7 @@ export async function showProviderSetupScreen(settings: SettingsFile): Promise<b
           new Separator(),
           { name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' as const },
         ],
+        pageSize: 8,
         theme: menuTheme,
       })
 

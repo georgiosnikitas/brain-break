@@ -115,6 +115,7 @@ describe('showProviderSetupScreen', () => {
     expect(choices?.[5]).toEqual({ name: 'OpenAI Compatible API', value: 'openai-compatible' })
     expect(choices?.[6]).toBeInstanceOf(Separator)
     expect(choices?.[7]).toEqual({ name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' })
+    expect(mockSelect.mock.calls[0]?.[0]).toEqual(expect.objectContaining({ pageSize: 8 }))
   })
 
   // -------------------------------------------------------------------------
