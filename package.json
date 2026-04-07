@@ -1,6 +1,6 @@
 {
   "name": "@georgiosnikitas/brain-break",
-  "version": "1.15.1",
+  "version": "1.16.0",
   "description": "An AI-powered terminal quiz app",
   "type": "module",
   "repository": {
@@ -31,6 +31,7 @@
     "@ai-sdk/anthropic": "^3.0.63",
     "@ai-sdk/google": "^3.0.52",
     "@ai-sdk/openai": "^3.0.47",
+    "@ai-sdk/openai-compatible": "^2.0.40",
     "@github/copilot-sdk": "^0.2.1",
     "@inquirer/prompts": "^8.3.2",
     "ai": "^6.0.134",

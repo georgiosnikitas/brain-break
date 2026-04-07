@@ -49,6 +49,8 @@ const mockWriteSettings = vi.mocked(writeSettings)
 const mockTestProviderConnection = vi.mocked(testProviderConnection)
 const mockSetTheme = vi.mocked(setTheme)
 
+type SettingsChoice = { name?: string; value?: string | number }
+
 let logSpy: ReturnType<typeof vi.spyOn>
 
 beforeEach(() => {
@@ -309,6 +311,30 @@ describe('showSettingsScreen', () => {
     }))
   })
 
+  it('provider selector includes OpenAI Compatible API', async () => {
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('back').mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const providerSelectCall = mockSelect.mock.calls[1]?.[0]
+    expect(providerSelectCall?.choices).toContainEqual({ name: 'OpenAI Compatible API', value: 'openai-compatible' })
+  })
+
+  it('selecting OpenAI Compatible API prompts for endpoint and model', async () => {
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai-compatible').mockResolvedValueOnce('back')
+    mockInput.mockResolvedValueOnce('https://api.example.com/v1').mockResolvedValueOnce('my-model')
+
+    await showSettingsScreen()
+
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Endpoint URL' }))
+    expect(mockInput).toHaveBeenCalledWith(expect.objectContaining({ message: 'Model Name' }))
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai-compatible', expect.objectContaining({
+      provider: 'openai-compatible',
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
+    }))
+  })
+
   it('Save after provider change persists provider fields', async () => {
     mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('anthropic').mockResolvedValueOnce('claude-haiku-4-5').mockResolvedValueOnce('save')
 
@@ -322,7 +348,20 @@ describe('showSettingsScreen', () => {
       anthropicModel: 'claude-haiku-4-5',
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama4',
+      ollamaModel: 'llama3.2',
+    }))
+  })
+
+  it('Save after OpenAI Compatible API change persists endpoint and model', async () => {
+    mockSelect.mockResolvedValueOnce('provider').mockResolvedValueOnce('openai-compatible').mockResolvedValueOnce('save')
+    mockInput.mockResolvedValueOnce('https://api.example.com/v1').mockResolvedValueOnce('my-model')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({
+      provider: 'openai-compatible',
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
     }))
   })
 
@@ -368,7 +407,8 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const toggleChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'showWelcome')
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const toggleChoice = choices.find((c) => c?.value === 'showWelcome')
     expect(toggleChoice).toEqual(
       expect.objectContaining({ name: expect.stringContaining('Welcome & Exit screen') })
     )
@@ -389,7 +429,8 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const milestoneChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'asciiArtMilestone')
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const milestoneChoice = choices.find((c) => c?.value === 'asciiArtMilestone')
     expect(milestoneChoice).toEqual(
       expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone: Classic') })
     )
@@ -402,7 +443,8 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const milestoneChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'asciiArtMilestone')
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const milestoneChoice = choices.find((c) => c?.value === 'asciiArtMilestone')
     expect(milestoneChoice).toEqual(
       expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone: Instant') })
     )
@@ -464,9 +506,9 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const choices = firstCallArgs.choices.filter((c: { value?: string }) => c?.value)
-    const milestoneIdx = choices.findIndex((c: { value?: string }) => c?.value === 'asciiArtMilestone')
-    const welcomeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'showWelcome')
+    const choices = (firstCallArgs.choices as SettingsChoice[]).filter((c) => c?.value)
+    const milestoneIdx = choices.findIndex((c) => c?.value === 'asciiArtMilestone')
+    const welcomeIdx = choices.findIndex((c) => c?.value === 'showWelcome')
     expect(milestoneIdx).toBeLessThan(welcomeIdx)
     expect(milestoneIdx).toBeGreaterThanOrEqual(0)
   })
@@ -477,7 +519,8 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const themeChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'theme')
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const themeChoice = choices.find((c) => c?.value === 'theme')
     expect(themeChoice).toEqual(
       expect.objectContaining({ name: expect.stringContaining('Theme:         Dark') })
     )
@@ -490,7 +533,8 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const themeChoice = firstCallArgs.choices.find((c: { value?: string }) => c?.value === 'theme')
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const themeChoice = choices.find((c) => c?.value === 'theme')
     expect(themeChoice).toEqual(
       expect.objectContaining({ name: expect.stringContaining('Theme:         Light') })
     )
@@ -539,10 +583,10 @@ describe('showSettingsScreen', () => {
     await showSettingsScreen()
 
     const firstCallArgs = mockSelect.mock.calls[0][0]
-    const choices = firstCallArgs.choices.filter((c: { value?: string }) => c?.value)
-    const milestoneIdx = choices.findIndex((c: { value?: string }) => c?.value === 'asciiArtMilestone')
-    const themeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'theme')
-    const welcomeIdx = choices.findIndex((c: { value?: string }) => c?.value === 'showWelcome')
+    const choices = (firstCallArgs.choices as SettingsChoice[]).filter((c) => c?.value)
+    const milestoneIdx = choices.findIndex((c) => c?.value === 'asciiArtMilestone')
+    const themeIdx = choices.findIndex((c) => c?.value === 'theme')
+    const welcomeIdx = choices.findIndex((c) => c?.value === 'showWelcome')
     expect(themeIdx).toBeGreaterThan(milestoneIdx)
     expect(themeIdx).toBeLessThan(welcomeIdx)
   })
@@ -559,5 +603,6 @@ describe('getProviderLabel', () => {
     expect(getProviderLabel('anthropic')).toBe('Anthropic')
     expect(getProviderLabel('gemini')).toBe('Google Gemini')
     expect(getProviderLabel('ollama')).toBe('Ollama')
+    expect(getProviderLabel('openai-compatible')).toBe('OpenAI Compatible API')
   })
 })

@@ -2,6 +2,7 @@ import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { CopilotClient, approveAll } from '@github/copilot-sdk'
 import type { AiProviderType, Result, SettingsFile } from '../domain/schema.js'
 
@@ -25,12 +26,14 @@ export const AI_ERRORS = {
   NETWORK_ANTHROPIC: 'Could not reach Anthropic API. Check your connection and try again.',
   NETWORK_GEMINI: 'Could not reach Gemini API. Check your connection and try again.',
   NETWORK_OLLAMA: (endpoint: string) => `Could not reach Ollama at ${endpoint}. Ensure Ollama is running and try again.`,
+  NETWORK_OPENAI_COMPATIBLE: (endpoint: string) => `Could not reach the OpenAI Compatible API endpoint at ${endpoint}. Verify the endpoint URL in Settings and try again.`,
   // Auth errors
   AUTH_COPILOT: 'Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in.',
   AUTH_OPENAI: 'OpenAI API key is invalid or missing. Set the OPENAI_API_KEY environment variable with a valid key and restart the app.',
   AUTH_ANTHROPIC: 'Anthropic API key is invalid or missing. Set the ANTHROPIC_API_KEY environment variable with a valid key and restart the app.',
   AUTH_GEMINI: 'Google API key is invalid or missing. Set the GOOGLE_GENERATIVE_AI_API_KEY environment variable with a valid key and restart the app.',
   AUTH_OLLAMA: 'Could not connect to Ollama. Check that the endpoint and model are correct in Settings.',
+  AUTH_OPENAI_COMPATIBLE: 'OpenAI Compatible API key is invalid or missing. Set the OPENAI_COMPATIBLE_API_KEY environment variable with a valid key and restart the app.',
   // Quota errors
   QUOTA: 'API quota exceeded. Check your plan and billing details with your provider.',
 } as const
@@ -41,7 +44,7 @@ export const AI_ERRORS = {
 export function classifyProviderError(
   err: unknown,
   providerType: AiProviderType | null,
-  ollamaEndpoint = 'http://localhost:11434',
+  endpointOverride = 'http://localhost:11434',
 ): string {
   const msg = err instanceof Error ? err.message : ''
 
@@ -58,6 +61,7 @@ export function classifyProviderError(
       case 'anthropic': return AI_ERRORS.AUTH_ANTHROPIC
       case 'gemini': return AI_ERRORS.AUTH_GEMINI
       case 'ollama': return AI_ERRORS.AUTH_OLLAMA
+      case 'openai-compatible': return AI_ERRORS.AUTH_OPENAI_COMPATIBLE
       default: return AI_ERRORS.NO_PROVIDER
     }
   }
@@ -67,7 +71,8 @@ export function classifyProviderError(
     case 'openai': return AI_ERRORS.NETWORK_OPENAI
     case 'anthropic': return AI_ERRORS.NETWORK_ANTHROPIC
     case 'gemini': return AI_ERRORS.NETWORK_GEMINI
-    case 'ollama': return AI_ERRORS.NETWORK_OLLAMA(ollamaEndpoint)
+    case 'ollama': return AI_ERRORS.NETWORK_OLLAMA(endpointOverride)
+    case 'openai-compatible': return AI_ERRORS.NETWORK_OPENAI_COMPATIBLE(endpointOverride)
     default: return AI_ERRORS.NO_PROVIDER
   }
 }
@@ -187,6 +192,26 @@ function createOllamaAdapter(settings: SettingsFile): AiProvider {
 }
 
 // ---------------------------------------------------------------------------
+// OpenAI Compatible adapter — Vercel AI SDK with user-provided endpoint
+// ---------------------------------------------------------------------------
+function createOpenAICompatibleAdapter(settings: SettingsFile): AiProvider {
+  const provider = createOpenAICompatible({
+    baseURL: settings.openaiCompatibleEndpoint,
+    apiKey: process.env['OPENAI_COMPATIBLE_API_KEY'] ?? '',
+    name: 'openai-compatible',
+  })
+  return {
+    async generateCompletion(prompt: string): Promise<string> {
+      const { text } = await generateText({
+        model: provider(settings.openaiCompatibleModel),
+        prompt,
+      })
+      return text
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Factory — returns the active provider adapter based on settings
 // ---------------------------------------------------------------------------
 export function createProvider(settings: SettingsFile): Result<AiProvider> {
@@ -200,6 +225,7 @@ export function createProvider(settings: SettingsFile): Result<AiProvider> {
     anthropic: () => createAnthropicAdapter(settings),
     gemini: () => createGeminiAdapter(settings),
     ollama: () => createOllamaAdapter(settings),
+    'openai-compatible': () => createOpenAICompatibleAdapter(settings),
   }
 
   return { ok: true, data: adapters[settings.provider]() }
@@ -222,7 +248,7 @@ export async function testProviderConnection(
     const response = await providerResult.data.generateCompletion('Say a short, one-sentence greeting to confirm you are working.')
     return { ok: true, data: response }
   } catch (err) {
-    return { ok: false, error: classifyProviderError(err, providerType, settings.ollamaEndpoint) }
+    return { ok: false, error: classifyProviderError(err, providerType, providerType === 'openai-compatible' ? settings.openaiCompatibleEndpoint : settings.ollamaEndpoint) }
   }
 }
 
@@ -269,5 +295,10 @@ export async function validateProvider(
       } catch {
         return { ok: false, error: AI_ERRORS.AUTH_COPILOT }
       }
+
+    case 'openai-compatible':
+      return process.env['OPENAI_COMPATIBLE_API_KEY']
+        ? { ok: true, data: undefined }
+        : { ok: false, error: AI_ERRORS.AUTH_OPENAI_COMPATIBLE }
   }
 }

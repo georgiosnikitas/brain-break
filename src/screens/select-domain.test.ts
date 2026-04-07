@@ -54,7 +54,7 @@ vi.mock('../domain/store.js', async (importOriginal) => {
         anthropicModel: 'claude-opus-4-6',
         geminiModel: 'gemini-2.5-pro',
         ollamaEndpoint: 'http://localhost:11434',
-        ollamaModel: 'llama4',
+        ollamaModel: 'llama3.2',
       },
     }),
   }

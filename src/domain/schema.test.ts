@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema } from './schema.js'
+import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema, PROVIDER_CHOICES, PROVIDER_LABELS } from './schema.js'
 
 const validMeta = {
   score: 100,
@@ -302,7 +302,7 @@ describe('SettingsFileSchema — provider fields', () => {
     anthropicModel: 'claude-sonnet-4.6-latest',
     geminiModel: 'gemini-2.5-pro',
     ollamaEndpoint: 'http://localhost:11434',
-    ollamaModel: 'llama4',
+    ollamaModel: 'llama3.2',
   }
 
   function parseSettings(overrides: Record<string, unknown> = {}) {
@@ -333,7 +333,7 @@ describe('SettingsFileSchema — provider fields', () => {
     expect(result.anthropicModel).toBe('claude-opus-4-6')
     expect(result.geminiModel).toBe('gemini-2.5-pro')
     expect(result.ollamaEndpoint).toBe('http://localhost:11434')
-    expect(result.ollamaModel).toBe('llama4')
+    expect(result.ollamaModel).toBe('llama3.2')
   })
 
   it('rejects empty ollamaEndpoint string', () => {
@@ -383,8 +383,8 @@ describe('defaultSettings — provider fields', () => {
     expect(defaultSettings().ollamaEndpoint).toBe('http://localhost:11434')
   })
 
-  it('returns ollamaModel: llama4', () => {
-    expect(defaultSettings().ollamaModel).toBe('llama4')
+  it('returns ollamaModel: llama3.2', () => {
+    expect(defaultSettings().ollamaModel).toBe('llama3.2')
   })
 
   it('returns all settings fields', () => {
@@ -396,12 +396,69 @@ describe('defaultSettings — provider fields', () => {
       'language',
       'ollamaEndpoint',
       'ollamaModel',
+      'openaiCompatibleEndpoint',
+      'openaiCompatibleModel',
       'openaiModel',
       'provider',
       'showWelcome',
       'theme',
       'tone',
     ])
+  })
+
+  it('returns openaiCompatibleEndpoint: https://api.x.ai/v1', () => {
+    expect(defaultSettings().openaiCompatibleEndpoint).toBe('https://api.x.ai/v1')
+  })
+
+  it('returns openaiCompatibleModel: grok-4-1-fast-reasoning', () => {
+    expect(defaultSettings().openaiCompatibleModel).toBe('grok-4-1-fast-reasoning')
+  })
+})
+
+describe('AiProviderTypeSchema — openai-compatible', () => {
+  it('accepts openai-compatible', () => {
+    expect(AiProviderTypeSchema.safeParse('openai-compatible').success).toBe(true)
+  })
+})
+
+describe('SettingsFileSchema — openai-compatible fields', () => {
+  it('parses object with openaiCompatibleEndpoint and openaiCompatibleModel', () => {
+    const result = SettingsFileSchema.safeParse({
+      ...defaultSettings(),
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.openaiCompatibleEndpoint).toBe('https://api.example.com/v1')
+      expect(result.data.openaiCompatibleModel).toBe('my-model')
+    }
+  })
+
+  it('defaults openaiCompatibleEndpoint and openaiCompatibleModel when missing', () => {
+    const { openaiCompatibleEndpoint: _e, openaiCompatibleModel: _m, ...rest } = defaultSettings()
+    const result = SettingsFileSchema.safeParse(rest)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.openaiCompatibleEndpoint).toBe('https://api.x.ai/v1')
+      expect(result.data.openaiCompatibleModel).toBe('grok-4-1-fast-reasoning')
+    }
+  })
+})
+
+describe('PROVIDER_CHOICES — openai-compatible', () => {
+  it('has 6 entries', () => {
+    expect(PROVIDER_CHOICES).toHaveLength(6)
+  })
+
+  it('includes openai-compatible entry', () => {
+    expect(PROVIDER_CHOICES).toContainEqual({ name: 'OpenAI Compatible API', value: 'openai-compatible' })
+  })
+})
+
+describe('PROVIDER_LABELS — openai-compatible', () => {
+  it('maps openai-compatible to OpenAI Compatible API', () => {
+    expect(PROVIDER_LABELS['openai-compatible']).toBe('OpenAI Compatible API')
   })
 })
 
@@ -429,7 +486,7 @@ describe('showWelcome setting', () => {
       anthropicModel: 'claude-opus-4-6',
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama4',
+      ollamaModel: 'llama3.2',
     }
     const parsed = SettingsFileSchema.parse(oldSettings)
     expect(parsed.showWelcome).toBe(true)
@@ -503,7 +560,7 @@ describe('theme setting', () => {
       anthropicModel: 'claude-opus-4-6',
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama4',
+      ollamaModel: 'llama3.2',
     }
     const parsed = SettingsFileSchema.parse(oldSettings)
     expect(parsed.theme).toBe('dark')

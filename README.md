@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/github/license/georgiosnikitas/brain-break)](LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/georgiosnikitas)
 
-Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including OpenAI, Anthropic, Google Gemini, GitHub Copilot, and Ollama for local models.
+Brain Break is an AI-powered terminal quiz app built with TypeScript. Define quiz domains, answer AI-generated questions, and review your score progression and history — all from a CLI interface. Choose from multiple AI providers including OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama for local models, or any OpenAI-compatible endpoint.
 
 ```
   🧠🔨
@@ -24,7 +24,7 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
 
 ## ✨ Features
 
-- **Multiple AI providers** — OpenAI, Anthropic, Google Gemini, GitHub Copilot, and Ollama (local LLMs)
+- **Multiple AI providers** — OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama (local LLMs), and any OpenAI-compatible endpoint
 - **Domain-based quiz sessions** — create any topic like `java-programming`, `greek-mythology`, or `thai-cuisine`
 - **AI-generated questions** — multiple-choice questions with automatic deduplication
 - **Adaptive difficulty** — scoring and difficulty progression based on correctness and response speed
@@ -47,6 +47,7 @@ Brain Break is an AI-powered terminal quiz app built with TypeScript. Define qui
   - **Google Gemini** — `GOOGLE_GENERATIVE_AI_API_KEY` environment variable
   - **GitHub Copilot** — active Copilot subscription and authentication in the environment
   - **Ollama** — a running Ollama instance
+  - **OpenAI Compatible API** — `OPENAI_COMPATIBLE_API_KEY` environment variable. Use for any service exposing an OpenAI-compatible chat completions endpoint (e.g. Azure OpenAI, Groq, Together AI, Mistral, Perplexity, DeepSeek, LM Studio, vLLM). 
 
 ## 🚀 Installation
 
@@ -107,8 +108,6 @@ On first launch, Brain Break prompts you to select and configure an AI provider.
 
 ## 📝 Notes
 
-- For cloud providers (OpenAI, Anthropic, Gemini), set the corresponding API key environment variable before running the app.
-- For Ollama, ensure the Ollama server is running and the chosen model is pulled locally.
 - All quiz data and settings are stored locally under `~/.brain-break/`.
 
 ## 🤝 Contributing

@@ -546,6 +546,7 @@ describe('isAuthErrorMessage', () => {
     AI_ERRORS.AUTH_ANTHROPIC,
     AI_ERRORS.AUTH_GEMINI,
     AI_ERRORS.AUTH_OLLAMA,
+    AI_ERRORS.AUTH_OPENAI_COMPATIBLE,
   ])('returns true for "%s"', (msg) => {
     expect(isAuthErrorMessage(msg)).toBe(true)
   })

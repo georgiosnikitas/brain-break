@@ -23,6 +23,11 @@ vi.mock('@ai-sdk/google', () => ({
   createGoogleGenerativeAI: () => (...args: unknown[]) => mockGoogle(...args),
 }))
 
+const mockOpenAICompatibleProvider = vi.fn()
+vi.mock('@ai-sdk/openai-compatible', () => ({
+  createOpenAICompatible: () => (...args: unknown[]) => mockOpenAICompatibleProvider(...args),
+}))
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -46,6 +51,7 @@ beforeEach(() => {
   mockOpenai.mockReset()
   mockAnthropic.mockReset()
   mockGoogle.mockReset()
+  mockOpenAICompatibleProvider.mockReset()
   mockSendAndWait.mockReset()
   mockDisconnect.mockReset()
   mockCreateSession.mockReset()
@@ -60,6 +66,7 @@ beforeEach(() => {
   mockOpenai.mockReturnValue('openai-model')
   mockAnthropic.mockReturnValue('anthropic-model')
   mockGoogle.mockReturnValue('google-model')
+  mockOpenAICompatibleProvider.mockReturnValue('openai-compatible-model')
 
   _setCopilotClient(null)
 })
@@ -112,6 +119,14 @@ describe('createProvider', () => {
 
   it('returns ok:true with an AiProvider for ollama', () => {
     const result = createProvider(makeSettings({ provider: 'ollama' }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(typeof result.data.generateCompletion).toBe('function')
+  })
+
+  it('returns ok:true with an AiProvider for openai-compatible', () => {
+    const result = createProvider(makeSettings({ provider: 'openai-compatible' }))
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -277,7 +292,7 @@ describe('Ollama adapter', () => {
     await result.data.generateCompletion('prompt')
 
     expect(fetch).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.objectContaining({
-      body: JSON.stringify({ model: 'llama4', prompt: 'prompt', stream: false }),
+      body: JSON.stringify({ model: 'llama3.2', prompt: 'prompt', stream: false }),
     }))
   })
 
@@ -367,6 +382,38 @@ describe('Copilot adapter', () => {
 
     // Re-inject null so subsequent tests are clean
     _setCopilotClient(null)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// OpenAI Compatible adapter — generateCompletion
+// ---------------------------------------------------------------------------
+describe('OpenAI Compatible adapter', () => {
+  let provider: AiProvider
+
+  beforeEach(() => {
+    const result = createProvider(makeSettings({ provider: 'openai-compatible', openaiCompatibleEndpoint: 'https://api.example.com/v1', openaiCompatibleModel: 'my-model' }))
+    if (!result.ok) throw new Error('expected ok')
+    provider = result.data
+  })
+
+  it('calls generateText with configured model and prompt', async () => {
+    mockGenerateText.mockResolvedValueOnce({ text: 'compatible response' })
+
+    const text = await provider.generateCompletion('test prompt')
+
+    expect(text).toBe('compatible response')
+    expect(mockOpenAICompatibleProvider).toHaveBeenCalledWith('my-model')
+    expect(mockGenerateText).toHaveBeenCalledWith({
+      model: 'openai-compatible-model',
+      prompt: 'test prompt',
+    })
+  })
+
+  it('propagates errors from generateText', async () => {
+    mockGenerateText.mockRejectedValueOnce(new Error('API error'))
+
+    await expect(provider.generateCompletion('test')).rejects.toThrow('API error')
   })
 })
 
@@ -503,6 +550,21 @@ describe('validateProvider', () => {
       _setCopilotClient(null)
     })
   })
+
+  describe('openai-compatible', () => {
+    it('returns ok:true when OPENAI_COMPATIBLE_API_KEY is set', async () => {
+      process.env = { ...originalEnv, OPENAI_COMPATIBLE_API_KEY: 'sk-compat-test' }
+      const result = await validateProvider('openai-compatible', makeSettings())
+      expect(result).toEqual({ ok: true, data: undefined })
+    })
+
+    it('returns AUTH_OPENAI_COMPATIBLE error when OPENAI_COMPATIBLE_API_KEY is missing', async () => {
+      process.env = { ...originalEnv }
+      delete process.env['OPENAI_COMPATIBLE_API_KEY']
+      const result = await validateProvider('openai-compatible', makeSettings())
+      expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_OPENAI_COMPATIBLE })
+    })
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -539,6 +601,14 @@ describe('classifyProviderError', () => {
 
   it('returns NETWORK_OLLAMA with custom endpoint', () => {
     expect(classifyProviderError(new Error('ECONNREFUSED'), 'ollama', 'http://myhost:11434')).toBe(AI_ERRORS.NETWORK_OLLAMA('http://myhost:11434'))
+  })
+
+  it('returns AUTH_OPENAI_COMPATIBLE for 401 error with openai-compatible provider', () => {
+    expect(classifyProviderError(new Error('401 Unauthorized'), 'openai-compatible')).toBe(AI_ERRORS.AUTH_OPENAI_COMPATIBLE)
+  })
+
+  it('returns NETWORK_OPENAI_COMPATIBLE with correct endpoint for generic error', () => {
+    expect(classifyProviderError(new Error('ECONNREFUSED'), 'openai-compatible', 'https://api.example.com/v1')).toBe(AI_ERRORS.NETWORK_OPENAI_COMPATIBLE('https://api.example.com/v1'))
   })
 
   it('returns NO_PROVIDER when providerType is null', () => {
@@ -631,6 +701,23 @@ describe('testProviderConnection', () => {
     _setCopilotClient(null)
   })
 
+  it('returns ok:true with response text when test API call succeeds for openai-compatible', async () => {
+    process.env = { ...originalEnv, OPENAI_COMPATIBLE_API_KEY: 'sk-compat-test' }
+    mockGenerateText.mockResolvedValueOnce({ text: 'Hello from compatible!' })
+
+    const settings = makeSettings({
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
+    })
+    const result = await testProviderConnection('openai-compatible', settings)
+
+    expect(result).toEqual({ ok: true, data: 'Hello from compatible!' })
+    expect(mockOpenAICompatibleProvider).toHaveBeenCalledWith('my-model')
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({ prompt: 'Say a short, one-sentence greeting to confirm you are working.' }),
+    )
+  })
+
   it('returns NETWORK_OPENAI error when test call throws for openai', async () => {
     process.env = { ...originalEnv, OPENAI_API_KEY: 'sk-test' }
     mockGenerateText.mockRejectedValueOnce(new Error('connection refused'))
@@ -679,6 +766,19 @@ describe('testProviderConnection', () => {
     _setCopilotClient(null)
   })
 
+  it('returns NETWORK_OPENAI_COMPATIBLE error with endpoint when test call throws for openai-compatible', async () => {
+    process.env = { ...originalEnv, OPENAI_COMPATIBLE_API_KEY: 'sk-compat-test' }
+    mockGenerateText.mockRejectedValueOnce(new Error('connection refused'))
+
+    const settings = makeSettings({
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
+    })
+    const result = await testProviderConnection('openai-compatible', settings)
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.NETWORK_OPENAI_COMPATIBLE('https://api.example.com/v1') })
+  })
+
   it('returns AUTH_GEMINI error when test call throws with 403 message', async () => {
     process.env = { ...originalEnv, GOOGLE_GENERATIVE_AI_API_KEY: 'gk-invalid' }
     mockGenerateText.mockRejectedValueOnce(new Error('403 Forbidden: API key not valid'))
@@ -704,6 +804,19 @@ describe('testProviderConnection', () => {
     const result = await testProviderConnection('anthropic', makeSettings())
 
     expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_ANTHROPIC })
+  })
+
+  it('returns AUTH_OPENAI_COMPATIBLE error when test call throws with 401 message', async () => {
+    process.env = { ...originalEnv, OPENAI_COMPATIBLE_API_KEY: 'sk-compat-invalid' }
+    mockGenerateText.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    const settings = makeSettings({
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
+    })
+    const result = await testProviderConnection('openai-compatible', settings)
+
+    expect(result).toEqual({ ok: false, error: AI_ERRORS.AUTH_OPENAI_COMPATIBLE })
   })
 
   it('returns QUOTA error when test call throws with quota exceeded message', async () => {
@@ -763,11 +876,18 @@ describe('AI_ERRORS', () => {
     expect(msg).toContain('Ollama')
   })
 
+  it('NETWORK_OPENAI_COMPATIBLE is a function that includes the endpoint', () => {
+    const msg = AI_ERRORS.NETWORK_OPENAI_COMPATIBLE('https://api.example.com/v1')
+    expect(msg).toContain('https://api.example.com/v1')
+    expect(msg).toContain('OpenAI Compatible')
+  })
+
   it('has all auth error messages', () => {
     expect(AI_ERRORS.AUTH_COPILOT).toContain('Copilot')
     expect(AI_ERRORS.AUTH_OPENAI).toContain('OPENAI_API_KEY')
     expect(AI_ERRORS.AUTH_ANTHROPIC).toContain('ANTHROPIC_API_KEY')
     expect(AI_ERRORS.AUTH_GEMINI).toContain('GOOGLE_GENERATIVE_AI_API_KEY')
     expect(AI_ERRORS.AUTH_OLLAMA).toContain('Ollama')
+    expect(AI_ERRORS.AUTH_OPENAI_COMPATIBLE).toContain('OPENAI_COMPATIBLE_API_KEY')
   })
 })

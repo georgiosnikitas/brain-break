@@ -23,8 +23,20 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-04-05'
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+lastEdited: '2026-04-07'
 editHistory:
+  - date: '2026-04-07'
+    changes: 'Provider label renamed from "OpenAI Compatible" to "OpenAI Compatible API" across all live PRD content — Executive Summary, User Journeys, Project-Type Requirements, Implementation Decisions, Feature 2, Feature 8, NFR 2. Edit history entries and internal field names (`openai-compatible` enum, `openaiCompatibleEndpoint`, `openaiCompatibleModel`, `OPENAI_COMPATIBLE_API_KEY`) unchanged.'
+  - date: '2026-04-07'
+    changes: 'OpenAI Compatible provider rename: "Custom API" renamed to "OpenAI Compatible" across all sections. Environment variable renamed from `CUSTOM_API_KEY` to `OPENAI_COMPATIBLE_API_KEY`. Provider enum value changed from `custom` to `openai-compatible`. Settings fields renamed from `customEndpoint`/`customModel` to `openaiCompatibleEndpoint`/`openaiCompatibleModel`. All references updated: Executive Summary, User Journeys Onboarding, Project-Type Requirements, Implementation Decisions (provider config + settings persistence), Feature 2, Feature 8 (First-Launch Provider Setup + AI Provider settings), NFR 2 (network + auth error messages).'
+  - date: '2026-04-07'
+    changes: 'Custom API provider added: a sixth AI provider option (Custom API) supporting any OpenAI-compatible endpoint. Users provide an endpoint URL and model name; the API key is read from the `CUSTOM_API_KEY` environment variable. Custom API added to provider selection lists in Executive Summary (2 occurrences), User Journeys Onboarding, Innovation Analysis (5→6 providers), Project-Type Requirements AI Integration, Feature 2, Feature 8 First-Launch Provider Setup and Settings AI Provider. Implementation Decisions updated: `custom` added to provider enum, `customEndpoint` (string) and `customModel` (string) fields added to provider configuration and settings persistence. NFR 2 updated with Custom API network and authentication error messages. Provider setup flow mirrors Ollama: free-text endpoint URL and model name, connection test via OpenAI-compatible chat completions format. No predefined model select box — both fields are free-text with no defaults.'
   - date: '2026-04-05'
     changes: 'Theme setting added: new 🌓 Theme selector in Feature 8 (Dark/Light, default Dark) controls the application''s color palette for readability on both dark and light terminal backgrounds. Feature 9 updated with dual color palettes — Dark theme uses standard cyan, yellow, green, dim; Light theme substitutes blue for cyan, bold green for green, gray for dim, bold yellow for yellow, and darker gradient endpoints. Features 11, 12, 15, 18 updated to reference active theme gradient and accent colors. NFR 6 updated to document dual palette support. Implementation Decisions settings persistence updated with `theme` field. User Journeys Settings updated with theme switching example. Theme takes effect immediately — no restart required.'
   - date: '2026-04-05'
@@ -109,11 +121,11 @@ editHistory:
 
 ## Executive Summary
 
-`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or a local Ollama instance. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
+`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, a local Ollama instance, or any OpenAI-compatible API via the OpenAI Compatible API option. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
 
 Curious people want to stay sharp across a wide variety of topics, but existing learning tools demand 30–60 minute structured sessions that don't fit the short, unplanned breaks that naturally occur during a day. The result: knowledge gaps compound silently, and people either over-commit to platforms they never finish, or do nothing during natural break windows. No existing CLI-first tool combines AI question generation, user-defined open-ended domains, duplicate prevention, and honest skill tracking in a single, zero-friction package.
 
-`brain-break` targets anyone with daily terminal use and access to an LLM provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, or a local Ollama instance) who wants short, purposeful learning sessions on topics they care about.
+`brain-break` targets anyone with daily terminal use and access to an LLM provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, a local Ollama instance, or any OpenAI-compatible endpoint via OpenAI Compatible API) who wants short, purposeful learning sessions on topics they care about.
 
 ---
 
@@ -252,7 +264,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama) using arrow keys, below a line separator, a **⏭️ Skip — set up later in ⚙️ Settings** option is also available. If the user selects a provider, the app configures provider-specific settings (model name, endpoint) and makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and offers **🔄 Retry** and **⏭️ Skip** options. If the user skips (either from the provider list or after a failed connection test), the app saves settings with `provider: null` and proceeds directly to the home screen — the user can explore all features except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. This behavior is controlled by the Settings toggle labeled **🎬 Welcome & Exit screen**. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic; the app validates the name against existing active and archived domains (if a duplicate is found, a context-specific message is displayed and the user is returned to the name prompt); once a unique name is entered, the user selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
+**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) using arrow keys, below a line separator, a **⏭️ Skip — set up later in ⚙️ Settings** option is also available. If the user selects a provider, the app configures provider-specific settings (model name, endpoint) and makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and offers **🔄 Retry** and **⏭️ Skip** options. If the user skips (either from the provider list or after a failed connection test), the app saves settings with `provider: null` and proceeds directly to the home screen — the user can explore all features except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. This behavior is controlled by the Settings toggle labeled **🎬 Welcome & Exit screen**. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic; the app validates the name against existing active and archived domains (if a duplicate is found, a context-specific message is displayed and the user is returned to the name prompt); once a unique name is entered, the user selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -287,7 +299,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 | Session length | 2–10 minutes | 30–60+ minutes | Variable |
 | Terminal-native | ✅ | ❌ | ❌ |
 | Any user-defined domain | ✅ | ❌ (fixed catalogue) | ✅ (manual) |
-| AI-generated questions | ✅ (5 providers) | ❌ | ❌ |
+| AI-generated questions | ✅ (6 providers) | ❌ | ❌ |
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill-signal scoring | ✅ | ❌ (completion %) | ❌ |
@@ -300,12 +312,13 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 - **Runtime:** Node.js >=22.0.0 (per `package.json` engines field)
 - **Interface:** Terminal only — no web UI, no GUI, no browser-based components
-- **AI Integration:** The app supports 5 AI providers, selectable by the user at first launch or in Settings:
-  - **GitHub Copilot SDK** — uses the user’s existing Copilot credentials (no API key required)
+- **AI Integration:** The app supports 6 AI providers, selectable by the user at first launch or in Settings:
+  - **GitHub Copilot SDK** — uses the user's existing Copilot credentials (no API key required)
   - **OpenAI** — requires `OPENAI_API_KEY` environment variable
   - **Anthropic** — requires `ANTHROPIC_API_KEY` environment variable
   - **Google Gemini** — requires `GOOGLE_GENERATIVE_AI_API_KEY` environment variable
   - **Ollama** — local instance, no API key; requires endpoint URL and model name
+  - **OpenAI Compatible API** — any OpenAI-compatible endpoint; requires `OPENAI_COMPATIBLE_API_KEY` environment variable, user-provided endpoint URL and model name
 - All providers must support the same structured generation and verification JSON response schemas; the app treats providers as interchangeable backends behind a unified interface
 - **Storage:** Local file system only — one JSON file per domain at `~/.brain-break/<domain-slug>.json`; no database server, no cloud sync
 - **Distribution:** Published to npm — installable via `npx` with no global install required
@@ -315,10 +328,10 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 ### Implementation Decisions
 
 - **Provider abstraction:** All AI calls route through a unified provider interface. Each provider adapter translates the app’s prompt format to the provider’s API. Adding a new provider requires implementing the adapter interface — no changes to business logic
-- **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`). API keys are read from environment variables at runtime — never stored in settings
+- **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`). For OpenAI Compatible API, the settings store `openaiCompatibleEndpoint` (string, no default — must be provided by the user) and `openaiCompatibleModel` (string, no default — must be provided by the user). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the generation prompt returns a **JSON structured response** with question text, answer options (A–D), difficulty level, and speed tier time thresholds (fast / normal / slow in ms). The generation step does **not** supply the trusted answer key
 - **Language and tone injection:** Every AI prompt (questions, motivational messages, answer explanations) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), and for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "theme": "dark", "showWelcome": true }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), and for OpenAI Compatible API: `openaiCompatibleEndpoint` (string) and `openaiCompatibleModel` (string), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "theme": "dark", "showWelcome": true }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Answer verification mechanism:** After generating and shuffling a candidate question, a separate verification prompt asks the AI to determine the correct answer for the finalized question **without seeing any pre-selected answer**. The verification response must return both `correctAnswer` (`A` | `B` | `C` | `D`) and `correctOptionText` (the exact copied text of the selected option). The app accepts the candidate only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`. Verification is **fail-closed**: any mismatch, network error, JSON parse error, or schema mismatch discards the entire candidate and triggers a fresh generation cycle. Each question has a bounded retry budget of **3 candidate attempts total** (initial attempt + 2 retries); if all attempts fail, the question is rejected and never shown to the user
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`). Duplicate validation compares the slugified form against existing domain files — ensuring visually distinct inputs that normalize to the same slug (e.g. `Python 3` and `python-3`) are detected as duplicates
@@ -362,7 +375,7 @@ The following 18 features define the complete MVP capability set. Each feature i
 
 ### Feature 2 — AI-Powered Question Generation (Multi-Provider)
 
-- Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama)
+- Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama, or OpenAI Compatible API)
 - The app sends identical generation and verification prompt structures to all providers and expects the same generation and verification JSON schemas — provider differences are abstracted behind the provider adapter layer
 - All questions are multiple choice (4 options: A, B, C, D)
 - Every AI call injects the active language and tone of voice from global settings — questions, answer options, and AI-generated motivational messages are rendered in the configured language and voice
@@ -479,23 +492,25 @@ User can view a summary dashboard for the active domain:
 **First-Launch Provider Setup**
 
 - On first launch (no `settings.json` exists), a one-time **Provider Setup** screen appears before the home screen
-- The user selects an AI provider from the fixed list using arrow key navigation: **OpenAI**, **Anthropic**, **Google Gemini**, **GitHub Copilot**, **Ollama** — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option
+- The user selects an AI provider from the fixed list using arrow key navigation: **OpenAI**, **Anthropic**, **Google Gemini**, **GitHub Copilot**, **Ollama**, **OpenAI Compatible API** — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option
 - Selecting **⏭️ Skip** saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen — the user can explore all features except Play; attempting Play shows: *"AI provider not ready. Go to Settings to configure."*
 - After selecting a provider, the app configures provider-specific settings and makes a real one-shot API test call to verify connectivity:
   - **OpenAI / Anthropic / Google Gemini:** Checks for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) — if found, presents a select box with 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option. Default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini. The user can accept the pre-selected default or choose a different model. Selecting "🧙 Custom model" prompts for a model name via validated free-text input. After provider-specific configuration, the app makes a real one-shot API test call to verify connectivity. If the env var is missing, display: *"Set the `[VAR_NAME]` environment variable and restart the app."*
   - **GitHub Copilot:** Tests Copilot authentication with a real API call — if successful, proceed; if not, display: *"Copilot authentication not detected. Ensure you have an active GitHub Copilot subscription and are logged in."*
   - **Ollama:** Prompts for endpoint URL (pre-filled `http://localhost:11434`) and model name (pre-filled `llama4`) — tests connection; if unreachable, display: *"Could not reach Ollama at [endpoint]. Ensure Ollama is running."*
+  - **OpenAI Compatible API:** Checks for the `OPENAI_COMPATIBLE_API_KEY` environment variable — if found, prompts for endpoint URL (free-text, required) and model name (free-text, required). After configuration, the app makes a real one-shot API test call to verify connectivity using the OpenAI-compatible chat completions format. If the env var is missing, display: *"Set the `OPENAI_COMPATIBLE_API_KEY` environment variable and restart the app."*
 - If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting **⏭️ Skip** saves settings with `provider: null` and proceeds to the home screen; selecting **🔄 Retry** re-runs the connection test for the same provider. Users who skip can explore all features except Play (attempting Play shows: *"AI provider not ready. Go to Settings to configure."*)
 - If validation succeeds, the app proceeds to the home screen with full functionality
-- The selected provider (and Ollama endpoint/model if applicable) is saved to `settings.json`
+- The selected provider (and Ollama or OpenAI Compatible API endpoint/model if applicable) is saved to `settings.json`
 - On subsequent launches, the saved provider is used automatically — no re-prompting
 
 **AI Provider**
 
-- User selects from 5 providers via arrow key navigation: **OpenAI**, **Anthropic**, **Google Gemini**, **GitHub Copilot**, **Ollama**
+- User selects from 6 providers via arrow key navigation: **OpenAI**, **Anthropic**, **Google Gemini**, **GitHub Copilot**, **Ollama**, **OpenAI Compatible API**
 - Selecting a provider triggers the same validation logic as first-launch setup
 - For OpenAI, Anthropic, and Google Gemini, the user is presented with a select box offering 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option. Default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini
 - For Ollama, the user can edit the endpoint URL and model name
+- For OpenAI Compatible API, the user can edit the endpoint URL and model name — both are free-text with no defaults; the API key is read from the `OPENAI_COMPATIBLE_API_KEY` environment variable
 - GitHub Copilot does not prompt for a model — model selection is managed internally by the Copilot SDK
 - API keys are never entered in-app — they are read from environment variables at runtime
 - Changing providers takes effect on the next AI call — no restart required
@@ -773,10 +788,12 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
   - GitHub Copilot: *"Could not reach the Copilot API. Check your connection and try again."*
   - OpenAI / Anthropic / Gemini: *"Could not reach [Provider] API. Check your connection and try again."*
   - Ollama: *"Could not reach Ollama at [endpoint]. Ensure Ollama is running and try again."*
+  - OpenAI Compatible API: *"Could not reach the OpenAI Compatible API at [endpoint]. Check your connection and endpoint URL and try again."*
 - **Authentication / API key failure:**
   - GitHub Copilot: *"Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."*
   - OpenAI / Anthropic / Gemini: *"[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."*
   - Ollama: *"Could not connect to Ollama. Check that the endpoint and model are correct in Settings."*
+  - OpenAI Compatible API: *"OpenAI Compatible API key is invalid or missing. Set the `OPENAI_COMPATIBLE_API_KEY` environment variable with a valid key and restart the app."*
 - In all error cases, the app remains running and the user can navigate to Settings to reconfigure.
 
 ### NFR 3 — Data Integrity

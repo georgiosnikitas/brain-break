@@ -4,8 +4,10 @@ status: complete
 inputDocuments: []
 date: 2026-03-01
 author: George
-lastEdited: '2026-04-04'
-editHistory:  - date: '2026-04-04'
+lastEdited: '2026-04-07'
+editHistory:  - date: '2026-04-07'
+    changes: 'OpenAI Compatible API added as 6th AI provider across Executive Summary, Proposed Solution, Key Differentiators table, and MVP Feature Summary. Provider counts updated from 5 to 6. Aligns with PRD Feature 8, Epic 7, and FR6.'
+  - date: '2026-04-04'
     changes: 'ASCII Art Milestone setting added: milestone threshold is now configurable in Settings with three options (Instant/0, Quick/10, Classic/100; default: Classic). MVP Feature Summary updated with configurable threshold. Aligns with PRD Feature 8 and Feature 18, Epic 12 Story 12.3, and FR49.'
   - date: '2026-04-03'
     changes: 'MVP Feature Summary updated from 15 to 16 core capabilities: added ASCII Art (Milestone Unlock) — domain sub-menu shows gradient progress bar toward 100 correct answers; once unlocked, displays FIGlet ASCII art with cyan-to-magenta gradient. Aligns with PRD Feature 18, Epic 12, and FR48.'
@@ -27,7 +29,7 @@ editHistory:  - date: '2026-04-04'
 
 ## Executive Summary
 
-`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or a local Ollama instance. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
+`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, a local Ollama instance, or any OpenAI-compatible endpoint via the OpenAI Compatible API option. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
 
 ---
 
@@ -56,7 +58,7 @@ No existing CLI-first tool combines AI question generation, user-defined open-en
 `brain-break` is a terminal CLI tool that:
 - On every launch, displays a home screen listing all configured domains with their current score and progress; if no domains exist, the only available action is to create a new one
 - Allows the user to resume an existing domain or add a new one from the home screen at any time; domains can be anything — `algebra-second-degree-polynomial-equations`, `english-grammar`, `greek-mythology`, `music-90s-hits`, `thai-cuisine`, or `java-programming`
-- Supports 5 AI providers (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama) to generate fresh, non-repeating multiple-choice questions on demand for any domain
+- Supports 6 AI providers (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama, OpenAI Compatible API) to generate fresh, non-repeating multiple-choice questions on demand for any domain
 - Presents questions interactively in the terminal with a response timer
 - Scores answers based on correctness and response speed — producing an honest, evolving knowledge signal
 - Persists a full history of questions, answers, timestamps, durations, and scores locally — reviewable at any point alongside total score and total time played
@@ -68,7 +70,7 @@ No existing CLI-first tool combines AI question generation, user-defined open-en
 | Session length | 2–10 minutes | 30–60+ minutes | Variable |
 | Terminal-native | ✅ | ❌ | ❌ |
 | Any user-defined domain | ✅ | ❌ (fixed catalogue) | ✅ (manual) |
-| AI-generated questions | ✅ (5 providers) | ❌ | ❌ |
+| AI-generated questions | ✅ (6 providers) | ❌ | ❌ |
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill signal scoring | ✅ | ❌ (completion %) | ❌ |
@@ -120,7 +122,7 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 The MVP delivers sixteen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
-- **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama), with adaptive difficulty based on consecutive answer streaks
+- **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama, or OpenAI Compatible API), with adaptive difficulty based on consecutive answer streaks
 - **Interactive terminal quiz** — one question at a time, silent per-question timer, immediate correctness feedback with score delta and speed tier, and an on-demand AI explanation of the correct answer
 - **Challenge mode (sprint)** — a timed sprint from the domain sub-menu; select a question count (5/10/20) and time budget (2/5/10 min); all N questions preloaded upfront; a visible countdown runs continuously without pausing; post-answer nav limited to Next and Back; sprint ends when questions run out or time expires
 - **Speed-weighted scoring** — a cumulative, per-domain score that rewards fast correct answers and compounds penalties for slow incorrect ones; never resets

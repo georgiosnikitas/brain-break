@@ -16,7 +16,7 @@ export type Question = VerifiedQuestion
 // Helpers
 // ---------------------------------------------------------------------------
 function classifyError(err: unknown, settings?: SettingsFile): string {
-  return classifyProviderError(err, settings?.provider ?? null, settings?.ollamaEndpoint)
+  return classifyProviderError(err, settings?.provider ?? null, settings?.provider === 'openai-compatible' ? settings?.openaiCompatibleEndpoint : settings?.ollamaEndpoint)
 }
 
 export function isAuthErrorMessage(error: string): boolean {
@@ -25,6 +25,7 @@ export function isAuthErrorMessage(error: string): boolean {
     || error === AI_ERRORS.AUTH_ANTHROPIC
     || error === AI_ERRORS.AUTH_GEMINI
     || error === AI_ERRORS.AUTH_OLLAMA
+    || error === AI_ERRORS.AUTH_OPENAI_COMPATIBLE
 }
 
 function stripJsonFences(text: string): string {

@@ -98,7 +98,7 @@ describe('showProviderSetupScreen', () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('First-Time Setup'))
   })
 
-  it('calls select with 5 provider choices + separator + skip option', async () => {
+  it('calls select with 6 provider choices + separator + skip option', async () => {
     mockSelect.mockResolvedValueOnce('openai' as never)
     mockSelect.mockResolvedValueOnce('gpt-5.4-mini' as never)
     mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
@@ -106,14 +106,15 @@ describe('showProviderSetupScreen', () => {
     await runSetup()
 
     const choices = mockSelect.mock.calls[0]?.[0]?.choices
-    expect(choices).toHaveLength(7)
+    expect(choices).toHaveLength(8)
     expect(choices?.[0]).toEqual({ name: 'OpenAI', value: 'openai' })
     expect(choices?.[1]).toEqual({ name: 'Anthropic', value: 'anthropic' })
     expect(choices?.[2]).toEqual({ name: 'Google Gemini', value: 'gemini' })
     expect(choices?.[3]).toEqual({ name: 'GitHub Copilot', value: 'copilot' })
     expect(choices?.[4]).toEqual({ name: 'Ollama', value: 'ollama' })
-    expect(choices?.[5]).toBeInstanceOf(Separator)
-    expect(choices?.[6]).toEqual({ name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' })
+    expect(choices?.[5]).toEqual({ name: 'OpenAI Compatible API', value: 'openai-compatible' })
+    expect(choices?.[6]).toBeInstanceOf(Separator)
+    expect(choices?.[7]).toEqual({ name: '⏭️  Skip — set up later in ⚙️  Settings', value: 'skip' })
   })
 
   // -------------------------------------------------------------------------
@@ -269,6 +270,32 @@ describe('showProviderSetupScreen', () => {
     expect(mockWriteSettings).toHaveBeenCalledWith(expectedSettings)
   })
 
+  it('OpenAI Compatible API selected → prompts for endpoint and model, validates with updated settings', async () => {
+    mockSelect.mockResolvedValueOnce('openai-compatible' as never)
+    mockInput
+      .mockResolvedValueOnce('https://api.example.com/v1')
+      .mockResolvedValueOnce('my-model')
+    mockTestProviderConnection.mockResolvedValueOnce({ ok: true, data: 'Hello!' })
+
+    await runSetup()
+
+    expect(mockInput).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Endpoint URL', default: 'https://api.x.ai/v1', validate: expect.any(Function) }),
+    )
+    expect(mockInput).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Model Name', default: 'grok-4-1-fast-reasoning', validate: expect.any(Function) }),
+    )
+
+    const expectedSettings = {
+      ...settings,
+      provider: 'openai-compatible' as const,
+      openaiCompatibleEndpoint: 'https://api.example.com/v1',
+      openaiCompatibleModel: 'my-model',
+    }
+    expect(mockTestProviderConnection).toHaveBeenCalledWith('openai-compatible', expectedSettings)
+    expect(mockWriteSettings).toHaveBeenCalledWith(expectedSettings)
+  })
+
   it('Ollama empty model input resets to the default model', async () => {
     settings = { ...settings, ollamaModel: 'mistral' }
     mockSelect.mockResolvedValueOnce('ollama' as never)
@@ -283,13 +310,13 @@ describe('showProviderSetupScreen', () => {
       ...settings,
       provider: 'ollama',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama4',
+      ollamaModel: 'llama3.2',
     })
     expect(mockWriteSettings).toHaveBeenCalledWith({
       ...settings,
       provider: 'ollama',
       ollamaEndpoint: 'http://localhost:11434',
-      ollamaModel: 'llama4',
+      ollamaModel: 'llama3.2',
     })
   })
 

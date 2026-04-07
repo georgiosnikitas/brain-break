@@ -3,6 +3,8 @@ import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
 import {
   DEFAULT_OLLAMA_MODEL,
+  DEFAULT_OPENAI_COMPATIBLE_ENDPOINT,
+  DEFAULT_OPENAI_COMPATIBLE_MODEL,
   OPENAI_MODEL_CHOICES,
   ANTHROPIC_MODEL_CHOICES,
   GEMINI_MODEL_CHOICES,
@@ -13,7 +15,7 @@ import {
 } from '../domain/schema.js'
 import { menuTheme, success, warn } from '../utils/format.js'
 
-type HostedProviderType = Exclude<AiProviderType, 'copilot' | 'ollama'>
+type HostedProviderType = Exclude<AiProviderType, 'copilot' | 'ollama' | 'openai-compatible'>
 
 const HOSTED_PROVIDER_MODEL_CHOICES: Record<HostedProviderType, ModelChoice[]> = {
   openai: OPENAI_MODEL_CHOICES,
@@ -44,6 +46,22 @@ export async function promptForProviderSettings(provider: AiProviderType, settin
       message: 'Ollama Model Name',
       default: settings.ollamaModel,
     })).trim() || DEFAULT_OLLAMA_MODEL
+
+    return updatedSettings
+  }
+
+  if (provider === 'openai-compatible') {
+    updatedSettings.openaiCompatibleEndpoint = (await input({
+      message: 'Endpoint URL',
+      default: settings.openaiCompatibleEndpoint || DEFAULT_OPENAI_COMPATIBLE_ENDPOINT,
+      validate: (value: string) => value.trim() ? true : 'Endpoint URL cannot be empty',
+    })).trim()
+
+    updatedSettings.openaiCompatibleModel = (await input({
+      message: 'Model Name',
+      default: settings.openaiCompatibleModel || DEFAULT_OPENAI_COMPATIBLE_MODEL,
+      validate: (value: string) => value.trim() ? true : 'Model name cannot be empty',
+    })).trim()
 
     return updatedSettings
   }

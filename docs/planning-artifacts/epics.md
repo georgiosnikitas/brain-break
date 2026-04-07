@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-04-05'
+lastEdited: '2026-04-07'
 status: 'complete'
 editHistory:
+  - date: '2026-04-07'
+    changes: 'OpenAI Compatible API provider added as 6th provider: FR6 updated (provider list includes OpenAI Compatible API). FR15 updated (5→6 providers). FR17 updated (OpenAI Compatible API fields noted — no defaults, stored only when configured). FR26 updated (provider list includes OpenAI Compatible API). FR27 updated (OpenAI Compatible API validation: checks OPENAI_COMPATIBLE_API_KEY env var, prompts for endpoint URL and model name, tests connection). FR28 updated (OpenAI Compatible API endpoint/model editing added). FR30 updated (Ollama and OpenAI Compatible API errors include endpoint URL). NFR2 updated (network and auth error messages for OpenAI Compatible API). Epic 7 description updated (5→6 adapters, OpenAI Compatible API in provider list). Story 7.1 updated (AiProviderType union gains openai-compatible, SettingsFileSchema gains optional openaiCompatibleEndpoint/openaiCompatibleModel, backward compatibility list updated). Story 7.2 updated (6 adapters including OpenAI Compatible via @ai-sdk/openai-compatible, createProvider AC for openai-compatible, validateProvider AC for openai-compatible, test coverage 5→6 providers). Story 7.3 updated (AI_ERRORS gains NETWORK_OPENAI_COMPATIBLE and AUTH_OPENAI_COMPATIBLE, import restriction list gains @ai-sdk/openai-compatible). Story 7.4 updated (provider list 5→6, OpenAI Compatible API setup AC with endpoint/model prompts and env var check, test coverage 5→6). Story 7.5 updated (provider selector 5→6, OpenAI Compatible API editing AC, writeSettings persistence list, test coverage 5→6). Reflects PRD edits 2026-04-07 (OpenAI Compatible API provider).'
   - date: '2026-04-05'
     changes: 'Theme setting added: FR50 added (🌓 Theme toggle — Dark/Light, default Dark — controls color palette for readability on dark and light terminal backgrounds; stored as `theme` in settings.json; takes effect immediately). FR15 updated (Settings screen gains Theme toggle). FR17 updated (settings defaults expanded with `theme: "dark"`). FR21–FR23 updated with Dark/Light color variants (bold green, bold yellow, blue substitutions for Light theme). NFR6 updated (dual Dark/Light palette support). FR Coverage Map updated (FR50 → Epic 5, Epic 6). Epic 5 FRs covered updated (FR50 added). Epic 6 description and FRs covered updated (FR50, dual palette, NFR6). Story 5.1 schema updated with `theme` field and default. Story 5.2 settings screen updated with Theme toggle. Story 6.1 rewritten as theme-aware semantic color helpers with Dark/Light branching for all helpers. Story 6.3 test coverage updated for both themes. Story 6.4 added (Theme-Aware Gradient Colors — gradient endpoints adapt per theme for Welcome/Exit/Banner/ASCII Art screens). Story 7.1 defaultSettings() updated with `theme: "dark"`. Reflects PRD edit 2026-04-05 (Feature 8, Feature 9 Theme support).'
   - date: '2026-04-05'
@@ -83,7 +85,7 @@ FR4: Domains can be archived from the domain sub-menu — archived domains are r
 
 FR5: The home screen includes an "Archived domains" action that opens the archived list, where the user can unarchive any domain to resume exactly where they left off.
 
-FR6: Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, or Ollama) as multiple-choice (4 options: A–D). The generation prompt returns question text plus four answer options, difficulty level, and speed thresholds; it does not provide the trusted answer key. A second verification prompt independently returns `correctAnswer` and `correctOptionText`, and the app accepts the question only when those two values align locally on the same option. Verification is fail-closed with a bounded budget of 3 candidate attempts total (initial attempt + 2 retries); if no verified answer is obtained, the question is rejected. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
+FR6: Questions are generated on demand via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama, or OpenAI Compatible API) as multiple-choice (4 options: A–D). The generation prompt returns question text plus four answer options, difficulty level, and speed thresholds; it does not provide the trusted answer key. A second verification prompt independently returns `correctAnswer` and `correctOptionText`, and the app accepts the question only when those two values align locally on the same option. Verification is fail-closed with a bounded budget of 3 candidate attempts total (initial attempt + 2 retries); if no verified answer is obtained, the question is rejected. Questions never repeat within a domain — SHA-256 deduplication is persisted across all sessions.
 
 FR7: Difficulty adapts automatically on a 5-level scale: 3 consecutive correct answers increases difficulty by 1 (max level 5); 3 consecutive wrong answers decreases it by 1 (min level 1). New domains start at the difficulty level selected during domain creation (default: level 2). Difficulty and streak counter persist across sessions per domain.
 
@@ -101,11 +103,11 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 5 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), Theme (toggle: Dark/Light; default: Dark), and Welcome & Exit Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 6 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), Theme (toggle: Dark/Light; default: Dark), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, theme: "dark", showWelcome: true }`.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, theme: "dark", showWelcome: true }`. OpenAI Compatible API fields (`openaiCompatibleEndpoint`, `openaiCompatibleModel`) are stored only when the user configures them — no defaults are applied.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -123,15 +125,15 @@ FR24: Users can permanently delete a domain from the domain sub-menu. Selecting 
 
 FR25: The home screen includes a "☕ Buy me a coffee" action positioned between the archived domains separator and the Exit action. Selecting it opens a dedicated screen displaying an ASCII QR code (small, indented) encoding the creator's support URL and the URL in plain text, with a single Back action that returns the user to the home screen.
 
-FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
+FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
-FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and present a select box with 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini); Ollama prompts for endpoint URL and model name and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
+FR27: After provider selection on the Provider Setup screen, the app validates provider readiness: GitHub Copilot checks authentication; OpenAI/Anthropic/Gemini check for the corresponding environment variable (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) and present a select box with 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini); Ollama prompts for endpoint URL and model name and tests connection; OpenAI Compatible API checks for the `OPENAI_COMPATIBLE_API_KEY` environment variable and prompts for endpoint URL and model name (both free-text, required) and tests connection. If validation fails, the app displays a provider-specific error message and offers **🔄 Retry** and **⏭️ Skip** options — selecting Retry re-runs the connection test for the same provider; selecting Skip saves settings with `provider: null` and proceeds to the home screen (all features except Play are accessible). If validation succeeds, the provider is saved to `settings.json` and the app proceeds with full functionality. On subsequent launches, the saved provider is used automatically.
 
-FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is presented with a select box offering 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini). For Ollama, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
+FR28: The Settings screen includes an AI Provider selector that allows the user to change providers at any time. Selecting a provider triggers the same validation logic as first-launch setup. For OpenAI, Anthropic, and Google Gemini, the user is presented with a select box offering 3 predefined models (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option (default models: `gpt-5.4` for OpenAI, `claude-opus-4-6` for Anthropic, `gemini-2.5-pro` for Gemini). For Ollama, the user can edit the endpoint URL and model name. For OpenAI Compatible API, the user can edit the endpoint URL and model name — both are free-text with no defaults; the API key is read from the `OPENAI_COMPATIBLE_API_KEY` environment variable. GitHub Copilot does not prompt for a model. API keys are never entered in-app — they are read from environment variables at runtime. Changing providers takes effect on the next AI call.
 
 FR29: If no provider is configured or the configured provider is unreachable, Play displays: "AI provider not ready. Go to Settings to configure." and returns the user to the domain sub-menu. All other app features remain functional.
 
-FR30: All AI provider error messages are provider-specific: network errors identify the specific provider and suggest checking the connection; authentication errors include the specific environment variable name or auth mechanism; Ollama errors include the configured endpoint URL. The app remains running after any AI error and the user can navigate to Settings to reconfigure.
+FR30: All AI provider error messages are provider-specific: network errors identify the specific provider and suggest checking the connection; authentication errors include the specific environment variable name or auth mechanism; Ollama and OpenAI Compatible API errors include the configured endpoint URL. The app remains running after any AI error and the user can navigate to Settings to reconfigure.
 
 FR31: On every launch where the `showWelcome` setting is `true` (default), a Welcome Screen is displayed after the Provider Setup screen (if shown) and before the home screen. The Welcome Screen shows: the app emoji branding (`🧠🔨`), a gradient-colored ASCII art rendering of "Brain Break" (cyan-to-magenta row interpolation; bold cyan fallback on limited terminals), a styled subtitle (`> Train your brain, one question at a time_`) where `>` is rendered in cyan and `_` is rendered in magenta, the current version number (dim white), and a gradient shadow bar. The user dismisses the screen by pressing Enter. Ctrl+C exits the app cleanly.
 
@@ -177,7 +179,7 @@ FR50: The Settings screen includes a **🌓 Theme** toggle (displayed as Dark/Li
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
 
-NFR2: If the configured AI provider is unreachable, the app displays a provider-specific error message and returns the user to the domain sub-menu without crashing. Per-provider messages: GitHub Copilot — "Could not reach the Copilot API. Check your connection and try again."; OpenAI/Anthropic/Gemini — "Could not reach [Provider] API. Check your connection and try again."; Ollama — "Could not reach Ollama at [endpoint]. Ensure Ollama is running and try again." If authentication fails: GitHub Copilot — "Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."; OpenAI/Anthropic/Gemini — "[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."; Ollama — "Could not connect to Ollama. Check that the endpoint and model are correct in Settings." In all error cases, the app remains running and the user can navigate to Settings to reconfigure.
+NFR2: If the configured AI provider is unreachable, the app displays a provider-specific error message and returns the user to the domain sub-menu without crashing. Per-provider messages: GitHub Copilot — "Could not reach the Copilot API. Check your connection and try again."; OpenAI/Anthropic/Gemini — "Could not reach [Provider] API. Check your connection and try again."; Ollama — "Could not reach Ollama at [endpoint]. Ensure Ollama is running and try again."; OpenAI Compatible API — "Could not reach the OpenAI Compatible API at [endpoint]. Check your connection and endpoint URL and try again." If authentication fails: GitHub Copilot — "Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."; OpenAI/Anthropic/Gemini — "[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."; Ollama — "Could not connect to Ollama. Check that the endpoint and model are correct in Settings."; OpenAI Compatible API — "OpenAI Compatible API key is invalid or missing. Set the `OPENAI_COMPATIBLE_API_KEY` environment variable with a valid key and restart the app." In all error cases, the app remains running and the user can navigate to Settings to reconfigure.
 
 NFR3: Missing domain file → treated as a new domain (score 0, no history, no error displayed). Corrupted domain file → warning displayed, domain reset to clean state, corrupted file overwritten on next save.
 
@@ -310,11 +312,11 @@ Every menu in the application renders the focused item with a full-row inverted 
 **Additional requirements covered:** `utils/format.ts` semantic color helpers, `inquirer` select theme configuration across all screens
 
 ### Epic 7: Multi-Provider AI Integration
-Users can select their preferred AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, or Ollama) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
+Users can select their preferred AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, or OpenAI Compatible API) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
 **FRs covered:** FR26, FR27, FR28, FR29, FR30
 **FRs updated:** FR6 (Copilot-only → multi-provider), FR15 (4 tones → 7 tones + provider selector), FR17 (settings defaults expanded with provider fields)
 **NFRs covered:** NFR2 (per-provider error handling)
-**Additional requirements covered:** `ai/providers.ts` — `AiProvider` interface + 5 adapters (4 via Vercel AI SDK + 1 custom Copilot), `createProvider()` factory, `validateProvider()` readiness checks; `ai/client.ts` refactored to provider-agnostic orchestration; `screens/provider-setup.ts` first-launch screen; `domain/schema.ts` expanded with `AiProviderType`; startup flow wired in `index.ts`/`router.ts`
+**Additional requirements covered:** `ai/providers.ts` — `AiProvider` interface + 6 adapters (4 via Vercel AI SDK + 1 custom Copilot + 1 OpenAI Compatible), `createProvider()` factory, `validateProvider()` readiness checks; `ai/client.ts` refactored to provider-agnostic orchestration; `screens/provider-setup.ts` first-launch screen; `domain/schema.ts` expanded with `AiProviderType`; startup flow wired in `index.ts`/`router.ts`
 
 ### Epic 8: Welcome & Exit Screens + Static Banner
 When enabled, branded launch/exit screens frame the session: a Welcome Screen on startup and an Exit Message screen on explicit home Exit, both sharing the same visual language (gradient ASCII art, styled subtitle, version, and shadow bar). Every normal app screen renders a persistent static banner (`🧠🔨 Brain Break` + gradient shadow bar) at the top of the terminal, providing consistent visual branding across navigation states.
@@ -1547,24 +1549,24 @@ So that gradient visuals remain readable and vibrant on both dark and light term
 
 ## Epic 7: Multi-Provider AI Integration
 
-Users can select their preferred AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, or Ollama) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer powered by the Vercel AI SDK, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
+Users can select their preferred AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, or OpenAI Compatible API) at first launch and change it at any time from Settings — all providers are interchangeable behind a unified adapter layer powered by the Vercel AI SDK, with provider-specific error messages and non-blocking validation that lets users explore the full app even before their provider is ready.
 
 ### Story 7.1: Settings Schema — Provider Fields
 
 As a developer,
-I want `domain/schema.ts` extended with `AiProviderType`, `provider`, `openaiModel`, `anthropicModel`, `geminiModel`, `ollamaEndpoint`, and `ollamaModel` fields in the `SettingsFile` schema,
+I want `domain/schema.ts` extended with `AiProviderType`, `provider`, `openaiModel`, `anthropicModel`, `geminiModel`, `ollamaEndpoint`, `ollamaModel`, `openaiCompatibleEndpoint`, and `openaiCompatibleModel` fields in the `SettingsFile` schema,
 So that the settings store and all downstream modules have a single, type-safe source of truth for multi-provider configuration.
 
 **Acceptance Criteria:**
 
 **Given** `domain/schema.ts` is updated  
 **When** I import `AiProviderType`  
-**Then** it resolves to the union type `'copilot' | 'openai' | 'anthropic' | 'gemini' | 'ollama'`  
+**Then** it resolves to the union type `'copilot' | 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'openai-compatible'`  
 **And** a corresponding `AiProviderTypeSchema` Zod enum is exported  
 
 **Given** `domain/schema.ts` is updated  
 **When** I import `SettingsFileSchema`  
-**Then** it validates a JSON object with fields: `provider` (nullable `AiProviderType`), `language` (string), `tone` (`ToneOfVoice`), `openaiModel` (string), `anthropicModel` (string), `geminiModel` (string), `ollamaEndpoint` (string), and `ollamaModel` (string)  
+**Then** it validates a JSON object with fields: `provider` (nullable `AiProviderType`), `language` (string), `tone` (`ToneOfVoice`), `openaiModel` (string), `anthropicModel` (string), `geminiModel` (string), `ollamaEndpoint` (string), `ollamaModel` (string), `openaiCompatibleEndpoint` (optional string), and `openaiCompatibleModel` (optional string)  
 
 **Given** `domain/schema.ts` is updated  
 **When** I call `defaultSettings()`  
@@ -1572,7 +1574,7 @@ So that the settings store and all downstream modules have a single, type-safe s
 
 **Given** `domain/store.ts` already handles `readSettings()` and `writeSettings()`  
 **When** the expanded schema is deployed  
-**Then** existing `settings.json` files without `provider`, `openaiModel`, `anthropicModel`, `geminiModel`, `ollamaEndpoint`, or `ollamaModel` fields are handled gracefully — missing fields fall back to defaults via Zod `.default()` or post-parse merge  
+**Then** existing `settings.json` files without `provider`, `openaiModel`, `anthropicModel`, `geminiModel`, `ollamaEndpoint`, `ollamaModel`, `openaiCompatibleEndpoint`, or `openaiCompatibleModel` fields are handled gracefully — missing fields fall back to defaults via Zod `.default()` or post-parse merge  
 
 **Given** `domain/schema.test.ts` is updated  
 **When** I run `npm test`  
@@ -1583,7 +1585,7 @@ So that the settings store and all downstream modules have a single, type-safe s
 ### Story 7.2: AI Provider Abstraction Layer
 
 As a developer,
-I want `ai/providers.ts` to define an `AiProvider` interface and implement 5 provider adapters (4 via Vercel AI SDK + 1 custom Copilot) with a `createProvider()` factory and `validateProvider()` readiness check,
+I want `ai/providers.ts` to define an `AiProvider` interface and implement 6 provider adapters (4 via Vercel AI SDK + 1 custom Copilot + 1 OpenAI Compatible via Vercel AI SDK with `@ai-sdk/openai-compatible`) with a `createProvider()` factory and `validateProvider()` readiness check,
 So that all AI calls are routed through a unified interface and adding a new provider requires only implementing the adapter — no changes to business logic.
 
 **Acceptance Criteria:**
@@ -1613,6 +1615,10 @@ So that all AI calls are routed through a unified interface and adding a new pro
 **Then** it returns `{ ok: true, data: <AiProvider> }` where the adapter uses the `@github/copilot-sdk` directly (custom adapter, not Vercel AI SDK)  
 
 **Given** `ai/providers.ts` is implemented  
+**When** I call `createProvider(settings)` with `settings.provider = 'openai-compatible'`  
+**Then** it returns `{ ok: true, data: <AiProvider> }` where the adapter uses Vercel AI SDK `generateText()` with `@ai-sdk/openai-compatible`, using `settings.openaiCompatibleEndpoint` and `settings.openaiCompatibleModel`, and reads the API key from the `OPENAI_COMPATIBLE_API_KEY` environment variable  
+
+**Given** `ai/providers.ts` is implemented  
 **When** I call `createProvider(settings)` with `settings.provider = null`  
 **Then** it returns `{ ok: false, error: AI_ERRORS.NO_PROVIDER }`  
 
@@ -1632,6 +1638,10 @@ So that all AI calls are routed through a unified interface and adding a new pro
 **When** the function runs  
 **Then** it tests connection to `settings.ollamaEndpoint` and returns success/failure accordingly  
 
+**Given** `validateProvider()` is called with `providerType = 'openai-compatible'`  
+**When** the function runs  
+**Then** it checks for the `OPENAI_COMPATIBLE_API_KEY` environment variable, then tests connection to `settings.openaiCompatibleEndpoint` and returns success/failure accordingly  
+
 **Given** `validateProvider()` is called with `providerType = 'copilot'`  
 **When** the function runs  
 **Then** it checks Copilot SDK authentication readiness  
@@ -1642,7 +1652,7 @@ So that all AI calls are routed through a unified interface and adding a new pro
 
 **Given** `ai/providers.test.ts` exists  
 **When** I run `npm test`  
-**Then** all tests pass, covering: `createProvider()` for all 5 providers (SDK mocked), null provider error, `validateProvider()` success and failure for each provider type  
+**Then** all tests pass, covering: `createProvider()` for all 6 providers (SDK mocked), null provider error, `validateProvider()` success and failure for each provider type  
 
 ---
 
@@ -1656,7 +1666,7 @@ So that the AI client is fully provider-agnostic and returns clear, actionable e
 
 **Given** `ai/client.ts` is refactored  
 **When** I inspect its imports  
-**Then** it imports from `ai/providers.ts` (`createProvider`) and `ai/prompts.ts` — it does **not** import any provider SDK directly (`@github/copilot-sdk`, `ai`, `@ai-sdk/*`, `ollama-ai-provider`)  
+**Then** it imports from `ai/providers.ts` (`createProvider`) and `ai/prompts.ts` — it does **not** import any provider SDK directly (`@github/copilot-sdk`, `ai`, `@ai-sdk/*`, `ollama-ai-provider`, `@ai-sdk/openai-compatible`)  
 
 **Given** `ai/client.ts` is refactored  
 **When** `generateQuestion(domain, difficultyLevel, existingHashes, previousQuestions, settings)` is called  
@@ -1680,7 +1690,8 @@ So that the AI client is fully provider-agnostic and returns clear, actionable e
 - `PARSE` — "Received an unexpected response from the AI provider. Please try again."  
 - `NETWORK_COPILOT`, `NETWORK_OPENAI`, `NETWORK_ANTHROPIC`, `NETWORK_GEMINI` — provider-specific network error messages  
 - `NETWORK_OLLAMA` — function that takes endpoint URL and returns a message  
-- `AUTH_COPILOT`, `AUTH_OPENAI`, `AUTH_ANTHROPIC`, `AUTH_GEMINI`, `AUTH_OLLAMA` — provider-specific auth error messages  
+- `NETWORK_OPENAI_COMPATIBLE` — function that takes endpoint URL and returns a message  
+- `AUTH_COPILOT`, `AUTH_OPENAI`, `AUTH_ANTHROPIC`, `AUTH_GEMINI`, `AUTH_OLLAMA`, `AUTH_OPENAI_COMPATIBLE` — provider-specific auth error messages  
 
 **Given** `generateMotivationalMessage(trigger, settings)` exists  
 **When** it is called  
@@ -1707,7 +1718,7 @@ So that I can start using the app with my preferred provider without editing con
 **Given** the Provider Setup screen is displayed  
 **When** I inspect the screen  
 **Then** the terminal is cleared and a heading explains this is first-time setup  
-**And** a list of 5 providers is shown: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama — navigable with arrow keys  
+**And** a list of 6 providers is shown: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama, OpenAI Compatible API — navigable with arrow keys  
 **And** below the provider list, a line separator is shown followed by a **⏭️ Skip — set up later in ⚙️ Settings** option  
 
 **Given** I select "⏭️ Skip" from the provider list  
@@ -1741,6 +1752,15 @@ So that I can start using the app with my preferred provider without editing con
 **And** if reachable → success message, settings saved (including `ollamaEndpoint` and `ollamaModel`), app proceeds to home screen  
 **And** if unreachable → message displayed: "Could not reach Ollama at [endpoint]. Ensure Ollama is running." — **🔄 Retry** and **⏭️ Skip** options are shown; selecting Retry re-runs the connection test, selecting Skip saves settings with `provider: null` and proceeds to the home screen  
 
+**Given** I select "OpenAI Compatible API" from the provider list  
+**When** the selection is confirmed  
+**Then** the app checks for the `OPENAI_COMPATIBLE_API_KEY` environment variable  
+**And** if present → I am prompted for endpoint URL (free-text, required) and model name (free-text, required)  
+**And** the app tests connection to the endpoint using OpenAI-compatible chat completions format  
+**And** if reachable → success message, settings saved (including `openaiCompatibleEndpoint` and `openaiCompatibleModel`), app proceeds to home screen  
+**And** if unreachable → message displayed: "Could not reach the OpenAI Compatible API at [endpoint]. Check your connection and endpoint URL and try again." — **🔄 Retry** and **⏭️ Skip** options are shown  
+**And** if `OPENAI_COMPATIBLE_API_KEY` env var is missing → message displayed: "Set the `OPENAI_COMPATIBLE_API_KEY` environment variable and restart the app." — **🔄 Retry** and **⏭️ Skip** options are shown  
+
 **Given** validation fails for any provider  
 **When** I select **⏭️ Skip**  
 **Then** settings are saved with `provider: null` and the app proceeds to the home screen  
@@ -1752,7 +1772,7 @@ So that I can start using the app with my preferred provider without editing con
 
 **Given** `screens/provider-setup.ts` has co-located tests  
 **When** I run `npm test`  
-**Then** all tests pass, covering: screen renders on null provider, all 5 provider selections, skip option present below separator, skip saves null provider and navigates to home, validation success and failure paths, retry on failure re-runs test, skip on failure saves null provider, Ollama endpoint/model prompts, settings saved after selection, `clearScreen()` called  
+**Then** all tests pass, covering: screen renders on null provider, all 6 provider selections, skip option present below separator, skip saves null provider and navigates to home, validation success and failure paths, retry on failure re-runs test, skip on failure saves null provider, Ollama endpoint/model prompts, OpenAI Compatible API endpoint/model prompts, settings saved after selection, `clearScreen()` called  
 
 ---
 
@@ -1771,7 +1791,7 @@ So that I can switch providers or fix configuration issues without restarting th
 
 **Given** I select the AI Provider option  
 **When** the provider selector opens  
-**Then** I can choose from 5 providers via arrow key navigation: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama  
+**Then** I can choose from 6 providers via arrow key navigation: GitHub Copilot, OpenAI, Anthropic, Google Gemini, Ollama, OpenAI Compatible API  
 
 **Given** I select a new provider (e.g., "Anthropic")  
 **When** the selection is confirmed  
@@ -1786,6 +1806,12 @@ So that I can switch providers or fix configuration issues without restarting th
 **And** validation tests the connection  
 **And** the Ollama-specific fields are updated in the in-memory settings  
 
+**Given** I select "OpenAI Compatible API" as the provider  
+**When** the selection is confirmed  
+**Then** I am prompted to edit the endpoint URL and model name (both free-text, required)  
+**And** validation checks for the `OPENAI_COMPATIBLE_API_KEY` environment variable and tests connection to the endpoint  
+**And** the `openaiCompatibleEndpoint` and `openaiCompatibleModel` fields are updated in the in-memory settings  
+
 **Given** I select "GitHub Copilot" as the provider  
 **When** the selection is confirmed  
 **Then** no model prompt is displayed — Copilot manages models internally  
@@ -1793,7 +1819,7 @@ So that I can switch providers or fix configuration issues without restarting th
 
 **Given** I have changed the provider on the Settings screen  
 **When** I select "Save"  
-**Then** `writeSettings()` persists the new provider, per-provider model field (if applicable), `ollamaEndpoint`, and `ollamaModel` (if applicable) alongside language and tone  
+**Then** `writeSettings()` persists the new provider, per-provider model field (if applicable), `ollamaEndpoint`, `ollamaModel` (if applicable), `openaiCompatibleEndpoint`, and `openaiCompatibleModel` (if applicable) alongside language and tone  
 **And** I am returned to the home screen  
 **And** the new provider takes effect on the next AI call — no app restart required  
 
@@ -1803,7 +1829,7 @@ So that I can switch providers or fix configuration issues without restarting th
 
 **Given** `screens/settings.test.ts` is updated  
 **When** I run `npm test`  
-**Then** all tests pass, covering: AI Provider option present on Settings screen, provider selector renders all 5 options, provider change triggers validation, hosted providers prompt for model name with defaults, Ollama prompts for endpoint/model, Save persists provider and model, Back discards provider change, `clearScreen()` called  
+**Then** all tests pass, covering: AI Provider option present on Settings screen, provider selector renders all 6 options, provider change triggers validation, hosted providers prompt for model name with defaults, Ollama prompts for endpoint/model, OpenAI Compatible API prompts for endpoint/model, Save persists provider and model, Back discards provider change, `clearScreen()` called  
 
 ---
 

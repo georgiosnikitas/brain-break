@@ -103,7 +103,7 @@ export function defaultDomainFile(startingDifficulty: number = 2): DomainFile {
 export const ToneOfVoiceSchema = z.enum(['natural', 'expressive', 'calm', 'humorous', 'sarcastic', 'robot', 'pirate'])
 export type ToneOfVoice = z.infer<typeof ToneOfVoiceSchema>
 
-export const AiProviderTypeSchema = z.enum(['copilot', 'openai', 'anthropic', 'gemini', 'ollama'])
+export const AiProviderTypeSchema = z.enum(['copilot', 'openai', 'anthropic', 'gemini', 'ollama', 'openai-compatible'])
 export type AiProviderType = z.infer<typeof AiProviderTypeSchema>
 
 export const PROVIDER_CHOICES: Array<{ name: string; value: AiProviderType }> = [
@@ -112,6 +112,7 @@ export const PROVIDER_CHOICES: Array<{ name: string; value: AiProviderType }> = 
   { name: 'Google Gemini', value: 'gemini' },
   { name: 'GitHub Copilot', value: 'copilot' },
   { name: 'Ollama', value: 'ollama' },
+  { name: 'OpenAI Compatible API', value: 'openai-compatible' },
 ]
 
 export const PROVIDER_LABELS: Record<AiProviderType, string> = Object.fromEntries(
@@ -122,7 +123,9 @@ export const DEFAULT_OPENAI_MODEL = 'gpt-5.4'
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-opus-4-6'
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-pro'
 export const DEFAULT_OLLAMA_ENDPOINT = 'http://localhost:11434'
-export const DEFAULT_OLLAMA_MODEL = 'llama4'
+export const DEFAULT_OLLAMA_MODEL = 'llama3.2'
+export const DEFAULT_OPENAI_COMPATIBLE_ENDPOINT = 'https://api.x.ai/v1'
+export const DEFAULT_OPENAI_COMPATIBLE_MODEL = 'grok-4-1-fast-reasoning'
 
 export type ModelChoice = { name: string; value: string; description: string }
 
@@ -159,6 +162,8 @@ export const SettingsFileSchema = z.object({
   geminiModel: z.string().min(1).default(DEFAULT_GEMINI_MODEL),
   ollamaEndpoint: z.string().min(1).default(DEFAULT_OLLAMA_ENDPOINT),
   ollamaModel: z.string().min(1).default(DEFAULT_OLLAMA_MODEL),
+  openaiCompatibleEndpoint: z.string().default(DEFAULT_OPENAI_COMPATIBLE_ENDPOINT),
+  openaiCompatibleModel: z.string().default(DEFAULT_OPENAI_COMPATIBLE_MODEL),
   asciiArtMilestone: AsciiArtMilestoneSchema.default(100),
   theme: ThemeSchema.default('dark'),
   showWelcome: z.boolean().default(true),
@@ -175,6 +180,8 @@ export function defaultSettings(): SettingsFile {
     geminiModel: DEFAULT_GEMINI_MODEL,
     ollamaEndpoint: DEFAULT_OLLAMA_ENDPOINT,
     ollamaModel: DEFAULT_OLLAMA_MODEL,
+    openaiCompatibleEndpoint: DEFAULT_OPENAI_COMPATIBLE_ENDPOINT,
+    openaiCompatibleModel: DEFAULT_OPENAI_COMPATIBLE_MODEL,
     asciiArtMilestone: 100,
     theme: 'dark' as const,
     showWelcome: true,

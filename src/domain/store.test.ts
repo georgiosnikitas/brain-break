@@ -226,6 +226,8 @@ describe('writeSettings + readSettings', () => {
       geminiModel: 'gemini-2.0-flash',
       ollamaEndpoint: 'http://localhost:11434',
       ollamaModel: 'llama3',
+      openaiCompatibleEndpoint: '',
+      openaiCompatibleModel: '',
       asciiArtMilestone: 100 as const,
       theme: 'dark' as const,
       showWelcome: true,
@@ -305,7 +307,7 @@ describe('writeSettings + readSettings', () => {
     expect(result.data.anthropicModel).toBe('claude-opus-4-6')
     expect(result.data.geminiModel).toBe('gemini-2.5-pro')
     expect(result.data.ollamaEndpoint).toBe('http://localhost:11434')
-    expect(result.data.ollamaModel).toBe('llama4')
+    expect(result.data.ollamaModel).toBe('llama3.2')
   })
 
   it('roundtrips expanded settings with all provider fields', async () => {
@@ -318,6 +320,8 @@ describe('writeSettings + readSettings', () => {
       geminiModel: 'gemini-2.5-pro',
       ollamaEndpoint: 'http://custom:1234',
       ollamaModel: 'mistral',
+      openaiCompatibleEndpoint: '',
+      openaiCompatibleModel: '',
       asciiArtMilestone: 100 as const,
       theme: 'dark' as const,
       showWelcome: true,

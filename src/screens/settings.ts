@@ -42,12 +42,7 @@ export function getProviderLabel(provider: AiProviderType | null): string {
 
 async function handleProviderAction(
   provider: AiProviderType | null,
-  settings: SettingsFile,
-  openaiModel: string,
-  anthropicModel: string,
-  geminiModel: string,
-  ollamaEndpoint: string,
-  ollamaModel: string,
+  localSettings: SettingsFile,
 ) {
   const selectedProvider = await select<AiProviderType | 'back'>({
     message: 'AI Provider',
@@ -62,21 +57,16 @@ async function handleProviderAction(
   })
 
   if (selectedProvider === 'back') {
-    return { ...settings, provider, openaiModel, anthropicModel, geminiModel, ollamaEndpoint, ollamaModel, message: '' }
+    return { ...localSettings, provider, message: '' }
   }
 
   const updatedSettings = await promptForProviderSettings(selectedProvider, {
-    ...settings,
+    ...localSettings,
     provider: selectedProvider,
-    openaiModel,
-    anthropicModel,
-    geminiModel,
-    ollamaEndpoint,
-    ollamaModel,
   })
 
   if (!updatedSettings) {
-    return { ...settings, provider, openaiModel, anthropicModel, geminiModel, ollamaEndpoint, ollamaModel, message: '' }
+    return { ...localSettings, provider, message: '' }
   }
 
   const spinner = ora('Testing connection...').start()
@@ -177,6 +167,8 @@ export async function showSettingsScreen(): Promise<void> {
   let geminiModel = currentSettings.geminiModel
   let ollamaEndpoint = currentSettings.ollamaEndpoint
   let ollamaModel = currentSettings.ollamaModel
+  let openaiCompatibleEndpoint = currentSettings.openaiCompatibleEndpoint
+  let openaiCompatibleModel = currentSettings.openaiCompatibleModel
   let showWelcome = currentSettings.showWelcome
   let asciiArtMilestone = currentSettings.asciiArtMilestone
   let theme = currentSettings.theme
@@ -195,12 +187,16 @@ export async function showSettingsScreen(): Promise<void> {
         case 'provider': {
           const result = await handleProviderAction(
             provider,
-            currentSettings,
-            openaiModel,
-            anthropicModel,
-            geminiModel,
-            ollamaEndpoint,
-            ollamaModel,
+            {
+              ...currentSettings,
+              openaiModel,
+              anthropicModel,
+              geminiModel,
+              ollamaEndpoint,
+              ollamaModel,
+              openaiCompatibleEndpoint,
+              openaiCompatibleModel,
+            },
           )
           provider = result.provider
           openaiModel = result.openaiModel
@@ -208,6 +204,8 @@ export async function showSettingsScreen(): Promise<void> {
           geminiModel = result.geminiModel
           ollamaEndpoint = result.ollamaEndpoint
           ollamaModel = result.ollamaModel
+          openaiCompatibleEndpoint = result.openaiCompatibleEndpoint
+          openaiCompatibleModel = result.openaiCompatibleModel
           banner = result.message
           break
         }
@@ -246,6 +244,8 @@ export async function showSettingsScreen(): Promise<void> {
             geminiModel,
             ollamaEndpoint,
             ollamaModel,
+            openaiCompatibleEndpoint,
+            openaiCompatibleModel,
             asciiArtMilestone,
             theme,
             showWelcome,
