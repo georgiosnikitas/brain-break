@@ -4,7 +4,7 @@ import ora from 'ora'
 import { readDomain, readSettings, writeDomain } from '../domain/store.js'
 import { defaultSettings, MAX_COACH_REPORT_LENGTH, type DomainFile, type MyCoachScope, type QuestionRecord, type SettingsFile } from '../domain/schema.js'
 import { generateCoachReport } from '../ai/client.js'
-import { header, dim, warn, error as errorFmt, menuTheme } from '../utils/format.js'
+import { header, dim, error as errorFmt, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 
 type CoachAction = 'regenerate' | 'back'
