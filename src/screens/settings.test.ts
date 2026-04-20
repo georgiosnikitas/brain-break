@@ -432,7 +432,7 @@ describe('showSettingsScreen', () => {
     const choices = firstCallArgs.choices as SettingsChoice[]
     const milestoneChoice = choices.find((c) => c?.value === 'asciiArtMilestone')
     expect(milestoneChoice).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone: Classic') })
+      expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone:   Classic') })
     )
   })
 
@@ -446,7 +446,7 @@ describe('showSettingsScreen', () => {
     const choices = firstCallArgs.choices as SettingsChoice[]
     const milestoneChoice = choices.find((c) => c?.value === 'asciiArtMilestone')
     expect(milestoneChoice).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone: Instant') })
+      expect.objectContaining({ name: expect.stringContaining('ASCII Art Milestone:   Instant') })
     )
   })
 
@@ -522,7 +522,7 @@ describe('showSettingsScreen', () => {
     const choices = firstCallArgs.choices as SettingsChoice[]
     const themeChoice = choices.find((c) => c?.value === 'theme')
     expect(themeChoice).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('Theme:         Dark') })
+      expect.objectContaining({ name: expect.stringContaining('Theme:                 Dark') })
     )
   })
 
@@ -536,7 +536,7 @@ describe('showSettingsScreen', () => {
     const choices = firstCallArgs.choices as SettingsChoice[]
     const themeChoice = choices.find((c) => c?.value === 'theme')
     expect(themeChoice).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('Theme:         Light') })
+      expect.objectContaining({ name: expect.stringContaining('Theme:                 Light') })
     )
   })
 
@@ -618,7 +618,7 @@ describe('showSettingsScreen', () => {
     const choices = firstCallArgs.choices as SettingsChoice[]
     const coachChoice = choices.find((c) => c?.value === 'myCoachScope')
     expect(coachChoice).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('My Coach Scope: Extended') })
+      expect.objectContaining({ name: expect.stringContaining('My Coach Scope:        Extended') })
     )
   })
 
@@ -632,7 +632,7 @@ describe('showSettingsScreen', () => {
     const choices = firstCallArgs.choices as SettingsChoice[]
     const coachChoice = choices.find((c) => c?.value === 'myCoachScope')
     expect(coachChoice).toEqual(
-      expect.objectContaining({ name: expect.stringContaining('My Coach Scope: Recent') })
+      expect.objectContaining({ name: expect.stringContaining('My Coach Scope:        Recent') })
     )
   })
 

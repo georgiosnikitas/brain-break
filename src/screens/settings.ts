@@ -139,12 +139,12 @@ async function selectSettingsAction(
   return select<SettingsAction>({
     message: 'Choose a setting:',
     choices: [
-      { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
-      { name: `🌍 Language:      ${language}`, value: 'language' as const },
-      { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
-      { name: `🏋️  My Coach Scope: ${MY_COACH_SCOPE_LABELS[myCoachScope]}`, value: 'myCoachScope' as const },
-      { name: `🎨 ASCII Art Milestone: ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
-      { name: `🌓 Theme:         ${THEME_LABELS[theme]}`, value: 'theme' as const },
+      { name: `🤖 AI Provider:           ${getProviderLabel(provider)}`, value: 'provider' as const },
+      { name: `🌍 Language:              ${language}`, value: 'language' as const },
+      { name: `🎭 Tone of Voice:         ${TONE_LABELS[tone]}`, value: 'tone' as const },
+      { name: `🏋️  My Coach Scope:        ${MY_COACH_SCOPE_LABELS[myCoachScope]}`, value: 'myCoachScope' as const },
+      { name: `🎨 ASCII Art Milestone:   ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
+      { name: `🌓 Theme:                 ${THEME_LABELS[theme]}`, value: 'theme' as const },
       { name: `🎬 Welcome & Exit screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
       new Separator(),
       { name: '💾 Save', value: 'save' as const },
