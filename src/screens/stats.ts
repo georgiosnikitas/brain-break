@@ -103,7 +103,7 @@ export async function showStats(domainSlug: string, nowMs: number = Date.now()):
     console.log('📅 ' + bold('Days since first session:') + ' No data yet')
     console.log('🔥 ' + bold('Return streak:') + ' No data yet')
   } else {
-    const trend = computeScoreTrend(history)
+    const trend = computeScoreTrend(history, nowMs)
     const trendLabels = { growing: 'Growing 📈', declining: 'Declining 📉', flat: 'Flat ➡️' }
     const trendLabel = trendLabels[trend]
     const daySinceFirst = daysSinceFirstSession(history)

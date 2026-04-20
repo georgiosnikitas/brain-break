@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { hashQuestion } from '../utils/hash.js'
 import type { AiProvider } from './providers.js'
-import { makeSettings } from '../__test-helpers__/factories.js'
+import { makeSettings, makeRecord } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Mock providers module — intercept createProvider, keep real AI_ERRORS
@@ -26,7 +26,7 @@ vi.mock('./providers.js', async (importOriginal) => {
 })
 
 // Must import after mock setup
-const { generateQuestion, preloadQuestions, generateMotivationalMessage, generateExplanation, generateMicroLesson, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
+const { generateQuestion, preloadQuestions, generateMotivationalMessage, generateExplanation, generateMicroLesson, generateCoachReport, AI_ERRORS, isAuthErrorMessage } = await import('./client.js')
 const { createProvider } = await import('./providers.js')
 const mockCreateProvider = vi.mocked(createProvider)
 
@@ -1032,5 +1032,92 @@ describe('preloadQuestions', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// generateCoachReport
+// ---------------------------------------------------------------------------
+describe('generateCoachReport', () => {
+  const settings = makeSettings({ provider: 'openai' })
+  const history = [makeRecord(), makeRecord({ isCorrect: false, userAnswer: 'B' })]
+
+  it('returns ok:true with prose report string on success', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Strengths\nGreat.\n\nWeaknesses\nNone.\n\nLearning trajectory\nImproving.\n\nRecommendations\nKeep going.')
+
+    const result = await generateCoachReport('javascript', history, settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toContain('Strengths')
+    expect(result.data).toContain('Recommendations')
+  })
+
+  it('trims whitespace from the returned report', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('  Report.  \n')
+
+    const result = await generateCoachReport('javascript', history, settings)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data).toBe('Report.')
+  })
+
+  it('returns NO_PROVIDER error when provider is not configured', async () => {
+    mockCreateProvider.mockReturnValueOnce({ ok: false, error: AI_ERRORS.NO_PROVIDER })
+
+    const result = await generateCoachReport('javascript', history, makeSettings())
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NO_PROVIDER)
+  })
+
+  it('returns provider-specific NETWORK error on generic failure', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('Connection refused'))
+
+    const result = await generateCoachReport('javascript', history, makeSettings({ provider: 'anthropic' }))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.NETWORK_ANTHROPIC)
+  })
+
+  it('returns provider-specific AUTH error on 401', async () => {
+    mockGenerateCompletion.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    const result = await generateCoachReport('javascript', history, makeSettings({ provider: 'openai' }))
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error).toBe(AI_ERRORS.AUTH_OPENAI)
+  })
+
+  it('passes history and slug to the prompt', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('ok')
+
+    await generateCoachReport('javascript', history, settings)
+
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
+    expect(sentPrompt).toContain('javascript')
+    expect(sentPrompt).toContain(history[0].question)
+  })
+
+  it('passes settings to the prompt (voice instruction injected)', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('ok')
+    const greekSettings = makeSettings({ provider: 'openai', language: 'Greek', tone: 'pirate' })
+
+    await generateCoachReport('javascript', history, greekSettings)
+
+    const sentPrompt: string = mockGenerateCompletion.mock.calls[0][0]
+    expect(sentPrompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('accepts empty history', async () => {
+    mockGenerateCompletion.mockResolvedValueOnce('Report with no data.')
+
+    const result = await generateCoachReport('javascript', [], settings)
+
+    expect(result.ok).toBe(true)
   })
 })

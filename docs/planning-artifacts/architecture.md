@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-04-07'
+lastEdited: '2026-04-19'
 editHistory:
+  - date: '2026-04-19'
+    changes: 'My Coach (PRD Feature 19, Epic 13, FR51–FR52): Requirements Overview updated (15→16 features, My Coach added to feature list). Estimated components updated (17–19→18–20). Cross-cutting concerns updated (coaching report AI path, myCoachScope setting). Domain File Schema updated (optional lastCoachQuestionCount and lastCoachTimestamp fields in meta). Settings schema expanded with myCoachScope field and default. Settings screen description updated (My Coach Scope option). Navigation pattern updated (My Coach route in domain sub-menu, showMyCoach router export). New My Coach Screen Architecture section added — coaching report generation via generateCoachReport() in ai/client.ts, scoped history (25/100/all), soft tip for <25 questions, staleness notice on regenerate, generation timestamp display. ai/client.ts public exports updated (generateCoachReport). ai/prompts.ts role updated (coaching prompt template). Module Architecture src/ tree updated (my-coach.ts added, domain-menu.ts comment expanded, router count 16→17). Complete Project Directory Structure updated (my-coach.ts + my-coach.test.ts added, router count 16→17). Feature to Structure Mapping updated (F16 row added). Cross-Cutting Concern Mapping updated (coaching report generation row added). Requirements Coverage Validation updated (F16 row added). Coherence Validation updated with My Coach mention. All changes additive — no architectural decisions changed.'
   - date: '2026-04-07'
     changes: 'OpenAI Compatible API added as 6th AI provider. All provider counts updated from 5 to 6 (Requirements Overview, Scale & Complexity, Technical Constraints, Cross-Cutting Concerns, Decision Priority, Coherence Validation). Settings schema expanded with openai-compatible enum value, openaiCompatibleEndpoint and openaiCompatibleModel fields. AI Provider Enum table, AiProviderType union, adapter table, AI_ERRORS (NETWORK_OPENAI_COMPATIBLE + AUTH_OPENAI_COMPATIBLE), and defaultSettings() updated. Authentication & Security, Settings screen, first-launch provider setup, and provider-setup validation flow updated. Module architecture and project directory tree comments updated (5→6 adapters, 4→5 via Vercel AI SDK). External boundaries, cross-cutting concern mapping, coherence validation, and SDK dependency list updated with @ai-sdk/openai-compatible. Future enhancement note updated. Aligns with PRD Feature 8, Epic 7, and FR6.'
   - date: '2026-04-05'
@@ -57,7 +59,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-15 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, and a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls.
+16 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, my coach scope, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls, and a per-domain AI-powered coaching report (My Coach) that analyzes scoped question history to surface strengths, weaknesses, trajectory, and recommendations — with configurable history scope (recent 25, extended 100, or complete).
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -71,7 +73,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Primary domain: CLI / terminal application (Unix-like: macOS, Linux, WSL)
 - Complexity level: Low-Medium
 - External dependencies: 6 AI provider adapters via Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for OpenAI, Anthropic, Gemini, Ollama, and OpenAI Compatible API; GitHub Copilot SDK as a custom adapter — one provider active at runtime, user-selected; `figlet` for local ASCII Art banner rendering
-- Estimated architectural components: 17–19 focused modules
+- Estimated architectural components: 18–20 focused modules
 
 ### Technical Constraints & Dependencies
 
@@ -84,12 +86,12 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Cross-Cutting Concerns Identified
 
-- **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 6 supported backends (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine and the challenge mode batch-preload path
+- **AI integration & error resilience:** Every question cycle routes through the active AI provider — one of 6 supported backends (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API); network/auth failure paths produce per-provider error messages and must be handled uniformly across the quiz engine, the challenge mode batch-preload path, and the My Coach coaching report generation path
 - **File I/O with integrity guarantees:** Read/write/permission enforcement is needed everywhere domain state is touched — must be centralized, not scattered
 - **State management:** Streak counter, difficulty level, score, and question hashes all evolve per answer; bookmark status can be toggled from post-answer, history, and bookmark screens — all must be atomically persisted
 - **Terminal rendering:** All user-facing output (home screen, quiz, history, stats, spinner) requires a consistent rendering approach — `utils/screen.ts` owns the viewport-clear primitive; all screens call `clearScreen()` as their first operation before any output. **Exception:** the post-answer quiz feedback panel renders inline on the same screen as the question — `clearScreen()` is **not** called between the question display and the feedback panel. A terminal reset occurs only when the user selects Next question (loading a new question) or exits the quiz
 - **Deduplication:** SHA-256 lookup on every question generation — must be fast and correctly scoped per domain
-- **Global settings & AI voice injection:** Language, tone of voice, and AI provider selection stored in a global settings file; language + tone injected into every AI prompt — affects questions, answer options, and motivational messages; provider setting determines which AI backend is used; `showWelcome` setting controls both the startup welcome screen and the exit screen; must be read before any AI call and before exit routing
+- **Global settings & AI voice injection:** Language, tone of voice, AI provider selection, and my coach scope stored in a global settings file; language + tone injected into every AI prompt — affects questions, answer options, motivational messages, and coaching reports; provider setting determines which AI backend is used; `showWelcome` setting controls both the startup welcome screen and the exit screen; `myCoachScope` setting controls how many recent questions are included in coaching report generation; must be read before any AI call and before exit routing
 - **Semantic color system:** Post-answer feedback, speed tier badges, difficulty level badges, and menu highlighting all use a consistent color vocabulary defined in a single utility module
 - **Sprint countdown timer:** Challenge mode renders a visible `M:SS` countdown on every question and post-answer screen; the timer never pauses and must be able to interrupt the active `inquirer` prompt when it expires (auto-submit). Uses wall-clock `Date.now()` deltas — not `setInterval` ticks — to avoid drift
 - **Batch question preloading:** Challenge mode preloads all N questions before the sprint starts. The preload loop accumulates hashes to prevent intra-batch duplicates in addition to domain-history hashes. AI provider failure during preload aborts the entire sprint
@@ -209,7 +211,10 @@ Each domain file at `~/.brain-break/<domain-slug>.json` uses a two-section struc
     "totalTimePlayedMs": 0,
     "createdAt": "ISO8601",
     "lastSessionAt": "ISO8601",
-    "archived": false
+    "archived": false,
+    "lastCoachQuestionCount": 0,   // Optional — number of answered questions at last coach report generation
+    "lastCoachTimestamp": "ISO8601", // Optional — timestamp of last coach report generation
+    "lastCoachReport": "string"    // Optional — full text of the last generated coaching report
   },
   "hashes": ["sha256hex", ...],
   "history": [
@@ -278,6 +283,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "ollamaModel": "llama4",      // Ollama only — model name
   "openaiCompatibleEndpoint": "",              // OpenAI Compatible API only — endpoint URL (no default)
   "openaiCompatibleModel": "",                 // OpenAI Compatible API only — model name (no default)
+  "myCoachScope": "100",       // My Coach history scope: "25" (Recent) | "100" (Extended, default) | "all" (Complete)
   "showWelcome": true            // Boolean — show animated welcome screen on startup and exit screen on quit
 }
 ```
@@ -305,7 +311,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), `ModelChoice` type (`{ name: string; value: string; description: string }`), per-provider model choice arrays (`OPENAI_MODEL_CHOICES`, `ANTHROPIC_MODEL_CHOICES`, `GEMINI_MODEL_CHOICES` — each containing 3 models labelled Fast / Normal / Complex), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-opus-4-6'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-pro'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama4'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', openaiCompatibleEndpoint: '', openaiCompatibleModel: '', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit.
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), `ModelChoice` type (`{ name: string; value: string; description: string }`), per-provider model choice arrays (`OPENAI_MODEL_CHOICES`, `ANTHROPIC_MODEL_CHOICES`, `GEMINI_MODEL_CHOICES` — each containing 3 models labelled Fast / Normal / Complex), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-opus-4-6'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-pro'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama4'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', openaiCompatibleEndpoint: '', openaiCompatibleModel: '', myCoachScope: '100', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit. The `myCoachScope` field controls the number of recent questions included in My Coach report generation (`"25"` = Recent 25, `"100"` = Extended 100, `"all"` = Complete history).
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -313,7 +319,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 
 **AI prompt injection:** `ai/prompts.ts` conditionally prepends a voice instruction to every prompt when language ≠ `"English"` or tone ≠ `"natural"` — e.g., `"Respond in Greek using a pirate tone of voice."`. The settings object is passed through from the screen layer to `ai/client.ts` to `ai/prompts.ts`.
 
-**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 6 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, presents a select box with 3 predefined models per provider (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option), language (free-text input), tone (select from 7 presets), and Welcome & Exit screen toggle (ON/OFF — controls both the startup welcome screen and the exit screen). For Ollama, the user can also edit the endpoint URL and model name. For OpenAI Compatible API, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
+**Settings screen:** `screens/settings.ts` provides a menu-driven loop where the user can change AI provider (select from 6 presets — triggers provider validation and, for OpenAI/Anthropic/Gemini, presents a select box with 3 predefined models per provider (labelled Fast / Normal / Complex) plus a "🧙 Custom model" option for free-text entry and a "↩️ Back" option), language (free-text input), tone (select from 7 presets), My Coach Scope (select from 3 presets: Recent 25, Extended 100, Complete — controls how many recent questions are included in coaching reports), and Welcome & Exit screen toggle (ON/OFF — controls both the startup welcome screen and the exit screen). For Ollama, the user can also edit the endpoint URL and model name. For OpenAI Compatible API, the user can edit the endpoint URL and model name. GitHub Copilot does not prompt for a model. Save persists + returns to home; Back discards + returns to home.
 
 **First-launch provider setup:** `screens/provider-setup.ts` displays a one-time provider selection screen on first launch (when `provider` is `null`). The user selects a provider via arrow keys; the app validates readiness:
 - **Copilot:** checks Copilot authentication
@@ -398,6 +404,7 @@ The Anthropic, Gemini, Ollama, and OpenAI Compatible API adapters follow the sam
 - Generation schema covers: `question` (string), `options` (A–D strings), `difficultyLevel` (1–5 int), `speedThresholds` (`{ fastMs: number, slowMs: number }`) — generation does **not** return the trusted answer key
 - Verification schema covers: `correctAnswer` (`A`–`D`) and `correctOptionText` (string copied verbatim from the chosen option)
 - Provider-agnostic: if any provider returns malformed JSON, the same `AI_ERRORS.PARSE` path is taken
+- **Coaching report generation (My Coach):** Unlike question generation and verification (which require structured JSON validated by Zod), coaching reports return free-form prose text. The coaching prompt sends scoped question history (recent 25, 100, or all based on `myCoachScope` setting) to the active AI provider and receives a multi-paragraph analysis covering strengths, weaknesses, learning trajectory, and actionable recommendations. The raw text is returned directly via `Result<string>` — no Zod schema validation is applied to the prose content. The same `AI_ERRORS` error classification (network/auth/quota) applies.
 - **Answer verification gate:** After Zod validation and option shuffling, a separate verification prompt presents the finalized question and options to the AI **without revealing any pre-selected answer** and asks it to return both `correctAnswer` and `correctOptionText`. The candidate is accepted only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`. Any verification mismatch, network error, JSON parse error, or schema mismatch discards the candidate and triggers a fresh generation cycle. This applies to both the primary generation path and the deduplication regeneration path. The mechanism is **fail-closed** with a bounded budget of **3 candidate attempts total** (initial attempt + 2 retries); exhausting the budget returns an error and no question is shown to the user. The verification prompt includes the active language/tone voice instruction when settings are provided.
 
 **`ai/client.ts` Role (Refactored)**
@@ -415,6 +422,7 @@ The Anthropic, Gemini, Ollama, and OpenAI Compatible API adapters follow the sam
 - `generateQuestion(domain, difficulty, hashes, prev, settings?)` — full generation + fail-closed verification + dedup cycle
 - `generateMotivationalMessage(trigger, settings?)` — motivational one-liner for domain selection screen
 - `generateExplanation(question, userAnswer, settings?)` — explains why the correct answer is right and the user's answer (if wrong) is wrong; returns `Result<string>` (raw text)
+- `generateCoachReport(domain, history, settings?)` — generates a multi-paragraph coaching report analyzing scoped question history (strengths, weaknesses, trajectory, recommendations); returns `Result<string>` (raw prose text, not structured JSON); scoping determined by `settings.myCoachScope` (`"25"` / `"100"` / `"all"`); language + tone voice instruction injected when non-default settings active
 - `isAuthErrorMessage(error)` — returns `true` if the error string matches any `AI_ERRORS.AUTH_*` constant; allows callers to distinguish auth failures from network/parse errors without importing `AI_ERRORS` directly
 - `AI_ERRORS` — re-exported from `providers.ts` for downstream consumers
 
@@ -482,6 +490,7 @@ router.showHome()
     → History                 → router.showHistory(slug) → router.showDomainMenu(slug)
     → Bookmarks               → router.showBookmarks(slug) → router.showDomainMenu(slug)
     → Statistics              → router.showStats(slug) → router.showDomainMenu(slug)
+    → My Coach                → router.showMyCoach(slug) → router.showDomainMenu(slug)
     → ASCII Art               → router.showAsciiArt(slug) → router.showDomainMenu(slug)
     → Archive                 → router.archiveDomain(slug) → router.showHome()
     → Delete                  → router.deleteDomain(slug) → router.showHome()
@@ -495,7 +504,7 @@ router.showHome()
 
 Each screen is a standalone `async` function that resolves when the user exits it. `router.ts` is the only place that calls other screens — screens never call each other directly.
 
-*Rationale:* 15 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
+*Rationale:* 16 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
@@ -715,6 +724,38 @@ After termination, the challenge screen returns session data to the router: `{ q
 
 ---
 
+### My Coach Screen
+
+`screens/my-coach.ts` exports `showMyCoachScreen(slug)`. The router's `showMyCoach(slug)` delegates to it, and `screens/domain-menu.ts` exposes the My Coach action between Statistics and ASCII Art.
+
+**Coaching report entry model:**
+- On entry, the screen reads the domain file. If `meta.lastCoachReport` and `meta.lastCoachTimestamp` are both present, the cached report is displayed immediately (no AI call, no spinner) — this is the preview path
+- If no cached report exists (first use), the screen reads settings, scopes the history, and calls `ai/client.ts.generateCoachReport(domain, scopedHistory, settings)` to generate the initial report
+
+**Coaching report generation model:**
+- History is scoped based on `settings.myCoachScope` (`"25"` = most recent 25, `"100"` = most recent 100, `"all"` = complete history)
+- The coaching prompt sends the scoped history (question text, user answer, correct answer, correctness, difficulty level, speed tier) to the active AI provider and requests a multi-paragraph analysis covering: strengths, weaknesses, learning trajectory, and actionable recommendations
+- The AI provider returns free-form prose text — **not** structured JSON. No Zod schema is applied to the coaching report content. The same `AI_ERRORS` error classification (network/auth/quota) applies
+- An `ora` spinner is shown during report generation
+- Language + tone voice instruction is injected into the coaching prompt when non-default settings are active
+
+**Report display:**
+- `header('🏋️ My Coach — ' + domainName)` matches the Statistics-style header pattern
+- Generation timestamp displayed as a dim line below the header: e.g., `Generated: Apr 19, 2026 at 14:32`
+- The coaching report text is rendered below the timestamp
+- When `history.length < 25`: a dim tip is displayed above the report: `"Tip: Reports become more accurate with at least 25 answered questions."`
+
+**Navigation:**
+- The screen shows `🔄 Regenerate`, a separator, and `↩️  Back`
+- Selecting Regenerate triggers a new AI call and re-renders the report. If fewer than 25 new questions have been answered since the last report (tracked via `meta.lastCoachQuestionCount`), a dim staleness notice is displayed before regeneration: `"Only X new questions answered since your last report — the new report may not differ significantly."`
+- Selecting Back or receiving `ExitPromptError` returns to `router.showDomainMenu(slug)`
+
+**Domain metadata persistence:**
+- After each successful report generation, the screen writes `meta.lastCoachQuestionCount = history.length`, `meta.lastCoachTimestamp = new Date().toISOString()`, and `meta.lastCoachReport = reportText` to the domain file via `domain/store.ts.writeDomain()`
+- These fields are optional in the schema — missing values are treated as "no previous report generated"
+
+---
+
 ### Module Architecture
 
 **`src/` Directory Structure**
@@ -722,11 +763,11 @@ After termination, the challenge screen returns session data to the router: `{ q
 ```
 src/
 ├── index.ts              # Entry point — bootstraps and calls router
-├── router.ts             # Navigation dispatcher — 16 exported functions, only file that calls screens
+├── router.ts             # Navigation dispatcher — 17 exported functions, only file that calls screens
 ├── screens/
 │   ├── home.ts           # F1: domain list + coffee screen (F10)
 │   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
-│   ├── domain-menu.ts    # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back)
+│   ├── domain-menu.ts    # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back)
 │   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
 │   ├── archived.ts       # F1: archived domain list + unarchive
 │   ├── quiz.ts           # F3: question loop, timer, answer feedback
@@ -735,6 +776,7 @@ src/
 │   ├── history.ts        # F6: single-question navigation history view
 │   ├── bookmarks.ts      # F12: single-question bookmark navigation view
 │   ├── stats.ts          # F7: stats dashboard
+│   ├── my-coach.ts       # F16: AI-powered coaching report — scoped history analysis, strengths/weaknesses/trajectory/recommendations
 │   ├── ascii-art.ts      # F15: local FIGlet domain banner with randomized font selection + gradient coloring
 │   ├── settings.ts       # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
 │   ├── provider-settings.ts # F8: per-provider model/endpoint prompts with defaults
@@ -742,9 +784,9 @@ src/
 │   ├── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
 │   └── exit.ts           # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 ├── ai/
-│   ├── client.ts         # F2/F14: provider-agnostic AI client + fail-closed verification gating + error handling + preloadQuestions()
+│   ├── client.ts         # F2/F14/F16: provider-agnostic AI client + fail-closed verification gating + error handling + preloadQuestions() + generateCoachReport()
 │   ├── providers.ts      # F2: AiProvider interface + 6 adapters (5 via Vercel AI SDK + 1 custom Copilot)
-│   └── prompts.ts        # F2: generation + verification prompt templates + Zod response schemas + voice injection
+│   └── prompts.ts        # F2/F16: generation + verification + coaching prompt templates + Zod response schemas + voice injection
 ├── domain/
 │   ├── store.ts          # F5: read/write domain + settings files (atomic)
 │   ├── schema.ts         # F5/F8: types + Zod schemas (DomainFile, SettingsFile, AiProviderType, ToneOfVoice)
@@ -953,13 +995,13 @@ brain-break/
 │       └── ci.yml                  # tsc --noEmit + vitest
 ├── src/
 │   ├── index.ts                    # Entry: bootstraps app, reads settings, routes to provider setup / welcome / home
-│   ├── router.ts                   # Navigation dispatcher — 16 exported functions, only file that calls screens
+│   ├── router.ts                   # Navigation dispatcher — 17 exported functions, only file that calls screens
 │   ├── screens/
 │   │   ├── home.ts                 # F1/F10: domain list + coffee screen
 │   │   ├── home.test.ts
 │   │   ├── create-domain.ts        # F1: new domain input + starting difficulty selection + validation + duplicate check
 │   │   ├── create-domain.test.ts
-│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back)
+│   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back)
 │   │   ├── domain-menu.test.ts
 │   │   ├── select-domain.ts        # F1/F2: motivational message + quiz transition
 │   │   ├── select-domain.test.ts
@@ -977,6 +1019,8 @@ brain-break/
 │   │   ├── bookmarks.test.ts
 │   │   ├── stats.ts                # F7: stats dashboard
 │   │   ├── stats.test.ts
+│   │   ├── my-coach.ts             # F16: AI-powered coaching report — scoped history analysis, strengths/weaknesses/trajectory/recommendations
+│   │   ├── my-coach.test.ts
 │   │   ├── ascii-art.ts            # F15: local FIGlet domain banner with randomized font selection + gradient coloring
 │   │   ├── ascii-art.test.ts
 │   │   ├── settings.ts             # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
@@ -989,11 +1033,11 @@ brain-break/
 │   │   ├── exit.ts                 # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 │   │   └── exit.test.ts
 │   ├── ai/
-│   │   ├── client.ts               # F2/F14: provider-agnostic AI client + Result<T> error wrapping + preloadQuestions()
+│   │   ├── client.ts               # F2/F14/F16: provider-agnostic AI client + Result<T> error wrapping + preloadQuestions() + generateCoachReport()
 │   │   ├── client.test.ts
 │   │   ├── providers.ts            # F2: AiProvider interface + 6 adapters (5 via Vercel AI SDK + 1 custom Copilot)
 │   │   ├── providers.test.ts
-│   │   ├── prompts.ts              # F2: prompt templates + Zod QuestionResponseSchema + voice injection
+│   │   ├── prompts.ts              # F2/F16: prompt templates + Zod QuestionResponseSchema + coaching prompt template + voice injection
 │   │   └── prompts.test.ts
 │   ├── domain/
 │   │   ├── schema.ts               # F5/F8: DomainFile + SettingsFile + AiProviderType + ToneOfVoice types + Zod schemas + PROVIDER_CHOICES/LABELS + DEFAULT_* constants
@@ -1045,7 +1089,7 @@ brain-break/
 | F5 — Persistent History | `domain/store.ts`, `domain/schema.ts` |
 | F6 — View History | `screens/history.ts`, `domain/store.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F7 — View Stats | `screens/stats.ts`, `domain/store.ts` |
-| F8 — Global Settings | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts` (readSettings/writeSettings), `domain/schema.ts` (SettingsFile/AiProviderType/ToneOfVoice), `ai/prompts.ts` (voice injection), `ai/providers.ts` (provider validation) |
+| F8 — Global Settings | `screens/settings.ts`, `screens/provider-setup.ts`, `domain/store.ts` (readSettings/writeSettings), `domain/schema.ts` (SettingsFile/AiProviderType/ToneOfVoice/myCoachScope), `ai/prompts.ts` (voice injection), `ai/providers.ts` (provider validation) |
 | F9 — Color System | `utils/format.ts` (semantic color helpers, menuTheme) + all `screens/*.ts` (consumers) |
 | F10 — Coffee Screen | `screens/home.ts` (showCoffeeScreen) |
 | F11 — Welcome Screen | `screens/welcome.ts` (animated ASCII-art + typewriter tagline + 3s auto-proceed timer), `domain/schema.ts` (`showWelcome` setting) |
@@ -1053,6 +1097,7 @@ brain-break/
 | F13 — Exit Screen | `screens/exit.ts` (dynamic session message + typewriter animation + 3s auto-exit timer), `screens/home.ts` (total questions aggregation + conditional exit routing), `domain/schema.ts` (`showWelcome` setting) |
 | F14 — Challenge Mode (Sprint) | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution loop + timer + per-answer write), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F15 — ASCII Art Screen | `screens/ascii-art.ts` (local FIGlet rendering + randomized font selection + gradient coloring), `screens/domain-menu.ts` (ASCII Art action), `router.ts` (`showAsciiArt()`), `utils/format.ts` (`gradientText`) |
+| F16 — My Coach | `screens/my-coach.ts` (cached report preview + coaching report generation + regenerate + staleness notice + generation timestamp), `screens/domain-menu.ts` (My Coach action), `router.ts` (`showMyCoach()`), `ai/client.ts` (`generateCoachReport()`), `ai/prompts.ts` (coaching prompt template), `domain/store.ts` (read domain + write coach metadata), `domain/schema.ts` (optional `lastCoachQuestionCount` + `lastCoachTimestamp` + `lastCoachReport` fields, `myCoachScope` setting) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 | NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
@@ -1074,6 +1119,7 @@ brain-break/
 | Settings tone migration | `domain/store.ts` → `migrateSettings()` — maps legacy tone values on read |
 | Sprint countdown timer | `screens/challenge.ts` — wall-clock `Date.now()` delta rendered as `M:SS` on every question + post-answer screen; `AbortController` + `setTimeout` interrupts active `inquirer` prompt on timer expiry |
 | Batch question preloading | `ai/client.ts` → `preloadQuestions()` — sequential N-question generation with intra-batch + domain-history dedup; `ora` spinner progress in `screens/challenge.ts`; provider failure aborts entire sprint |
+| Coaching report generation | `ai/client.ts` → `generateCoachReport()` — sends scoped question history to AI provider, receives free-form prose (not structured JSON); `ai/prompts.ts` builds coaching prompt with voice injection; `screens/my-coach.ts` owns spinner lifecycle, timestamp display, tip/staleness notices, and coach metadata persistence |
 
 ### Integration Points
 
@@ -1205,7 +1251,7 @@ router.showChallenge(slug)
 
 ### Coherence Validation ✅
 
-All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `figlet`, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@ai-sdk/openai-compatible`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 4 of 6 provider adapters (OpenAI, Anthropic, Gemini, OpenAI Compatible API) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), local FIGlet rendering for ASCII Art, and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design. Challenge Mode reuses the same `generateQuestion()` pipeline, `applyAnswer()` scoring, `writeDomain()` persistence, and `renderQuestionDetail()` rendering — no new architectural primitives needed; the `AbortController`-based prompt interruption uses native Node.js APIs already available in the runtime target.
+All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNext, `inquirer` v12, `@inquirer/prompts`, `ora` v8, `chalk` v5, `figlet`, `zod`, `qrcode-terminal`, `ai` (Vercel AI SDK), `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, `@ai-sdk/openai-compatible`, `@github/copilot-sdk`, `patch-package`, and `vitest` are all ESM-native and internally consistent. The Vercel AI SDK unifies 4 of 6 provider adapters (OpenAI, Anthropic, Gemini, OpenAI Compatible API) under a single `generateText()` interface; Ollama uses raw HTTP `fetch()` and Copilot uses a custom SDK adapter — reducing per-provider boilerplate and SDK version maintenance burden. The `Result<T>` error pattern, atomic write strategy, provider abstraction (`AiProvider` interface), local FIGlet rendering for ASCII Art, and Zod validation approach are coherent and mutually reinforcing. The directory structure directly implements all dependency rules by design. Challenge Mode reuses the same `generateQuestion()` pipeline, `applyAnswer()` scoring, `writeDomain()` persistence, and `renderQuestionDetail()` rendering — no new architectural primitives needed; the `AbortController`-based prompt interruption uses native Node.js APIs already available in the runtime target. My Coach reuses the existing AI provider pipeline (`createProvider()` + `generateCompletion()`) and `Result<T>` error handling — the only architectural distinction is that coaching reports return free-form prose via `Result<string>` rather than Zod-validated structured JSON; the `generateCoachReport()` function in `ai/client.ts` follows the same provider-agnostic pattern as `generateMotivationalMessage()` and `generateExplanation()`.
 
 ### Requirements Coverage Validation ✅
 
@@ -1226,6 +1272,7 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | F13 — Exit Screen | ✅ | `screens/exit.ts` (dynamic session message + typewriter + gradient rendering + 3s auto-exit timer), `screens/home.ts` (total questions aggregation) |
 | F14 — Challenge Mode (Sprint) | ✅ | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution + timer), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` |
 | F15 — ASCII Art Screen | ✅ | `screens/ascii-art.ts` (local FIGlet rendering + randomized font selection + gradient coloring), `screens/domain-menu.ts` (ASCII Art action), `router.ts` (`showAsciiArt()`), `utils/format.ts` (`gradientText`) |
+| F16 — My Coach | ✅ | `screens/my-coach.ts` (coaching report display + regenerate + staleness notice + generation timestamp), `screens/domain-menu.ts` (My Coach action), `router.ts` (`showMyCoach()`), `ai/client.ts` (`generateCoachReport()`), `ai/prompts.ts` (coaching prompt template), `domain/store.ts` (read domain + write coach metadata), `domain/schema.ts` (optional `lastCoachQuestionCount` + `lastCoachTimestamp` fields, `myCoachScope` setting) |
 
 | NFR | Status | Addressed By |
 |---|---|---|
@@ -1233,7 +1280,7 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state; same error path for `preloadQuestions()` batch failures |
 | NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT; sprint per-answer write ensures crash safety |
 | NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
-| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer feedback (quiz and challenge) renders inline (no clear between question and feedback); sprint-setup and challenge screens follow standard clearScreen pattern |
+| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer feedback (quiz and challenge) renders inline (no clear between question and feedback); sprint-setup, challenge, and my-coach screens follow standard clearScreen pattern |
 | NFR 6 — Terminal color rendering | ✅ | `utils/format.ts` → ANSI 8/16-color baseline; `chalk` handles terminal capability detection |
 
 ### Implementation Readiness Validation ✅
@@ -1256,7 +1303,7 @@ All critical decisions are documented with explicit versions. Patterns are compr
 **Resolution:** `domain/schema.ts` exports a `defaultDomainFile(startingDifficulty?)` factory function returning a valid `DomainFile` at the specified starting difficulty level (defaults to level 2 — Elementary), score 0, empty history and hashes. `store.ts.readDomain()` calls this on `ENOENT` — no error propagated to the caller. `screens/create-domain.ts` calls `defaultDomainFile(selectedDifficulty)` when creating a new domain with the user's chosen starting difficulty.
 
 **Missing settings file = defaults (F8):**
-`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-sonnet-4.6-latest', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', openaiCompatibleEndpoint: '', openaiCompatibleModel: '', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
+`domain/store.ts.readSettings()` MUST return `defaultSettings()` (`{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', openaiCompatibleEndpoint: '', openaiCompatibleModel: '', myCoachScope: '100', showWelcome: true }`) when the settings file does not exist. No error propagated to the caller. A `null` provider triggers the first-launch Provider Setup screen.
 
 ### Architecture Completeness Checklist
 

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-04-07
+last_updated: 2026-04-20
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -146,3 +146,10 @@ development_status:
   12-2-ascii-art-milestone-unlock: done
   12-3-ascii-art-milestone-setting: done
   epic-12-retrospective: optional
+
+  # Epic 13: My Coach (implement order: 13-3 → 13-2 → 13-1)
+  epic-13: in-progress
+  13-3-domain-schema-coach-fields: done
+  13-2-my-coach-scope-setting: done
+  13-1-my-coach-screen: done
+  epic-13-retrospective: optional

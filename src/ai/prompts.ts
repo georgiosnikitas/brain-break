@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AnswerOptionSchema, type AnswerOption, type SettingsFile } from '../domain/schema.js'
+import { AnswerOptionSchema, type AnswerOption, type SettingsFile, type QuestionRecord } from '../domain/schema.js'
 
 // ---------------------------------------------------------------------------
 // Zod schema for the structured JSON the model must return
@@ -42,6 +42,15 @@ function buildVoiceInstruction(settings: SettingsFile): string {
 
 function voicePrefix(settings?: SettingsFile): string {
   return settings ? buildVoiceInstruction(settings) : ''
+}
+
+function formatAnswerWithText(record: QuestionRecord, answer: QuestionRecord['userAnswer']): string {
+  if (answer === 'TIMEOUT') {
+    return 'TIMEOUT (no option selected)'
+  }
+
+  const optionText = sanitizeInput(record.options[answer])
+  return `${answer} ("${optionText}")`
 }
 
 function formatOptions(options: QuestionResponse['options']): string {
@@ -169,5 +178,40 @@ Correct answer: ${question.correctAnswer}
 Explanation already provided: "${safeExplanation}"
 
 Reply with ONLY the micro-lesson — no JSON, no quotes, no extra text.`
+}
+
+export function buildCoachReportPrompt(
+  slug: string,
+  scopedHistory: QuestionRecord[],
+  settings?: SettingsFile,
+): string {
+  const safeDomain = sanitizeInput(slug)
+  const total = scopedHistory.length
+  const historyLines = scopedHistory.map((r, i) => {
+    const q = sanitizeInput(r.question)
+    const userAnswer = formatAnswerWithText(r, r.userAnswer)
+    const correctAnswer = formatAnswerWithText(r, r.correctAnswer)
+    return `${i + 1}. "${q}" | userAnswer=${userAnswer} | correctAnswer=${correctAnswer} | isCorrect=${r.isCorrect} | difficultyLevel=${r.difficultyLevel} | timeTakenMs=${r.timeTakenMs} | speedTier=${r.speedTier}`
+  }).join('\n')
+  return `${voicePrefix(settings)}You are a personalized learning coach. Analyze the user's answer history for the topic "${safeDomain}" and produce a concise coaching report that will help the user focus their next study sessions.
+
+Answer history (${total} question${total === 1 ? '' : 's'}):
+${historyLines}
+
+Produce a coaching report with exactly these four sections, in this order, each with a clear heading:
+
+Strengths
+- Subtopics, patterns, or skills where the user consistently performs well.
+
+Weaknesses
+- Subtopics, patterns, or skills where the user struggles. Cite concrete evidence from the history (e.g., difficulty, speed, repeated misses).
+
+Learning trajectory
+- State whether the user is improving, plateauing, or declining. Cite evidence (accuracy over time, difficulty progression, speed).
+
+Recommendations
+- 2–4 specific, actionable suggestions tailored to the observed weaknesses and trajectory.
+
+Reply with ONLY the coaching report as plain prose with the four section headings — no JSON, no markdown fences, no extra commentary before or after.`
 }
 

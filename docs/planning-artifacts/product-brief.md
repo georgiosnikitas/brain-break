@@ -4,8 +4,10 @@ status: complete
 inputDocuments: []
 date: 2026-03-01
 author: George
-lastEdited: '2026-04-07'
-editHistory:  - date: '2026-04-07'
+lastEdited: '2026-04-19'
+editHistory:  - date: '2026-04-19'
+    changes: 'Feature 19 (My Coach) added: MVP Feature Summary updated from 16 to 17 core capabilities — added My Coach (AI-generated coaching report analyzing scoped question history to identify strengths, weaknesses, trajectory, and recommendations; configurable scope in Settings: Recent 25 / Extended 100 / Complete all). Key Differentiators table updated with AI-powered progress coaching row. Global Settings bullet updated with My Coach scope. Aligns with PRD Feature 19, Epic 13, FR51, FR52.'
+  - date: '2026-04-07'
     changes: 'OpenAI Compatible API added as 6th AI provider across Executive Summary, Proposed Solution, Key Differentiators table, and MVP Feature Summary. Provider counts updated from 5 to 6. Aligns with PRD Feature 8, Epic 7, and FR6.'
   - date: '2026-04-04'
     changes: 'ASCII Art Milestone setting added: milestone threshold is now configurable in Settings with three options (Instant/0, Quick/10, Classic/100; default: Classic). MVP Feature Summary updated with configurable threshold. Aligns with PRD Feature 8 and Feature 18, Epic 12 Story 12.3, and FR49.'
@@ -74,6 +76,7 @@ No existing CLI-first tool combines AI question generation, user-defined open-en
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill signal scoring | ✅ | ❌ (completion %) | ❌ |
+| AI-powered progress coaching | ✅ | ❌ | ❌ |
 | Timed sprint mode | ✅ | ❌ | ❌ |
 | Zero setup friction | ✅ | ❌ | ❌ |
 | Open source / shareable | ✅ | ❌ | Partial |
@@ -119,7 +122,7 @@ Since `brain-break` is an open-source tool (not a commercial product), success i
 
 ## MVP Feature Summary
 
-The MVP delivers sixteen core capabilities:
+The MVP delivers seventeen core capabilities:
 
 - **In-app domain management** — create, resume, archive, and delete domains from a two-level navigation (home screen + domain sub-menu); all state is domain-scoped and persists across sessions
 - **AI-powered question generation (multi-provider)** — on-demand, never-repeating multiple-choice questions via the user's configured AI provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, Ollama, or OpenAI Compatible API), with adaptive difficulty based on consecutive answer streaks
@@ -131,7 +134,8 @@ The MVP delivers sixteen core capabilities:
 - **View stats command** — summary dashboard showing score, accuracy, total time played, starting difficulty, current difficulty level, score trend, and return streak
 - **Question bookmarking** — bookmark any answered question from the quiz or history for later revisiting; accessible via a dedicated View Bookmarks screen in the domain sub-menu with navigation identical to View History; per-domain, no cap
 - **Explanation drill-down** — after an AI explanation (in quiz or history), a "Teach me more" option generates a concise micro-lesson on the underlying concept, turning every question into a deeper learning opportunity
-- **Global settings** — configurable AI provider, question language (free-text), and tone of voice; global across all domains and persists between sessions
+- **My Coach** — AI-generated coaching report from the domain sub-menu analyzing the user’s question history (configurable scope: last 25, last 100, or all) to surface strengths, weaknesses, learning trajectory, and recommendations
+- **Global settings** — configurable AI provider, question language (free-text), tone of voice, My Coach scope, ASCII Art milestone threshold, theme (Dark/Light), and welcome/exit screen toggle; global across all domains and persists between sessions
 - **Welcome screen** — on launch (when enabled), a branded splash screen with gradient ASCII art, styled subtitle, and app version; dismissible with Enter; controllable via `showWelcome` setting (default: on)
 - **Static banner** — every screen (except Welcome and Provider Setup) renders a persistent `🧠🔨 Brain Break` header with a cyan-to-magenta gradient shadow bar
 - **Terminal UI highlighting & color system** — full-row menu highlight, semantic post-answer colors, speed tier badge colors, and difficulty level badge colors

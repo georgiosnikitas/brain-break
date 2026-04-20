@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { writeDomain, readDomain, listDomains, deleteDomain, _setDataDir, readSettings, writeSettings, _setSettingsPath } from './store.js'
+import { writeDomain, readDomain, listDomains, deleteDomain, _setDataDir, readSettings, writeSettings, _setSettingsPath, loadDomainOrDefault, loadSettingsOrDefault } from './store.js'
 import { defaultDomainFile, DomainFile, defaultSettings } from './schema.js'
 
 let testDir: string
@@ -59,6 +59,33 @@ describe('writeDomain + readDomain', () => {
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('fail-slug')
+  })
+
+  it('roundtrips domain with both coach fields set', async () => {
+    const domain: DomainFile = {
+      ...defaultDomainFile(),
+      meta: {
+        ...defaultDomainFile().meta,
+        lastCoachQuestionCount: 42,
+        lastCoachTimestamp: '2026-04-20T10:00:00.000Z',
+      },
+    }
+    await writeDomain('coach-topic', domain)
+    const result = await readDomain('coach-topic')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.meta.lastCoachQuestionCount).toBe(42)
+    expect(result.data.meta.lastCoachTimestamp).toBe('2026-04-20T10:00:00.000Z')
+  })
+
+  it('roundtrips domain without coach fields — fields remain absent', async () => {
+    const domain = defaultDomainFile()
+    await writeDomain('no-coach-topic', domain)
+    const result = await readDomain('no-coach-topic')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.meta.lastCoachQuestionCount).toBeUndefined()
+    expect(result.data.meta.lastCoachTimestamp).toBeUndefined()
   })
 })
 
@@ -231,6 +258,7 @@ describe('writeSettings + readSettings', () => {
       asciiArtMilestone: 100 as const,
       theme: 'dark' as const,
       showWelcome: true,
+      myCoachScope: '100' as const,
     }
     const writeResult = await writeSettings(settings)
     expect(writeResult.ok).toBe(true)
@@ -325,6 +353,7 @@ describe('writeSettings + readSettings', () => {
       asciiArtMilestone: 100 as const,
       theme: 'dark' as const,
       showWelcome: true,
+      myCoachScope: '100' as const,
     }
     const writeResult = await writeSettings(full)
     expect(writeResult.ok).toBe(true)
@@ -345,5 +374,67 @@ describe('writeSettings + readSettings', () => {
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Failed to write settings')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// loadDomainOrDefault
+// ---------------------------------------------------------------------------
+describe('loadDomainOrDefault', () => {
+  it('returns the domain data when the file exists and is valid', async () => {
+    const domain: DomainFile = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, score: 77 } }
+    await writeDomain('valid-topic', domain)
+    const result = await loadDomainOrDefault('valid-topic')
+    expect(result.meta.score).toBe(77)
+  })
+
+  it('returns defaultDomainFile() and logs a warning when the domain is corrupted (warnOnError=true)', async () => {
+    await writeFile(join(testDir, 'corrupt-topic.json'), 'not valid json')
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+
+    const result = await loadDomainOrDefault('corrupt-topic')
+
+    expect(result.meta.score).toBe(0)
+    expect(result.history).toEqual([])
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('corrupt-topic'))
+    warnSpy.mockRestore()
+  })
+
+  it('returns defaultDomainFile() without logging a warning when warnOnError=false', async () => {
+    await writeFile(join(testDir, 'silent-corrupt.json'), 'not valid json')
+    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+
+    const result = await loadDomainOrDefault('silent-corrupt', false)
+
+    expect(result.meta.score).toBe(0)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// loadSettingsOrDefault
+// ---------------------------------------------------------------------------
+describe('loadSettingsOrDefault', () => {
+  let settingsFile: string
+
+  beforeEach(() => {
+    settingsFile = join(testDir, 'settings.json')
+    _setSettingsPath(settingsFile)
+  })
+
+  afterEach(() => {
+    _setSettingsPath(null)
+  })
+
+  it('returns defaultSettings() when no settings file exists', async () => {
+    const result = await loadSettingsOrDefault()
+    expect(result).toEqual(defaultSettings())
+  })
+
+  it('returns stored settings when the file exists and is valid', async () => {
+    await writeSettings({ ...defaultSettings(), language: 'Spanish' })
+    const result = await loadSettingsOrDefault()
+    expect(result.language).toBe('Spanish')
   })
 })

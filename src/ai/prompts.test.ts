@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt, buildMicroLessonPrompt } from './prompts.js'
-import { defaultSettings, type SettingsFile } from '../domain/schema.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildVerificationPrompt, buildMicroLessonPrompt, buildCoachReportPrompt } from './prompts.js'
+import { defaultSettings, type SettingsFile, type QuestionRecord } from '../domain/schema.js'
 import { makeVerifiedQuestion } from '../__test-helpers__/factories.js'
 
 const englishNaturalSettings = defaultSettings()
@@ -346,5 +346,129 @@ describe('buildMicroLessonPrompt', () => {
     const prompt = buildMicroLessonPrompt(sampleQuestion, 'Line one\nLine two')
     expect(prompt).toContain('Line one Line two')
     expect(prompt).not.toContain('Line one\nLine two')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildCoachReportPrompt
+// ---------------------------------------------------------------------------
+const sampleHistory: QuestionRecord[] = [
+  {
+    question: 'What is a closure?',
+    options: {
+      A: 'A function bundled with lexical scope',
+      B: 'A CSS selector',
+      C: 'A Node.js package manager',
+      D: 'A JavaScript test runner',
+    },
+    correctAnswer: 'A',
+    userAnswer: 'A',
+    isCorrect: true,
+    answeredAt: '2026-04-01T10:00:00.000Z',
+    timeTakenMs: 4200,
+    speedTier: 'fast',
+    scoreDelta: 60,
+    difficultyLevel: 3,
+    bookmarked: false,
+  },
+  {
+    question: 'What is hoisting?',
+    options: {
+      A: 'Automatic memory cleanup',
+      B: 'Declaration processing before execution',
+      C: 'Moving code into a callback',
+      D: 'Converting var to const',
+    },
+    correctAnswer: 'B',
+    userAnswer: 'C',
+    isCorrect: false,
+    answeredAt: '2026-04-02T10:00:00.000Z',
+    timeTakenMs: 22000,
+    speedTier: 'slow',
+    scoreDelta: -30,
+    difficultyLevel: 4,
+    bookmarked: false,
+  },
+]
+
+describe('buildCoachReportPrompt', () => {
+  it('injects voice prefix for non-default settings', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory, greekPirateSettings)
+    expect(prompt).toContain('Respond in Greek using a pirate tone of voice.')
+  })
+
+  it('omits voice prefix when no settings provided', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('omits voice prefix for English/natural settings', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory, englishNaturalSettings)
+    expect(prompt).not.toContain('Respond in')
+  })
+
+  it('sanitizes the domain slug', () => {
+    const prompt = buildCoachReportPrompt('node\njs', sampleHistory)
+    expect(prompt).toContain('"node js"')
+    expect(prompt).not.toContain('"node\njs"')
+  })
+
+  it('includes the domain name in the prompt', () => {
+    const prompt = buildCoachReportPrompt('typescript', sampleHistory)
+    expect(prompt).toContain('typescript')
+  })
+
+  it('includes question text from history entries', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory)
+    expect(prompt).toContain('What is a closure?')
+    expect(prompt).toContain('What is hoisting?')
+  })
+
+  it('includes structured per-question fields (userAnswer, correctAnswer, isCorrect, difficulty, time, speed)', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory)
+    expect(prompt).toContain('userAnswer=A ("A function bundled with lexical scope")')
+    expect(prompt).toContain('correctAnswer=B ("Declaration processing before execution")')
+    expect(prompt).toContain('isCorrect=false')
+    expect(prompt).toContain('difficultyLevel=4')
+    expect(prompt).toContain('timeTakenMs=22000')
+    expect(prompt).toContain('speedTier=slow')
+  })
+
+  it('describes timeout answers without leaking undefined option text', () => {
+    const timedOutRecord: QuestionRecord = {
+      ...sampleHistory[0],
+      userAnswer: 'TIMEOUT',
+      isCorrect: false,
+    }
+
+    const prompt = buildCoachReportPrompt('javascript', [timedOutRecord])
+
+    expect(prompt).toContain('userAnswer=TIMEOUT (no option selected)')
+    expect(prompt).not.toContain('undefined')
+  })
+
+  it('mentions all four report sections', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory)
+    expect(prompt).toContain('Strengths')
+    expect(prompt).toContain('Weaknesses')
+    expect(prompt).toContain('Learning trajectory')
+    expect(prompt).toContain('Recommendations')
+  })
+
+  it('instructs the model to reply with only the report prose', () => {
+    const prompt = buildCoachReportPrompt('javascript', sampleHistory)
+    expect(prompt).toContain('Reply with ONLY')
+  })
+
+  it('sanitizes newlines in question text', () => {
+    const dirty: QuestionRecord = { ...sampleHistory[0], question: 'What is\na closure?' }
+    const prompt = buildCoachReportPrompt('javascript', [dirty])
+    expect(prompt).toContain('What is a closure?')
+    expect(prompt).not.toContain('What is\na closure?')
+  })
+
+  it('handles empty history gracefully', () => {
+    const prompt = buildCoachReportPrompt('javascript', [])
+    expect(prompt).toContain('0 questions')
   })
 })

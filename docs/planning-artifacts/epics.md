@@ -1,10 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-04-07'
+lastEdited: '2026-04-19'
 status: 'complete'
 editHistory:
-  - date: '2026-04-07'
-    changes: 'OpenAI Compatible API provider added as 6th provider: FR6 updated (provider list includes OpenAI Compatible API). FR15 updated (5→6 providers). FR17 updated (OpenAI Compatible API fields noted — no defaults, stored only when configured). FR26 updated (provider list includes OpenAI Compatible API). FR27 updated (OpenAI Compatible API validation: checks OPENAI_COMPATIBLE_API_KEY env var, prompts for endpoint URL and model name, tests connection). FR28 updated (OpenAI Compatible API endpoint/model editing added). FR30 updated (Ollama and OpenAI Compatible API errors include endpoint URL). NFR2 updated (network and auth error messages for OpenAI Compatible API). Epic 7 description updated (5→6 adapters, OpenAI Compatible API in provider list). Story 7.1 updated (AiProviderType union gains openai-compatible, SettingsFileSchema gains optional openaiCompatibleEndpoint/openaiCompatibleModel, backward compatibility list updated). Story 7.2 updated (6 adapters including OpenAI Compatible via @ai-sdk/openai-compatible, createProvider AC for openai-compatible, validateProvider AC for openai-compatible, test coverage 5→6 providers). Story 7.3 updated (AI_ERRORS gains NETWORK_OPENAI_COMPATIBLE and AUTH_OPENAI_COMPATIBLE, import restriction list gains @ai-sdk/openai-compatible). Story 7.4 updated (provider list 5→6, OpenAI Compatible API setup AC with endpoint/model prompts and env var check, test coverage 5→6). Story 7.5 updated (provider selector 5→6, OpenAI Compatible API editing AC, writeSettings persistence list, test coverage 5→6). Reflects PRD edits 2026-04-07 (OpenAI Compatible API provider).'
+  - date: '2026-04-19'
+    changes: 'Feature 19 (My Coach) added: FR51 (My Coach screen — AI coaching report from scoped history, no gate, soft tip for <25 questions, generation timestamp, staleness notice on Regenerate, Regenerate/Back nav), FR52 (My Coach scope setting — Recent 25/Extended 100/Complete all, default Extended 100). FR3 updated (My Coach added to domain sub-menu actions). FR15 updated (Settings screen gains My Coach scope selector). FR17 updated (settings defaults include myCoachScope: "100"). FR Coverage Map updated (FR51 → Epic 13, FR52 → Epic 5/Epic 13). NFR5 updated (my coach screen in terminal reset list). Epic 2 description updated (My Coach in sub-menu action list). Epic 5 description and FRs covered updated (FR52 added). Epic 13 (My Coach) added with 3 stories (13.1–13.3): My Coach Screen, My Coach Scope Setting, Domain Schema Coach Fields. Reflects PRD edit 2026-04-19 (Feature 19 My Coach).'
   - date: '2026-04-05'
     changes: 'Theme setting added: FR50 added (🌓 Theme toggle — Dark/Light, default Dark — controls color palette for readability on dark and light terminal backgrounds; stored as `theme` in settings.json; takes effect immediately). FR15 updated (Settings screen gains Theme toggle). FR17 updated (settings defaults expanded with `theme: "dark"`). FR21–FR23 updated with Dark/Light color variants (bold green, bold yellow, blue substitutions for Light theme). NFR6 updated (dual Dark/Light palette support). FR Coverage Map updated (FR50 → Epic 5, Epic 6). Epic 5 FRs covered updated (FR50 added). Epic 6 description and FRs covered updated (FR50, dual palette, NFR6). Story 5.1 schema updated with `theme` field and default. Story 5.2 settings screen updated with Theme toggle. Story 6.1 rewritten as theme-aware semantic color helpers with Dark/Light branching for all helpers. Story 6.3 test coverage updated for both themes. Story 6.4 added (Theme-Aware Gradient Colors — gradient endpoints adapt per theme for Welcome/Exit/Banner/ASCII Art screens). Story 7.1 defaultSettings() updated with `theme: "dark"`. Reflects PRD edit 2026-04-05 (Feature 8, Feature 9 Theme support).'
   - date: '2026-04-05'
@@ -79,7 +79,7 @@ FR1: On every launch, the app displays a home screen listing all configured acti
 
 FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
-FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, and Back. The ASCII Art label dynamically reflects the domain's unlock status: when the domain has fewer correct answers than the configured ASCII Art Milestone threshold (FR49, default: 100), the label shows a cyan-to-magenta gradient progress bar with percentage (e.g., `ASCII Art [████░░░░░░] 42%`); when the domain has reached the threshold, the label shows `ASCII Art ✨`. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. Selecting Challenge opens the sprint setup screen (see FR44). Selecting ASCII Art opens the milestone-gated ASCII Art screen (see FR48). After a quiz or challenge sprint session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
+FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, and Back. The ASCII Art label dynamically reflects the domain's unlock status: when the domain has fewer correct answers than the configured ASCII Art Milestone threshold (FR49, default: 100), the label shows a cyan-to-magenta gradient progress bar with percentage (e.g., `ASCII Art [████░░░░░░] 42%`); when the domain has reached the threshold, the label shows `ASCII Art ✨`. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. Selecting Challenge opens the sprint setup screen (see FR44). Selecting ASCII Art opens the milestone-gated ASCII Art screen (see FR48). After a quiz or challenge sprint session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
 
 FR4: Domains can be archived from the domain sub-menu — archived domains are removed from the active list but all their history, score, and progress are fully preserved. Archiving returns the user to the home screen.
 
@@ -103,11 +103,11 @@ FR13: Users can view a stats dashboard for the active domain showing: current sc
 
 FR14: The home screen includes a Settings action positioned above the "Buy me a coffee" action.
 
-FR15: The Settings screen allows configuring: AI Provider (selectable from 6 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), Theme (toggle: Dark/Light; default: Dark), and Welcome & Exit Screen toggle (ON/OFF).
+FR15: The Settings screen allows configuring: AI Provider (selectable from 6 providers: OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API), Language (free-text entry), Tone of Voice (selectable from 7 presets: Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate), My Coach Scope (selectable from 3 options: Recent/25, Extended/100, Complete/all; default: Extended), ASCII Art Milestone (selectable from 3 options: Instant/0, Quick/10, Classic/100; default: Classic), Theme (toggle: Dark/Light; default: Dark), and Welcome & Exit Screen toggle (ON/OFF).
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, theme: "dark", showWelcome: true }`. OpenAI Compatible API fields (`openaiCompatibleEndpoint`, `openaiCompatibleModel`) are stored only when the user configures them — no defaults are applied.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, myCoachScope: "100", theme: "dark", showWelcome: true }`. OpenAI Compatible API fields (`openaiCompatibleEndpoint`, `openaiCompatibleModel`) are stored only when the user configures them — no defaults are applied.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -175,6 +175,10 @@ FR49: The Settings screen includes an **ASCII Art Milestone** selector positione
 
 FR50: The Settings screen includes a **🌓 Theme** toggle (displayed as Dark/Light) positioned before the Welcome & Exit Screen toggle. Default is Dark — optimized for dark terminal backgrounds; uses standard cyan, yellow, green, and dim styling. When set to Light — optimized for light terminal backgrounds; substitutes low-contrast colors with readable alternatives (blue for cyan, bold green for green, gray for dim, bold yellow for yellow) as defined in FR21–FR23. The setting is global, applies to all screens and all color output. Changing the theme takes effect immediately — no restart required; the next screen render uses the new palette. The selected value is stored as `theme` (string: `"dark"` | `"light"`) in `settings.json`. Gradient colors (Welcome Screen, Exit Message, Static Banner, ASCII Art) use darker endpoints in Light theme: teal `rgb(0, 140, 160)` → magenta `rgb(180, 0, 100)`. Dim text uses `chalk.gray` in Light theme instead of `chalk.dim`. Header text uses `chalk.bold.blue` in Light theme instead of `chalk.bold.cyan`.
 
+FR51: The domain sub-menu includes a **🏋️  My Coach** action positioned after **Statistics** and before **ASCII Art**. Selecting My Coach opens a dedicated coaching report screen. On first use (no cached report stored in `meta.lastCoachReport`), the AI provider is called immediately to generate a personalized coaching report based on the user's scoped question history. On subsequent uses, the previously generated report is displayed instantly as a preview — the user can then opt to **Regenerate** for a fresh AI analysis. My Coach works from the very first answered question — no minimum gate. When the domain has fewer than 25 answered questions, a dim tip is displayed: "Tip: Reports become more accurate with at least 25 answered questions." The scope of history sent to the AI is controlled by the global My Coach Scope setting (FR52): Recent (25) / Extended (100) / Complete (all), default Extended. The AI returns a concise coaching report covering: strengths, weaknesses, learning trajectory, and recommendations. The report uses the active language and tone settings (FR18). A loading spinner is shown during generation. The report is displayed on a dedicated screen with header `🏋️ My Coach — <domain>` and a dim generation timestamp below the header (e.g., `Generated: Apr 19, 2026 at 14:32`). After the report, two options: **🔄 Regenerate** and **↩️  Back**. On Regenerate, if fewer than 25 new questions have been answered since the last report, a dim staleness notice is shown: "Only X new questions answered since your last report — the new report may not differ significantly." Three optional fields are persisted on the domain JSON on each successful generation: `lastCoachQuestionCount` (number, set to current `history.length`), `lastCoachTimestamp` (ISO 8601 string), and `lastCoachReport` (string, the full report text). If the AI provider fails, the same NFR2 error handling applies.
+
+FR52: The Settings screen includes a **🏋️  My Coach Scope** selector positioned after **Tone of Voice** and before **ASCII Art Milestone**. The selector offers three options via arrow key navigation: **Recent (25 questions)**, **Extended (100 questions)** (default), and **Complete (all questions)**. The setting is global — applies to all domains. When the domain has fewer questions than the selected scope, all available questions are included. The selected value is stored as `myCoachScope` (string: `"25"` | `"100"` | `"all"`) in `settings.json`.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
@@ -185,7 +189,7 @@ NFR3: Missing domain file → treated as a new domain (score 0, no history, no e
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, my coach screen, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
 NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application ships two color palettes (Dark and Light) to ensure readability across both dark and light terminal backgrounds; the active palette is determined by the 🌓 Theme setting (FR50, default: Dark). All semantic color mappings are defined in FR20–FR23. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
@@ -219,7 +223,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 |---|---|---|
 | FR1 | Epic 2 | Home screen — domain list with score + count; select opens domain sub-menu |
 | FR2 | Epic 2 | Create new domain via free-text input |
-| FR3 | Epic 2 | Domain sub-menu — Play/Challenge/History/Bookmarks/Statistics/ASCII Art/Archive/Delete/Back + motivational message on Play |
+| FR3 | Epic 2 | Domain sub-menu — Play/Challenge/History/Bookmarks/Statistics/My Coach/ASCII Art/Archive/Delete/Back + motivational message on Play |
 | FR4 | Epic 2 | Archive domain from domain sub-menu (preserves all data) |
 | FR5 | Epic 2 | Archived domains + unarchive |
 | FR6 | Epic 3, Epic 7 | Multi-provider question generation + SHA-256 deduplication |
@@ -267,6 +271,8 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR49 | Epic 5, Epic 12 | ASCII Art Milestone setting — three threshold options (Instant/0, Quick/10, Classic/100), default Classic; stored as `asciiArtMilestone` in settings.json; affects all ASCII Art unlock gating |
 | FR47 | Epic 2 | Duplicate domain name validation — slugified comparison against active and archived domains with context-specific messages |
 | FR50 | Epic 5, Epic 6 | Theme toggle (Dark/Light, default Dark) — controls color palette for readability on dark and light terminal backgrounds |
+| FR51 | Epic 13 | My Coach screen — cached report shown on entry (preview); AI auto-generated on first use; opt-in Regenerate; generation timestamp; staleness notice on Regenerate; `lastCoachReport` persisted |
+| FR52 | Epic 5, Epic 13 | My Coach Scope setting — Recent (25) / Extended (100) / Complete (all), default Extended; stored as `myCoachScope` in settings.json |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -286,7 +292,7 @@ Users can clone the repo, install dependencies, and run `tsx src/index.ts` to re
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
 
 ### Epic 2: Domain Management
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24, FR47
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
@@ -300,7 +306,7 @@ Users can review their complete question history for any domain (single-question
 **FRs covered:** FR12, FR13, FR37, FR38, FR42
 ### Epic 5: Global Settings
 Users can configure their preferred language and AI tone of voice from a dedicated Settings screen accessible from the home menu — settings persist across sessions, apply to all domains, and take effect on the next AI-generated content (questions, answers, motivational messages).
-**FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19, FR50
+**FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19, FR50, FR52
 **FRs updated:** FR3 (motivational message → AI-generated with language/tone), FR6/FR18 (language + tone injected into all AI calls)
 **NFRs covered:** none directly
 **Additional requirements covered:** SettingsFile schema + Zod validation, settings store (read/write `~/.brain-break/settings.json`), prompt builder updated to accept `{ language, tone }` context
@@ -345,6 +351,12 @@ Users can select an ASCII Art option from the domain sub-menu to view their prog
 **FRs covered:** FR48, FR49
 **FRs updated:** FR3 (ASCII Art label dynamic with configurable threshold), FR15 (Settings screen gains milestone selector), FR17 (settings defaults expanded)
 **NFRs covered:** none — local rendering only, with no provider or network dependency
+
+### Epic 13: My Coach
+Users can select My Coach from the domain sub-menu to receive a personalized AI-generated coaching report that analyzes their answer history — identifying strengths, weaknesses, learning trajectory, and recommendations. On entry, a previously generated report is shown instantly as a preview (no AI call); users opt in to regeneration via the Regenerate action. First-time use auto-generates a report. The report scope is configurable in Settings (last 25, last 100, or all questions). Reports display a generation timestamp, and regenerating shows a staleness notice when fewer than 25 new questions have been answered since the last report. The full report text is persisted to the domain file (`lastCoachReport`) alongside `lastCoachTimestamp` and `lastCoachQuestionCount`.
+**FRs covered:** FR51, FR52
+**FRs updated:** FR3 (My Coach added to domain sub-menu actions), FR15 (Settings screen gains My Coach Scope selector), FR17 (settings defaults include myCoachScope)
+**NFRs covered:** NFR2 (AI provider error handling), NFR5 (My Coach screen in terminal reset list)
 
 ---
 
@@ -573,7 +585,7 @@ So that I can easily support the developer without leaving the terminal.
 
 ## Epic 2: Domain Management
 
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
+Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
 
 ### Story 2.1: Home Screen — Display Domain List
 
@@ -2577,3 +2589,150 @@ I want to configure the ASCII Art unlock milestone in Settings with three option
 **Given** the Settings screen, ASCII Art screen, and domain menu are updated  
 **When** I run `npm test`  
 **Then** all existing tests pass with no regressions, and new tests cover: schema validation for `asciiArtMilestone` (0/10/100 accepted, other values rejected, default 100); settings screen shows milestone selector; ASCII Art locked/unlocked behavior with different thresholds; domain menu label adapts to threshold; motivational message reflects configured value; progress bar caps at 100%
+
+---
+
+## Epic 13: My Coach
+
+Users can select My Coach from the domain sub-menu to receive a personalized AI-generated coaching report that analyzes their answer history — identifying strengths, weaknesses, learning trajectory, and recommendations. The report scope is configurable in Settings (last 25, last 100, or all questions). Reports display a generation timestamp, and regenerating shows a staleness notice when fewer than 25 new questions have been answered since the last report.
+
+### Story 13.1: My Coach Screen
+
+As a user,
+I want to select My Coach from the domain sub-menu and receive an AI-generated coaching report based on my answer history for the active domain,
+So that I can understand my strengths, weaknesses, and learning trajectory — and get actionable recommendations for what to focus on next.
+
+**Acceptance Criteria:**
+
+**Given** the domain sub-menu is displayed  
+**When** I view the list of actions  
+**Then** a `🏋️ My Coach` option appears after `📊 Statistics` and before `🎨 ASCII Art`  
+
+**Given** I select `🏋️ My Coach` from the domain sub-menu  
+**When** the screen renders  
+**Then** `clearAndBanner()` is called and the screen displays a header: `🏋️ My Coach — <domain>` (using `header()`, same pattern as Statistics)  
+**And** a loading spinner is shown while the AI generates the coaching report  
+
+**Given** the domain has at least 1 answered question  
+**When** the AI coaching report is requested  
+**Then** the history payload includes a structured summary per question from the scoped window (controlled by the My Coach scope setting, FR52): question text, user's chosen answer, correct answer, whether it was correct, difficulty level, time taken, and speed tier  
+**And** when the domain has fewer questions than the selected scope, all available questions are included  
+
+**Given** the AI provider returns a coaching report  
+**When** the report is displayed  
+**Then** it covers four sections: **Strengths** (subtopics where the user performs well), **Weaknesses** (subtopics where the user struggles), **Learning trajectory** (improving/plateauing/declining with evidence), and **Recommendations** (specific, actionable suggestions)  
+**And** the report is generated using the active language and tone settings (FR18)  
+
+**Given** the coaching report is displayed  
+**When** I view the screen  
+**Then** a dim generation timestamp is shown immediately below the header (e.g., `Generated: Apr 19, 2026 at 14:32`)  
+**And** `lastCoachTimestamp` (ISO 8601 string) is persisted to the domain JSON file  
+**And** `lastCoachQuestionCount` (number, set to current `history.length`) is persisted to the domain JSON file  
+
+**Given** the domain has fewer than 25 answered questions  
+**When** the coaching report is displayed  
+**Then** a dim tip is shown above the report: *"Tip: Reports become more accurate with at least 25 answered questions."*  
+
+**Given** the domain has 25 or more answered questions  
+**When** the coaching report is displayed  
+**Then** the tip is not shown  
+
+**Given** the coaching report is displayed  
+**When** I view the navigation options  
+**Then** two options are shown: **🔄 Regenerate** and **↩️  Back**  
+
+**Given** I select **🔄 Regenerate**  
+**When** fewer than 25 new questions have been answered since the last report (current `history.length` minus `lastCoachQuestionCount` < 25)  
+**Then** a dim staleness notice is displayed above the regenerated report: *"Only X new questions answered since your last report — the new report may not differ significantly."*  
+**And** the AI is still called and a fresh report is generated (the notice is informational, not blocking)  
+**And** `lastCoachQuestionCount` and `lastCoachTimestamp` are updated in the domain JSON file  
+
+**Given** I select **🔄 Regenerate**  
+**When** 25 or more new questions have been answered since the last report  
+**Then** the staleness notice is not shown  
+**And** a fresh report is generated and displayed  
+**And** `lastCoachQuestionCount` and `lastCoachTimestamp` are updated in the domain JSON file  
+
+**Given** I select **↩️  Back** or press Ctrl+C  
+**When** the action is triggered  
+**Then** I am returned to the domain sub-menu  
+
+**Given** the AI provider is unreachable or the call fails  
+**When** the error occurs  
+**Then** the app displays the same provider-specific error message as NFR2  
+**And** the user is returned to the domain sub-menu — no crash  
+
+**Given** no provider is configured (`provider: null`)  
+**When** I select My Coach  
+**Then** the app displays: *"AI provider not ready. Go to Settings to configure."* and returns to the domain sub-menu (same guard as FR29)  
+
+**Given** `src/screens/my-coach.ts` and `src/screens/my-coach.test.ts` are created  
+**When** I run `npm test`  
+**Then** all tests pass, covering: My Coach appears in domain sub-menu after Statistics; header and timestamp rendered; AI called with scoped history; report displays four sections; tip shown when <25 questions; tip hidden when ≥25; Regenerate generates fresh report; staleness notice shown when <25 new questions since last report; staleness notice hidden when ≥25 new; lastCoachQuestionCount and lastCoachTimestamp persisted; Back returns to domain sub-menu; Ctrl+C returns to domain sub-menu; provider error handled gracefully; no-provider guard displayed  
+
+---
+
+### Story 13.2: My Coach Scope Setting
+
+As a user,
+I want to configure the My Coach history scope in Settings — choosing between Recent (25 questions), Extended (100 questions), or Complete (all questions) — so that I can control the depth of analysis and the token cost of my coaching reports.
+
+**Acceptance Criteria:**
+
+**Given** I open the Settings screen  
+**When** I view the list of settings  
+**Then** a `🏋️ My Coach scope` selector is displayed after **Tone of Voice** and before **🎨 ASCII Art Milestone**  
+**And** it shows the currently active option name (Recent / Extended / Complete)  
+
+**Given** I select the My Coach scope setting  
+**When** the selector opens  
+**Then** three options are shown: `Recent (25 questions)`, `Extended (100 questions)`, `Complete (all questions)`  
+**And** the current value is pre-selected  
+
+**Given** I select `Extended (100 questions)` (the default)  
+**When** I save settings  
+**Then** `myCoachScope` is stored as `"100"` in `settings.json`  
+
+**Given** I select `Recent (25 questions)`  
+**When** I save settings  
+**Then** `myCoachScope` is stored as `"25"` in `settings.json`  
+
+**Given** I select `Complete (all questions)`  
+**When** I save settings  
+**Then** `myCoachScope` is stored as `"all"` in `settings.json`  
+
+**Given** `myCoachScope` is missing from `settings.json` (existing users upgrading)  
+**When** the settings file is loaded  
+**Then** the schema applies the default value of `"100"` — existing behavior is preserved  
+
+**Given** the Settings screen is updated  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests cover: schema validation for `myCoachScope` (`"25"` / `"100"` / `"all"` accepted, other values rejected, default `"100"`); settings screen shows My Coach scope selector; Save persists selected value; default applied on missing field  
+
+---
+
+### Story 13.3: Domain Schema Coach Fields
+
+As a developer,
+I want `lastCoachQuestionCount` and `lastCoachTimestamp` added as optional fields on the domain JSON schema,
+So that the My Coach screen can track when the last report was generated and how many questions existed at that time.
+
+**Acceptance Criteria:**
+
+**Given** `domain/schema.ts` is updated  
+**When** I inspect the `DomainFileSchema`  
+**Then** it includes two optional fields: `lastCoachQuestionCount` (number, optional) and `lastCoachTimestamp` (string/ISO 8601, optional)  
+**And** existing domain files without these fields pass Zod validation (backward compatible)  
+
+**Given** `defaultDomainFile()` is called  
+**When** I inspect the returned object  
+**Then** `lastCoachQuestionCount` and `lastCoachTimestamp` are not present (they are only written after a coaching report is generated)  
+
+**Given** a My Coach report is successfully generated  
+**When** `writeDomain()` is called  
+**Then** `lastCoachQuestionCount` is set to the domain's current `history.length`  
+**And** `lastCoachTimestamp` is set to the current ISO 8601 timestamp  
+
+**Given** `domain/schema.ts` and `domain/store.ts` are updated  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests cover: schema accepts domain files with and without coach fields; `lastCoachQuestionCount` and `lastCoachTimestamp` round-trip through write/read; fields are absent from `defaultDomainFile()` output

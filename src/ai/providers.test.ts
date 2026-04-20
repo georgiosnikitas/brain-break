@@ -309,6 +309,77 @@ describe('Ollama adapter', () => {
 
     await expect(result.data.generateCompletion('prompt')).rejects.toThrow('model not found')
   })
+
+  it('normalizes trailing slashes in the Ollama endpoint URL', async () => {
+    const settings = makeSettings({ provider: 'ollama', ollamaEndpoint: 'http://myhost:11434//', ollamaModel: 'llama3' })
+    const result = createProvider(settings)
+    if (!result.ok) throw new Error('expected ok')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce({ response: 'ok' }),
+    }))
+
+    await result.data.generateCompletion('prompt')
+
+    expect(fetch).toHaveBeenCalledWith('http://myhost:11434/api/generate', expect.anything())
+  })
+
+  it('throws when the Ollama error body contains an object with a message property', async () => {
+    const result = createProvider(makeSettings({ provider: 'ollama' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: vi.fn().mockResolvedValueOnce({ error: { message: 'model load failed' } }),
+      text: vi.fn().mockResolvedValueOnce(''),
+    }))
+
+    await expect(result.data.generateCompletion('prompt')).rejects.toThrow('model load failed')
+  })
+
+  it('falls back to response text when Ollama returns a non-JSON error body', async () => {
+    const result = createProvider(makeSettings({ provider: 'ollama' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: vi.fn().mockRejectedValueOnce(new SyntaxError('invalid json')),
+      text: vi.fn().mockResolvedValueOnce('Internal server error'),
+    }))
+
+    await expect(result.data.generateCompletion('prompt')).rejects.toThrow('Internal server error')
+  })
+
+  it('falls back to status line when the Ollama error body text is empty', async () => {
+    const result = createProvider(makeSettings({ provider: 'ollama' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: vi.fn().mockRejectedValueOnce(new SyntaxError('invalid json')),
+      text: vi.fn().mockResolvedValueOnce('   '),
+    }))
+
+    await expect(result.data.generateCompletion('prompt')).rejects.toThrow('Ollama request failed with status 503')
+  })
+
+  it('falls back to status line when both JSON and text() reading fail', async () => {
+    const result = createProvider(makeSettings({ provider: 'ollama' }))
+    if (!result.ok) throw new Error('expected ok')
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: vi.fn().mockRejectedValueOnce(new SyntaxError('invalid json')),
+      text: vi.fn().mockRejectedValueOnce(new Error('read failed')),
+    }))
+
+    await expect(result.data.generateCompletion('prompt')).rejects.toThrow('Ollama request failed with status 500')
+  })
 })
 
 // ---------------------------------------------------------------------------

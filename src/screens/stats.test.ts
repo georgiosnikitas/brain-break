@@ -291,7 +291,8 @@ describe('showStats — with history', () => {
   })
 
   it('displays score trend label', async () => {
-    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-10T10:00:00.000Z', scoreDelta: 50 })])
+    const fixedNow = new Date('2026-03-15T12:00:00.000Z').getTime()
+    const logged = await runStatsAndCapture([makeRecord({ answeredAt: '2026-03-10T10:00:00.000Z', scoreDelta: 50 })], fixedNow)
     expect(logged).toContain('Growing 📈')
   })
 

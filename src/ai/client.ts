@@ -1,10 +1,10 @@
 import { randomInt } from 'node:crypto'
 import { createProvider, AI_ERRORS, classifyProviderError } from './providers.js'
 import type { AiProvider } from './providers.js'
-import type { Result, SettingsFile, AnswerOption } from '../domain/schema.js'
+import type { Result, SettingsFile, AnswerOption, QuestionRecord } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import { hashQuestion } from '../utils/hash.js'
-import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildMicroLessonPrompt, buildVerificationPrompt, QuestionResponseSchema, VerificationResponseSchema, sanitizeInput } from './prompts.js'
+import { buildQuestionPrompt, buildDeduplicationPrompt, buildMotivationalPrompt, buildExplanationPrompt, buildMicroLessonPrompt, buildVerificationPrompt, buildCoachReportPrompt, QuestionResponseSchema, VerificationResponseSchema, sanitizeInput } from './prompts.js'
 import type { QuestionResponse, VerifiedQuestion, MotivationalTrigger } from './prompts.js'
 
 // Re-export AI_ERRORS so downstream consumers keep working without import path changes
@@ -214,4 +214,12 @@ export async function generateMicroLesson(
   settings?: SettingsFile,
 ): Promise<Result<string>> {
   return callProvider(buildMicroLessonPrompt(question, explanation, settings), settings)
+}
+
+export async function generateCoachReport(
+  slug: string,
+  scopedHistory: QuestionRecord[],
+  settings?: SettingsFile,
+): Promise<Result<string>> {
+  return callProvider(buildCoachReportPrompt(slug, scopedHistory, settings), settings)
 }

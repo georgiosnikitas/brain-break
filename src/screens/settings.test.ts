@@ -590,6 +590,119 @@ describe('showSettingsScreen', () => {
     expect(themeIdx).toBeGreaterThan(milestoneIdx)
     expect(themeIdx).toBeLessThan(welcomeIdx)
   })
+
+  // ---------------------------------------------------------------------------
+  // My Coach scope
+  // ---------------------------------------------------------------------------
+  it('My Coach scope choice appears after Tone of Voice and before ASCII Art Milestone', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const choices = (firstCallArgs.choices as SettingsChoice[]).filter((c) => c?.value)
+    const toneIdx = choices.findIndex((c) => c?.value === 'tone')
+    const coachIdx = choices.findIndex((c) => c?.value === 'myCoachScope')
+    const milestoneIdx = choices.findIndex((c) => c?.value === 'asciiArtMilestone')
+    expect(coachIdx).toBeGreaterThan(toneIdx)
+    expect(coachIdx).toBeLessThan(milestoneIdx)
+    expect(coachIdx).toBeGreaterThanOrEqual(0)
+  })
+
+  it('renders My Coach scope label with Extended when myCoachScope is "100"', async () => {
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const coachChoice = choices.find((c) => c?.value === 'myCoachScope')
+    expect(coachChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('My Coach Scope: Extended') })
+    )
+  })
+
+  it('renders My Coach scope label with Recent when myCoachScope is "25"', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), myCoachScope: '25' } })
+    mockSelect.mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const firstCallArgs = mockSelect.mock.calls[0][0]
+    const choices = firstCallArgs.choices as SettingsChoice[]
+    const coachChoice = choices.find((c) => c?.value === 'myCoachScope')
+    expect(coachChoice).toEqual(
+      expect.objectContaining({ name: expect.stringContaining('My Coach Scope: Recent') })
+    )
+  })
+
+  it('selecting myCoachScope action triggers scope selector prompt with correct default', async () => {
+    mockSelect
+      .mockResolvedValueOnce('myCoachScope')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      message: 'My Coach Scope',
+      default: '100',
+    }))
+  })
+
+  it('My Coach scope selector includes a Back option after a separator', async () => {
+    mockSelect
+      .mockResolvedValueOnce('myCoachScope')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const scopePrompt = mockSelect.mock.calls[1]?.[0]
+    expect(scopePrompt).toEqual(expect.objectContaining({ message: 'My Coach Scope' }))
+    expect(scopePrompt?.choices).toHaveLength(5)
+    expect(scopePrompt?.choices[4]).toEqual({ name: '↩️  Back', value: 'back' })
+  })
+
+  it('Back from My Coach scope selector leaves the value unchanged', async () => {
+    mockSelect
+      .mockResolvedValueOnce('myCoachScope')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ myCoachScope: '100' }))
+  })
+
+  it('Save after My Coach scope change persists the selected value', async () => {
+    mockSelect
+      .mockResolvedValueOnce('myCoachScope')
+      .mockResolvedValueOnce('25')
+      .mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ myCoachScope: '25' }))
+  })
+
+  it('Save with default scope includes myCoachScope: "100"', async () => {
+    mockSelect.mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ myCoachScope: '100' }))
+  })
+
+  it('ExitPromptError during scope select does not call writeSettings', async () => {
+    mockSelect
+      .mockResolvedValueOnce('myCoachScope')
+      .mockRejectedValueOnce(new ExitPromptError('canceled'))
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).not.toHaveBeenCalled()
+  })
 })
 
 describe('getProviderLabel', () => {

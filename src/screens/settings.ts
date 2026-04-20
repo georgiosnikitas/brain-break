@@ -3,7 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import ora from 'ora'
 import { testProviderConnection } from '../ai/providers.js'
 import { readSettings, writeSettings } from '../domain/store.js'
-import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type AsciiArtMilestone, type ToneOfVoice, type SettingsFile, type Theme } from '../domain/schema.js'
+import { defaultSettings, PROVIDER_CHOICES, PROVIDER_LABELS, type AiProviderType, type AsciiArtMilestone, type MyCoachScope, type ToneOfVoice, type SettingsFile, type Theme } from '../domain/schema.js'
 import { menuTheme, success, warn, header, setTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import { promptForProviderSettings } from './provider-settings.js'
@@ -23,7 +23,7 @@ const TONE_LABELS: Record<string, string> = Object.fromEntries(
   TONE_CHOICES.map(c => [c.value, c.name])
 )
 
-type SettingsAction = 'provider' | 'language' | 'tone' | 'asciiArtMilestone' | 'theme' | 'showWelcome' | 'save' | 'back'
+type SettingsAction = 'provider' | 'language' | 'tone' | 'myCoachScope' | 'asciiArtMilestone' | 'theme' | 'showWelcome' | 'save' | 'back'
 
 const THEME_LABELS: Record<Theme, string> = { dark: 'Dark', light: 'Light' }
 
@@ -34,6 +34,14 @@ const MILESTONE_CHOICES: Array<{ name: string; value: AsciiArtMilestone }> = [
 ]
 
 const MILESTONE_LABELS: Record<number, string> = { 0: 'Instant', 10: 'Quick', 100: 'Classic' }
+
+const MY_COACH_SCOPE_CHOICES: Array<{ name: string; value: MyCoachScope }> = [
+  { name: 'Recent (25 questions)', value: '25' },
+  { name: 'Extended (100 questions)', value: '100' },
+  { name: 'Complete (all questions)', value: 'all' },
+]
+
+const MY_COACH_SCOPE_LABELS: Record<string, string> = { '25': 'Recent', '100': 'Extended', 'all': 'Complete' }
 const SETTINGS_PAGE_SIZE = 10
 
 export function getProviderLabel(provider: AiProviderType | null): string {
@@ -101,10 +109,29 @@ async function handleSaveAction(settings: SettingsFile): Promise<void> {
   }
 }
 
+async function handleMyCoachScopeAction(current: MyCoachScope): Promise<{ value: MyCoachScope; banner: string }> {
+  const selectedScope = await select<MyCoachScope | 'back'>({
+    message: 'My Coach Scope',
+    choices: [
+      ...MY_COACH_SCOPE_CHOICES,
+      new Separator(),
+      { name: '↩️  Back', value: 'back' as const },
+    ],
+    default: current,
+    theme: menuTheme,
+    pageSize: SETTINGS_PAGE_SIZE,
+  })
+  if (selectedScope === 'back') {
+    return { value: current, banner: '' }
+  }
+  return { value: selectedScope, banner: success(`My Coach Scope set to ${MY_COACH_SCOPE_LABELS[selectedScope]}`) }
+}
+
 async function selectSettingsAction(
   provider: AiProviderType | null,
   language: string,
   tone: ToneOfVoice,
+  myCoachScope: MyCoachScope,
   asciiArtMilestone: AsciiArtMilestone,
   theme: Theme,
   showWelcome: boolean,
@@ -115,6 +142,7 @@ async function selectSettingsAction(
       { name: `🤖 AI Provider:   ${getProviderLabel(provider)}`, value: 'provider' as const },
       { name: `🌍 Language:      ${language}`, value: 'language' as const },
       { name: `🎭 Tone of Voice: ${TONE_LABELS[tone]}`, value: 'tone' as const },
+      { name: `🏋️  My Coach Scope: ${MY_COACH_SCOPE_LABELS[myCoachScope]}`, value: 'myCoachScope' as const },
       { name: `🎨 ASCII Art Milestone: ${MILESTONE_LABELS[asciiArtMilestone]}`, value: 'asciiArtMilestone' as const },
       { name: `🌓 Theme:         ${THEME_LABELS[theme]}`, value: 'theme' as const },
       { name: `🎬 Welcome & Exit screen: ${showWelcome ? 'ON' : 'OFF'}`, value: 'showWelcome' as const },
@@ -171,6 +199,7 @@ export async function showSettingsScreen(): Promise<void> {
   let openaiCompatibleModel = currentSettings.openaiCompatibleModel
   let showWelcome = currentSettings.showWelcome
   let asciiArtMilestone = currentSettings.asciiArtMilestone
+  let myCoachScope = currentSettings.myCoachScope
   let theme = currentSettings.theme
   let banner = ''
 
@@ -181,7 +210,7 @@ export async function showSettingsScreen(): Promise<void> {
       if (banner) console.log(banner + '\n')
       banner = ''
       
-        const action = await selectSettingsAction(provider, language, tone, asciiArtMilestone, theme, showWelcome)
+        const action = await selectSettingsAction(provider, language, tone, myCoachScope, asciiArtMilestone, theme, showWelcome)
 
       switch (action) {
         case 'provider': {
@@ -227,6 +256,12 @@ export async function showSettingsScreen(): Promise<void> {
           banner = welcomeResult.banner
           break
         }
+        case 'myCoachScope': {
+          const scopeResult = await handleMyCoachScopeAction(myCoachScope)
+          myCoachScope = scopeResult.value
+          if (scopeResult.banner) banner = scopeResult.banner
+          break
+        }
         case 'asciiArtMilestone': {
           const milestoneResult = await handleAsciiArtMilestoneAction(asciiArtMilestone)
           asciiArtMilestone = milestoneResult.value
@@ -247,6 +282,7 @@ export async function showSettingsScreen(): Promise<void> {
             openaiCompatibleEndpoint,
             openaiCompatibleModel,
             asciiArtMilestone,
+            myCoachScope,
             theme,
             showWelcome,
           }

@@ -29,8 +29,10 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-04-07'
+lastEdited: '2026-04-19'
 editHistory:
+  - date: '2026-04-19'
+    changes: 'Feature 19 (My Coach) added: a new domain sub-menu action that sends the user''s scoped question history to the AI provider and returns a qualitative coaching report (strengths, weaknesses, trajectory, recommendations). No minimum question gate — works from 1 answered question; when the domain has fewer than 25 questions, a soft tip is displayed. Report displays a generation timestamp below the header. On Regenerate, if fewer than 25 new questions have been answered since the last report, a staleness notice is shown. Two new optional fields added to domain JSON: `lastCoachQuestionCount` (number) and `lastCoachTimestamp` (ISO 8601 string). My Coach scope setting added to Feature 8 (Global Settings): Recent (25) / Extended (100) / Complete (all), default Extended (100); stored as `myCoachScope` (string: `"25"` | `"100"` | `"all"`, default `"100"`) in settings.json. Product Scope updated from 18 to 19 capabilities. Executive Summary, User Journeys (Core Usage, Long-term), Innovation Analysis, Feature 1 domain sub-menu, Feature 5 domain data, Feature 8 settings, Implementation Decisions (settings persistence), FR preamble, and NFR 5 updated with My Coach references.'
   - date: '2026-04-07'
     changes: 'Provider label renamed from "OpenAI Compatible" to "OpenAI Compatible API" across all live PRD content — Executive Summary, User Journeys, Project-Type Requirements, Implementation Decisions, Feature 2, Feature 8, NFR 2. Edit history entries and internal field names (`openai-compatible` enum, `openaiCompatibleEndpoint`, `openaiCompatibleModel`, `OPENAI_COMPATIBLE_API_KEY`) unchanged.'
   - date: '2026-04-07'
@@ -121,7 +123,7 @@ editHistory:
 
 ## Executive Summary
 
-`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, a local Ollama instance, or any OpenAI-compatible API via the OpenAI Compatible API option. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
+`brain-break` is a Node.js terminal application that delivers AI-powered, multiple-choice knowledge quizzes on any topic you define. It generates contextually relevant, never-repeating questions across any domain — from `java-programming` to `greek-mythology` to `thai-cuisine` — turning idle break time into a measurable, honest knowledge signal. A built-in AI coach analyzes the user's answer history and delivers personalized progress reports — identifying strengths, weaknesses, learning trajectory, and actionable recommendations. Users choose their AI provider: OpenAI, Anthropic, Google Gemini, GitHub Copilot SDK, a local Ollama instance, or any OpenAI-compatible API via the OpenAI Compatible API option. It lives where terminal users already work: the CLI. No accounts. No setup friction. Clone, pick your provider, and run.
 
 Curious people want to stay sharp across a wide variety of topics, but existing learning tools demand 30–60 minute structured sessions that don't fit the short, unplanned breaks that naturally occur during a day. The result: knowledge gaps compound silently, and people either over-commit to platforms they never finish, or do nothing during natural break windows. No existing CLI-first tool combines AI question generation, user-defined open-ended domains, duplicate prevention, and honest skill tracking in a single, zero-friction package.
 
@@ -165,7 +167,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 18 capabilities define the complete MVP:
+The following 19 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -185,6 +187,7 @@ The following 18 capabilities define the complete MVP:
 16. Question Bookmarking
 17. Challenge Mode (Sprint)
 18. ASCII Art (Milestone Unlock)
+19. My Coach
 
 ### Out of Scope
 
@@ -273,6 +276,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 - **Play:** Answers a question → sees result in color (correct = green, incorrect = red) → sees score delta in color → sees speed tier badge → next question
 - **Challenge:** Selects Challenge from the domain sub-menu → picks sprint duration and sprint size presets → app preloads all N questions → sprint starts with a visible countdown timer that never pauses → answers questions with Next question as the only forward action → sprint ends when all N questions are answered or the timer hits zero
 - On exiting a session, the domain sub-menu displays a one-time session summary — score delta, accuracy, speed stats, and difficulty change — giving every session a tangible result before the user decides what to do next; Challenge sessions additionally show a sprint completion line (questions completed vs total, or time-expired indicator)
+- Between sessions, the user can select **My Coach** from the domain sub-menu to receive a personalized AI-generated coaching report that analyzes their answer history — identifying strengths, weaknesses, learning trajectory, and recommendations for where to focus next
 - When the user is done, selecting Exit from the home screen shows a branded farewell screen (Feature 15), then the app terminates cleanly
 - History persists between sessions automatically
 
@@ -280,7 +284,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. User switches Theme from Dark to Light because they're using a terminal with a white background — all colors immediately adapt for readability. Changing settings takes effect on the next AI call (language, tone) or next screen render (theme) — no restart required.
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via Bookmarks for targeted review. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via Bookmarks for targeted review. My Coach takes the learning loop further — users open their coaching report to see which subtopics they're strong in, where they plateau, and what to focus on next, turning raw history into strategic learning direction. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -303,6 +307,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 | Never repeats questions | ✅ | N/A | ❌ |
 | In-app domain management | ✅ | ❌ | ❌ |
 | Honest skill-signal scoring | ✅ | ❌ (completion %) | ❌ |
+| AI-powered progress coaching | ✅ | ❌ | ❌ |
 | Zero setup friction | ✅ | ❌ | ❌ |
 | Open source / shareable | ✅ | ❌ | Partial |
 
@@ -331,7 +336,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`). For OpenAI Compatible API, the settings store `openaiCompatibleEndpoint` (string, no default — must be provided by the user) and `openaiCompatibleModel` (string, no default — must be provided by the user). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the generation prompt returns a **JSON structured response** with question text, answer options (A–D), difficulty level, and speed tier time thresholds (fast / normal / slow in ms). The generation step does **not** supply the trusted answer key
 - **Language and tone injection:** Every AI prompt (questions, motivational messages, answer explanations) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), and for OpenAI Compatible API: `openaiCompatibleEndpoint` (string) and `openaiCompatibleModel` (string), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "theme": "dark", "showWelcome": true }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), and for OpenAI Compatible API: `openaiCompatibleEndpoint` (string) and `openaiCompatibleModel` (string), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `myCoachScope` (string: `"25"` | `"100"` | `"all"`, default `"100"`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "myCoachScope": "100", "theme": "dark", "showWelcome": true }`
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Answer verification mechanism:** After generating and shuffling a candidate question, a separate verification prompt asks the AI to determine the correct answer for the finalized question **without seeing any pre-selected answer**. The verification response must return both `correctAnswer` (`A` | `B` | `C` | `D`) and `correctOptionText` (the exact copied text of the selected option). The app accepts the candidate only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`. Verification is **fail-closed**: any mismatch, network error, JSON parse error, or schema mismatch discards the entire candidate and triggers a fresh generation cycle. Each question has a bounded retry budget of **3 candidate attempts total** (initial attempt + 2 retries); if all attempts fail, the question is rejected and never shown to the user
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`). Duplicate validation compares the slugified form against existing domain files — ensuring visually distinct inputs that normalize to the same slug (e.g. `Python 3` and `python-3`) are detected as duplicates
@@ -340,7 +345,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 18 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 19 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -358,14 +363,14 @@ The following 18 features define the complete MVP capability set. Each feature i
 **Domain sub-menu (Level 2)**
 
 - Selecting a domain from the home screen opens a domain sub-menu — the prompt header shows the domain name, current score, and total questions answered (refreshed on every entry)
-- The domain sub-menu provides the following actions: **Play**, **Challenge**, **History**, **Bookmarks**, **Statistics**, **ASCII Art**, **Archive**, **Delete**, and **Back**
+- The domain sub-menu provides the following actions: **Play**, **Challenge**, **History**, **Bookmarks**, **Statistics**, **My Coach**, **ASCII Art**, **Archive**, **Delete**, and **Back**
 - The **ASCII Art** label dynamically reflects the domain's unlock status: when the domain has fewer correct answers than the configured ASCII Art Milestone threshold (Feature 8, default: 100), the label shows a cyan-to-magenta gradient progress bar with percentage (e.g., `ASCII Art [████░░░░░░] 42%`); when the domain has reached the threshold, the label shows `ASCII Art ✨`
 - Selecting **Play** displays a contextual motivational message before the session starts — triggered when the user has returned within 7 days of their last session or their score is trending upward — the message is AI-generated using the active language and tone of voice settings, then the quiz begins
 - After a quiz or challenge sprint session ends, the user is returned to the domain sub-menu (not the home screen); on this first re-render, a session summary block is displayed between the domain header and the action menu (see Feature 14 — Session Summary)
 - Selecting **Archive** sets the domain as archived, removes it from the active list, and returns the user to the home screen — all history, score, and progress are fully preserved
 - Selecting **Delete** prompts the user with a blocking confirmation dialog (*"Delete '[domain]' permanently? This cannot be undone."*) — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu
 - Selecting **Back** returns the user to the home screen
-- Selecting **History**, **Bookmarks**, **Statistics**, or **ASCII Art** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
+- Selecting **History**, **Bookmarks**, **Statistics**, **My Coach**, or **ASCII Art** opens the respective screen; selecting Back from any returns the user to the domain sub-menu
 - Selecting **Challenge** opens the sprint setup screen (see Feature 17 — Challenge Mode)
 
 **Archived domains**
@@ -446,7 +451,7 @@ The following 18 features define the complete MVP capability set. Each feature i
 
 - All domain data persists locally between sessions — no data is lost when the app is closed
 - Each domain's state is fully isolated — switching domains does not affect other domains
-- Each domain stores: current score, current difficulty level, total time played, and complete question history
+- Each domain stores: current score, current difficulty level, total time played, complete question history, and optional My Coach metadata (`lastCoachQuestionCount`, `lastCoachTimestamp`, and `lastCoachReport` — present only after the user generates their first coaching report for the domain)
 
 Every answered question is recorded with:
 - Question text and all answer options
@@ -484,10 +489,10 @@ User can view a summary dashboard for the active domain:
 ### Feature 8 — Global Settings
 
 - The home screen includes a **Settings** option positioned above the "Buy me a coffee" action
-- Selecting Settings opens a settings screen where the user can configure six global preferences: **AI Provider**, **Language**, **Tone of Voice**, **ASCII Art Milestone**, **Theme**, and **Welcome & Exit Screen** toggle
+- Selecting Settings opens a settings screen where the user can configure seven global preferences: **AI Provider**, **Language**, **Tone of Voice**, **My Coach Scope**, **ASCII Art Milestone**, **Theme**, and **Welcome & Exit Screen** toggle
 - Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages)
 - Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`
-- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, asciiArtMilestone = `100`, theme = `dark`, showWelcome = `true`
+- On first launch with no settings file, defaults are: provider = none (must be selected), language = `English`, tone = `Natural`, myCoachScope = `100`, asciiArtMilestone = `100`, theme = `dark`, showWelcome = `true`
 
 **First-Launch Provider Setup**
 
@@ -539,6 +544,16 @@ User can view a summary dashboard for the active domain:
   - **Classic (100 questions)** — unlocks after 100 cumulative correct answers per domain (default)
 - The setting is global — it applies to all domains; changing the threshold is retroactive (domains that already meet the new threshold immediately unlock, domains that no longer meet it re-lock)
 - The selected value is stored as `asciiArtMilestone` (number: `0` | `10` | `100`) in `settings.json`
+
+**My Coach Scope**
+- A 🏋️  My Coach Scope selector (displayed as the currently active option name) controls how many questions from the domain's history are included in the AI coaching report (Feature 19)
+- Three options via arrow key navigation:
+  - **Recent (25 questions)** — sends the most recent 25 answered questions to the AI provider
+  - **Extended (100 questions)** — sends the most recent 100 answered questions to the AI provider (default)
+  - **Complete (all questions)** — sends the entire question history to the AI provider
+- The setting is global — it applies to all domains
+- When the domain has fewer questions than the selected scope, all available questions are included
+- The selected value is stored as `myCoachScope` (string: `"25"` | `"100"` | `"all"`) in `settings.json`
 
 **Theme**
 - A 🌓 Theme toggle (displayed as Dark/Light) controls the application's color palette to ensure readability on both dark and light terminal backgrounds
@@ -775,6 +790,31 @@ The sprint ends on whichever condition occurs first:
 - Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
 - Rendering is local and instant — no network calls, no loading spinner, no AI dependency
 
+### Feature 19 — My Coach
+
+- The domain sub-menu includes a **🏋️  My Coach** action positioned after **Statistics** and before **ASCII Art**
+- Selecting My Coach opens a dedicated coaching report screen. On first use (no cached report), the AI provider is called immediately to generate a personalized coaching report based on the user's scoped question history for the active domain. On subsequent uses, the previously generated report is displayed instantly (without an AI call) as a preview — the user can then opt to **Regenerate** if they want a fresh analysis
+- My Coach works from the very first answered question — there is no minimum question gate
+- When the domain has fewer than 25 answered questions, a dim tip is displayed above the coaching report: *"Tip: Reports become more accurate with at least 25 answered questions."* — the tip disappears once the domain reaches 25 or more questions
+- The scope of history sent to the AI is controlled by the global **🏋️  My Coach Scope** setting (Feature 8): **Recent (25)** sends the most recent 25 questions, **Extended (100)** sends the most recent 100 questions (default), **Complete (all)** sends the entire history. When the domain has fewer questions than the selected scope, all available questions are included
+- The history payload sent to the AI includes a structured summary per question: question text, the user's chosen answer, the correct answer, whether it was correct, difficulty level, time taken, and speed tier — sufficient for the AI to identify patterns without excessive token usage
+- The AI prompt instructs the provider to return a concise, actionable coaching report covering:
+  1. **Strengths** — subtopics or patterns where the user performs well
+  2. **Weaknesses** — subtopics or patterns where the user struggles
+  3. **Learning trajectory** — whether the user is improving, plateauing, or declining, with supporting evidence from the history
+  4. **Recommendations** — specific, actionable suggestions for what to focus on next
+- The coaching report is generated using the active language and tone settings (Feature 8) — the report renders in the configured language and voice
+- A loading spinner is displayed during report generation
+- The coaching report is displayed on a dedicated screen using the standard `clearAndBanner()` flow, with a header: `🏋️ My Coach — <domain>`
+- A generation timestamp is displayed in dim text immediately below the header (e.g., `Generated: Apr 19, 2026 at 14:32`) — this timestamp is updated on every successful report generation and persisted as `lastCoachTimestamp` (ISO 8601 string) in the domain JSON file
+- After the report is displayed, the user is presented with two options: **🔄 Regenerate** and **↩️  Back**
+- Selecting **Regenerate** calls the AI again with the same scoped history to produce a fresh coaching report — useful when the user wants an updated analysis or a different perspective
+- On successful report generation (both initial and regenerate), the app persists `lastCoachQuestionCount` (set to the current total number of answered questions in the domain), `lastCoachTimestamp` (set to the current ISO 8601 timestamp), and `lastCoachReport` (the full report text) in the domain JSON file
+- When regenerating, if fewer than 25 new questions have been answered since the last report (i.e., current `history.length` minus `lastCoachQuestionCount` is less than 25), a dim notice is displayed above the regenerated report: *"Only X new questions answered since your last report — the new report may not differ significantly."* — the notice is informational and does not block regeneration; the user still receives a fresh report
+- `lastCoachQuestionCount` (number), `lastCoachTimestamp` (ISO 8601 string), and `lastCoachReport` (string) are optional fields on the domain JSON — absent on domains where My Coach has never been used; their presence does not affect any other feature
+- Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
+- If the AI provider is unreachable or the call fails, the app displays the same provider-specific error message as NFR 2 and returns the user to the domain sub-menu — the failure is non-critical and does not crash the app
+
 ---
 
 ## Non-Functional Requirements
@@ -804,7 +844,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, statistics dashboard, welcome screen, exit message screen, settings screen, and sprint setup screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. This exception applies to both Play mode (Feature 3) and Challenge Mode (Feature 17). A terminal reset occurs only when the user selects Next question (loading the next question) or exits the session. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
+All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, statistics dashboard, my coach report, welcome screen, exit message screen, settings screen, and sprint setup screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. This exception applies to both Play mode (Feature 3) and Challenge Mode (Feature 17). A terminal reset occurs only when the user selects Next question (loading the next question) or exits the session. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application ships two color palettes (Dark and Light) to ensure readability across both dark and light terminal backgrounds; the active palette is determined by the 🌓 Theme setting in Feature 8 (default: Dark). All semantic color mappings are defined in Feature 9. The application is interactive-only; non-TTY and piped execution modes are out of scope.

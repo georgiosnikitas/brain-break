@@ -260,6 +260,14 @@ describe('theme-aware semantic helpers', () => {
     expect(colorScoreDelta(4)).toBe(chalk.bold.green('+4'))
   })
 
+  it('uses red variants for negative score delta', () => {
+    expect(colorScoreDelta(-5)).toBe(chalk.red('-5'))
+
+    setTheme('light')
+
+    expect(colorScoreDelta(-5)).toBe(chalk.bold.red('-5'))
+  })
+
   it('uses theme-aware variants for speed tiers', () => {
     expect(colorSpeedTier('fast')).toBe(chalk.green('Fast'))
     expect(colorSpeedTier('normal')).toBe(chalk.yellow('Normal'))

@@ -17,6 +17,12 @@ export type SpeedTier = z.infer<typeof SpeedTierSchema>
 export const AnswerOptionSchema = z.enum(['A', 'B', 'C', 'D'])
 export type AnswerOption = z.infer<typeof AnswerOptionSchema>
 
+export const MAX_COACH_REPORT_LENGTH = 50_000
+export const LAST_COACH_REPORT_DEPENDENCY_MESSAGE =
+  'lastCoachReport requires lastCoachTimestamp and lastCoachQuestionCount to also be present'
+
+const NonNegativeIntegerSchema = z.number().int().min(0)
+
 // ---------------------------------------------------------------------------
 // Domain meta
 // ---------------------------------------------------------------------------
@@ -24,13 +30,19 @@ export const DomainMetaSchema = z.object({
   score: z.number().refine(v => Number.isFinite(v)),
   difficultyLevel: z.number().int().min(1).max(5),
   startingDifficulty: z.number().int().min(1).max(5).default(2),
-  streakCount: z.number().int().min(0),
+  streakCount: NonNegativeIntegerSchema,
   streakType: z.enum(['correct', 'incorrect', 'none']),
   totalTimePlayedMs: z.number().min(0).refine(v => Number.isFinite(v)),
   createdAt: z.iso.datetime(),
   lastSessionAt: z.iso.datetime().nullable(),
   archived: z.boolean(),
-})
+  lastCoachQuestionCount: NonNegativeIntegerSchema.optional(),
+  lastCoachTimestamp: z.iso.datetime().optional(),
+  lastCoachReport: z.string().max(MAX_COACH_REPORT_LENGTH).optional(),
+}).refine(
+  meta => meta.lastCoachReport === undefined || (meta.lastCoachTimestamp !== undefined && meta.lastCoachQuestionCount !== undefined),
+  { message: LAST_COACH_REPORT_DEPENDENCY_MESSAGE },
+)
 export type DomainMeta = z.infer<typeof DomainMetaSchema>
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5
 
@@ -153,6 +165,9 @@ export type Theme = z.infer<typeof ThemeSchema>
 export const AsciiArtMilestoneSchema = z.union([z.literal(0), z.literal(10), z.literal(100)])
 export type AsciiArtMilestone = z.infer<typeof AsciiArtMilestoneSchema>
 
+export const MyCoachScopeSchema = z.enum(['25', '100', 'all'])
+export type MyCoachScope = z.infer<typeof MyCoachScopeSchema>
+
 export const SettingsFileSchema = z.object({
   provider: AiProviderTypeSchema.nullable().default(null),
   language: z.string().min(1),
@@ -165,6 +180,7 @@ export const SettingsFileSchema = z.object({
   openaiCompatibleEndpoint: z.string().default(DEFAULT_OPENAI_COMPATIBLE_ENDPOINT),
   openaiCompatibleModel: z.string().default(DEFAULT_OPENAI_COMPATIBLE_MODEL),
   asciiArtMilestone: AsciiArtMilestoneSchema.default(100),
+  myCoachScope: MyCoachScopeSchema.default('100'),
   theme: ThemeSchema.default('dark'),
   showWelcome: z.boolean().default(true),
 })
@@ -183,6 +199,7 @@ export function defaultSettings(): SettingsFile {
     openaiCompatibleEndpoint: DEFAULT_OPENAI_COMPATIBLE_ENDPOINT,
     openaiCompatibleModel: DEFAULT_OPENAI_COMPATIBLE_MODEL,
     asciiArtMilestone: 100,
+    myCoachScope: '100',
     theme: 'dark' as const,
     showWelcome: true,
   }

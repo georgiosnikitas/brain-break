@@ -14,6 +14,7 @@ export type DomainMenuAction =
   | { action: 'history' }
   | { action: 'bookmarks' }
   | { action: 'stats' }
+  | { action: 'my-coach' }
   | { action: 'ascii-art' }
   | { action: 'archive' }
   | { action: 'delete' }
@@ -29,6 +30,7 @@ export function buildDomainMenuChoices(correctCount: number, threshold: number):
     { name: '📜 History', value: { action: 'history' } },
     { name: '⭐ Bookmarks', value: { action: 'bookmarks' } },
     { name: '📊 Statistics', value: { action: 'stats' } },
+    { name: '🏋️  My Coach', value: { action: 'my-coach' } },
     { name: asciiArtLabel, value: { action: 'ascii-art' } },
     { name: '🗄  Archive', value: { action: 'archive' } },
     { name: '🗑  Delete', value: { action: 'delete' } },
@@ -74,7 +76,7 @@ async function promptForDomainAction(
       message: 'Choose an action:',
       choices: buildDomainMenuChoices(correctCount, threshold),
       theme: menuTheme,
-      pageSize: 10,
+      pageSize: 12,
     })
   } catch (err) {
     if (err instanceof ExitPromptError) {
@@ -221,6 +223,8 @@ async function handleDomainAction(slug: string, answer: DomainMenuAction, correc
     await router.showBookmarks(slug)
   } else if (answer.action === 'stats') {
     await router.showStats(slug)
+  } else if (answer.action === 'my-coach') {
+    await router.showMyCoach(slug)
   } else if (answer.action === 'ascii-art') {
     await router.showAsciiArt(slug, correctCount, threshold)
   } else if (answer.action === 'archive') {

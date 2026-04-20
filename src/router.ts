@@ -12,6 +12,7 @@ import { showDomainMenuScreen } from './screens/domain-menu.js'
 import { showSprintSetup } from './screens/sprint-setup.js'
 import { showChallengeExecution } from './screens/challenge.js'
 import { showAsciiArtScreen } from './screens/ascii-art.js'
+import { showMyCoachScreen } from './screens/my-coach.js'
 import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
@@ -109,6 +110,10 @@ export async function showStats(slug: string): Promise<void> {
 
 export async function showAsciiArt(slug: string, correctCount: number, threshold: number): Promise<void> {
   await showAsciiArtScreen(slug, correctCount, threshold)
+}
+
+export async function showMyCoach(slug: string): Promise<void> {
+  await showMyCoachScreen(slug)
 }
 
 export async function deleteDomain(slug: string): Promise<void> {

@@ -36,6 +36,7 @@ vi.mock('../router.js', () => ({
   showHistory: vi.fn(),
   showBookmarks: vi.fn(),
   showStats: vi.fn(),
+  showMyCoach: vi.fn(),
   showAsciiArt: vi.fn(),
   archiveDomain: vi.fn(),
   deleteDomain: vi.fn(),
@@ -74,6 +75,7 @@ beforeEach(() => {
   vi.mocked(router.showHistory).mockResolvedValue(undefined)
   vi.mocked(router.showBookmarks).mockResolvedValue(undefined)
   vi.mocked(router.showStats).mockResolvedValue(undefined)
+  vi.mocked(router.showMyCoach).mockResolvedValue(undefined)
   vi.mocked(router.showAsciiArt).mockResolvedValue(undefined)
   vi.mocked(router.archiveDomain).mockResolvedValue(undefined)
   vi.mocked(router.deleteDomain).mockResolvedValue(undefined)
@@ -84,67 +86,69 @@ beforeEach(() => {
 // buildDomainMenuChoices
 // ---------------------------------------------------------------------------
 describe('buildDomainMenuChoices', () => {
-  it('returns 10 items with a Separator before Back', () => {
+  it('returns 11 items with a Separator before Back', () => {
     const choices = buildDomainMenuChoices(0, 100)
-    expect(choices).toHaveLength(10)
+    expect(choices).toHaveLength(11)
   })
 
-  it('names contain Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back in order', () => {
+  it('names contain Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back in order', () => {
     const choices = buildDomainMenuChoices(0, 100) as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].name).toContain('Play')
     expect(choices[1].name).toContain('Challenge')
     expect(choices[2].name).toContain('History')
     expect(choices[3].name).toContain('Bookmarks')
     expect(choices[4].name).toContain('Statistics')
-    expect(choices[5].name).toContain('ASCII Art')
-    expect(choices[6].name).toContain('Archive')
-    expect(choices[7].name).toContain('Delete')
-    expect(choices[9].name).toContain('Back')
+    expect(choices[5].name).toContain('My Coach')
+    expect(choices[6].name).toContain('ASCII Art')
+    expect(choices[7].name).toContain('Archive')
+    expect(choices[8].name).toContain('Delete')
+    expect(choices[10].name).toContain('Back')
   })
 
-  it('action values are play, challenge, history, bookmarks, stats, ascii-art, archive, delete, back in order', () => {
+  it('action values are play, challenge, history, bookmarks, stats, my-coach, ascii-art, archive, delete, back in order', () => {
     const choices = buildDomainMenuChoices(0, 100) as Array<{ name: string; value: DomainMenuAction }>
     expect(choices[0].value).toEqual({ action: 'play' })
     expect(choices[1].value).toEqual({ action: 'challenge' })
     expect(choices[2].value).toEqual({ action: 'history' })
     expect(choices[3].value).toEqual({ action: 'bookmarks' })
     expect(choices[4].value).toEqual({ action: 'stats' })
-    expect(choices[5].value).toEqual({ action: 'ascii-art' })
-    expect(choices[6].value).toEqual({ action: 'archive' })
-    expect(choices[7].value).toEqual({ action: 'delete' })
-    expect(choices[9].value).toEqual({ action: 'back' })
+    expect(choices[5].value).toEqual({ action: 'my-coach' })
+    expect(choices[6].value).toEqual({ action: 'ascii-art' })
+    expect(choices[7].value).toEqual({ action: 'archive' })
+    expect(choices[8].value).toEqual({ action: 'delete' })
+    expect(choices[10].value).toEqual({ action: 'back' })
   })
 
   it('shows unlocked label when correctCount >= 100', () => {
     const choices = buildDomainMenuChoices(100, 100) as Array<{ name: string; value: DomainMenuAction }>
-    expect(choices[5].name).toBe('🎨 ASCII Art ✨')
+    expect(choices[6].name).toBe('🎨 ASCII Art ✨')
   })
 
   it('shows locked progress label when correctCount < 100', () => {
     const choices = buildDomainMenuChoices(42, 100) as Array<{ name: string; value: DomainMenuAction }>
-    expect(choices[5].name).toContain('🎨 ASCII Art')
-    expect(choices[5].name).toContain('42%')
+    expect(choices[6].name).toContain('🎨 ASCII Art')
+    expect(choices[6].name).toContain('42%')
   })
 
   it('Quick threshold: locked at 5/10 shows progress bar', () => {
     const choices = buildDomainMenuChoices(5, 10) as Array<{ name: string; value: DomainMenuAction }>
-    expect(choices[5].name).toContain('🎨 ASCII Art')
-    expect(choices[5].name).toContain('50%')
+    expect(choices[6].name).toContain('🎨 ASCII Art')
+    expect(choices[6].name).toContain('50%')
   })
 
   it('Quick threshold: unlocked at 10/10 shows sparkle', () => {
     const choices = buildDomainMenuChoices(10, 10) as Array<{ name: string; value: DomainMenuAction }>
-    expect(choices[5].name).toBe('🎨 ASCII Art ✨')
+    expect(choices[6].name).toBe('🎨 ASCII Art ✨')
   })
 
   it('Instant threshold (0): always shows sparkle label', () => {
     const choices = buildDomainMenuChoices(0, 0) as Array<{ name: string; value: DomainMenuAction }>
-    expect(choices[5].name).toBe('🎨 ASCII Art ✨')
+    expect(choices[6].name).toBe('🎨 ASCII Art ✨')
   })
 
   it('Instant threshold (0) with history: still shows sparkle label', () => {
     const choices = buildDomainMenuChoices(50, 0) as Array<{ name: string; value: DomainMenuAction }>
-    expect(choices[5].name).toBe('🎨 ASCII Art ✨')
+    expect(choices[6].name).toBe('🎨 ASCII Art ✨')
   })
 })
 
@@ -226,6 +230,18 @@ describe('showDomainMenuScreen — Stats', () => {
     await showDomainMenuScreen('typescript')
 
     expect(vi.mocked(router.showStats)).toHaveBeenCalledWith('typescript')
+  })
+})
+
+describe('showDomainMenuScreen — My Coach', () => {
+  it('calls router.showMyCoach with the correct slug on my-coach', async () => {
+    mockSelect
+      .mockResolvedValueOnce({ action: 'my-coach' })
+      .mockResolvedValueOnce({ action: 'back' })
+
+    await showDomainMenuScreen('typescript')
+
+    expect(vi.mocked(router.showMyCoach)).toHaveBeenCalledWith('typescript')
   })
 })
 

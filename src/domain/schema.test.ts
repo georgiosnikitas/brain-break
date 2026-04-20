@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainFileSchema, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema, PROVIDER_CHOICES, PROVIDER_LABELS } from './schema.js'
+import { DomainFileSchema, MAX_COACH_REPORT_LENGTH, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema, PROVIDER_CHOICES, PROVIDER_LABELS } from './schema.js'
 
 const validMeta = {
   score: 100,
@@ -394,6 +394,7 @@ describe('defaultSettings — provider fields', () => {
       'asciiArtMilestone',
       'geminiModel',
       'language',
+      'myCoachScope',
       'ollamaEndpoint',
       'ollamaModel',
       'openaiCompatibleEndpoint',
@@ -596,6 +597,157 @@ describe('QuestionRecordSchema', () => {
 
   it('rejects an invalid userAnswer value', () => {
     const result = QuestionRecordSchema.safeParse({ ...validRecord, userAnswer: 'E' })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('myCoachScope setting', () => {
+  it('accepts myCoachScope: "25"', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), myCoachScope: '25' })
+    expect(parsed.myCoachScope).toBe('25')
+  })
+
+  it('accepts myCoachScope: "100"', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), myCoachScope: '100' })
+    expect(parsed.myCoachScope).toBe('100')
+  })
+
+  it('accepts myCoachScope: "all"', () => {
+    const parsed = SettingsFileSchema.parse({ ...defaultSettings(), myCoachScope: 'all' })
+    expect(parsed.myCoachScope).toBe('all')
+  })
+
+  it('rejects invalid myCoachScope values', () => {
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), myCoachScope: '50' }).success).toBe(false)
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), myCoachScope: 100 }).success).toBe(false)
+    expect(SettingsFileSchema.safeParse({ ...defaultSettings(), myCoachScope: 'recent' }).success).toBe(false)
+  })
+
+  it('defaults myCoachScope to "100" when omitted (existing users upgrading)', () => {
+    const parsed = SettingsFileSchema.parse({ language: 'English', tone: 'natural' })
+    expect(parsed.myCoachScope).toBe('100')
+  })
+
+  it('returns myCoachScope: "100" in defaultSettings()', () => {
+    expect(defaultSettings().myCoachScope).toBe('100')
+  })
+})
+
+describe('DomainMetaSchema — coach fields', () => {
+  it('accepts a meta object without lastCoachQuestionCount / lastCoachTimestamp (default state)', () => {
+    const result = parseDomain()
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachQuestionCount).toBeUndefined()
+    expect(result.data.meta.lastCoachTimestamp).toBeUndefined()
+  })
+
+  it('accepts a meta object with both lastCoachQuestionCount and lastCoachTimestamp', () => {
+    const result = parseDomain({
+      meta: { ...validMeta, lastCoachQuestionCount: 25, lastCoachTimestamp: '2026-04-19T14:32:00.000Z' },
+    })
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachQuestionCount).toBe(25)
+    expect(result.data.meta.lastCoachTimestamp).toBe('2026-04-19T14:32:00.000Z')
+  })
+
+  it('accepts a meta object with only lastCoachQuestionCount present (timestamp absent)', () => {
+    const result = parseDomain({ meta: { ...validMeta, lastCoachQuestionCount: 10 } })
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachQuestionCount).toBe(10)
+    expect(result.data.meta.lastCoachTimestamp).toBeUndefined()
+  })
+
+  it('accepts a meta object with only lastCoachTimestamp present (count absent)', () => {
+    const result = parseDomain({ meta: { ...validMeta, lastCoachTimestamp: '2026-04-19T14:32:00.000Z' } })
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachTimestamp).toBe('2026-04-19T14:32:00.000Z')
+    expect(result.data.meta.lastCoachQuestionCount).toBeUndefined()
+  })
+
+  it('rejects negative lastCoachQuestionCount', () => {
+    const result = parseDomain({ meta: { ...validMeta, lastCoachQuestionCount: -1 } })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects non-integer lastCoachQuestionCount', () => {
+    const result = parseDomain({ meta: { ...validMeta, lastCoachQuestionCount: 3.5 } })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects non-ISO lastCoachTimestamp', () => {
+    const result = parseDomain({ meta: { ...validMeta, lastCoachTimestamp: 'yesterday' } })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts a meta object with lastCoachReport string (with required companion fields)', () => {
+    const result = parseDomain({
+      meta: {
+        ...validMeta,
+        lastCoachReport: 'My coaching report text.',
+        lastCoachQuestionCount: 5,
+        lastCoachTimestamp: '2026-04-19T14:32:00.000Z',
+      },
+    })
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachReport).toBe('My coaching report text.')
+  })
+
+  it('accepts a meta object without lastCoachReport (optional field)', () => {
+    const result = parseDomain()
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachReport).toBeUndefined()
+  })
+
+  it('accepts all three coach fields together', () => {
+    const result = parseDomain({
+      meta: {
+        ...validMeta,
+        lastCoachQuestionCount: 30,
+        lastCoachTimestamp: '2026-04-19T14:32:00.000Z',
+        lastCoachReport: 'Strengths: ...',
+      },
+    })
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.meta.lastCoachReport).toBe('Strengths: ...')
+  })
+
+  it('defaultDomainFile() does NOT include coach fields', () => {
+    const file = defaultDomainFile()
+    expect('lastCoachQuestionCount' in file.meta).toBe(false)
+    expect('lastCoachTimestamp' in file.meta).toBe(false)
+    expect('lastCoachReport' in file.meta).toBe(false)
+  })
+
+  it('rejects lastCoachReport without lastCoachTimestamp', () => {
+    const result = parseDomain({
+      meta: { ...validMeta, lastCoachReport: 'report', lastCoachQuestionCount: 5 },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects lastCoachReport without lastCoachQuestionCount', () => {
+    const result = parseDomain({
+      meta: { ...validMeta, lastCoachReport: 'report', lastCoachTimestamp: '2026-04-19T14:32:00.000Z' },
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects lastCoachReport longer than 50_000 chars', () => {
+    const result = parseDomain({
+      meta: {
+        ...validMeta,
+        lastCoachReport: 'x'.repeat(MAX_COACH_REPORT_LENGTH + 1),
+        lastCoachQuestionCount: 5,
+        lastCoachTimestamp: '2026-04-19T14:32:00.000Z',
+      },
+    })
     expect(result.success).toBe(false)
   })
 })
