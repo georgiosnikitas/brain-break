@@ -206,7 +206,7 @@ describe('showMyCoachScreen — rendering', () => {
     expect(logged).toContain('Answer at least one question before using My Coach.')
     expect(mockGenerateCoachReport).not.toHaveBeenCalled()
     expect(mockWriteDomain).not.toHaveBeenCalled()
-    expect(mockSelect).not.toHaveBeenCalled()
+    expect(mockSelect).toHaveBeenCalledTimes(1) // Back-only navigation prompt
     consoleSpy.mockRestore()
   })
 })
@@ -339,11 +339,15 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
     consoleSpy.mockRestore()
   })
 
-  it('does NOT show the staleness notice when 25+ new questions since last report', async () => {
-    mockReadDomain.mockImplementation(async () => ({ ok: true, data: makeDomain(makeHistory(60), { lastCoachQuestionCount: 20 }) }))
-    mockSelect
-      .mockResolvedValueOnce('regenerate')
-      .mockResolvedValueOnce('back')
+  it('does NOT show staleness notice before Regenerate when ≥25 new questions since last report', async () => {
+    // Use a cached report so the initial view shows the prompt without generating first.
+    // 40 new questions ≥ threshold → no staleness warning before the Regenerate option.
+    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomain(makeHistory(60), {
+      lastCoachReport: 'Cached report',
+      lastCoachTimestamp: '2026-04-01T10:00:00.000Z',
+      lastCoachQuestionCount: 20,
+    }) })
+    mockSelect.mockResolvedValueOnce('back')
 
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
@@ -351,6 +355,50 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('may not differ significantly')
+    consoleSpy.mockRestore()
+  })
+
+  it('does NOT show staleness notice after the first-ever generation (no prior report)', async () => {
+    // First-ever run: domain has history but no cached report. The post-generation prompt
+    // should NOT show a staleness notice, since there's no "last report" to compare against.
+    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomain(makeHistory(30)) })
+    mockSelect.mockResolvedValueOnce('back')
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showMyCoachScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
+    expect(logged).not.toContain('may not differ significantly')
+    expect(mockGenerateCoachReport).toHaveBeenCalledTimes(1)
+    consoleSpy.mockRestore()
+  })
+
+  it('shows the staleness notice on every iteration of the regenerate loop', async () => {
+    // After each regeneration lastCoachQuestionCount = history.length, so newQuestions = 0
+    // on every subsequent prompt — the notice should appear twice across two consecutive regenerates.
+    let callCount = 0
+    mockReadDomain.mockImplementation(async () => {
+      callCount++
+      // First call: no cache (first-ever generation, no notice)
+      // Subsequent calls: simulate persisted cache matching the just-generated state
+      if (callCount === 1) {
+        return { ok: true, data: makeDomain(makeHistory(30)) }
+      }
+      return { ok: true, data: makeDomain(makeHistory(30), { lastCoachQuestionCount: 30 }) }
+    })
+    mockSelect
+      .mockResolvedValueOnce('regenerate') // after first generation
+      .mockResolvedValueOnce('regenerate') // after second generation
+      .mockResolvedValueOnce('back')       // after third generation
+
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showMyCoachScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
+    const matches = logged.match(/may not differ significantly/g) ?? []
+    expect(matches.length).toBe(2) // shown before the 2nd and 3rd Regenerate/Back prompts
+    expect(mockGenerateCoachReport).toHaveBeenCalledTimes(3)
     consoleSpy.mockRestore()
   })
 })
@@ -517,6 +565,21 @@ describe('showMyCoachScreen — cached report', () => {
     expect(mockWriteDomain).toHaveBeenCalledTimes(1)
   })
 
+  it('shows staleness notice before Regenerate prompt on initial cached view when <25 new questions', async () => {
+    // Staleness warning now appears BEFORE the user selects Regenerate, acting as a deterrent.
+    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(30, 28) }) // 2 new questions
+    mockSelect.mockResolvedValueOnce('back') // user sees warning and decides not to regenerate
+    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+
+    await showMyCoachScreen('typescript')
+
+    const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
+    expect(logged).toContain('Only 2 new questions answered since your last report')
+    expect(logged).toContain('may not differ significantly')
+    expect(mockGenerateCoachReport).not.toHaveBeenCalled() // warning shown before any generation
+    consoleSpy.mockRestore()
+  })
+
   it('shows staleness notice on Regenerate when <25 new questions since cached report', async () => {
     mockReadDomain.mockImplementation(async () => ({
       ok: true,
@@ -534,14 +597,10 @@ describe('showMyCoachScreen — cached report', () => {
     consoleSpy.mockRestore()
   })
 
-  it('does NOT show staleness notice on Regenerate when ≥25 new questions since cached report', async () => {
-    mockReadDomain.mockImplementation(async () => ({
-      ok: true,
-      data: makeDomainWithCache(60, 20),
-    }))
-    mockSelect
-      .mockResolvedValueOnce('regenerate')
-      .mockResolvedValueOnce('back')
+  it('does NOT show staleness notice before Regenerate when ≥25 new questions since cached report', async () => {
+    // 40 new questions ≥ threshold → no staleness warning before the Regenerate option.
+    mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(60, 20) })
+    mockSelect.mockResolvedValueOnce('back')
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')

@@ -140,7 +140,7 @@ describe('buildPageChoices', () => {
 // showHistory — empty history
 // ---------------------------------------------------------------------------
 describe('showHistory — empty history', () => {
-  it('logs "No questions answered yet" and calls showHome after Back', async () => {
+  it('logs "No questions answered yet." and calls showHome after Back', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
     const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
@@ -148,7 +148,7 @@ describe('showHistory — empty history', () => {
     await showHistory('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('No questions answered yet')
+    expect(allLogs).toContain('No questions answered yet.')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     consoleSpy.mockRestore()
   })
@@ -160,9 +160,10 @@ describe('showHistory — empty history', () => {
 
     await showHistory('typescript')
 
-    const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name: string; value: string }>
-    expect(choices).toHaveLength(1)
-    expect(choices[0].value).toBe('back')
+    const choices = mockSelect.mock.calls[0][0].choices as unknown as Array<{ name?: string; value?: string }>
+    const backChoices = choices.filter((c) => c.value === 'back')
+    expect(backChoices).toHaveLength(1)
+    expect(backChoices[0].name).toBe('↩️  Back')
   })
 })
 
@@ -507,7 +508,7 @@ describe('showHistory — corrupted domain', () => {
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('corrupted'))
     const allLogs = logSpy.mock.calls.map((c) => String(c[0])).join('\n')
-    expect(allLogs).toContain('No questions answered yet')
+    expect(allLogs).toContain('No questions answered yet.')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     warnSpy.mockRestore()
     logSpy.mockRestore()

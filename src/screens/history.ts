@@ -1,4 +1,4 @@
-import { select } from '@inquirer/prompts'
+import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { readDomain } from '../domain/store.js'
 import {
@@ -35,11 +35,14 @@ export async function showHistory(domainSlug: string): Promise<void> {
   if (history.length === 0) {
     clearAndBanner()
     console.log(header(`📜 History — ${domainSlug}`))
-    console.log(dim('No questions answered yet'))
+    console.log(dim('No questions answered yet.'))
     try {
       await select<NavAction>({
         message: 'Navigation',
-        choices: [{ name: '↩️  Back', value: 'back' }],
+        choices: [
+          new Separator(),
+          { name: '↩️  Back', value: 'back' },
+        ],
         theme: menuTheme,
       })
     } catch (err) {

@@ -76,7 +76,24 @@ function normalizeCoachReport(report: string): string {
   return report.slice(0, MAX_COACH_REPORT_LENGTH).trimEnd()
 }
 
-async function promptRegenerateOrBack(): Promise<CoachAction | null> {
+async function promptBackOnly(): Promise<void> {
+  try {
+    await select<'back'>({
+      message: 'Navigation',
+      choices: [
+        new Separator(),
+        { name: '↩️  Back', value: 'back' },
+      ],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) return
+    throw err
+  }
+}
+
+async function promptRegenerateOrBack(stalenessNotice: string = ''): Promise<CoachAction | null> {
+  logDimNotice(stalenessNotice)
   try {
     return await select<CoachAction>({
       message: 'Navigation',
@@ -108,12 +125,11 @@ function getTipMessage(historyLength: number): string {
     : ''
 }
 
-function renderReport(report: string, historyLength: number, generatedAt: Date, stalenessNotice: string, freshDataNotice: string = ''): void {
+function renderReport(report: string, historyLength: number, generatedAt: Date, freshDataNotice: string = ''): void {
   console.log(dim(`Generated: ${formatCoachTimestamp(generatedAt)}`))
   console.log()
 
   logDimNotice(freshDataNotice)
-  logDimNotice(stalenessNotice)
   logDimNotice(getTipMessage(historyLength))
 
   console.log(report)
@@ -145,7 +161,7 @@ function renderCoachHeader(slug: string): void {
 }
 
 function showNoHistoryWarning(): void {
-  console.log(warn(EMPTY_HISTORY_MESSAGE))
+  console.log(dim(EMPTY_HISTORY_MESSAGE))
 }
 
 function hasAnsweredQuestions(domain: DomainFile): boolean {
@@ -188,41 +204,43 @@ async function readDomainOrShowError(slug: string): Promise<DomainFile | null> {
 
 async function loadCoachDomainForView(slug: string): Promise<DomainFile | null> {
   renderCoachHeader(slug)
-
-  const domain = await readDomainOrShowError(slug)
-  if (domain && !hasAnsweredQuestions(domain)) {
-    showNoHistoryWarning()
-    return null
-  }
-
-  return domain
+  return await readDomainOrShowError(slug)
 }
 
-async function renderGeneratedReport(slug: string, domain: DomainFile, settings: SettingsFile, stalenessNotice: string): Promise<boolean> {
+async function renderGeneratedReport(slug: string, domain: DomainFile, settings: SettingsFile): Promise<boolean> {
   const outcome = await generateAndPersist(slug, domain, settings)
   if (!outcome.ok) {
     console.log(errorFmt(outcome.error))
     return false
   }
 
-  renderReport(outcome.report, outcome.historyLength, outcome.generatedAt, stalenessNotice)
+  renderReport(outcome.report, outcome.historyLength, outcome.generatedAt)
   return true
 }
 
-async function renderInitialCoachView(slug: string): Promise<boolean> {
+async function renderInitialCoachView(slug: string): Promise<string | null> {
   const domain = await loadCoachDomainForView(slug)
   if (!domain) {
-    return false
+    return null
+  }
+
+  if (!hasAnsweredQuestions(domain)) {
+    showNoHistoryWarning()
+    await promptBackOnly()
+    return null
   }
 
   const cached = getCachedCoachReport(domain)
   if (!cached) {
-    return await renderGeneratedReport(slug, domain, readSettingsOrDefault(await readSettings()), '')
+    const ok = await renderGeneratedReport(slug, domain, readSettingsOrDefault(await readSettings()))
+    if (!ok) return null
+    // First-ever generation: no prior report exists, so a staleness notice would be misleading.
+    return ''
   }
 
   const freshDataNotice = computeFreshDataNotice(domain.history.length, cached.previousCoachCount)
-  renderReport(cached.report, domain.history.length, cached.generatedAt, '', freshDataNotice)
-  return true
+  renderReport(cached.report, domain.history.length, cached.generatedAt, freshDataNotice)
+  return computeStalenessNotice(domain.history.length, cached.previousCoachCount)
 }
 
 async function runRegenerateLoop(slug: string): Promise<void> {
@@ -234,14 +252,14 @@ async function runRegenerateLoop(slug: string): Promise<void> {
       return
     }
 
-    const previousCoachCount = domain.meta.lastCoachQuestionCount ?? 0
-    const stalenessNotice = computeStalenessNotice(domain.history.length, previousCoachCount)
-    const rendered = await renderGeneratedReport(slug, domain, settings, stalenessNotice)
+    const rendered = await renderGeneratedReport(slug, domain, settings)
     if (!rendered) {
       return
     }
 
-    const action = await promptRegenerateOrBack()
+    // After regeneration, lastCoachQuestionCount = history.length → always 0 new questions
+    const stalenessNotice = computeStalenessNotice(domain.history.length, domain.history.length)
+    const action = await promptRegenerateOrBack(stalenessNotice)
     if (action !== 'regenerate') {
       return
     }
@@ -249,11 +267,12 @@ async function runRegenerateLoop(slug: string): Promise<void> {
 }
 
 export async function showMyCoachScreen(slug: string): Promise<void> {
-  if (!await renderInitialCoachView(slug)) {
+  const stalenessNotice = await renderInitialCoachView(slug)
+  if (stalenessNotice === null) {
     return
   }
 
-  const firstAction = await promptRegenerateOrBack()
+  const firstAction = await promptRegenerateOrBack(stalenessNotice)
   if (firstAction !== 'regenerate') {
     return
   }
