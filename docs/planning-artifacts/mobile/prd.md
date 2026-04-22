@@ -69,7 +69,7 @@ identity.
    tone/language/scope settings — ships on mobile. Users will never hear
    *"that's a desktop feature."* Omissions are platform-forced (Exit,
    Copilot, theme picker) or explicitly out-of-phase (Challenge, ASCII art,
-   Sprint, sync) — never the result of convenience.
+   sync) — never the result of convenience.
 
 2. **Your data, your keys, your cloud.** Brain Break never touches user
    data and never charges users. Phase 1 is local-only on each platform
@@ -103,7 +103,6 @@ identity.
 - **Session success:** A "good session" is defined as a user answering at least one question *and* receiving at least one Explain *or* Teach-me-more follow-up. Target: ≥70% of sessions meet this bar.
 - **Onboarding completion (P0 retention metric):** ≥60% of users who download the app successfully configure an AI provider. The BYO-key flow is the most critical single surface in the product; failures here become invisible downstream churn.
 - **Qualitative "aha!" moment:** ≥40% of users who complete onboarding create ≥1 bookmark during their first week — a user-declared "this was worth remembering" signal.
-- **Coach adoption validates the differentiator:** Users who configure My Coach on a domain open that domain ≥2× more often than domains without a coach.
 
 ### Business Success
 
@@ -152,25 +151,12 @@ Brain Break is a solo-maintained, no-backend, no-monetization product. "Business
 - **Telemetry:** No in-app crash SDK, no behavioral analytics. Crash metrics read from Apple App Store Connect and Google Play Console dashboards only. Honors the "your data" promise with the strongest possible interpretation: we collect nothing.
 - **Release:** iOS App Store + Google Play. Organic promotion via terminal-user word-of-mouth.
 
-### Growth Features (Post-MVP — Phase 2+)
+### Growth Features (Post-MVP — Phase 2)
 
 - **Cross-platform sync via user-owned Google Drive** (BYOC pattern — covers terminal and mobile simultaneously, no backend operated by us).
 - **Opt-in gentle reminder / streak notifications.** Hard commitment: user-initiated, never behavioral manipulation.
 - **Challenge mode** on mobile.
 - **ASCII art milestones** reimagined for mobile.
-- **Sprint mode** on mobile.
-- **Cross-domain / global statistics** (currently domain-scoped only).
-- **Light theme** and high-contrast accessibility variants.
-- **Hosted AI proxy provider** (`HostedProxyProvider` slot reserved in core) — addresses the BYO-key onboarding cliff for non-technical users.
-- **Additional BYOC sync targets:** iCloud Drive, Dropbox, OneDrive.
-
-### Vision (Future — aspirational, not committed)
-
-- **Shared domains:** Export a domain (prompt + coach config, no personal history) as a package others can import. No backend needed — share via AirDrop, email, or a Drive link.
-- **On-device small-model fallback** (Apple Intelligence / ExecuTorch / MLC) for basic quiz generation when offline or for users who refuse BYO-key.
-- **Watch complications** (Apple Watch / Wear OS): a single daily question on the wrist.
-- **Family / pair mode:** multi-profile support within a single device.
-- **Spaced repetition scheduling** layered over bookmarks — question-answer-forget-reinforce cycle.
 
 ## User Journeys
 
@@ -252,9 +238,9 @@ Brain Break Mobile is a single-user, solo-consumer product with no backend, no m
 2. Home is empty — no domains. *"Wait, my terminal has 40. Does this not sync?"* He remembers: Phase 1 is local-only, no sync yet. He nods, and creates *"React 19 features"* on mobile just to kick the tires.
 3. Create-domain form. Keyboard-aware, quick. He plays 3 questions, tries Explain, tries Teach me more, tries Bookmark. All work.
 4. Domain menu. He scans it: Play, History, Bookmarks, Stats, My Coach, Archive, Delete. *"All of it. Okay, they really did it."*
-5. Settings. He scans it: AI Provider, Language, Tone of Voice, My Coach Scope, Welcome & Exit toggle. He notices no Copilot provider, no theme picker, no ASCII Art Milestone, no Sprint Mode.
+5. Settings. He scans it: AI Provider, Language, Tone of Voice, My Coach Scope, Welcome & Exit toggle. He notices no Copilot provider, no theme picker, no ASCII Art Milestone, no Challenge mode.
 
-**Climax.** Alex does not get frustrated — because every omission is consistent with what the App Store description and the GitHub README already told him: Copilot is a forced platform divergence, theme picker is Phase 1 dark-only, ASCII art and Sprint and Challenge are explicitly documented backlog commitments. He tweets: *"brain-break mobile is out and they actually kept every feature. no 'lite edition' energy. respect."*
+**Climax.** Alex does not get frustrated — because every omission is consistent with what the App Store description and the GitHub README already told him: Copilot is a forced platform divergence, theme picker is Phase 1 dark-only, ASCII art and Challenge are explicitly documented backlog commitments. He tweets: *"brain-break mobile is out and they actually kept every feature. no 'lite edition' energy. respect."*
 
 **Resolution.** Alex uses mobile occasionally (on trips), keeps terminal as his daily driver, and is in the pipeline for the Phase 2 sync launch. He becomes a free user-acquisition channel.
 
@@ -289,7 +275,7 @@ Brain Break Mobile is a single-user, solo-consumer product with no backend, no m
 Brain Break Mobile operates in the **personal-learning** corner of EdTech. Standard institutional-EdTech compliance concerns were explicitly evaluated and found inapplicable to Phase 1 scope:
 
 - **COPPA / FERPA:** Not applicable. The app is marketed to adults; there is no institutional user, no minor-as-primary-user, no school, no teacher, no curriculum, and no shared content repository.
-- **WCAG / accessibility:** Phase 1 targets a reasonable baseline (dynamic type, VoiceOver / TalkBack labels on interactive elements, sufficient color contrast) but does not claim formal WCAG 2.1 AA conformance. Full conformance is a Phase 2+ commitment.
+- **WCAG / accessibility:** Phase 1 targets a reasonable baseline (dynamic type, VoiceOver / TalkBack labels on interactive elements, sufficient color contrast) but does not claim formal WCAG 2.1 AA conformance.
 - **GDPR / CCPA:** Technically applicable (EU / California users may install), but Phase 1 processes zero personal data on any server operated by us. All data is on-device; AI calls route through user-provided keys to user-chosen providers. App Store privacy labels will reflect this. The privacy story is *"we never had it, so there is nothing to give, leak, or sell."*
 
 Deeper technical constraints (secret storage, offline behavior, AI latency, local SQLite persistence) are defined in the Functional and Non-Functional Requirements sections below.
@@ -298,7 +284,7 @@ Deeper technical constraints (secret storage, offline behavior, AI latency, loca
 
 ### Project-Type Overview
 
-Brain Break Mobile is a cross-platform native app delivered to iOS and Android via Expo / React Native / TypeScript, sharing a platform-agnostic `@brain-break/core` package with the existing terminal application. The app is local-first, network-optional, and distributed through the Apple App Store and Google Play Store.
+Brain Break Mobile is a cross-platform native app delivered to iOS and Android via Expo / React Native / TypeScript, sharing a platform-agnostic `@brain-break/core` package with the existing terminal application. The app is local-first — it launches, reads, browses, and creates domains offline — while AI-driven actions (Play, Explain, Teach me more, Coach) require a network connection. It is distributed through the Apple App Store and Google Play Store.
 
 ### Platform Requirements
 
@@ -329,7 +315,7 @@ Local-first by architecture. Network behavior by feature:
 | Browse domains, history, bookmarks, archived | Works offline |
 | Domain stats (local data only) | Works offline |
 | Settings (except provider-key validation) | Works offline |
-| Create domain | Requires network (AI generates initial question set) |
+| Create domain | Works offline (config only; question generation happens later during Play) |
 | Play (quiz question generation) | Requires network |
 | Explain, Teach me more | Requires network |
 | My Coach message generation | Requires network |
@@ -396,12 +382,10 @@ Full MVP scope and core user journeys are defined in the **Product Scope** and *
 
 ### Post-MVP Roadmap
 
-Phased priorities (detailed feature list is in *Product Scope → Growth Features* and *Product Scope → Vision*):
+Phased priorities (detailed feature list is in *Product Scope → Growth Features*):
 
 - **Phase 2 (immediate post-MVP, committed):** Google Drive BYOC sync covering terminal and mobile. Highest-value post-MVP investment: resolves the "lose your phone, lose your learning" pain and unlocks multi-device users.
-- **Phase 2.5:** Hosted AI proxy provider (addresses BYO-key onboarding cliff) if Phase-1 onboarding completion lands materially below 60%.
-- **Phase 3 (growth):** Challenge mode, Sprint mode, ASCII art milestones ported to mobile; opt-in local notifications; global stats; light theme; additional BYOC sync targets (iCloud, Dropbox).
-- **Phase 4 (vision):** Shared domains, watch complications, spaced repetition, family/pair mode, on-device fallback model.
+- **Phase 3 (growth):** Challenge mode and ASCII art milestones ported to mobile; opt-in local notifications.
 
 ### Risk Mitigation
 
@@ -419,7 +403,7 @@ Phased priorities (detailed feature list is in *Product Scope → Growth Feature
 
 | Risk | Mitigation |
 | --- | --- |
-| BYO-key onboarding cliff kills retention (below 60% target) | Phase 2.5 hosted-proxy option is pre-architected (slot reserved in provider interface); can be enabled without core refactor |
+| BYO-key onboarding cliff kills retention (below 60% target) | If missed materially, investigate qualitatively with onboarded users before committing to heavier mitigations; no hosted-proxy fallback is committed for Phase 2 |
 | Terminal users don't refer non-dev partners | Measured via the 100-install / 3-month target; if missed, investigate via direct outreach to existing terminal users before investing in paid acquisition |
 | Non-dev users find "learning app without streaks/gamification" unmotivating | Validated by Maya-style qualitative feedback, not just DAU numbers; *no manipulation* is a product commitment, not a hypothesis to revisit |
 | App Store rejection for BYO-key or external-link patterns | Precedent exists (terminal emulators, AI chat apps use identical BYO-key patterns); external Buy-me-a-coffee link is explicitly allowed for non-digital-goods |
@@ -440,18 +424,14 @@ To protect the parity principle and keep scope honest, the following are explici
 **Deferred to named phases:**
 
 - Cross-device sync (Phase 2)
-- Hosted AI proxy provider (Phase 2.5)
 - Push and local notifications of any kind (Phase 3)
-- Challenge mode, Sprint mode, ASCII art milestones (Phase 3)
-- Light theme and high-contrast variants (Phase 3)
-- Global / cross-domain statistics (Phase 3)
-- Tablet and iPad-optimized layouts (Phase 3+)
-- Watch complications, shared domains, spaced repetition, on-device fallback model, family mode (Phase 4+)
+- Challenge mode and ASCII art milestones (Phase 3)
 
 **Hard commitments — not on any roadmap:**
 
 - Third-party advertising, sponsorships, cross-promotion
 - In-app purchases, subscriptions, or paid feature unlocks
+- Tablet and iPad-optimized layouts (Brain Break Mobile is a phones-only product)
 
 **Deferred with conditions — may be reconsidered in a later phase:**
 
@@ -549,7 +529,7 @@ The following requirements define the complete capability contract for Brain Bre
 - **FR57:** A user can toggle the Welcome & Exit screen setting from Settings, matching the terminal's `showWelcome` behavior (splash and farewell on app launch / close).
 - **FR58:** Settings changes persist across app restarts via local storage.
 - **FR59:** The Settings screen does not offer a theme picker; the app is dark-only in Phase 1.
-- **FR60:** The Settings screen does not offer ASCII art milestone, Sprint, or Challenge options; those features are out of scope in Phase 1.
+- **FR60:** The Settings screen does not offer ASCII art milestone or Challenge options; those features are out of scope in Phase 1.
 
 ### Data Persistence & Local Storage
 
@@ -564,7 +544,7 @@ The following requirements define the complete capability contract for Brain Bre
 - **FR66:** The app launches and reaches Home in offline mode.
 - **FR67:** A user can browse domains, history, bookmarks, archived domains, and stats entirely offline.
 - **FR68:** A user can open and modify Settings offline, except for actions that require a live test call (e.g., validating a newly entered provider key).
-- **FR69:** Network-required actions (Play, Explain, Teach me more, coach message generation, create-domain AI seed) fail with a clear, recoverable message when offline or when the provider is unreachable.
+- **FR69:** Network-required actions (Play, Explain, Teach me more, coach message generation) fail with a clear, recoverable message when offline or when the provider is unreachable.
 
 ### Parity & Platform Divergence Transparency
 
@@ -579,7 +559,7 @@ Only categories that materially apply to Brain Break Mobile Phase 1 are document
 
 - **NFR-P1:** The app reaches the Home screen in under 2 seconds from cold start on a 2-year-old mid-range device (baseline: iPhone 12, Pixel 6a).
 - **NFR-P2:** Tapping a domain row on Home opens its Domain menu within 250 ms (perceived-instant interaction).
-- **NFR-P3:** Question generation (Play, Create domain) completes with p50 < 4 seconds and p95 < 8 seconds over a stable network; longer latencies are acceptable when attributable to the user's chosen AI provider or network.
+- **NFR-P3:** Question generation during Play completes with p50 < 4 seconds and p95 < 8 seconds over a stable network; longer latencies are acceptable when attributable to the user's chosen AI provider or network.
 - **NFR-P4:** Explain and Teach-me-more AI calls show a loading indicator within 100 ms of trigger and do not block the Back button or other local UI.
 - **NFR-P5:** Haptic + visual feedback on answer submission fires within 50 ms of tap.
 - **NFR-P6:** Local data reads (domain list, history, bookmarks, stats) render under 300 ms even for domains with ≥1,000 history entries.
