@@ -3,11 +3,11 @@ stepsCompleted: ['step-01-init', 'step-02-context', 'step-03-starter', 'step-04-
 workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
-completedAt: '2026-04-21'
+completedAt: '2026-04-25'
 inputDocuments:
   - path: 'docs/planning-artifacts/mobile/prd.md'
     type: 'mobile-prd'
-    note: 'PRIMARY source of truth. 71 FRs, 34 NFRs, phased scope.'
+    note: 'PRIMARY source of truth. 74 FRs, 34 NFRs, phased scope.'
   - path: 'docs/planning-artifacts/mobile/_party-mode-transcript.md'
     type: 'party-mode-transcript'
     note: 'Locked architectural decisions from 2026-04-21 kickoff.'
@@ -43,11 +43,11 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Requirements Overview
 
-**Functional Requirements.** The mobile PRD specifies **71 FRs** across 13 capability areas. Architecturally they decompose into three layers:
+**Functional Requirements.** The mobile PRD specifies **74 FRs** across 13 capability areas. Architecturally they decompose into three layers:
 
-- **Core-portable logic (platform-agnostic)** — domain schema, AI provider interface and implementations, utility helpers, storage interface. These requirements (FR22–FR34, FR46–FR50, FR54–FR56, FR61–FR65) apply identically to terminal and mobile and must be served from a single shared package.
-- **Mobile-only concerns (platform-specific)** — secure-store key lifecycle, haptic feedback, SQLite persistence, expo-router stack navigation, system-browser external links, onboarding gate, zero-state Home. These (FR1–FR21, FR28, FR35–FR45, FR51–FR53, FR57–FR71) live in `packages/mobile`.
-- **Parity-contract requirements** — FR70 (divergence transparency link) and FR71 (store-description disclosure) are process/documentation contracts, not code; they shape release workflow, not runtime architecture.
+- **Core-portable logic (platform-agnostic)** — domain schema (now including the `updatedAt` core-schema field per FR67), AI provider interface and implementations, scoring rules, prompt construction, coach-report generation, utility helpers, storage interface. These requirements (notably FR24, FR27–FR28, FR32–FR33, FR48–FR51, FR57–FR59, FR64–FR68) apply identically to terminal and mobile and must be served from a single shared package.
+- **Mobile-only concerns (platform-specific)** — secure-store key lifecycle, haptic feedback, SQLite persistence, expo-router stack navigation, system-browser external links, onboarding gate, zero-state Home, on-screen Last Session summary, coach tip/staleness banners. These (notably FR1–FR23, FR25–FR26, FR29–FR31, FR34–FR47, FR50, FR52–FR56, FR60–FR63, FR69–FR72) live in `packages/mobile`.
+- **Parity-contract requirements** — FR73 (divergence transparency link) and FR74 (store-description disclosure) are process/documentation contracts, not code; they shape release workflow, not runtime architecture.
 
 **Non-Functional Requirements.** The **34 NFRs** drive architecture asymmetrically. A few are high-leverage:
 
@@ -89,7 +89,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 **Brownfield discipline (PRD-mandated):**
 
 - Core extraction proceeds as a sequence of small additive commits. Each commit leaves `main` green on the terminal test suite.
-- **No migration of existing terminal data.** Domains created before core extraction continue to live on the user's filesystem in their current shape; we do not rewrite them. The `id` + `updatedAt` fields mandated by FR64 apply to **newly created records from day one onward**, on both platforms. Existing terminal records without these fields are tolerated by the read path and remain outside the sync surface.
+- **No migration of existing terminal data.** Domains created before core extraction continue to live on the user's filesystem in their current shape; we do not rewrite them. The `updatedAt` field (PRD-mandated by FR67 as a core-schema change applied to **both** terminal and mobile during core extraction) and the `id` field (architecture-mandated by D1, ULID) apply to **newly created records from day one onward**, on both platforms. Existing terminal records without these fields are tolerated by the read path and remain outside the sync surface.
 - No destructive migrations ever. All migrations are forward-only and preserve existing data.
 
 ### Cross-Cutting Concerns Identified
@@ -702,7 +702,7 @@ packages/core/
 │   │   ├── migrations.test.ts
 │   │   └── types.ts                 # { version, up } type
 │   ├── scoring/
-│   │   ├── applyAnswer.ts           # moved from src/domain/scoring.ts — pure, implements FR27
+│   │   ├── applyAnswer.ts           # moved from src/domain/scoring.ts — pure, implements FR28
 │   │   ├── speedTier.ts
 │   │   └── scoring.test.ts
 │   ├── ai/
@@ -765,7 +765,7 @@ packages/core/
 - Identity: `newId`, `ulidSchema`.
 - Storage contract: `StorageAdapter`, `StorageError`, `StorageErrorKind`, `canonicalSerialize`, `canonicalParse`.
 - AI contract: `AiProvider`, provider factory functions (`createOpenAiProvider`, etc., excluding Copilot), `AiErrorKind`, `classifyProviderError` (generic core version).
-- Scoring: `applyAnswer`, `getSpeedTier`, `SpeedThresholds`, `ApplyAnswerResult` — ensures mobile and terminal score identically (FR27).
+- Scoring: `applyAnswer`, `getSpeedTier`, `SpeedThresholds`, `ApplyAnswerResult` — ensures mobile and terminal score identically (FR28).
 - Async: `runAsyncCall`, `AsyncCallResult`, `AsyncCallOptions`.
 - Migrations: `runMigrations`, `CURRENT_SCHEMA_VERSION`.
 - Parity: `PlatformCapabilities`, `defaultCapabilities`.
@@ -817,7 +817,7 @@ packages/terminal/
 - `src/ai/prompts.ts` → `core/src/ai/prompts.ts`.
 - `src/ai/client.ts` → redistributed between `core/src/async/runAsyncCall.ts` and per-provider modules.
 - `src/domain/schema.ts` → `core/src/schemas/`.
-- `src/domain/scoring.ts` → `core/src/scoring/`. Pure function, implements FR27 (terminal scoring rules). Mobile must score identically; moving it to core is the only way to guarantee parity without duplication.
+- `src/domain/scoring.ts` → `core/src/scoring/`. Pure function, implements FR28 (terminal scoring rules). Mobile must score identically; moving it to core is the only way to guarantee parity without duplication.
 - `src/domain/store.ts` → split: filesystem reads/writes become `FileSystemAdapter`, Zod validation moves to `core/src/storage/canonicalParse.ts`.
 - `src/utils/hash.ts`, `slugify.ts`, `format.ts` → `core/src/utils/`.
 - `src/utils/screen.ts` (terminal-specific ANSI helper) → **stays in terminal** under `src/screens/` or a new `src/terminal-ui/`.
@@ -849,30 +849,30 @@ packages/mobile/
 │   │   ├── _layout.tsx
 │   │   ├── index.tsx                # provider picker (FR3, FR4)
 │   │   └── setup/
-│   │       └── [provider].tsx       # per-provider key entry + validation (FR5–FR8)
+│   │       └── [provider].tsx       # per-provider key entry + model selection + validation (FR5–FR9)
 │   ├── create-domain.tsx            # FR13
 │   ├── archived.tsx                 # FR14–FR15
 │   ├── settings/
 │   │   ├── _layout.tsx
-│   │   ├── index.tsx                # FR51
-│   │   ├── ai-provider.tsx          # FR52–FR53
-│   │   ├── language.tsx             # FR54
-│   │   ├── tone.tsx                 # FR55
-│   │   ├── coach-scope.tsx          # FR56
-│   │   └── welcome-exit.tsx         # FR57
+│   │   ├── index.tsx                # FR54
+│   │   ├── ai-provider.tsx          # FR55–FR56
+│   │   ├── language.tsx             # FR57
+│   │   ├── tone.tsx                 # FR58
+│   │   ├── coach-scope.tsx          # FR59
+│   │   └── welcome.tsx              # FR60 (Welcome toggle only — no Exit on mobile, per FR17)
 │   └── domain/
 │       └── [id]/
 │           ├── _layout.tsx
-│           ├── index.tsx            # Domain menu (FR18–FR21)
-│           ├── play.tsx             # Quiz loop (FR22–FR30)
+│           ├── index.tsx            # Domain menu + header + Last Session summary (FR18–FR22, FR31)
+│           ├── play.tsx             # Quiz loop (FR23–FR30)
 │           ├── play/
-│           │   ├── explain.tsx      # FR31, FR33
-│           │   └── teach-more.tsx   # FR32, FR33
-│           ├── history.tsx          # FR40–FR42
-│           ├── bookmarks.tsx        # FR35–FR39
-│           ├── stats.tsx            # FR43–FR45
-│           ├── coach.tsx            # FR46–FR50
-│           └── delete.tsx           # FR20 confirmation route
+│           │   ├── explain.tsx      # FR32, FR34–FR35
+│           │   └── teach-more.tsx   # FR33, FR34–FR35
+│           ├── history.tsx          # FR36–FR38
+│           ├── bookmarks.tsx        # FR41–FR42
+│           ├── stats.tsx            # FR44–FR46
+│           ├── coach.tsx            # FR47–FR53
+│           └── delete.tsx           # FR21 confirmation route
 ├── components/
 │   ├── common/
 │   │   ├── Button.tsx
@@ -888,7 +888,6 @@ packages/mobile/
 │   ├── quiz/
 │   │   ├── QuizQuestion.tsx
 │   │   ├── AnswerOption.tsx
-│   │   ├── CoachOneLiner.tsx
 │   │   └── AnswerFeedback.tsx
 │   ├── history/
 │   │   └── HistoryRow.tsx
@@ -902,10 +901,10 @@ packages/mobile/
 │   ├── useAsyncCall.ts              # mobile-side UI wrapper around core runAsyncCall
 │   ├── useDomains.ts                # data hook — FR10
 │   ├── useDomain.ts                 # data hook
-│   ├── useHistory.ts                # data hook — FR40
-│   ├── useBookmarks.ts              # data hook — FR37
-│   ├── useStats.ts                  # data hook — FR43
-│   ├── useCoach.ts                  # FR46
+│   ├── useHistory.ts                # data hook — FR36
+│   ├── useBookmarks.ts              # data hook — FR41
+│   ├── useStats.ts                  # data hook — FR44
+│   ├── useCoach.ts                  # FR47
 │   ├── useSettings.ts
 │   ├── useProviderConfig.ts
 │   ├── useKeyboardHeight.ts
@@ -985,19 +984,20 @@ Each PRD FR lives in a predictable location:
 
 | FR range | Capability | Mobile location | Core dependency |
 | --- | --- | --- | --- |
-| FR1–FR9 | Onboarding & provider setup | `app/onboarding/`, `services/keyValidator.ts`, `services/SecureStoreKeyRepository.ts` | `core/ai/<provider>/provider.ts`, `core/errors/AiErrorKind.ts` |
+| FR1–FR9 | Onboarding & provider setup (incl. hosted-provider model selection FR5) | `app/onboarding/`, `services/keyValidator.ts`, `services/SecureStoreKeyRepository.ts` | `core/ai/<provider>/provider.ts`, `core/errors/AiErrorKind.ts` |
 | FR10–FR17 | Home & domain management | `app/index.tsx`, `app/archived.tsx`, `hooks/useDomains.ts` | `core/schemas/domain.ts`, `core/storage/StorageAdapter.ts` |
-| FR18–FR21 | Domain menu | `app/domain/[id]/index.tsx`, `components/domain/DomainMenu.tsx` | — |
-| FR22–FR30 | Play (quiz) loop | `app/domain/[id]/play.tsx`, `components/quiz/*`, `hooks/useAsyncCall.ts`, `native-bridges/haptics.ts` | `core/ai/<provider>/provider.ts`, `core/async/runAsyncCall.ts`, `core/schemas/question.ts`, `core/scoring/applyAnswer.ts` (FR27) |
-| FR31–FR34 | Explain / Teach-me-more | `app/domain/[id]/play/explain.tsx`, `app/domain/[id]/play/teach-more.tsx`, `hooks/useAsyncCall.ts` | `core/ai/prompts.ts`, `core/async/runAsyncCall.ts` |
-| FR35–FR39 | Bookmarks | `app/domain/[id]/bookmarks.tsx`, `hooks/useBookmarks.ts` | `core/schemas/question.ts`, `core/storage/StorageAdapter.ts` |
-| FR40–FR42 | History | `app/domain/[id]/history.tsx`, `hooks/useHistory.ts` | `core/storage/StorageAdapter.ts` |
-| FR43–FR45 | Stats (domain-scoped) | `app/domain/[id]/stats.tsx`, `hooks/useStats.ts`, `components/stats/AccuracyChart.tsx` | `core/utils/format.ts` |
-| FR46–FR50 | My Coach | `app/domain/[id]/coach.tsx`, `hooks/useCoach.ts` | `core/schemas/domain.ts` (coach fields), `core/ai/prompts.ts` |
-| FR51–FR60 | Settings | `app/settings/*`, `hooks/useSettings.ts`, `hooks/useProviderConfig.ts` | `core/schemas/settings.ts`, `core/parity/PlatformCapabilities.ts` |
-| FR61–FR65 | Data persistence & local storage | `services/SqliteAdapter.ts` | `core/storage/StorageAdapter.ts`, `core/identity/newId.ts`, `core/migrations/` |
-| FR66–FR69 | Network & offline behavior | `components/common/ErrorPanel.tsx`, `hooks/useAsyncCall.ts` | `core/async/runAsyncCall.ts`, `core/errors/AiErrorKind.ts` |
-| FR70–FR71 | Parity transparency | `app/settings/index.tsx` (About link), store listings | `core/parity/PlatformCapabilities.ts` |
+| FR18–FR22 | Domain menu (incl. header FR19, return-nav FR22) | `app/domain/[id]/index.tsx`, `components/domain/DomainMenu.tsx` | — |
+| FR23–FR30 | Play (quiz) loop | `app/domain/[id]/play.tsx`, `components/quiz/*`, `hooks/useAsyncCall.ts`, `native-bridges/haptics.ts` | `core/ai/<provider>/provider.ts`, `core/async/runAsyncCall.ts`, `core/schemas/question.ts`, `core/scoring/applyAnswer.ts` (FR28) |
+| FR31 | Last Session summary | `app/domain/[id]/index.tsx` (one-shot summary block), `components/domain/LastSessionSummary.tsx` | `core/scoring/sessionSummary.ts` (aggregation pure fn) |
+| FR32–FR35 | Explain / Teach-me-more | `app/domain/[id]/play/explain.tsx`, `app/domain/[id]/play/teach-more.tsx`, `hooks/useAsyncCall.ts` | `core/ai/prompts.ts`, `core/async/runAsyncCall.ts` |
+| FR36–FR38 | History | `app/domain/[id]/history.tsx`, `hooks/useHistory.ts` | `core/storage/StorageAdapter.ts` |
+| FR39–FR43 | Bookmarks | `app/domain/[id]/bookmarks.tsx`, `app/domain/[id]/play.tsx` (toggle), `app/domain/[id]/history.tsx` (toggle), `hooks/useBookmarks.ts` | `core/schemas/question.ts`, `core/storage/StorageAdapter.ts` |
+| FR44–FR46 | Stats (domain-scoped) | `app/domain/[id]/stats.tsx`, `hooks/useStats.ts`, `components/stats/AccuracyChart.tsx` | `core/stats/` (pure aggregations: 30-day trend, return streak, days-since-first), `core/utils/format.ts` |
+| FR47–FR53 | My Coach (incl. <25 tip FR52, staleness FR53) | `app/domain/[id]/coach.tsx`, `components/coach/CoachTipBanner.tsx`, `components/coach/CoachStalenessBanner.tsx`, `hooks/useCoach.ts` | `core/schemas/domain.ts` (coach fields, scope), `core/ai/prompts.ts`, `core/coach/thresholds.ts` (TIP=25, STALENESS=25) |
+| FR54–FR63 | Settings | `app/settings/*`, `hooks/useSettings.ts`, `hooks/useProviderConfig.ts` | `core/schemas/settings.ts`, `core/parity/PlatformCapabilities.ts` |
+| FR64–FR68 | Data persistence & local storage | `services/SqliteAdapter.ts` | `core/storage/StorageAdapter.ts`, `core/identity/newId.ts`, `core/schemas/*` (incl. `updatedAt`, FR67), `core/migrations/` |
+| FR69–FR72 | Network & offline behavior | `components/common/ErrorPanel.tsx`, `hooks/useAsyncCall.ts` | `core/async/runAsyncCall.ts`, `core/errors/AiErrorKind.ts` |
+| FR73–FR74 | Parity transparency | `app/settings/index.tsx` (About link), store listings | `core/parity/PlatformCapabilities.ts` |
 
 ### Cross-Cutting Concerns to Locations
 
@@ -1009,7 +1009,7 @@ Each PRD FR lives in a predictable location:
 | Error boundaries without SDK | `app-errors/ErrorBoundary.tsx` + `app-errors/globalHandler.ts` (mobile); native unhandled-exception surfacing (terminal) |
 | Dependency injection at bootstrap | `app/_layout.tsx` (mobile); `src/index.ts` (terminal) |
 | Migration framework | `core/src/migrations/` |
-| Scoring rules (FR27) | `core/src/scoring/` — single source of truth for terminal + mobile |
+| Scoring rules (FR28) | `core/src/scoring/` — single source of truth for terminal + mobile |
 | Theming tokens layer | `theme/tokens.ts` + `theme/theme.ts` (mobile only) |
 | Offline-aware UI states | `components/common/ErrorPanel.tsx`, `components/common/EmptyState.tsx` + hook `status` discriminator |
 | Parity contract surface | `core/src/parity/` + `services/mobileCapabilities.ts` (mobile) + `parity/terminalCapabilities.ts` (terminal) |
@@ -1065,7 +1065,7 @@ Each PRD FR lives in a predictable location:
 
 ### Requirements Coverage Validation ✅
 
-**Functional requirements.** All 71 FRs are mapped to specific mobile locations and core dependencies in the Requirements-to-Structure table (Step 6). No FR is orphaned.
+**Functional requirements.** All 74 FRs are mapped to specific mobile locations and core dependencies in the Requirements-to-Structure table (Step 6). No FR is orphaned.
 
 **Non-functional requirements.** Every NFR has a named architectural enforcer:
 
@@ -1118,7 +1118,7 @@ Core runtime deps: `zod`, `ulid` (2). Test-time deps (`vitest`, `jest-expo`, `@t
 
 **G2 — Phased core-extraction plan.** Added as a new section below.
 
-**G3 — Copilot capability traced.** `PlatformCapabilities.copilotProvider` is `true` in `parity/terminalCapabilities.ts` and `false` in `services/mobileCapabilities.ts`. The mobile provider-setup screen (FR3, FR52) filters providers by this capability, making the "excluding GitHub Copilot" clause compile-time-enforced.
+**G3 — Copilot capability traced.** `PlatformCapabilities.copilotProvider` is `true` in `parity/terminalCapabilities.ts` and `false` in `services/mobileCapabilities.ts`. The mobile provider-setup screen (FR3) and the Settings AI-Provider screen (FR55) filter providers by this capability, making the "excluding GitHub Copilot" clause compile-time-enforced.
 
 **G4 — Accessibility enforcement reviewer-only.** Trade-off accepted per the simplicity rule: Phase 1 has no a11y lint rules. NFR-A1–A6 are enforced via the review checklist.
 
@@ -1258,8 +1258,8 @@ First user-visible surface. High retention leverage per PRD.
 Core product loop. Highest implementation density.
 
 1. `app/domain/[id]/index.tsx` (Domain menu).
-2. `app/domain/[id]/play.tsx` using `runAsyncCall` for question generation and `applyAnswer` from core for scoring (FR27).
-3. `QuizQuestion`, `AnswerOption`, `AnswerFeedback`, `CoachOneLiner` components.
+2. `app/domain/[id]/play.tsx` using `runAsyncCall` for question generation and `applyAnswer` from core for scoring (FR28).
+3. `QuizQuestion`, `AnswerOption`, `AnswerFeedback` components.
 4. `app/domain/[id]/play/explain.tsx` + `teach-more.tsx`.
 5. Haptic integration on answer + bookmark.
 6. Commits per screen.
@@ -1274,9 +1274,9 @@ Core product loop. Highest implementation density.
 ### Phase 15 — My Coach + Settings (FR46–FR60)
 
 1. `useCoach` + `app/domain/[id]/coach.tsx`.
-2. `useSettings` + `useProviderConfig` + six Settings screens (`index`, `ai-provider`, `language`, `tone`, `coach-scope`, `welcome-exit`).
+2. `useSettings` + `useProviderConfig` + six Settings screens (`index`, `ai-provider`, `language`, `tone`, `coach-scope`, `welcome`).
 3. `SettingRow` component.
-4. About link to GitHub README (FR70).
+4. About link to GitHub README (FR73).
 5. Commits per screen.
 
 ### Phase 16 — Polish, A11y Pass, Store Assets
@@ -1284,7 +1284,7 @@ Core product loop. Highest implementation density.
 1. A11y pass: labels, dynamic type verification, contrast spot-check.
 2. Icon, splash, Expo config finalization.
 3. `eas.json` profiles (`preview`, `production`).
-4. Store listings (FR71 disclosure: "phones only, dark-only, no sync yet").
+4. Store listings (FR74 disclosure: "phones only, dark-only, no sync yet").
 5. First TestFlight / Play Internal build via EAS.
 6. Commit.
 
@@ -1322,13 +1322,13 @@ Core product loop. Highest implementation density.
 - [x] Complete three-package tree defined (core + terminal + mobile)
 - [x] Public surface of core specified
 - [x] Architectural boundaries (import direction, runtime boundaries, data flow) documented
-- [x] All 71 FRs mapped to specific locations
+- [x] All 74 FRs mapped to specific locations
 - [x] All 11 cross-cutting concerns mapped to locations
 - [x] Configuration files enumerated
 
 **Validation**
 - [x] Coherence verified
-- [x] All 71 FRs covered
+- [x] All 74 FRs covered
 - [x] All 34 NFRs traced to enforcers
 - [x] Dependency inventory under NFR-M5 cap (8 / 15)
 - [x] Gaps identified and resolved
@@ -1338,7 +1338,7 @@ Core product loop. Highest implementation density.
 
 **Overall Status:** ✅ **READY FOR IMPLEMENTATION**
 
-**Confidence Level:** **High.** All 71 FRs and 34 NFRs are mapped to architectural enforcers. Phased plan keeps `main` green at every commit. Dependency footprint has substantial headroom. No external infrastructure required. Bidirectional sync readiness is an explicit Phase 1 invariant, not a retrofit.
+**Confidence Level:** **High.** All 74 FRs and 34 NFRs are mapped to architectural enforcers. Phased plan keeps `main` green at every commit. Dependency footprint has substantial headroom. No external infrastructure required. Bidirectional sync readiness is an explicit Phase 1 invariant, not a retrofit.
 
 **Key Strengths.**
 - Parity is structurally enforced: scoring, schemas, AI logic, error taxonomy all in core.

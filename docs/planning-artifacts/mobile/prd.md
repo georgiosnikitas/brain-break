@@ -101,8 +101,8 @@ identity.
 
 - **Habit formation:** Maya opens the app on ≥3 distinct days per week within her first 30 days.
 - **Session success:** A "good session" is defined as a user answering at least one question *and* receiving at least one Explain *or* Teach-me-more follow-up. Target: ≥70% of sessions meet this bar.
-- **Onboarding completion (P0 retention metric):** ≥60% of users who download the app successfully configure an AI provider. The BYO-key flow is the most critical single surface in the product; failures here become invisible downstream churn.
-- **Qualitative "aha!" moment:** ≥40% of users who complete onboarding create ≥1 bookmark during their first week — a user-declared "this was worth remembering" signal.
+- **Provider configuration (leading engagement metric):** ≥60% of users who install the app configure an AI provider within their first 7 days. Provider setup is optional at first launch (users can skip and explore Home first), so this is a measure of motivated engagement rather than a forced gate. Users who never configure a provider are expected to churn quickly; this metric surfaces that pattern early.
+- **Qualitative "aha!" moment:** ≥40% of users who have configured a provider create ≥1 bookmark during their first week — a user-declared "this was worth remembering" signal.
 
 ### Business Success
 
@@ -131,7 +131,7 @@ Brain Break is a solo-maintained, no-backend, no-monetization product. "Business
 | Metric | Target |
 | --- | --- |
 | iOS + Android installs | ≥100 |
-| Onboarding completion rate | ≥60% |
+| Provider configured within 7 days | ≥60% of installs |
 | 30-day active users (D30) | ≥30% of installs |
 | Users with ≥1 bookmark in week 1 | ≥40% of onboarded users |
 | "Buy me a coffee" conversions | ≥5 |
@@ -189,35 +189,35 @@ Brain Break Mobile is a single-user, solo-consumer product with no backend, no m
 - Domain menu routing to feature screens
 - Quiz screen (render question, capture answer, update score/history)
 - Inline correct/incorrect feedback with haptics
-- Coach one-liner rendering (contextual to domain)
 - Explain flow (AI call with latency-aware UX)
 - Teach-me-more flow (AI call)
 - Bookmark toggle with persistence
 - Network-latency-tolerant loading states
 
-#### Journey B — Maya's BYO-key onboarding (the retention cliff)
+#### Journey B — Maya's BYO-key setup (the engagement pivot)
 
-**Opening.** Sunday, 7:40 PM. Maya has just installed Brain Break from the App Store. She opens it for the first time. Her partner is in the kitchen; she wants to get going on her own.
+**Opening.** Sunday, 7:40 PM. Maya has just installed Brain Break from the App Store. She opens it for the first time. Her partner is in the kitchen; she wants to see what it looks like before committing to any account or key.
 
 **Rising action.**
-1. The app launches to a Welcome screen (default `showWelcome: ON`): a short greeting, dark background, one primary CTA — *"Set up your AI provider to get started."*
-2. She taps it. A screen titled "Choose an AI provider" lists OpenAI, Anthropic, Google Gemini, Ollama, and an OpenAI-compatible endpoint. Each row has a one-line description.
-3. Above the list is a contextual explainer: *"Brain Break uses AI to create and check your questions. You bring your own key so your learning stays yours — and so we never charge you."*
-4. Below the list is a secondary CTA: *"I don't know what to pick — help me choose."* Tapping it reveals a short explainer screen with a plain-language recommendation (*"If you're not sure, use OpenAI — it's the most popular"*) and a direct link to OpenAI's API key page.
+1. The app launches to a Welcome screen (default `showWelcome: ON`): a short greeting, dark background, two CTAs — a primary *"Set up your AI provider"* and a secondary *"Skip for now — set up later in Settings."*
+2. She taps **Skip**. She lands directly on Home. A persistent but unobtrusive banner reads: *"AI provider not configured — go to Settings to set one up."* Home, History, Bookmarks, and Stats are all accessible; only AI-bound actions (Play, Explain, Teach me more, My Coach) show a prompt to configure a provider first.
+3. She pokes around. She creates a domain and opens History. No friction. Five minutes later, curiosity wins: she taps Settings.
+4. In Settings, the AI Provider row shows *"Not configured."* She taps it. A screen titled "Choose an AI provider" lists OpenAI, Anthropic, Google Gemini, Ollama, and an OpenAI-compatible endpoint. Each row has a one-line description and a plain-language explainer above the list: *"Brain Break uses AI to create and check your questions. You bring your own key so your learning stays yours — and so we never charge you."*
+5. She picks OpenAI. The next screen shows a text field for the API key and a helper line: *"Don't have one yet? Tap here to get a key — it takes 2 minutes."* The link opens Safari on OpenAI's platform page. She creates a key, copies it, comes back, pastes it. A small spinner runs a lightweight test call; a green check appears: *"Connected to OpenAI."* She taps **Save**.
 
-**Climax.** She picks OpenAI. The next screen shows a text field for the API key and a helper line: *"Don't have one yet? Tap here to get a key — it takes 2 minutes."* The link opens Safari on OpenAI's platform page. She creates a key, copies it, comes back, pastes it. A small spinner runs a lightweight test call; a green check appears: *"Connected to OpenAI."* She taps **Continue**. Home appears with a sample starter domain: *"Welcome to Brain Break — try me."*
+**Resolution.** Setup took ~4 minutes, most of it on OpenAI's own site. Maya now has a working provider. She heads back to Home, opens her domain, and plays her first question. Because she was never blocked — she explored first, then committed — her drop-off risk was front-loaded at the Welcome screen choice, not at a mandatory gate deep inside setup.
 
-**Resolution.** Onboarding took ~4 minutes, most of it on OpenAI's own site. Maya joins the ~60% who successfully configure a provider — but *only* because we told her why, recommended one, deep-linked her, and validated the key before letting her leave the screen.
-
-**Failure modes (the ~40% we lose):**
-1. User hits the provider list, feels overwhelmed, closes and deletes the app.
-2. User opens the OpenAI link, hits a login/signup wall, bounces.
-3. User pastes an invalid key → we reject it → she loses confidence and quits.
+**Failure modes:**
+1. User skips, explores briefly, hits the AI-required prompt on Play, feels confused about what they signed up for, and deletes the app.
+2. User opens the OpenAI link from Settings, hits a login/signup wall, bounces.
+3. User pastes an invalid key → we reject it clearly → she retries or defers.
 
 **Capabilities this journey requires:**
-- First-launch onboarding flow (detects "no provider configured yet")
-- Provider catalog screen with plain-language descriptions and deep links to each provider's key page
-- "Help me choose" explainer modal
+- First-launch Welcome screen with both a "Set up provider" primary CTA and a "Skip" secondary CTA
+- First-launch detection and skip path routing to Home
+- Persistent "no provider" nudge on Home (non-blocking)
+- AI-action gating: graceful prompt to configure provider when a user attempts Play/Explain/Coach without one configured
+- Provider catalog screen in Settings with plain-language descriptions
 - Key-entry screen per provider (with paste-from-clipboard affordance)
 - Live key validation via a lightweight test call
 - Secure key storage via `expo-secure-store` (Keychain/Keystore)
@@ -238,7 +238,7 @@ Brain Break Mobile is a single-user, solo-consumer product with no backend, no m
 2. Home is empty — no domains. *"Wait, my terminal has 40. Does this not sync?"* He remembers: Phase 1 is local-only, no sync yet. He nods, and creates *"React 19 features"* on mobile just to kick the tires.
 3. Create-domain form. Keyboard-aware, quick. He plays 3 questions, tries Explain, tries Teach me more, tries Bookmark. All work.
 4. Domain menu. He scans it: Play, History, Bookmarks, Stats, My Coach, Archive, Delete. *"All of it. Okay, they really did it."*
-5. Settings. He scans it: AI Provider, Language, Tone of Voice, My Coach Scope, Welcome & Exit toggle. He notices no Copilot provider, no theme picker, no ASCII Art Milestone, no Challenge mode.
+5. Settings. He scans it: AI Provider, Language, Tone of Voice, My Coach Scope, Welcome toggle. He notices no Copilot provider, no theme picker, no ASCII Art Milestone, no Challenge mode.
 
 **Climax.** Alex does not get frustrated — because every omission is consistent with what the App Store description and the GitHub README already told him: Copilot is a forced platform divergence, theme picker is Phase 1 dark-only, ASCII art and Challenge are explicitly documented backlog commitments. He tweets: *"brain-break mobile is out and they actually kept every feature. no 'lite edition' energy. respect."*
 
@@ -261,7 +261,7 @@ Brain Break Mobile is a single-user, solo-consumer product with no backend, no m
 | Home screen (with zero-state) | A, B, C | P0 |
 | Create domain flow | A, C | P0 |
 | Domain menu (Play, History, Bookmarks, Stats, My Coach, Archive, Delete) | A, C | P0 |
-| Quiz / Play loop (with haptics + coach one-liner) | A, C | P0 |
+| Quiz / Play loop (with haptics) | A, C | P0 |
 | Explain + Teach me more | A, C | P0 |
 | Bookmark toggle | A | P0 |
 | Settings (full parity except Copilot and theme) | C | P0 |
@@ -363,7 +363,7 @@ This choice is deliberate. A smaller MVP (e.g., quiz-only, no My Coach) is techn
 
 **What we are validating with this MVP:**
 
-1. Non-dev users will successfully configure a BYO-key (≥60% target).
+1. Non-dev users will configure a BYO-key within 7 days at a ≥60% rate. The skip-on-first-launch pattern reduces forced abandonment; this metric validates that deferred setup still converts.
 2. The parity promise earns word-of-mouth from terminal users to their non-dev networks (≥100 installs organically within 3 months).
 3. Local-only Phase 1 is livable before Phase 2 sync arrives (validated by retention, not churn).
 
@@ -374,7 +374,7 @@ This choice is deliberate. A smaller MVP (e.g., quiz-only, no My Coach) is techn
 Full MVP scope and core user journeys are defined in the **Product Scope** and **User Journeys** sections above and are not repeated here. Summary:
 
 - 15 surfaces (Home, Create, Archived, Domain menu, Play, Explain, Teach me more, History, Bookmarks, Stats, My Coach, Archive, Delete, Settings, Buy me a coffee).
-- 5 settings (AI Provider, Language, Tone of Voice, My Coach Scope, Welcome & Exit toggle).
+- 5 settings (AI Provider, Language, Tone of Voice, My Coach Scope, Welcome toggle).
 - BYO-key AI (all terminal providers except GitHub Copilot).
 - Local-only SQLite storage behind `IStorageAdapter`.
 - Dark-only theme.
@@ -403,7 +403,7 @@ Phased priorities (detailed feature list is in *Product Scope → Growth Feature
 
 | Risk | Mitigation |
 | --- | --- |
-| BYO-key onboarding cliff kills retention (below 60% target) | If missed materially, investigate qualitatively with onboarded users before committing to heavier mitigations; no hosted-proxy fallback is committed for Phase 2 |
+| Provider configuration rate below 60% within 7 days | Investigate qualitatively: is drop-off at the Welcome skip, at the Settings provider screen, or at key validation? Fix the highest-drop stage first. No hosted-proxy fallback committed for Phase 2. |
 | Terminal users don't refer non-dev partners | Measured via the 100-install / 3-month target; if missed, investigate via direct outreach to existing terminal users before investing in paid acquisition |
 | Non-dev users find "learning app without streaks/gamification" unmotivating | Validated by Maya-style qualitative feedback, not just DAU numbers; *no manipulation* is a product commitment, not a hypothesis to revisit |
 | App Store rejection for BYO-key or external-link patterns | Precedent exists (terminal emulators, AI chat apps use identical BYO-key patterns); external Buy-me-a-coffee link is explicitly allowed for non-digital-goods |
@@ -446,110 +446,113 @@ The following requirements define the complete capability contract for Brain Bre
 - **FR1:** A first-time user can complete onboarding and reach a working Home screen without needing a separate device.
 - **FR2:** A user who has not yet configured an AI provider is routed to the provider-setup flow on app launch.
 - **FR3:** A user can choose an AI provider from the supported list (OpenAI, Anthropic, Google Gemini, Ollama, OpenAI-compatible endpoint) with a plain-language description of each option.
-- **FR4:** A user unsure which provider to choose can request a recommendation and receive a direct deep-link to that provider's API-key creation page.
-- **FR5:** A user can enter an API key for their selected provider, including via paste from the device clipboard.
+- **FR4:** A user can enter an API key for their selected provider, including via paste from the device clipboard.
+- **FR5:** For hosted providers (OpenAI, Anthropic, Google Gemini), a user can pick a model from a predefined list or enter a custom model name, matching the terminal's model selection flow.
 - **FR6:** For providers that require endpoint or model parameters (Ollama, OpenAI-compatible), a user can configure those parameters during setup.
 - **FR7:** The system validates a newly entered key via a lightweight test call and confirms success before allowing the user to leave the setup screen.
 - **FR8:** The system presents a clear, recoverable error message when key validation fails (invalid key, network error, rate limit).
-- **FR9:** A user can reach the Home screen only after a working provider is configured.
+- **FR9:** A user can skip the provider-setup flow on first launch and proceed directly to the Home screen; an AI provider can be configured at any time from Settings.
 
 ### Home & Domain Management
 
 - **FR10:** A user can view a list of their active (non-archived) domains on Home, each showing its name, score, and total question count.
 - **FR11:** A user can see a clear zero-state on Home when no domains exist yet, with a prompt to create the first domain.
 - **FR12:** A user can navigate from a Home domain row into that domain's menu.
-- **FR13:** A user can create a new domain from Home by providing a domain slug and any prompt / coach information the terminal equivalent supports.
+- **FR13:** A user can create a new domain from Home by providing a domain name (auto-slugified) and a starting difficulty (1 Beginner – 5 Expert), matching the terminal's create-domain flow.
 - **FR14:** A user can view a list of archived domains on a dedicated Archived screen accessible from Home.
 - **FR15:** A user can unarchive a previously archived domain from the Archived screen, returning it to the active list.
-- **FR16:** A user can open a "Buy me a coffee" surface from Home that leads to an external donation page in the system browser.
+- **FR16:** A user can open a "Buy me a coffee" surface from Home that leads to an external donation page in the system browser (the terminal renders a scannable QR code instead; the destination URL is identical).
 - **FR17:** The app is gracefully closed via the OS (swipe / home button); the terminal-style "Exit" menu item is not present.
 
 ### Domain Menu
 
 - **FR18:** A user can open a domain menu that offers: Play, History, Bookmarks, Stats, My Coach, Archive, Delete.
-- **FR19:** A user can archive a domain from the domain menu, removing it from the active Home list without data loss.
-- **FR20:** A user can permanently delete a domain from the domain menu, after explicit confirmation that warns the action cannot be undone.
-- **FR21:** A user can return from any domain-menu destination back to the domain menu, and from the domain menu back to Home.
+- **FR19:** The domain menu header shows the domain's name, current score, and total answered question count, matching the terminal's header layout.
+- **FR20:** A user can archive a domain from the domain menu, removing it from the active Home list without data loss.
+- **FR21:** A user can permanently delete a domain from the domain menu, after explicit confirmation that warns the action cannot be undone.
+- **FR22:** A user can return from any domain-menu destination back to the domain menu, and from the domain menu back to Home.
 
 ### Play (Quiz) Loop
 
-- **FR22:** A user can start a quiz session for a selected domain.
-- **FR23:** The system generates a new question on demand via the user's configured AI provider, respecting the domain's prompt, language, tone, and coach configuration.
-- **FR24:** A user is shown one question at a time, with multiple-choice options rendered for tap selection.
-- **FR25:** A user can submit an answer by tapping an option.
-- **FR26:** The system records every answered question in the domain's history with the user's answer, the correct answer, and a timestamp.
-- **FR27:** The system updates the domain's score after each answer, matching the terminal scoring rules.
-- **FR28:** A user receives tactile (haptic) and visual feedback on answer submission, differentiated for correct and incorrect outcomes.
-- **FR29:** A user can view a short coach one-liner alongside the question, when one is configured for the domain.
+- **FR23:** A user can start a quiz session for a selected domain.
+- **FR24:** The system generates a new question on demand via the user's configured AI provider, respecting the domain's topic, language, and tone.
+- **FR25:** A user is shown one question at a time, with multiple-choice options rendered for tap selection.
+- **FR26:** A user can submit an answer by tapping an option.
+- **FR27:** The system records every answered question in the domain's history with the user's answer, the correct answer, and a timestamp.
+- **FR28:** The system updates the domain's score after each answer, matching the terminal scoring rules.
+- **FR29:** A user receives tactile (haptic) and visual feedback on answer submission, differentiated for correct and incorrect outcomes.
 - **FR30:** A user can end the current quiz session and return to the domain menu at any question boundary.
+- **FR31:** When a Play session ends, the system shows a one-time Last Session summary on the domain menu containing: score delta, questions answered, correct/incorrect counts, accuracy, fastest answer, slowest answer, session duration, and starting → ending difficulty (with up/down/flat indicator). The summary clears as soon as the user navigates away from the domain menu.
 
 ### Question Inspection (Explain & Teach Me More)
 
-- **FR31:** A user can request an explanation of the current question, generated on demand via the configured AI provider.
-- **FR32:** A user can request a deeper contextual teaching ("Teach me more") related to the current question, generated on demand via the configured AI provider.
-- **FR33:** The system renders AI-generated explanatory content with a loading state that communicates network/AI latency without blocking local interaction.
-- **FR34:** The system presents a recoverable error state when an AI call fails, with a retry affordance and without crashing or losing the current question.
-
-### Bookmarks
-
-- **FR35:** A user can bookmark the current question from the Play loop.
-- **FR36:** A user can unbookmark a previously bookmarked question.
-- **FR37:** A user can view a list of bookmarked questions for a domain on a dedicated Bookmarks screen.
-- **FR38:** A user can remove a bookmark from the Bookmarks screen.
-- **FR39:** Bookmark state persists across app restarts, device sleep, and Phase 1's local-only storage boundary.
+- **FR32:** A user can request an explanation of the current question, generated on demand via the configured AI provider.
+- **FR33:** A user can request a deeper contextual teaching ("Teach me more") related to the current question, generated on demand via the configured AI provider.
+- **FR34:** The system renders AI-generated explanatory content with a loading state that communicates network/AI latency without blocking local interaction.
+- **FR35:** The system presents a recoverable error state when an AI call fails, with a retry affordance and without crashing or losing the current question.
 
 ### History
 
-- **FR40:** A user can view a chronological list of answered questions for a domain on a dedicated History screen.
-- **FR41:** Each history entry shows the question, the user's answer, the correct answer, and the outcome (correct / incorrect).
-- **FR42:** History is read-only in Phase 1. Individual history entries cannot be edited or deleted; clearing history is a domain-delete operation.
+- **FR36:** A user can view a chronological list of answered questions for a domain on a dedicated History screen.
+- **FR37:** Each history entry shows the same question detail as the post-answer view in the Play loop (all answer options, outcome, score delta, correct answer if wrong, time taken, speed tier, difficulty level, and answered timestamp).
+- **FR38:** History entries cannot be edited or deleted individually; clearing history is a domain-delete operation. Bookmark state on a history entry can be toggled (FR40).
+
+### Bookmarks
+
+- **FR39:** A user can bookmark or unbookmark the current question from the Play loop.
+- **FR40:** A user can bookmark or unbookmark a question from the History screen.
+- **FR41:** A user can view a list of bookmarked questions for a domain on a dedicated Bookmarks screen.
+- **FR42:** A user can remove a bookmark from the Bookmarks screen.
+- **FR43:** Bookmark state persists across app restarts, device sleep, and Phase 1's local-only storage boundary.
 
 ### Statistics (Domain-Scoped)
 
-- **FR43:** A user can view statistics for a specific domain on a dedicated Stats screen accessed from that domain's menu.
-- **FR44:** The Stats screen presents the set of metrics the terminal equivalent presents (score, total questions, accuracy, and any terminal-supported aggregations), scoped to the domain.
-- **FR45:** No global or cross-domain statistics exist in Phase 1.
+- **FR44:** A user can view statistics for a specific domain on a dedicated Stats screen accessed from that domain's menu.
+- **FR45:** The Stats screen presents the same metric set as the terminal: score, questions answered, correct/incorrect counts, accuracy, total time played, starting difficulty, current difficulty, 30-day score trend (growing / flat / declining), days since first session, and current return streak.
+- **FR46:** No global or cross-domain statistics exist in Phase 1.
 
 ### My Coach (Domain-Scoped)
 
-- **FR46:** A user can configure My Coach for a domain from the domain menu, providing coach instructions and scope.
-- **FR47:** A user can select the coach scope from the same options the terminal supports (Recent 25 / Extended 100 / Complete all questions).
-- **FR48:** The system passes the coach configuration and scope to the AI provider when generating coach messages during Play.
-- **FR49:** A user can update or clear a domain's coach configuration at any time.
-- **FR50:** My Coach state is stored per-domain and persists across app restarts.
+- **FR47:** A user can open My Coach for a domain from the domain menu; the system generates a coaching report on demand from that domain's answer history.
+- **FR48:** The scope of history included in the report is controlled by the global My Coach Scope setting (Recent 25 / Extended 100 / Complete all), matching the terminal.
+- **FR49:** On first use, the system calls the AI provider to generate the report; on subsequent visits, the cached report is shown instantly with an option to regenerate.
+- **FR50:** A user can regenerate the coaching report at any time from the My Coach screen.
+- **FR51:** The most recently generated report, its timestamp, and the question count at generation time are stored per-domain and persist across app restarts.
+- **FR52:** When the domain has fewer than 25 answered questions, a tip is displayed above the report indicating that reports become more accurate with more answered questions; the tip disappears at 25 or more.
+- **FR53:** When regenerating, if fewer than 25 new questions have been answered since the last report, a staleness notice is shown above the regenerated report; the notice is informational and does not block regeneration.
 
 ### Settings
 
-- **FR51:** A user can open a Settings screen from Home.
-- **FR52:** A user can change the current AI Provider from Settings, choosing from the same provider list supported at onboarding (excluding GitHub Copilot, which is not offered on mobile).
-- **FR53:** A user can update provider-specific parameters (API key, endpoint, model) from Settings, with the same validation flow as onboarding.
-- **FR54:** A user can change the question Language from Settings via a free-text input, matching the terminal setting.
-- **FR55:** A user can change the Tone of Voice from the same list the terminal supports (Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate).
-- **FR56:** A user can change the default My Coach Scope (Recent 25 / Extended 100 / Complete all) from Settings.
-- **FR57:** A user can toggle the Welcome & Exit screen setting from Settings, matching the terminal's `showWelcome` behavior (splash and farewell on app launch / close).
-- **FR58:** Settings changes persist across app restarts via local storage.
-- **FR59:** The Settings screen does not offer a theme picker; the app is dark-only in Phase 1.
-- **FR60:** The Settings screen does not offer ASCII art milestone or Challenge options; those features are out of scope in Phase 1.
+- **FR54:** A user can open a Settings screen from Home.
+- **FR55:** A user can change the current AI Provider from Settings, choosing from the same provider list supported at onboarding (excluding GitHub Copilot, which is not offered on mobile).
+- **FR56:** A user can update provider-specific parameters (API key, endpoint URL, model — including the predefined model list and a custom-model entry for hosted providers) from Settings, with the same validation flow as onboarding.
+- **FR57:** A user can change the question Language from Settings via a free-text input, matching the terminal setting.
+- **FR58:** A user can change the Tone of Voice from the same list the terminal supports (Natural, Expressive, Calm, Humorous, Sarcastic, Robot, Pirate).
+- **FR59:** A user can change the default My Coach Scope (Recent 25 / Extended 100 / Complete all) from Settings.
+- **FR60:** A user can toggle the Welcome screen setting from Settings, matching the terminal's `showWelcome` behavior on app launch. (The terminal's farewell on Exit is not applicable on mobile, where the app is closed by the OS — see FR17.)
+- **FR61:** Settings changes persist across app restarts via local storage.
+- **FR62:** The Settings screen does not offer a theme picker; the app is dark-only in Phase 1.
+- **FR63:** The Settings screen does not offer ASCII art milestone or Challenge options; those features are out of scope in Phase 1.
 
 ### Data Persistence & Local Storage
 
-- **FR61:** All domain data (meta, history, bookmarks, coach configuration, archive state) persists locally on the device.
-- **FR62:** All user settings persist locally on the device.
-- **FR63:** All AI provider API keys are stored in the device secure-store (Keychain on iOS, Keystore on Android) and are never written to plain storage, logs, or telemetry.
-- **FR64:** Every domain record carries a stable unique identifier and an `updatedAt` timestamp, enabling Phase 2 sync without Phase 1 migration pain.
-- **FR65:** The system survives forced app termination without data loss for any persisted domain, setting, or key.
+- **FR64:** All domain data (meta, history, bookmarks, cached coach report, archive state) persists locally on the device.
+- **FR65:** All user settings persist locally on the device.
+- **FR66:** All AI provider API keys are stored in the device secure-store (Keychain on iOS, Keystore on Android) and are never written to plain storage, logs, or telemetry.
+- **FR67:** Every domain record carries an `updatedAt` timestamp. This field is added to the shared core schema during the core-extraction effort and applies to both terminal and mobile, enabling Phase 2 sync without Phase 1 migration pain.
+- **FR68:** The system survives forced app termination without data loss for any persisted domain, setting, or key.
 
 ### Network & Offline Behavior
 
-- **FR66:** The app launches and reaches Home in offline mode.
-- **FR67:** A user can browse domains, history, bookmarks, archived domains, and stats entirely offline.
-- **FR68:** A user can open and modify Settings offline, except for actions that require a live test call (e.g., validating a newly entered provider key).
-- **FR69:** Network-required actions (Play, Explain, Teach me more, coach message generation) fail with a clear, recoverable message when offline or when the provider is unreachable.
+- **FR69:** The app launches and reaches Home in offline mode.
+- **FR70:** A user can browse domains, history, bookmarks, archived domains, and stats entirely offline.
+- **FR71:** A user can open and modify Settings offline, except for actions that require a live test call (e.g., validating a newly entered provider key).
+- **FR72:** Network-required actions (Play, Explain, Teach me more, coach report generation) fail with a clear, recoverable message when offline or when the provider is unreachable.
 
 ### Parity & Platform Divergence Transparency
 
-- **FR70:** The Settings screen exposes a link (or section) that points to the product's public README or About page where platform-forced divergences are documented.
-- **FR71:** The App Store and Play Store descriptions state the Phase 1 platform constraints explicitly (phones only; dark-only; no cross-device sync yet).
+- **FR73:** The Settings screen exposes a link (or section) that points to the product's public README or About page where platform-forced divergences are documented.
+- **FR74:** The App Store and Play Store descriptions state the Phase 1 platform constraints explicitly (phones only; dark-only; no cross-device sync yet).
 
 ## Non-Functional Requirements
 
@@ -560,14 +563,14 @@ Only categories that materially apply to Brain Break Mobile Phase 1 are document
 - **NFR-P1:** The app reaches the Home screen in under 2 seconds from cold start on a 2-year-old mid-range device (baseline: iPhone 12, Pixel 6a).
 - **NFR-P2:** Tapping a domain row on Home opens its Domain menu within 250 ms (perceived-instant interaction).
 - **NFR-P3:** Question generation during Play completes with p50 < 4 seconds and p95 < 8 seconds over a stable network; longer latencies are acceptable when attributable to the user's chosen AI provider or network.
-- **NFR-P4:** Explain and Teach-me-more AI calls show a loading indicator within 100 ms of trigger and do not block the Back button or other local UI.
+- **NFR-P4:** All AI calls (question generation, Explain, Teach me more, coach report) show a loading indicator within 100 ms of trigger and do not block the Back button or other local UI.
 - **NFR-P5:** Haptic + visual feedback on answer submission fires within 50 ms of tap.
 - **NFR-P6:** Local data reads (domain list, history, bookmarks, stats) render under 300 ms even for domains with ≥1,000 history entries.
 
 ### Security
 
 - **NFR-S1:** API keys are stored exclusively in the device secure-store (Keychain on iOS, Keystore on Android). Keys are never written to `AsyncStorage`, plain SQLite columns, file-system logs, console output, or crash reports.
-- **NFR-S2:** All network calls to AI providers and external link destinations use HTTPS/TLS 1.2 or higher. Plain-HTTP endpoints are rejected.
+- **NFR-S2:** All network calls to cloud AI providers and external link destinations use HTTPS/TLS 1.2 or higher. Plain-HTTP is permitted for user-configured local endpoints (e.g., Ollama or an OpenAI-compatible server running on the same LAN); the user is responsible for the security of their own local network.
 - **NFR-S3:** API keys are transmitted only to the provider endpoint the user configured. The app makes no network calls to any other destination with credentials attached.
 - **NFR-S4:** The app performs no background network activity when the user is not actively interacting; no telemetry beacons, heartbeat pings, or silent calls.
 - **NFR-S5:** On secure-store failure (e.g., key unreadable after device restore), the app detects the failure at app launch and routes the user back to provider-setup rather than attempting AI calls with a null or corrupted key.
@@ -596,7 +599,7 @@ Only categories that materially apply to Brain Break Mobile Phase 1 are document
 - **NFR-A3:** Color contrast for text and interactive elements meets WCAG 2.1 AA (4.5:1 for body text, 3:1 for large text and graphical objects).
 - **NFR-A4:** No interaction relies exclusively on color to convey meaning (correct / incorrect feedback pairs color with icon and haptic).
 - **NFR-A5:** Touch targets for interactive elements are ≥ 44×44 pt (iOS) / 48×48 dp (Android).
-- **NFR-A6:** Formal WCAG 2.1 AA conformance certification is a Phase 2+ commitment. Phase 1 meets the practices above as a good-faith baseline, not a certified conformance.
+- **NFR-A6:** Phase 1 meets the practices above as a good-faith accessibility baseline. Formal WCAG 2.1 AA conformance certification is not committed for any phase.
 
 ### Maintainability
 
