@@ -35,9 +35,16 @@
       font-size: 22px;
       font-weight: 700;
       margin-bottom: 8px;
+    }
+    h1 .brand {
       background: linear-gradient(90deg, var(--gradStart), var(--gradEnd));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h1 .emoji {
+      -webkit-text-fill-color: initial;
+      color: initial;
     }
     .subtitle {
       text-align: center;
@@ -96,10 +103,17 @@
     .banner-title {
       font-size: 15px;
       font-weight: 700;
+      display: inline-block;
+    }
+    .banner-title .brand {
       background: linear-gradient(90deg, var(--gradStart), var(--gradEnd));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      display: inline-block;
+      background-clip: text;
+    }
+    .banner-title .emoji {
+      -webkit-text-fill-color: initial;
+      color: initial;
     }
     .banner-shadow {
       height: 2px;
@@ -446,7 +460,7 @@
 </head>
 <body>
 
-<h1>🧠🔨 Brain Break Mobile — UX Design Direction</h1>
+<h1><span class="emoji">🧠🔨</span> <span class="brand">Brain Break Mobile — UX Design Direction</span></h1>
 <p class="subtitle">Direction C: Balanced Cards (chosen) · Dark-only · Custom token system · expo-router stack navigation</p>
 
 <div class="grid">
@@ -476,9 +490,9 @@
     <div class="screen-label">2 · Provider catalog (Settings → AI Provider)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Settings</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">AI Provider</div>
       </div>
       <div class="screen-body">
@@ -527,9 +541,9 @@
     <div class="screen-label">3 · Provider setup — key entry</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Providers</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">OpenAI</div>
       </div>
       <div class="screen-body">
@@ -554,9 +568,9 @@
     <div class="screen-label">4 · Provider setup — validation failed</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Providers</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">OpenAI</div>
       </div>
       <div class="screen-body">
@@ -580,9 +594,9 @@
     <div class="screen-label">5 · Provider setup — connected ✓</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Providers</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">OpenAI</div>
       </div>
       <div class="screen-body">
@@ -591,7 +605,7 @@
           <div style="font-size:18px;font-weight:700;color:var(--correct);">✓ OpenAI: GPT-5.4 Mini</div>
           <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Your API key has been validated and stored securely on your device.</div>
         </div>
-        <div class="primary-btn">↩️  Back to Settings</div>
+        <div class="primary-btn">Done</div>
       </div>
     </div>
   </div>
@@ -603,7 +617,7 @@
     <div class="screen-label">6 · Home — zero state (no domains yet)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="screen-body">
         <div class="nudge-banner">⚠ AI provider not configured — go to Settings to set one up.</div>
         <div class="zero-state">
@@ -643,9 +657,9 @@
     <div class="screen-label">7 · Create domain</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Home</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">New domain</div>
       </div>
       <div class="screen-body">
@@ -671,7 +685,7 @@
     <div class="screen-label">8 · Home — populated (2 domains)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="screen-body">
         <div style="font-size:12px;color:var(--textSec);padding:0 4px 4px;">👨‍💻 Choose a domain:</div>
         <div class="domain-row">
@@ -720,7 +734,7 @@
     <div class="screen-label">9 · Home — with Last Session summary</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="screen-body">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
           <div style="font-size:11px;color:var(--textSec);text-transform:uppercase;letter-spacing:0.06em;">── Last Session ──────</div>
@@ -755,9 +769,9 @@
     <div class="screen-label">10 · Domain Menu</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Home</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -785,9 +799,9 @@
     <div class="screen-label">11 · Domain Menu — provider not configured (Play disabled)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Home</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">Spanish irregular verbs</div>
       </div>
       <div class="screen-body">
@@ -815,9 +829,9 @@
     <div class="screen-label">12 · Domain menu — coach staleness banner</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Home</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">Spanish irregular verbs</div>
       </div>
       <div class="screen-body">
@@ -847,7 +861,11 @@
     <div class="screen-label">13 · Quiz — loading state</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Quiz</div>
+      </div>
       <div class="quiz-score">score: 87</div>
       <div class="question-block" style="padding:12px 16px 4px;">
         <div class="question-number" style="color:var(--textSec);">📝 Quiz — spanish-irregular-verbs</div>
@@ -866,7 +884,11 @@
     <div class="screen-label">14 · Quiz — question active</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Quiz</div>
+      </div>
       <div class="quiz-score">score: 87</div>
       <div class="question-block">
         <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
@@ -886,7 +908,11 @@
     <div class="screen-label">15 · Quiz — correct answer + Explain</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Quiz</div>
+      </div>
       <div class="quiz-score" style="color:var(--correct)">score: 88 ↑</div>
       <div class="question-block">
         <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
@@ -921,7 +947,11 @@
     <div class="screen-label">16 · Quiz — incorrect answer + Explain</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Quiz</div>
+      </div>
       <div class="quiz-score" style="color:var(--incorrect)">score: 86 ↓</div>
       <div class="question-block">
         <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
@@ -954,7 +984,11 @@
     <div class="screen-label">17 · Quiz — Teach me more (inline)</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Quiz</div>
+      </div>
       <div class="quiz-score" style="color:var(--correct)">score: 88 ↑</div>
       <div class="question-block">
         <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
@@ -989,9 +1023,9 @@
     <div class="screen-label">18 · History — empty (first session)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">📜 History — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -1010,9 +1044,9 @@
     <div class="screen-label">19 · History (domain-scoped)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">📜 History — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -1048,9 +1082,9 @@
     <div class="screen-label">20 · Bookmarks — empty</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">⭐ Bookmarks — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -1068,9 +1102,9 @@
     <div class="screen-label">21 · Bookmarks (domain-scoped)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">⭐ Bookmarks — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -1098,9 +1132,9 @@
     <div class="screen-label">22 · Question Detail (from History/Bookmarks)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">Question 12 of 14</div>
       </div>
       <div class="screen-body">
@@ -1131,9 +1165,9 @@
     <div class="screen-label">23 · Stats (domain-scoped)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">📊 Statistics — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body" style="gap:6px;">
@@ -1166,9 +1200,9 @@
     <div class="screen-label">24 · Stats &amp; My Coach — empty (no data yet)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">🏋️ My Coach — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -1187,9 +1221,9 @@
     <div class="screen-label">25 · My Coach (domain-scoped)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">🏋️ My Coach — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
@@ -1213,10 +1247,10 @@
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Home</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">Spanish irregular verbs</div>
       </div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="screen-body" style="position:relative;">
         <div class="menu-group" style="opacity:0.4;">
           <div class="menu-item"><span class="menu-icon">▶️</span><span class="menu-label">Play</span><span class="chevron">›</span></div>
@@ -1242,10 +1276,10 @@
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Home</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">Spanish irregular verbs</div>
       </div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="screen-body" style="position:relative;">
         <div class="menu-group" style="opacity:0.4;">
           <div class="menu-item"><div class="menu-icon">🎯</div><div class="menu-label">Play</div><div class="chevron">›</div></div>
@@ -1272,9 +1306,9 @@
     <div class="screen-label">28 · Archived domains</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">🗄  Archived domains</div>
       </div>
       <div class="screen-body">
@@ -1304,9 +1338,9 @@
     <div class="screen-label">29 · Settings</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">⚙️  Settings</div>
       </div>
       <div class="screen-body">
@@ -1330,9 +1364,9 @@
     <div class="screen-label">30 · Settings picker — Tone of Voice (representative)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">↩️  Back</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">🎭 Tone of Voice</div>
       </div>
       <div class="screen-body">
@@ -1355,9 +1389,9 @@
     <div class="screen-label">31 · About — divergences from terminal (FR73)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
-        <div class="nav-back">‹ Settings</div>
+        <div class="nav-back">‹ Back</div>
         <div class="nav-title">About</div>
       </div>
       <div class="screen-body">
@@ -1386,7 +1420,11 @@
     <div class="screen-label">32 · Offline-blocked (Play attempted offline)</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Offline</div>
+      </div>
       <div class="quiz-score">Score 87</div>
       <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:12px;">
         <div style="font-size:36px;">📡</div>
@@ -1405,7 +1443,11 @@
     <div class="screen-label">33 · Provider-gated (Play without provider)</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">Play</div>
+      </div>
       <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:12px;">
         <div style="font-size:36px;">🤖</div>
         <div style="font-size:16px;font-weight:600;color:var(--textPri);">AI provider not configured</div>
@@ -1423,7 +1465,7 @@
     <div class="screen-label">34 · Fatal error fallback (error boundary)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
-      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:14px;">
         <div style="font-size:48px;">⚠️</div>
         <div style="font-size:18px;font-weight:700;color:var(--textPri);">Something went wrong</div>
