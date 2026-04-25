@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brain Break Mobile — UX Design Direction (C)</title>
+  <style>
+    :root {
+      --bg:         #0a0a0a;
+      --surface:    #111111;
+      --surfaceEl:  #1a1a1a;
+      --border:     #2a2a2a;
+      --textPri:    #e5e5e5;
+      --textSec:    #888888;
+      --textDim:    #555555;
+      --correct:    #4ade80;
+      --incorrect:  #f87171;
+      --accent:     #a78bfa;
+      --warning:    #fbbf24;
+      --gradStart:  #06b6d4;
+      --gradEnd:    #a855f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      color: var(--textPri);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 32px 16px 64px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, var(--gradStart), var(--gradEnd));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--textSec);
+      font-size: 13px;
+      margin-bottom: 48px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .screen-label {
+      color: var(--textSec);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+
+    /* Phone frame */
+    .phone {
+      width: 320px;
+      min-height: 640px;
+      background: var(--bg);
+      border-radius: 36px;
+      border: 1.5px solid #333;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px 4px;
+      font-size: 11px;
+      color: var(--textSec);
+    }
+
+    /* Banner */
+    .banner {
+      padding: 8px 16px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .banner-title {
+      font-size: 15px;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--gradStart), var(--gradEnd));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    .banner-shadow {
+      height: 2px;
+      background: linear-gradient(90deg, var(--gradStart), var(--gradEnd));
+      opacity: 0.25;
+      margin-top: 4px;
+      border-radius: 1px;
+    }
+
+    /* Nav header */
+    .nav-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .nav-back {
+      color: var(--accent);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-title {
+      color: var(--textPri);
+      font-size: 15px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    /* Screen body */
+    .screen-body {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    /* Section header */
+    .section-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--textDim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 0 2px;
+    }
+
+    /* Domain row */
+    .domain-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 64px;
+    }
+    .domain-info { flex: 1; min-width: 0; }
+    .domain-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--textPri);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .domain-meta {
+      font-size: 12px;
+      color: var(--textSec);
+      margin-top: 2px;
+    }
+    .domain-score {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--correct);
+      white-space: nowrap;
+    }
+    .chevron { color: var(--textDim); font-size: 13px; }
+
+    /* Menu item */
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .menu-item:first-child { border-radius: 10px 10px 0 0; }
+    .menu-item:last-child { border-bottom: none; border-radius: 0 0 10px 10px; }
+    .menu-group {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .menu-icon { font-size: 16px; width: 24px; text-align: center; }
+    .menu-label { flex: 1; font-size: 15px; color: var(--textPri); }
+    .menu-destructive .menu-label { color: var(--incorrect); }
+
+    /* Action row */
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      height: 52px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      margin-top: 4px;
+    }
+    .action-label { flex: 1; font-size: 15px; color: var(--textPri); }
+
+    /* Answer card */
+    .answer-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      font-size: 15px;
+      color: var(--textPri);
+      gap: 10px;
+    }
+    .answer-card.selected { border-color: var(--accent); background: rgba(167,139,250,0.08); }
+    .answer-card.correct  { border-color: var(--correct); background: rgba(74,222,128,0.08); color: var(--correct); }
+    .answer-card.incorrect { border-color: var(--border); background: var(--surface); color: var(--textDim); }
+    .answer-letter {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--textDim);
+      width: 20px;
+      flex-shrink: 0;
+    }
+    .answer-card.correct .answer-letter { color: var(--correct); }
+    .answer-card.selected .answer-letter { color: var(--accent); }
+
+    /* Quiz screen */
+    .quiz-screen { background: var(--bg); }
+    .quiz-score {
+      position: absolute;
+      top: 52px;
+      right: 16px;
+      font-size: 12px;
+      color: var(--textSec);
+      font-weight: 600;
+    }
+    .question-block { padding: 16px 16px 8px; }
+    .question-number { font-size: 11px; color: var(--textDim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .question-text { font-size: 19px; font-weight: 600; color: var(--textPri); line-height: 1.45; }
+
+    /* Spinner */
+    .spinner-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--textSec);
+      font-size: 13px;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Explain block */
+    .explain-block {
+      background: var(--surfaceEl);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--textSec);
+      line-height: 1.55;
+      margin: 0 16px;
+    }
+    .explain-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    /* Post-answer actions */
+    .post-actions {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px;
+      flex-wrap: wrap;
+    }
+    .pill-btn {
+      background: var(--surfaceEl);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--textSec);
+      white-space: nowrap;
+    }
+    .pill-btn.primary { border-color: var(--accent); color: var(--accent); }
+
+    /* Settings */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+    }
+    .settings-row:first-child { border-radius: 10px 10px 0 0; }
+    .settings-row:last-child { border-bottom: none; border-radius: 0 0 10px 10px; }
+    .settings-value { font-size: 14px; color: var(--textSec); display: flex; align-items: center; gap: 6px; }
+
+    /* Text input */
+    .text-input {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: var(--textPri);
+      width: 100%;
+    }
+    .text-input.focused { border-color: var(--accent); }
+    .input-helper { font-size: 12px; color: var(--textSec); margin-top: 4px; padding-left: 4px; }
+    .input-helper a { color: var(--accent); text-decoration: none; }
+
+    /* Primary button */
+    .primary-btn {
+      background: var(--accent);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      margin-top: auto;
+      border: none;
+    }
+    .primary-btn.outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--textSec);
+    }
+
+    /* Provider card */
+    .provider-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 60px;
+    }
+    .provider-card.selected { border-color: var(--accent); }
+    .provider-info { flex: 1; }
+    .provider-name { font-size: 15px; font-weight: 600; color: var(--textPri); }
+    .provider-desc { font-size: 12px; color: var(--textSec); margin-top: 2px; }
+
+    /* Zero state */
+    .zero-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      text-align: center;
+      gap: 12px;
+    }
+    .zero-icon { font-size: 36px; }
+    .zero-title { font-size: 16px; font-weight: 600; color: var(--textPri); }
+    .zero-subtitle { font-size: 13px; color: var(--textSec); line-height: 1.5; }
+
+    /* Nudge banner */
+    .nudge-banner {
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.25);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--warning);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Welcome screen */
+    .welcome-screen {
+      background: var(--bg);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      gap: 16px;
+    }
+    .welcome-logo {
+      font-size: 48px;
+      line-height: 1;
+    }
+    .welcome-title {
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--gradStart), var(--gradEnd));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+    .welcome-tagline {
+      font-size: 14px;
+      color: var(--textSec);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .welcome-version { font-size: 11px; color: var(--textDim); }
+
+    .spacer { flex: 1; }
+    .gap-sm { height: 8px; }
+    .gap-md { height: 16px; }
+  </style>
+</head>
+<body>
+
+<h1>🧠🔨 Brain Break Mobile — UX Design Direction</h1>
+<p class="subtitle">Direction C: Balanced Cards (chosen) · Dark-only · Custom token system · expo-router stack navigation</p>
+
+<div class="grid">
+
+  <!-- ═══════════════ ONBOARDING & PROVIDER SETUP ═══════════════ -->
+
+  <!-- 1. Welcome Screen -->
+  <div>
+    <div class="screen-label">1 · Welcome Screen (first launch)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="welcome-screen">
+        <div class="welcome-logo">🧠🔨</div>
+        <div class="welcome-title">Brain Break</div>
+        <div class="welcome-tagline">Train your brain,<br>one question at a time</div>
+        <div class="welcome-version">v1.0.0</div>
+        <div style="height:32px"></div>
+        <div class="primary-btn" style="width:100%">🔧 Set up AI provider</div>
+        <div class="gap-sm"></div>
+        <div class="primary-btn outline" style="width:100%">⏭️  Skip — set up later in Settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Provider catalog -->
+  <div>
+    <div class="screen-label">2 · Provider catalog (Settings → AI Provider)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Settings</div>
+        <div class="nav-title">AI Provider</div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:13px;color:var(--textSec);line-height:1.5;padding:0 4px 4px;">Select your preferred AI provider to get started.</div>
+        <div class="provider-card selected">
+          <div class="provider-info">
+            <div class="provider-name">OpenAI <span style="color:var(--correct);font-size:13px;">✓ Connected</span></div>
+            <div class="provider-desc">GPT-5.4, GPT-5.4 Mini, GPT-5.4 Nano</div>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-info">
+            <div class="provider-name">Anthropic</div>
+            <div class="provider-desc">Claude Opus 4.6, Sonnet 4.6, Haiku 4.5</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-info">
+            <div class="provider-name">Google Gemini</div>
+            <div class="provider-desc">Gemini 2.5 Pro, Flash, Flash-Lite</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-info">
+            <div class="provider-name">Ollama</div>
+            <div class="provider-desc">Local models on your network</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-info">
+            <div class="provider-name">OpenAI Compatible API</div>
+            <div class="provider-desc">Custom endpoint</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div style="font-size:12px;color:var(--textDim);text-align:center;padding:8px 0;">⏭️  Skip — set up later in Settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Provider setup -->
+  <div>
+    <div class="screen-label">3 · Provider setup — key entry</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Providers</div>
+        <div class="nav-title">OpenAI</div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:13px;color:var(--textSec);line-height:1.55;padding:4px 0 12px;">
+          Select your preferred AI provider to get started.
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--textSec);margin-bottom:6px;">OpenAI API Key</div>
+        <div class="text-input focused">sk-proj-••••••••••••••••</div>
+        <div class="input-helper"><a href="#">Don't have one yet? Get an OpenAI key — takes 2 min ↗</a></div>
+        <div class="gap-md"></div>
+        <div style="font-size:12px;color:var(--textDim);display:flex;align-items:center;gap:6px;">
+          🔒 Stored in device Keychain — never leaves your phone
+        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn">Testing connection…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Provider setup — invalid key -->
+  <div>
+    <div class="screen-label">4 · Provider setup — validation failed</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Providers</div>
+        <div class="nav-title">OpenAI</div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:13px;font-weight:600;color:var(--textSec);margin-bottom:6px;">OpenAI API Key</div>
+        <div class="text-input" style="border-color:var(--incorrect);">sk-proj-••••••••••••••••</div>
+        <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--incorrect);display:flex;align-items:center;gap:8px;margin-top:8px;">
+          ⚠ OpenAI authentication failed: invalid API key (401)
+        </div>
+        <div class="input-helper" style="margin-top:8px;"><a href="#">Get an OpenAI key — takes 2 min ↗</a></div>
+        <div class="spacer"></div>
+        <div style="font-size:13px;color:var(--textSec);text-align:center;padding:8px 0;">What would you like to do?</div>
+        <div class="primary-btn">🔄 Retry</div>
+        <div class="gap-sm"></div>
+        <div class="primary-btn outline">⏭️  Skip — set up later in Settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Provider setup — success -->
+  <div>
+    <div class="screen-label">5 · Provider setup — connected ✓</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Providers</div>
+        <div class="nav-title">OpenAI</div>
+      </div>
+      <div class="screen-body">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:32px 0;">
+          <div style="font-size:48px;">✅</div>
+          <div style="font-size:18px;font-weight:700;color:var(--correct);">✓ OpenAI: GPT-5.4 Mini</div>
+          <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Your API key has been validated and stored securely on your device.</div>
+        </div>
+        <div class="primary-btn">↩️  Back to Settings</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ HOME & DOMAIN LIFECYCLE ═══════════════ -->
+
+  <!-- 6. Home — zero state -->
+  <div>
+    <div class="screen-label">6 · Home — zero state (no domains yet)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner">
+        <div class="banner-title">🧠🔨 Brain Break</div>
+        <div class="banner-shadow"></div>
+      </div>
+      <div class="screen-body">
+        <div class="nudge-banner">⚠ AI provider not configured — go to Settings to set one up.</div>
+        <div class="zero-state">
+          <div class="zero-icon">📚</div>
+          <div class="zero-title">No domains yet.</div>
+          <div class="zero-subtitle">👨‍💻 Choose a domain — or create your first one below.</div>
+        </div>
+        <div class="gap-md"></div>
+        <div class="menu-group">
+          <div class="action-row">
+            <span class="menu-icon">➕</span>
+            <span class="action-label">Create new domain</span>
+            <span class="chevron">›</span>
+          </div>
+          <div class="action-row" style="border-top: 1px solid var(--border); margin-top: 0; border-radius: 0;">
+            <span class="menu-icon">🗄</span>
+            <span class="action-label">Archived domains</span>
+            <span class="chevron">›</span>
+          </div>
+          <div class="action-row" style="border-top: 1px solid var(--border); margin-top: 0; border-radius: 0 0 10px 10px;">
+            <span class="menu-icon">⚙️</span>
+            <span class="action-label">Settings</span>
+            <span class="chevron">›</span>
+          </div>
+        </div>
+        <div class="action-row">
+          <span class="menu-icon">🍵</span>
+          <span class="action-label">Buy me a coffee</span>
+          <span style="font-size:12px;color:var(--textDim)">↗</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Create domain -->
+  <div>
+    <div class="screen-label">7 · Create domain</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Home</div>
+        <div class="nav-title">New domain</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div class="section-header">New domain name</div>
+        <div class="text-input focused">Spanish irregular verbs|</div>
+        <div class="input-helper">Anything you'd like to learn — be as broad or specific as you like.</div>
+        <div class="section-header" style="margin-top:12px;">Starting difficulty</div>
+        <div class="menu-group">
+          <div class="settings-row" style="justify-content:space-between;"><span>1 — Beginner</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>2 — Elementary</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>3 — Intermediate</span><span style="color:var(--accent);">✓</span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>4 — Advanced</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>5 — Expert</span><span></span></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn">💾 Save</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Home — populated -->
+  <div>
+    <div class="screen-label">8 · Home — populated (2 domains)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner">
+        <div class="banner-title">🧠🔨 Brain Break</div>
+        <div class="banner-shadow"></div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:12px;color:var(--textSec);padding:0 4px 4px;">👨‍💻 Choose a domain:</div>
+        <div class="domain-row">
+          <div class="domain-info">
+            <div class="domain-name">spanish-irregular-verbs</div>
+            <div class="domain-meta">score: <span style="color:var(--correct);font-weight:600;">87</span> · 14 questions</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="domain-row">
+          <div class="domain-info">
+            <div class="domain-name">behavioral-economics</div>
+            <div class="domain-meta">score: <span style="color:var(--correct);font-weight:600;">72</span> · 6 questions</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="gap-md"></div>
+        <div class="menu-group">
+          <div class="action-row">
+            <span class="menu-icon">➕</span>
+            <span class="action-label">Create new domain</span>
+            <span class="chevron">›</span>
+          </div>
+          <div class="action-row" style="border-top: 1px solid var(--border); margin-top: 0; border-radius: 0;">
+            <span class="menu-icon">🗄</span>
+            <span class="action-label">Archived domains</span>
+            <span class="chevron">›</span>
+          </div>
+          <div class="action-row" style="border-top: 1px solid var(--border); margin-top: 0; border-radius: 0 0 10px 10px;">
+            <span class="menu-icon">⚙️</span>
+            <span class="action-label">Settings</span>
+            <span class="chevron">›</span>
+          </div>
+        </div>
+        <div class="action-row">
+          <span class="menu-icon">🍵</span>
+          <span class="action-label">Buy me a coffee</span>
+          <span style="font-size:12px;color:var(--textDim)">↗</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Home — populated with Last Session + nudge -->
+  <div>
+    <div class="screen-label">9 · Home — with Last Session summary</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:11px;color:var(--textSec);text-transform:uppercase;letter-spacing:0.06em;">── Last Session ──────</div>
+          <div style="font-size:14px;font-weight:600;color:var(--textPri);margin-top:4px;">spanish-irregular-verbs</div>
+          <div style="font-size:12px;color:var(--textSec);margin-top:4px;line-height:1.6;">🏆 Score delta: <span style="color:var(--correct);">+5</span><br>📝 Questions answered: 3<br>✅ Correct / Incorrect: 2 / 1<br>🎯 Accuracy: 67%</div>
+        </div>
+        <div style="font-size:12px;color:var(--textSec);padding:8px 4px 4px;">👨‍💻 Choose a domain:</div>
+        <div class="domain-row">
+          <div class="domain-info">
+            <div class="domain-name">spanish-irregular-verbs</div>
+            <div class="domain-meta">score: <span style="color:var(--correct);font-weight:600;">127</span> · 42 questions</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="domain-row">
+          <div class="domain-info">
+            <div class="domain-name">behavioral-economics</div>
+            <div class="domain-meta">score: <span style="color:var(--correct);font-weight:600;">54</span> · 18 questions</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn">➕ Create new domain</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DOMAIN MENU ═══════════════ -->
+
+  <!-- 10. Domain Menu -->
+  <div>
+    <div class="screen-label">10 · Domain Menu</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner">
+        <div class="banner-title">🧠🔨 Brain Break</div>
+        <div class="banner-shadow"></div>
+      </div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Home</div>
+        <div class="nav-title">spanish-irregular-verbs</div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:12px;color:var(--textSec);padding:4px 0 8px;">Domain — spanish-irregular-verbs &nbsp; score: <span style="color:var(--correct);font-weight:700;">87</span> · 14 questions</div>
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 0;">Choose an action:</div>
+        <div class="menu-group">
+          <div class="menu-item"><span class="menu-icon">▶</span><span class="menu-label">Play</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⏱️</span><span class="menu-label">Challenge</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📜</span><span class="menu-label">History</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⭐</span><span class="menu-label">Bookmarks</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📊</span><span class="menu-label">Statistics</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🏋️</span><span class="menu-label">My Coach</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🎨</span><span class="menu-label">ASCII Art ✨</span><span class="chevron">›</span></div>
+        </div>
+        <div class="menu-group">
+          <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
+          <div class="menu-item menu-destructive"><span class="menu-icon">🗑</span><span class="menu-label">Delete</span><span class="chevron" style="color:var(--textDim)">›</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. Domain Menu — provider gated -->
+  <div>
+    <div class="screen-label">11 · Domain Menu — provider not configured (Play disabled)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Home</div>
+        <div class="nav-title">Spanish irregular verbs</div>
+      </div>
+      <div class="screen-body">
+        <div class="nudge-banner">⚠ AI provider not configured — Play, Challenge, and My Coach are disabled until you add a key.</div>
+        <div class="menu-group">
+          <div class="menu-item" style="opacity:0.4;"><span class="menu-icon">▶</span><span class="menu-label">Play</span><span style="font-size:11px;color:var(--textDim);">🔒</span></div>
+          <div class="menu-item" style="opacity:0.4;"><span class="menu-icon">⏱️</span><span class="menu-label">Challenge</span><span style="font-size:11px;color:var(--textDim);">🔒</span></div>
+          <div class="menu-item"><span class="menu-icon">📜</span><span class="menu-label">History</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⭐</span><span class="menu-label">Bookmarks</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📊</span><span class="menu-label">Statistics</span><span class="chevron">›</span></div>
+          <div class="menu-item" style="opacity:0.4;"><span class="menu-icon">🏋️</span><span class="menu-label">My Coach</span><span style="font-size:11px;color:var(--textDim);">🔒</span></div>
+        </div>
+        <div class="menu-group">
+          <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
+          <div class="menu-item menu-destructive"><span class="menu-icon">🗑</span><span class="menu-label">Delete</span><span class="chevron" style="color:var(--textDim)">›</span></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn">🔧 Set up AI provider</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. Coach staleness banner -->
+  <div>
+    <div class="screen-label">12 · Domain menu — coach staleness banner</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Home</div>
+        <div class="nav-title">Spanish irregular verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="background:rgba(167,139,250,0.08);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="color:var(--textPri);">28 new questions since this report — consider regenerating for fresh insights.</span>
+          <span class="pill-btn primary" style="padding:4px 10px;font-size:12px;">🔄 Regenerate</span>
+        </div>
+        <div class="menu-group">
+          <div class="menu-item"><div class="menu-icon">▶</div><div class="menu-label">Play</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">⏱️</div><div class="menu-label">Challenge</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">📜</div><div class="menu-label">History</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">⭐</div><div class="menu-label">Bookmarks</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">📊</div><div class="menu-label">Statistics</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">🏋️</div><div class="menu-label">My Coach</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">🎨</div><div class="menu-label">ASCII Art ✨</div><div class="chevron">›</div></div>
+          <div class="menu-item"><div class="menu-icon">🗄</div><div class="menu-label">Archive</div><div class="chevron">›</div></div>
+          <div class="menu-item menu-destructive"><div class="menu-icon">🗑</div><div class="menu-label">Delete</div><div class="chevron">›</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ QUIZ ═══════════════ -->
+
+  <!-- 13. Quiz — loading -->
+  <div>
+    <div class="screen-label">13 · Quiz — loading state</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="quiz-score">score: 87</div>
+      <div class="question-block" style="padding:12px 16px 4px;">
+        <div class="question-number" style="color:var(--textSec);">📝 Quiz — spanish-irregular-verbs</div>
+      </div>
+      <div class="spinner-block">
+        <div class="spinner"></div>
+        <span>Generating question…</span>
+        <div style="height:16px"></div>
+        <div class="pill-btn" style="margin-top:8px">↩️  Back</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. Quiz — question active -->
+  <div>
+    <div class="screen-label">14 · Quiz — question active</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="quiz-score">score: 87</div>
+      <div class="question-block">
+        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
+        <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
+      </div>
+      <div class="screen-body" style="padding-top:8px;">
+        <div class="answer-card"><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card"><span class="answer-letter">B)</span>pude</div>
+        <div class="answer-card"><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card"><span class="answer-letter">D)</span>puede</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 15. Quiz — correct answer + Explain -->
+  <div>
+    <div class="screen-label">15 · Quiz — correct answer + Explain</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="quiz-score" style="color:var(--correct)">score: 88 ↑</div>
+      <div class="question-block">
+        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
+        <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
+      </div>
+      <div class="screen-body" style="padding-top:8px;gap:6px;">
+        <div class="answer-card incorrect"><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct"><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect"><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect"><span class="answer-letter">D)</span>puede</div>
+      </div>
+      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="post-actions">
+        <div class="pill-btn primary">💡 Explain answer</div>
+        <div class="pill-btn">💫 Bookmark</div>
+        <div class="pill-btn">▶️  Next question</div>
+        <div class="pill-btn">↩️  Back</div>
+      </div>
+      <div class="explain-block">
+        <div class="explain-label">Explanation</div>
+        "Poder" is one of a handful of Spanish verbs with an irregular
+        preterite stem. Its stem changes to "pud-", giving "pude" (yo),
+        "pudiste" (tú), etc. — a pattern shared with "saber" (supe) and
+        "tener" (tuve).
+      </div>
+      <div class="gap-sm"></div>
+    </div>
+  </div>
+
+  <!-- 16. Quiz — incorrect answer -->
+  <div>
+    <div class="screen-label">16 · Quiz — incorrect answer + Explain</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="quiz-score" style="color:var(--incorrect)">score: 86 ↓</div>
+      <div class="question-block">
+        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
+        <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
+      </div>
+      <div class="screen-body" style="padding-top:8px;gap:6px;">
+        <div class="answer-card" style="border-color:var(--incorrect);background:rgba(248,113,113,0.08);color:var(--incorrect);"><span class="answer-letter" style="color:var(--incorrect);">A)</span>✗ podí</div>
+        <div class="answer-card correct"><span class="answer-letter">B)</span>✓ pude (correct)</div>
+        <div class="answer-card incorrect"><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect"><span class="answer-letter">D)</span>puede</div>
+      </div>
+      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="post-actions">
+        <div class="pill-btn primary">💡 Explain answer</div>
+        <div class="pill-btn">💫 Bookmark</div>
+        <div class="pill-btn">▶️  Next question</div>
+        <div class="pill-btn">↩️  Back</div>
+      </div>
+      <div class="explain-block">
+        <div class="explain-label">Why "pude"?</div>
+        "Podí" follows the regular -er pattern, but "poder" is irregular in
+        the preterite — its stem becomes "pud-". The full form is "pude".
+      </div>
+      <div class="gap-sm"></div>
+    </div>
+  </div>
+
+  <!-- 17. Quiz — Teach me more expansion -->
+  <div>
+    <div class="screen-label">17 · Quiz — Teach me more (inline)</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="quiz-score" style="color:var(--correct)">score: 88 ↑</div>
+      <div class="question-block">
+        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
+        <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
+      </div>
+      <div class="screen-body" style="padding-top:8px;gap:6px;">
+        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+      </div>
+      <div class="explain-block" style="border-left-color:var(--gradEnd);">
+        <div class="explain-label" style="color:var(--gradEnd);">📚 Teach me more</div>
+        Spanish has roughly a dozen verbs with irregular preterite stems.
+        Here are the most common patterns:<br><br>
+        • <b>u-stem:</b> poder→pud-, poner→pus-, saber→sup-, tener→tuv-<br>
+        • <b>i-stem:</b> hacer→hic-, querer→quis-, venir→vin-<br>
+        • <b>j-stem:</b> decir→dij-, traer→traj-, conducir→conduj-<br><br>
+        All share the same endings: -e, -iste, -o, -imos, -isteis, -ieron
+        (j-stem verbs drop the i in -ieron → -eron).
+      </div>
+      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="post-actions">
+        <div class="pill-btn">💫 Bookmark</div>
+        <div class="pill-btn primary">▶️  Next question</div>
+        <div class="pill-btn">↩️  Back</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ HISTORY · BOOKMARKS · STATS · COACH ═══════════════ -->
+
+  <!-- 18. History — empty -->
+  <div>
+    <div class="screen-label">18 · History — empty (first session)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">📜 History — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div class="zero-state">
+          <div class="zero-icon">📜</div>
+          <div class="zero-title">No questions answered yet.</div>
+          <div class="zero-subtitle">Once you start playing, every question you answer shows up here.</div>
+        </div>
+        <div class="primary-btn">▶ Play</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 19. History -->
+  <div>
+    <div class="screen-label">19 · History (domain-scoped)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">📜 History — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;">Question 14 of 14 · Today</div>
+        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+          <div class="domain-info">
+            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Conjugate 'poder' in the preterite, first-person singular.</div>
+            <div class="domain-meta" style="margin-top:4px;">✅ Correct · ⭐ bookmarked</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+          <div class="domain-info">
+            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Which verb means "to know (a fact)"?</div>
+            <div class="domain-meta" style="margin-top:4px;color:var(--incorrect);">❌ Incorrect</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:8px 0 4px;">Yesterday</div>
+        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+          <div class="domain-info">
+            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">What is the preterite stem of 'venir'?</div>
+            <div class="domain-meta" style="margin-top:4px;">✅ Correct</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 20. Bookmarks — empty -->
+  <div>
+    <div class="screen-label">20 · Bookmarks — empty</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">⭐ Bookmarks — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div class="zero-state">
+          <div class="zero-icon">⭐</div>
+          <div class="zero-title">No bookmarked questions.</div>
+          <div class="zero-subtitle">Tap 💫 Bookmark after answering to save a question here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 21. Bookmarks -->
+  <div>
+    <div class="screen-label">21 · Bookmarks (domain-scoped)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">⭐ Bookmarks — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;">Bookmark 1 of 2</div>
+        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+          <div class="domain-info">
+            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Conjugate 'poder' in the preterite, first-person singular.</div>
+            <div class="domain-meta" style="margin-top:4px;">⭐ Saved · 2 days ago</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+          <div class="domain-info">
+            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Why is 'pude' irregular while 'comí' is regular?</div>
+            <div class="domain-meta" style="margin-top:4px;">⭐ Saved · 5 days ago</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 22. Question Detail (S9b) -->
+  <div>
+    <div class="screen-label">22 · Question Detail (from History/Bookmarks)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">Question 12 of 14</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Apr 23 · 14:22</div>
+        <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
+        <div style="font-size:12px;color:var(--textSec);padding:6px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Correct answer: <span style="color:var(--correct);font-weight:600;">B</span><br>Score: <span style="color:var(--correct);font-weight:600;">+5</span> · Speed: fast · Time: 4.2s</div>
+        <div class="explain-block" style="margin:0;">
+          <div class="explain-label">Explanation</div>
+          "Poder" has an irregular preterite stem "pud-", giving "pude".
+        </div>
+        <div class="post-actions">
+          <div class="pill-btn primary">💡 Explain answer</div>
+          <div class="pill-btn">📚 Teach me more</div>
+          <div class="pill-btn">⭐ Remove bookmark</div>
+          <div class="pill-btn">⬅️  Previous</div>
+          <div class="pill-btn">➡️  Next</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 23. Stats -->
+  <div>
+    <div class="screen-label">23 · Stats (domain-scoped)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">📊 Statistics — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body" style="gap:6px;">
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🏆 Score:</span><span class="settings-value" style="color:var(--correct);font-weight:700;">127</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📝 Questions answered:</span><span class="settings-value">42</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>✅ Correct / Incorrect:</span><span class="settings-value">35 / 7</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🎯 Accuracy:</span><span class="settings-value" style="color:var(--correct);">83%</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>⏱️ Total time played:</span><span class="settings-value">38 min</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📈 Starting difficulty:</span><span class="settings-value">3 — Intermediate</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📈 Current difficulty:</span><span class="settings-value">4 — Advanced</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🔄 Score trend (30 days):</span><span class="settings-value" style="color:var(--correct);">Growing 📈</span></div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;height:80px;display:flex;align-items:flex-end;gap:3px;margin-top:4px;">
+          <div style="flex:1;background:var(--accent);height:30%;opacity:0.4;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:45%;opacity:0.5;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:55%;opacity:0.6;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:50%;opacity:0.5;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:70%;opacity:0.7;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:80%;opacity:0.8;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:90%;opacity:0.9;border-radius:2px;"></div>
+          <div style="flex:1;background:var(--accent);height:100%;border-radius:2px;"></div>
+        </div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📅 Days since first session:</span><span class="settings-value">14</span></div>
+        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🔥 Return streak:</span><span class="settings-value" style="color:var(--accent);">7 days</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 24. Stats — empty / My Coach — empty -->
+  <div>
+    <div class="screen-label">24 · Stats &amp; My Coach — empty (no data yet)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">🏋️ My Coach — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div class="zero-state">
+          <div class="zero-icon">🏋️</div>
+          <div class="zero-title">No data yet</div>
+          <div class="zero-subtitle">Answer at least one question before using My Coach.<br><br>Tip: Reports become more accurate with at least 25 answered questions.</div>
+        </div>
+        <div class="primary-btn outline" style="opacity:0.5;">🔄 Regenerate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 25. My Coach -->
+  <div>
+    <div class="screen-label">25 · My Coach (domain-scoped)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">🏋️ My Coach — spanish-irregular-verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="font-size:11px;color:var(--textSec);text-transform:uppercase;letter-spacing:0.06em;">Generated Apr 22 at 09:14</div>
+        <div class="explain-block" style="margin:0;">
+          <div class="explain-label">Coaching report</div>
+          You've made strong progress on preterite conjugations — your accuracy on 'tener', 'venir', and 'poder' has climbed from 60% to 87% in the last two weeks. The pattern that still trips you up is the e→i stem change in verbs like 'pedir' and 'servir'. Try 5 questions specifically on -ir stem-changing verbs this week to lock that in.
+        </div>
+        <div style="font-size:12px;color:var(--textSec);font-style:italic;padding:6px 4px;">Tip: Reports become more accurate with at least 25 answered questions.</div>
+        <div class="spacer"></div>
+        <div class="primary-btn outline">🔄 Regenerate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DESTRUCTIVE ACTIONS ═══════════════ -->
+
+  <!-- 26. Archive action sheet -->
+  <div>
+    <div class="screen-label">26 · Archive — confirmation action sheet</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Home</div>
+        <div class="nav-title">Spanish irregular verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body" style="position:relative;">
+        <div class="menu-group" style="opacity:0.4;">
+          <div class="menu-item"><span class="menu-icon">▶️</span><span class="menu-label">Play</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;">
+          <div style="background:#1c1c1c;border-radius:14px;width:92%;overflow:hidden;">
+            <div style="padding:16px 16px 12px;text-align:center;border-bottom:1px solid var(--border);">
+              <div style="font-size:15px;font-weight:600;color:var(--textPri);margin-bottom:4px;">Archive "spanish-irregular-verbs"?</div>
+              <div style="font-size:12px;color:var(--textSec);line-height:1.45;">You can unarchive it later from ⚙️ Settings → 🗄 Archived domains.</div>
+            </div>
+            <div style="padding:14px;text-align:center;font-size:15px;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">🗄  Archive</div>
+            <div style="padding:14px;text-align:center;font-size:15px;color:var(--textSec);">↩️  Cancel</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 27. Delete confirmation (native alert) -->
+  <div>
+    <div class="screen-label">27 · Delete domain — native confirmation</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Home</div>
+        <div class="nav-title">Spanish irregular verbs</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body" style="position:relative;">
+        <div class="menu-group" style="opacity:0.4;">
+          <div class="menu-item"><div class="menu-icon">🎯</div><div class="menu-label">Play</div><div class="chevron">›</div></div>
+          <div class="menu-item menu-destructive"><div class="menu-icon">🗑️</div><div class="menu-label">Delete</div><div class="chevron">›</div></div>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
+          <div style="background:#222;border-radius:14px;width:88%;overflow:hidden;text-align:center;">
+            <div style="padding:20px 16px 12px;">
+              <div style="font-size:15px;font-weight:600;color:#fff;">Delete "spanish-irregular-verbs" permanently?</div>
+              <div style="font-size:12px;color:#aaa;margin-top:6px;line-height:1.45;">This cannot be undone.</div>
+            </div>
+            <div style="display:flex;border-top:1px solid #333;">
+              <div style="flex:1;padding:12px;font-size:15px;color:#0a84ff;border-right:1px solid #333;">Cancel</div>
+              <div style="flex:1;padding:12px;font-size:15px;color:#ff453a;font-weight:600;">Delete</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 28. Archived domains -->
+  <div>
+    <div class="screen-label">28 · Archived domains</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">🗄  Archived domains</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="font-size:12px;color:var(--textSec);padding:0 4px 4px;">Choose a domain:</div>
+        <div class="domain-row">
+          <div class="domain-info">
+            <div class="domain-name" style="color:var(--textSec);">old-marketing-terms</div>
+            <div class="domain-meta">score: 42 · 18 questions · → Unarchive</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="domain-row">
+          <div class="domain-info">
+            <div class="domain-name" style="color:var(--textSec);">italian-basics</div>
+            <div class="domain-meta">score: 28 · 9 questions · → Unarchive</div>
+          </div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SETTINGS ═══════════════ -->
+
+  <!-- 29. Settings -->
+  <div>
+    <div class="screen-label">29 · Settings</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner">
+        <div class="banner-title">🧠🔨 Brain Break</div>
+        <div class="banner-shadow"></div>
+      </div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">⚙️  Settings</div>
+      </div>
+      <div class="screen-body">
+        <div class="menu-group">
+          <div class="settings-row"><span>🤖 AI Provider</span><span class="settings-value">OpenAI ›</span></div>
+          <div class="settings-row"><span>🌍 Language</span><span class="settings-value">English ›</span></div>
+          <div class="settings-row"><span>🎭 Tone of Voice</span><span class="settings-value">Natural ›</span></div>
+          <div class="settings-row"><span>🏋️ My Coach Scope</span><span class="settings-value">Extended (100) ›</span></div>
+          <div class="settings-row"><span>🎨 ASCII Art Milestone</span><span class="settings-value">Classic (100) ›</span></div>
+          <div class="settings-row"><span>🌓 Theme</span><span class="settings-value">Dark ›</span></div>
+          <div class="settings-row"><span>🎬 Welcome &amp; Exit screen</span><span class="settings-value" style="color:var(--correct)">ON</span></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn">💾 Save</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 30. Settings — picker (Language) -->
+  <div>
+    <div class="screen-label">30 · Settings picker — Tone of Voice (representative)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">↩️  Back</div>
+        <div class="nav-title">🎭 Tone of Voice</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div class="menu-group">
+          <div class="settings-row" style="justify-content:space-between;"><span>Natural</span><span style="color:var(--accent);">✓</span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>Expressive</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>Calm</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>Humorous</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>Sarcastic</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>Robot</span><span></span></div>
+          <div class="settings-row" style="justify-content:space-between;"><span>Pirate</span><span></span></div>
+        </div>
+        <div style="font-size:12px;color:var(--textDim);text-align:center;padding:8px 0;">Same picker pattern: Language, My Coach Scope, ASCII Milestone, Theme</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 31. About / Divergences -->
+  <div>
+    <div class="screen-label">31 · About — divergences from terminal (FR73)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Settings</div>
+        <div class="nav-title">About</div>
+      </div>
+      <div class="banner"><div class="banner-title">🧠🔨 Brain Break</div><div class="banner-shadow"></div></div>
+      <div class="screen-body">
+        <div style="font-size:13px;color:var(--textSec);line-height:1.55;padding:0 4px;">Brain Break Mobile is built to match Brain Break Terminal feature-for-feature. The differences below are explicit and intentional.</div>
+        <div class="section-header" style="margin-top:8px;">Forced platform divergences</div>
+        <div class="menu-group">
+          <div class="menu-item"><div class="menu-icon">🚫</div><div class="menu-label" style="font-size:13px;line-height:1.4;">GitHub Copilot provider — terminal only</div></div>
+        </div>
+        <div class="section-header" style="margin-top:8px;">Phase 1 deferrals</div>
+        <div class="menu-group">
+          <div class="menu-item"><div class="menu-icon">🎨</div><div class="menu-label" style="font-size:13px;">Theme picker — Phase 3</div></div>
+          <div class="menu-item"><div class="menu-icon">🎨</div><div class="menu-label" style="font-size:13px;">ASCII art milestones — Phase 2</div></div>
+          <div class="menu-item"><div class="menu-icon">⚡</div><div class="menu-label" style="font-size:13px;">Challenge mode — Phase 2</div></div>
+          <div class="menu-item"><div class="menu-icon">☁️</div><div class="menu-label" style="font-size:13px;">Cross-platform sync — Phase 2</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--accent);text-align:center;padding:12px 0;">View full divergence list on GitHub ↗</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════ ERROR & GATED STATES ═══════════════ -->
+
+  <!-- 32. Offline-blocked state -->
+  <div>
+    <div class="screen-label">32 · Offline-blocked (Play attempted offline)</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="quiz-score">Score 87</div>
+      <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:12px;">
+        <div style="font-size:36px;">📡</div>
+        <div style="font-size:16px;font-weight:600;color:var(--textPri);">You're offline</div>
+        <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Brain Break needs the internet to call your AI provider.<br>Reconnect and try again — your place is saved.</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div class="pill-btn primary">🔄 Retry</div>
+          <div class="pill-btn">↩️  Back</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 33. Provider-gated state -->
+  <div>
+    <div class="screen-label">33 · Provider-gated (Play without provider)</div>
+    <div class="phone quiz-screen">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:12px;">
+        <div style="font-size:36px;">🤖</div>
+        <div style="font-size:16px;font-weight:600;color:var(--textPri);">AI provider not configured</div>
+        <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Set up an AI provider in ⚙️ Settings to play, explain, or generate a coaching report.</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div class="pill-btn primary">🔧 Set up AI provider</div>
+          <div class="pill-btn">↩️  Back</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 34. Fatal error fallback -->
+  <div>
+    <div class="screen-label">34 · Fatal error fallback (error boundary)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:14px;">
+        <div style="font-size:48px;">⚠️</div>
+        <div style="font-size:18px;font-weight:700;color:var(--textPri);">Something went wrong</div>
+        <div style="font-size:13px;color:var(--textSec);line-height:1.55;">Brain Break hit an unexpected error. Your data is safe.<br><br>No information about this error was sent — Brain Break doesn't have a crash reporter installed.</div>
+        <div class="spacer"></div>
+        <div class="primary-btn" style="width:100%;">Restart</div>
+        <div class="primary-btn outline" style="width:100%;">Send feedback on GitHub</div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<p style="text-align:center;color:#333;font-size:12px;margin-top:48px;">
+  brain-break mobile · ux-design-directions.html · Direction C: Balanced Cards · April 2026
+</p>
+
+</body>
+</html>
