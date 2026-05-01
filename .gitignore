@@ -25,6 +25,7 @@ $RECYCLE.BIN/
 
 # bmad method
 _bmad/
+.agents/
 
 # .gemini folder
 .gemini/
