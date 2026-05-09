@@ -23,7 +23,7 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts && node_modules/.bin/patch-package
 
       - name: Type check
         run: npm run typecheck
@@ -50,8 +50,41 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  homebrew:
+  npm:
     needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts && node_modules/.bin/patch-package
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: |
+          npm pkg set name=brain-break
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view brain-break@${VERSION} --registry=https://registry.npmjs.org 2>/dev/null; then
+            echo "Version ${VERSION} already published to npm, skipping"
+          else
+            npm publish --access public
+          fi
+
+  homebrew:
+    needs: npm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -61,13 +94,14 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Compute SHA256 of source tarball
+      - name: Compute SHA256 of npm tarball
         id: sha
         run: |
-          TARBALL_URL="https://github.com/georgiosnikitas/brain-break/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
+          VERSION="${GITHUB_REF_NAME#v}"
+          TARBALL_URL="https://registry.npmjs.org/brain-break/-/brain-break-${VERSION}.tgz"
           SHA256=$(curl -sL "$TARBALL_URL" | shasum -a 256 | awk '{print $1}')
           if [[ -z "$SHA256" || "$SHA256" == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" ]]; then
-            echo "ERROR: Could not compute SHA256 for ${GITHUB_REF_NAME}"
+            echo "ERROR: Could not compute SHA256 for brain-break@${VERSION}"
             exit 1
           fi
           echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
@@ -82,7 +116,6 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           SHA256="${{ steps.sha.outputs.sha256 }}"
-          TAG="${GITHUB_REF_NAME}"
 
           mkdir -p Formula
 
@@ -90,18 +123,17 @@ jobs:
           # Formula for georgiosnikitas/homebrew-brain-break
           class BrainBreak < Formula
             desc "An AI-powered terminal quiz app"
-            homepage "https://github.com/georgiosnikitas/brain-break"
+            homepage "https://www.npmjs.com/package/brain-break"
           FORMULA_EOF
 
           # Append dynamic fields (outside heredoc to allow variable expansion)
           cat >> Formula/brain-break.rb << FORMULA_EOF
-            url "https://github.com/georgiosnikitas/brain-break/archive/refs/tags/${TAG}.tar.gz"
+            url "https://registry.npmjs.org/brain-break/-/brain-break-${VERSION}.tgz"
             sha256 "${SHA256}"
           FORMULA_EOF
 
           cat >> Formula/brain-break.rb << 'FORMULA_EOF'
             license "MIT"
-            head "https://github.com/georgiosnikitas/brain-break.git", branch: "main"
 
             depends_on "node"
 
@@ -137,36 +169,3 @@ jobs:
           git add Formula/brain-break.rb
           git commit -m "brain-break ${VERSION}"
           git push
-
-  npm:
-    needs: homebrew
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Publish to npm
-        run: |
-          npm pkg set name=brain-break
-          VERSION=$(node -p "require('./package.json').version")
-          if npm view brain-break@${VERSION} --registry=https://registry.npmjs.org 2>/dev/null; then
-            echo "Version ${VERSION} already published to npm, skipping"
-          else
-            npm publish --access public
-          fi
