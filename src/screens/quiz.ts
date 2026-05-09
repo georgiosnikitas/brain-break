@@ -10,125 +10,81 @@ import { colorIncorrect, warn, header, menuTheme, renderQuestionDetail } from '.
 import { clearAndBanner } from '../utils/screen.js'
 import { toggleBookmark, buildAnswerChoices } from './question-nav.js'
 
-type NavResult = 'next' | 'exit' | null
-type PostAnswerAction = 'explain' | 'bookmark' | NavResult
+type PostAction = 'explain' | 'teach' | 'bookmark' | 'next' | 'exit'
+type ResolvedAction = Exclude<PostAction, 'bookmark'> | null
+
+async function promptOrNull<T>(fn: () => Promise<T>): Promise<T | null> {
+  try {
+    return await fn()
+  } catch (err) {
+    if (err instanceof ExitPromptError) return null
+    throw err
+  }
+}
 
 async function askQuestion(
   question: Question,
 ): Promise<{ userAnswer: AnswerOption; timeTakenMs: number } | null> {
   const startTime = Date.now()
-  try {
-    const userAnswer = await select<AnswerOption>({
-      message: question.question,
-      choices: buildAnswerChoices(question),
-      theme: menuTheme,
-    })
-    const timeTakenMs = Date.now() - startTime
-    return { userAnswer, timeTakenMs }
-  } catch (err) {
-    if (err instanceof ExitPromptError) return null
-    throw err
-  }
+  const userAnswer = await promptOrNull(() => select<AnswerOption>({
+    message: question.question,
+    choices: buildAnswerChoices(question),
+    theme: menuTheme,
+  }))
+  if (userAnswer === null) return null
+  return { userAnswer, timeTakenMs: Date.now() - startTime }
 }
 
-async function askPostAnswerAction(bookmarked: boolean): Promise<'explain' | 'bookmark' | 'next' | 'exit' | null> {
-  try {
-    return await select<'explain' | 'bookmark' | 'next' | 'exit'>({
-      message: 'Next action:',
-      choices: [
-        { name: '💡 Explain answer', value: 'explain' as const },
-        { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' as const },
-        { name: '▶️  Next question', value: 'next' as const },
-        new Separator(),
-        { name: '↩️  Back', value: 'exit' as const },
-      ],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (err instanceof ExitPromptError) return null
-    throw err
-  }
+async function askActionMenu(
+  bookmarked: boolean,
+  ...extras: Array<{ name: string; value: PostAction }>
+): Promise<PostAction | null> {
+  return promptOrNull(() => select<PostAction>({
+    message: 'Next action:',
+    choices: [
+      ...extras,
+      { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' },
+      { name: '▶️  Next question', value: 'next' },
+      new Separator(),
+      { name: '↩️  Back', value: 'exit' },
+    ],
+    theme: menuTheme,
+  }))
 }
 
-async function askNextOrExit(): Promise<NavResult> {
-  try {
-    return await select<'next' | 'exit'>({
-      message: 'Next action:',
-      choices: [
-        { name: '▶️  Next question', value: 'next' as const },
-        new Separator(),
-        { name: '↩️  Back', value: 'exit' as const },
-      ],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (err instanceof ExitPromptError) return null
-    throw err
-  }
+async function askNextOrExit(): Promise<'next' | 'exit' | null> {
+  return promptOrNull(() => select<'next' | 'exit'>({
+    message: 'Next action:',
+    choices: [
+      { name: '▶️  Next question', value: 'next' },
+      new Separator(),
+      { name: '↩️  Back', value: 'exit' },
+    ],
+    theme: menuTheme,
+  }))
 }
 
-async function askPostExplainAction(bookmarked: boolean): Promise<'teach' | 'bookmark' | 'next' | 'exit' | null> {
-  try {
-    return await select<'teach' | 'bookmark' | 'next' | 'exit'>({
-      message: 'Next action:',
-      choices: [
-        { name: '📚 Teach me more', value: 'teach' as const },
-        { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' as const },
-        { name: '▶️  Next question', value: 'next' as const },
-        new Separator(),
-        { name: '↩️  Back', value: 'exit' as const },
-      ],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (err instanceof ExitPromptError) return null
-    throw err
-  }
-}
-
-async function askPostTeachAction(bookmarked: boolean): Promise<'bookmark' | NavResult> {
-  try {
-    return await select<'bookmark' | 'next' | 'exit'>({
-      message: 'Next action:',
-      choices: [
-        { name: bookmarked ? '⭐ Remove bookmark' : '💫 Bookmark', value: 'bookmark' as const },
-        { name: '▶️  Next question', value: 'next' as const },
-        new Separator(),
-        { name: '↩️  Back', value: 'exit' as const },
-      ],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (err instanceof ExitPromptError) return null
-    throw err
-  }
-}
-
-async function handleBookmarkLoop<T extends string>(
-  promptFn: (bookmarked: boolean) => Promise<T | null>,
+async function handleBookmarkLoop(
+  promptFn: (bookmarked: boolean) => Promise<PostAction | null>,
   record: QuestionRecord,
   domainSlug: string,
   domain: DomainFile,
-): Promise<Exclude<T, 'bookmark'> | null> {
+): Promise<ResolvedAction> {
   let action = await promptFn(record.bookmarked)
   while (action === 'bookmark') {
     await toggleBookmark(record, domainSlug, domain)
     action = await promptFn(record.bookmarked)
   }
-  return action as Exclude<T, 'bookmark'> | null
+  return action as ResolvedAction
 }
 
 async function showGenerationError(error: string): Promise<void> {
   console.error(colorIncorrect(error))
-  try {
-    await select({
-      message: 'Something went wrong',
-      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (!(err instanceof ExitPromptError)) throw err
-  }
+  await promptOrNull(() => select({
+    message: 'Something went wrong',
+    choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
+    theme: menuTheme,
+  }))
 }
 
 async function handleTeachMeMore(
@@ -138,7 +94,7 @@ async function handleTeachMeMore(
   record: QuestionRecord,
   domainSlug: string,
   domain: DomainFile,
-): Promise<NavResult> {
+): Promise<ResolvedAction> {
   const teachSpinner = ora('Generating micro-lesson...').start()
   const result = await generateMicroLesson(question, explanation, settings).finally(() => teachSpinner.stop())
   if (result.ok) {
@@ -146,7 +102,7 @@ async function handleTeachMeMore(
   } else {
     console.warn(warn('Could not generate micro-lesson.'))
   }
-  return handleBookmarkLoop(askPostTeachAction, record, domainSlug, domain)
+  return handleBookmarkLoop((b) => askActionMenu(b), record, domainSlug, domain)
 }
 
 async function handleExplain(
@@ -156,7 +112,7 @@ async function handleExplain(
   record: QuestionRecord,
   domainSlug: string,
   domain: DomainFile,
-): Promise<NavResult> {
+): Promise<ResolvedAction> {
   const explainSpinner = ora('Generating explanation...').start()
   const explainResult = await generateExplanation(question, userAnswer, settings).finally(() => explainSpinner.stop())
   if (explainResult.ok) {
@@ -164,7 +120,10 @@ async function handleExplain(
     if (!explainResult.data) {
       return askNextOrExit()
     }
-    const postAction = await handleBookmarkLoop(askPostExplainAction, record, domainSlug, domain)
+    const postAction = await handleBookmarkLoop(
+      (b) => askActionMenu(b, { name: '📚 Teach me more', value: 'teach' }),
+      record, domainSlug, domain,
+    )
     if (postAction === 'teach') {
       return handleTeachMeMore(question, explainResult.data, settings, record, domainSlug, domain)
     }
@@ -234,7 +193,10 @@ export async function showQuiz(domainSlug: string): Promise<SessionData | null> 
     renderQuestionDetail(record)
 
     // Post-answer action: explain, bookmark, next, or exit
-    let nextAction: Exclude<PostAnswerAction, 'bookmark'> | null = await handleBookmarkLoop(askPostAnswerAction, record, domainSlug, domain)
+    let nextAction = await handleBookmarkLoop(
+      (b) => askActionMenu(b, { name: '💡 Explain answer', value: 'explain' }),
+      record, domainSlug, domain,
+    )
 
     if (nextAction === 'explain') {
       nextAction = await handleExplain(question, userAnswer, settings, record, domainSlug, domain)

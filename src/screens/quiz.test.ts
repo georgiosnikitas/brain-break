@@ -88,6 +88,22 @@ function getChoiceValues(callIndex: number): string[] {
   return (call[0] as any).choices.map((c: any) => c.value)
 }
 
+function setupQuestion(correctAnswer: AnswerOption = 'A') {
+  mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion(correctAnswer) })
+}
+
+function setupExplainSuccess(text = 'Explanation.') {
+  mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: text })
+}
+
+function setupTeachSuccess(text = 'Lesson.') {
+  mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: text })
+}
+
+const muteLog = () => vi.spyOn(console, 'log').mockReturnValue(undefined)
+const muteWarn = () => vi.spyOn(console, 'warn').mockReturnValue(undefined)
+const muteError = () => vi.spyOn(console, 'error').mockReturnValue(undefined)
+
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
@@ -119,7 +135,7 @@ describe('showQuiz', () => {
     [AI_ERRORS.AUTH_COPILOT, 'authentication'],
     [AI_ERRORS.PARSE, 'unexpected response'],
   ])('displays error and returns null on %s error', async (aiError, expectedMsg) => {
-    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    const consoleSpy = muteError()
     mockGenerateQuestion.mockResolvedValue({ ok: false, error: aiError })
     mockSelect.mockResolvedValueOnce(true as any)
 
@@ -131,7 +147,7 @@ describe('showQuiz', () => {
   })
 
   it('persists domain with correct record and returns SessionData after correct answer + exit', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     const result = await showQuiz('typescript')
@@ -149,7 +165,7 @@ describe('showQuiz', () => {
   })
 
   it('includes all FR11 fields in the QuestionRecord', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -176,8 +192,8 @@ describe('showQuiz', () => {
   })
 
   it('shows correct answer in feedback on incorrect submission', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('B') })
+    const consoleSpy = muteLog()
+    setupQuestion('B')
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -190,8 +206,8 @@ describe('showQuiz', () => {
   })
 
   it('does not show "Correct answer:" line on a correct submission', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const consoleSpy = muteLog()
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -200,7 +216,7 @@ describe('showQuiz', () => {
   })
 
   it('loops for a second question when user chooses "next"', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')     // first answer
       .mockResolvedValueOnce('next')  // continue
@@ -216,7 +232,7 @@ describe('showQuiz', () => {
   })
 
   it('returns null when the next question generation fails after earlier answers', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    const consoleSpy = muteError()
     mockGenerateQuestion
       .mockResolvedValueOnce({ ok: true, data: makeQuestion('A') })
       .mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
@@ -233,7 +249,7 @@ describe('showQuiz', () => {
   })
 
   it('accumulates history across loop iterations', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('next')
@@ -248,9 +264,9 @@ describe('showQuiz', () => {
   })
 
   it('logs write error but continues to the next action when writeDomain fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    const consoleSpy = muteWarn()
     mockWriteDomain.mockResolvedValueOnce({ ok: false, error: 'disk full' })
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     const result = await showQuiz('typescript')
@@ -260,7 +276,7 @@ describe('showQuiz', () => {
   })
 
   it('returns null when ExitPromptError is thrown during answer selection', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockRejectedValueOnce(new ExitPromptError())
 
     const result = await showQuiz('typescript')
@@ -269,7 +285,7 @@ describe('showQuiz', () => {
   })
 
   it('returns SessionData when ExitPromptError is thrown during next-action selection', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockRejectedValueOnce(new ExitPromptError())
@@ -282,7 +298,7 @@ describe('showQuiz', () => {
 
   it('updates meta.lastSessionAt when persisting after each answer', async () => {
     const before = new Date().toISOString()
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -296,9 +312,9 @@ describe('showQuiz', () => {
   })
 
   it('warns and uses a fresh domain when readDomain fails', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    const warnSpy = muteWarn()
     mockReadDomain.mockResolvedValue({ ok: false, error: 'corrupted' })
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -308,7 +324,7 @@ describe('showQuiz', () => {
   })
 
   it('calls clearScreen before rendering a question', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -317,7 +333,7 @@ describe('showQuiz', () => {
   })
 
   it('calls clearAndBanner only before rendering a question, not before feedback', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -327,8 +343,8 @@ describe('showQuiz', () => {
   })
 
   it('displays domain header after clearAndBanner', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const consoleSpy = muteLog()
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -338,8 +354,8 @@ describe('showQuiz', () => {
   })
 
   it('shows all 4 answer options with user selection marker before feedback', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('B') })
+    const consoleSpy = muteLog()
+    setupQuestion('B')
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -395,8 +411,8 @@ describe('showQuiz', () => {
   })
 
   it('uses colorCorrect for correct answer feedback', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const consoleSpy = muteLog()
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -406,8 +422,8 @@ describe('showQuiz', () => {
   })
 
   it('uses colorIncorrect and colorCorrect reveal for incorrect answer feedback', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('B') })
+    const consoleSpy = muteLog()
+    setupQuestion('B')
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -419,8 +435,8 @@ describe('showQuiz', () => {
   })
 
   it('uses colorSpeedTier in feedback — speed tier label is present', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const consoleSpy = muteLog()
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -430,8 +446,8 @@ describe('showQuiz', () => {
   })
 
   it('uses colorScoreDelta in feedback — score delta is present', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const consoleSpy = muteLog()
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -441,8 +457,8 @@ describe('showQuiz', () => {
   })
 
   it('uses colorDifficultyLevel in feedback — difficulty label is present', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const consoleSpy = muteLog()
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -453,7 +469,7 @@ describe('showQuiz', () => {
   })
 
   it('re-throws non-ExitPromptError from answer select (askQuestion)', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     const boom = new Error('unexpected answer select failure')
     mockSelect.mockRejectedValueOnce(boom)
 
@@ -461,7 +477,7 @@ describe('showQuiz', () => {
   })
 
   it('re-throws non-ExitPromptError from next-action select (askNextAction)', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     const boom = new Error('unexpected next-action select failure')
     mockSelect
       .mockResolvedValueOnce('A')    // answer select succeeds
@@ -474,7 +490,7 @@ describe('showQuiz', () => {
   // Explain answer flow
   // -------------------------------------------------------------------------
   it('shows four post-answer options including explain and bookmark', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -488,9 +504,9 @@ describe('showQuiz', () => {
   })
 
   it('displays explanation when user selects explain and AI succeeds', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'TypeScript adds static typing.' })
+    const consoleSpy = muteLog()
+    setupQuestion()
+    setupExplainSuccess('TypeScript adds static typing.')
     mockSelect
       .mockResolvedValueOnce('A')        // answer
       .mockResolvedValueOnce('explain')  // explain
@@ -504,8 +520,8 @@ describe('showQuiz', () => {
   })
 
   it('starts and stops explain spinner around generateExplanation call', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -519,8 +535,8 @@ describe('showQuiz', () => {
   })
 
   it('shows warning on explain failure and falls through to next/exit', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    const warnSpy = muteWarn()
+    setupQuestion()
     mockGenerateExplanation.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
     mockSelect
       .mockResolvedValueOnce('A')
@@ -533,8 +549,8 @@ describe('showQuiz', () => {
   })
 
   it('shows teach/next/exit after explain is used (post-explain action)', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')        // answer
       .mockResolvedValueOnce('explain')  // explain
@@ -551,7 +567,7 @@ describe('showQuiz', () => {
   })
 
   it('returns SessionData when ExitPromptError during explain/next/exit prompt', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockRejectedValueOnce(new ExitPromptError()) // Ctrl+C on post-answer prompt
@@ -563,8 +579,8 @@ describe('showQuiz', () => {
   })
 
   it('returns SessionData when ExitPromptError during post-explain prompt', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -577,8 +593,8 @@ describe('showQuiz', () => {
   })
 
   it('continues to next question after explain then next', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')        // 1st answer
       .mockResolvedValueOnce('explain')  // explain
@@ -596,10 +612,10 @@ describe('showQuiz', () => {
   // Teach me more flow
   // -------------------------------------------------------------------------
   it('displays micro-lesson when user selects teach after explain', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation text.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Deep dive into TypeScript type system...' })
+    const consoleSpy = muteLog()
+    setupQuestion()
+    setupExplainSuccess('Explanation text.')
+    setupTeachSuccess('Deep dive into TypeScript type system...')
     mockSelect
       .mockResolvedValueOnce('A')        // answer
       .mockResolvedValueOnce('explain')  // explain
@@ -614,10 +630,10 @@ describe('showQuiz', () => {
   })
 
   it('calls generateMicroLesson with correct arguments', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'The explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess('The explanation.')
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('B')        // answer
       .mockResolvedValueOnce('explain')  // explain
@@ -633,10 +649,10 @@ describe('showQuiz', () => {
   })
 
   it('starts and stops teach spinner around generateMicroLesson call', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -651,10 +667,10 @@ describe('showQuiz', () => {
   })
 
   it('shows warning on teach failure and falls through to next/exit', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    const warnSpy = muteWarn()
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
     mockGenerateMicroLesson.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
     mockSelect
       .mockResolvedValueOnce('A')
@@ -668,10 +684,10 @@ describe('showQuiz', () => {
   })
 
   it('shows next/exit only (no teach) after micro-lesson is displayed', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')        // answer
       .mockResolvedValueOnce('explain')  // explain
@@ -689,9 +705,9 @@ describe('showQuiz', () => {
   })
 
   it('returns SessionData when ExitPromptError during post-explain teach/next/exit prompt', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -704,10 +720,10 @@ describe('showQuiz', () => {
   })
 
   it('continues to next question after explain → teach → next', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')        // 1st answer
       .mockResolvedValueOnce('explain')  // explain
@@ -723,9 +739,9 @@ describe('showQuiz', () => {
   })
 
   it('shows next/exit after explain failure (no teach option)', async () => {
-    vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    muteWarn()
+    muteLog()
+    setupQuestion()
     mockGenerateExplanation.mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
     mockSelect
       .mockResolvedValueOnce('A')
@@ -742,8 +758,8 @@ describe('showQuiz', () => {
   })
 
   it('skips teach option and goes to next/exit when AI returns empty explanation', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    muteLog()
+    setupQuestion()
     mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: '' })
     mockSelect
       .mockResolvedValueOnce('A')
@@ -764,7 +780,7 @@ describe('showQuiz', () => {
   // Bookmark toggle — post-answer (AC #1, #2, #3)
   // -------------------------------------------------------------------------
   it('post-answer: ⭐ Bookmark option is present in post-answer choices', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect.mockResolvedValueOnce('A').mockResolvedValueOnce('exit')
 
     await showQuiz('typescript')
@@ -774,8 +790,8 @@ describe('showQuiz', () => {
   })
 
   it('post-answer: selecting bookmark toggles bookmarked, calls writeDomain', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    muteLog()
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('bookmark')
@@ -790,7 +806,7 @@ describe('showQuiz', () => {
   })
 
   it('post-answer: bookmark toggles record.bookmarked to true in persisted domain', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('bookmark')
@@ -803,7 +819,7 @@ describe('showQuiz', () => {
   })
 
   it('post-answer: second bookmark toggle removes bookmark (back to false)', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('bookmark')  // set bookmark
@@ -817,7 +833,7 @@ describe('showQuiz', () => {
   })
 
   it('post-answer: shows "⭐ Remove bookmark" label after bookmark is set', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('bookmark')
@@ -832,7 +848,7 @@ describe('showQuiz', () => {
   })
 
   it('post-answer: bookmark then next proceeds to second question', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('bookmark')
@@ -847,7 +863,7 @@ describe('showQuiz', () => {
   })
 
   it('post-answer: bookmarked state is reflected in SessionData records', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
+    setupQuestion()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('bookmark')
@@ -862,8 +878,8 @@ describe('showQuiz', () => {
   // Bookmark toggle — post-explain (AC #4)
   // -------------------------------------------------------------------------
   it('post-explain: ⭐ Bookmark option is present in post-explain choices', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -876,9 +892,9 @@ describe('showQuiz', () => {
   })
 
   it('post-explain: selecting bookmark toggles bookmarked, calls writeDomain', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -894,9 +910,9 @@ describe('showQuiz', () => {
   })
 
   it('post-explain: bookmark toggles record.bookmarked to true in persisted domain', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -910,9 +926,9 @@ describe('showQuiz', () => {
   })
 
   it('post-explain: after bookmark toggle, loops back to post-explain menu (shows teach option)', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -927,8 +943,8 @@ describe('showQuiz', () => {
   })
 
   it('post-explain: ExitPromptError during bookmark select returns SessionData', async () => {
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
+    setupQuestion()
+    setupExplainSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -944,10 +960,10 @@ describe('showQuiz', () => {
   // Bookmark toggle — post-teach (AC #5)
   // -------------------------------------------------------------------------
   it('post-teach: ⭐ Bookmark option is present in post-teach choices (no teach option)', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -963,10 +979,10 @@ describe('showQuiz', () => {
   })
 
   it('post-teach: selecting bookmark toggles bookmarked, calls writeDomain', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -983,10 +999,10 @@ describe('showQuiz', () => {
   })
 
   it('post-teach: bookmark toggles record.bookmarked to true in persisted domain', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
@@ -1001,10 +1017,10 @@ describe('showQuiz', () => {
   })
 
   it('post-teach: ExitPromptError during bookmark select returns SessionData', async () => {
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
-    mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion('A') })
-    mockGenerateExplanation.mockResolvedValueOnce({ ok: true, data: 'Explanation.' })
-    mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: 'Lesson.' })
+    muteLog()
+    setupQuestion()
+    setupExplainSuccess()
+    setupTeachSuccess()
     mockSelect
       .mockResolvedValueOnce('A')
       .mockResolvedValueOnce('explain')
