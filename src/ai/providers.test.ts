@@ -440,8 +440,8 @@ describe('Copilot adapter', () => {
         start: mockStartFn,
         stop: vi.fn().mockResolvedValue([]),
         createSession: mockCreateSession,
-      } as unknown as InstanceType<typeof CopilotClient>
-    } as unknown as new () => InstanceType<typeof CopilotClient>)
+      }
+    })
 
     mockSendAndWait.mockResolvedValueOnce({ data: { content: 'ok' } })
 
@@ -611,8 +611,8 @@ describe('validateProvider', () => {
           start: vi.fn().mockRejectedValue(new Error('not installed')),
           stop: vi.fn().mockResolvedValue([]),
           createSession: mockCreateSession,
-        } as unknown as InstanceType<typeof CopilotClient>
-      } as unknown as new () => InstanceType<typeof CopilotClient>)
+        }
+      })
 
       const result = await validateProvider('copilot', makeSettings())
 

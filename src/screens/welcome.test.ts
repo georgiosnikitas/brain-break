@@ -18,7 +18,7 @@ const mockSelect = vi.mocked(select)
 beforeEach(() => {
   vi.useFakeTimers()
   vi.clearAllMocks()
-  mockSelect.mockResolvedValueOnce('continue' as unknown as string)
+  mockSelect.mockResolvedValueOnce('continue')
 })
 
 afterEach(() => {

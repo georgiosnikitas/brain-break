@@ -13,7 +13,7 @@ vi.mock('node:crypto', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:crypto')>()
   return {
     ...actual,
-    randomInt: (...args: unknown[]) => mockRandomInt(args[0] as number),
+    randomInt: (max: number) => mockRandomInt(max),
   }
 })
 

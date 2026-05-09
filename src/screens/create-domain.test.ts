@@ -30,19 +30,19 @@ describe('validateDomainName', () => {
   it('returns error string for empty input', () => {
     const result = validateDomainName('')
     expect(typeof result).toBe('string')
-    expect(result as string).toBeTruthy()
+    expect(result).toBeTruthy()
   })
 
   it('returns error string for whitespace-only input', () => {
     const result = validateDomainName('   ')
     expect(typeof result).toBe('string')
-    expect(result as string).toBeTruthy()
+    expect(result).toBeTruthy()
   })
 
   it('returns error string when slug resolves to empty (e.g. "---")', () => {
     const result = validateDomainName('---')
     expect(typeof result).toBe('string')
-    expect(result as string).toBeTruthy()
+    expect(result).toBeTruthy()
   })
 
   it('returns true for a valid domain name', () => {

@@ -20,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-  mockSelect.mockResolvedValueOnce('exit-now' as unknown as string)
+  mockSelect.mockResolvedValueOnce('exit-now')
 })
 
 afterEach(() => {
@@ -72,7 +72,7 @@ describe('showExitScreen', () => {
 
   it('exits immediately on Enter before timer elapses', async () => {
     mockSelect.mockReset()
-    mockSelect.mockResolvedValueOnce('exit-now' as unknown as string)
+    mockSelect.mockResolvedValueOnce('exit-now')
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
 
     const promise = showExitScreen(0)

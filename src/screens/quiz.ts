@@ -75,7 +75,7 @@ async function handleBookmarkLoop(
     await toggleBookmark(record, domainSlug, domain)
     action = await promptFn(record.bookmarked)
   }
-  return action as ResolvedAction
+  return action
 }
 
 async function showGenerationError(error: string): Promise<void> {
