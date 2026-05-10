@@ -303,6 +303,20 @@
       letter-spacing: 0.06em;
       margin-bottom: 4px;
     }
+    .explain-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .explain-readmore {
+      font-size: 12px;
+      color: var(--accent);
+      margin-top: 6px;
+      cursor: pointer;
+    }
+      margin-bottom: 4px;
+    }
 
     /* Post-answer actions */
     .post-actions {
@@ -744,8 +758,29 @@
           </div>
           <div class="chevron">›</div>
         </div>
-        <div class="spacer"></div>
-        <div class="primary-btn">➕ Create new domain</div>
+        <div class="gap-md"></div>
+        <div class="menu-group">
+          <div class="action-row">
+            <span class="menu-icon">➕</span>
+            <span class="action-label">Create new domain</span>
+            <span class="chevron">›</span>
+          </div>
+          <div class="action-row" style="border-top: 1px solid var(--border); margin-top: 0; border-radius: 0;">
+            <span class="menu-icon">🗄</span>
+            <span class="action-label">Archived domains</span>
+            <span class="chevron">›</span>
+          </div>
+          <div class="action-row" style="border-top: 1px solid var(--border); margin-top: 0; border-radius: 0 0 10px 10px;">
+            <span class="menu-icon">⚙️</span>
+            <span class="action-label">Settings</span>
+            <span class="chevron">›</span>
+          </div>
+        </div>
+        <div class="action-row">
+          <span class="menu-icon">🍵</span>
+          <span class="action-label">Buy me a coffee</span>
+          <span style="font-size:12px;color:var(--textDim)">↗</span>
+        </div>
       </div>
     </div>
   </div>
@@ -852,12 +887,9 @@
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
         <div class="nav-back">‹ Back</div>
-        <div class="nav-title">Quiz</div>
+        <div class="nav-title">📝 Quiz — spanish-irregular-verbs</div>
       </div>
       <div class="quiz-score">score: 87</div>
-      <div class="question-block" style="padding:12px 16px 4px;">
-        <div class="question-number" style="color:var(--textSec);">📝 Quiz — spanish-irregular-verbs</div>
-      </div>
       <div class="spinner-block">
         <div class="spinner"></div>
         <span>Generating question…</span>
@@ -875,11 +907,10 @@
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
         <div class="nav-back">‹ Back</div>
-        <div class="nav-title">Quiz</div>
+        <div class="nav-title">📝 Quiz — spanish-irregular-verbs</div>
       </div>
       <div class="quiz-score">score: 87</div>
       <div class="question-block">
-        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
         <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
       </div>
       <div class="screen-body" style="padding-top:8px;">
@@ -891,42 +922,37 @@
     </div>
   </div>
 
-  <!-- 15. Quiz — correct answer + Explain -->
+  <!-- 15. Quiz — correct answer -->
   <div>
-    <div class="screen-label">15 · Quiz — correct answer + Explain</div>
+    <div class="screen-label">15 · Quiz — correct answer</div>
     <div class="phone quiz-screen">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
         <div class="nav-back">‹ Back</div>
-        <div class="nav-title">Quiz</div>
+        <div class="nav-title">📝 Quiz — spanish-irregular-verbs</div>
       </div>
       <div class="quiz-score" style="color:var(--correct)">score: 88 ↑</div>
       <div class="question-block">
-        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
         <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
       </div>
       <div class="screen-body" style="padding-top:8px;gap:6px;">
-        <div class="answer-card incorrect"><span class="answer-letter">A)</span>podí</div>
-        <div class="answer-card correct"><span class="answer-letter">B)</span>✓ pude</div>
-        <div class="answer-card incorrect"><span class="answer-letter">C)</span>podía</div>
-        <div class="answer-card incorrect"><span class="answer-letter">D)</span>puede</div>
+        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+      </div>
+      <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin:4px 16px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+        <span>⏱ 274.1s</span>
+        <span style="color:var(--textDim);">|</span>
+        <span>🐢 Slow</span>
+        <span style="color:var(--textDim);">|</span>
+        <span>🎯 Elementary</span>
       </div>
       <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
       <div class="post-actions">
-        <div class="pill-btn primary">💡 Explain answer</div>
+        <div class="pill-btn">💡 Explain answer</div>
         <div class="pill-btn">💫 Bookmark</div>
-        <div class="pill-btn">▶️  Next question</div>
+        <div class="pill-btn primary">▶️  Next question</div>
         <div class="pill-btn">↩️  Back</div>
       </div>
-      <div class="explain-block">
-        <div class="explain-label">Explanation</div>
-        "Poder" is one of a handful of Spanish verbs with an irregular
-        preterite stem. Its stem changes to "pud-", giving "pude" (yo),
-        "pudiste" (tú), etc. — a pattern shared with "saber" (supe) and
-        "tener" (tuve).
-      </div>
-      <div class="gap-sm"></div>
     </div>
   </div>
 
@@ -938,32 +964,38 @@
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
         <div class="nav-back">‹ Back</div>
-        <div class="nav-title">Quiz</div>
+        <div class="nav-title">📝 Quiz — spanish-irregular-verbs</div>
       </div>
       <div class="quiz-score" style="color:var(--incorrect)">score: 86 ↓</div>
       <div class="question-block">
-        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
         <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
       </div>
       <div class="screen-body" style="padding-top:8px;gap:6px;">
-        <div class="answer-card" style="border-color:var(--incorrect);background:rgba(248,113,113,0.08);color:var(--incorrect);"><span class="answer-letter" style="color:var(--incorrect);">A)</span>✗ podí</div>
-        <div class="answer-card correct"><span class="answer-letter">B)</span>✓ pude (correct)</div>
-        <div class="answer-card incorrect"><span class="answer-letter">C)</span>podía</div>
-        <div class="answer-card incorrect"><span class="answer-letter">D)</span>puede</div>
+        <div class="answer-card" style="border-color:var(--incorrect);background:rgba(248,113,113,0.08);color:var(--incorrect);min-height:auto;padding:10px 14px;"><span class="answer-letter" style="color:var(--incorrect);">A)</span>✗ podí</div>
+        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude (correct)</div>
       </div>
-      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
-      <div class="post-actions">
-        <div class="pill-btn primary">💡 Explain answer</div>
-        <div class="pill-btn">💫 Bookmark</div>
-        <div class="pill-btn">▶️  Next question</div>
-        <div class="pill-btn">↩️  Back</div>
+      <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin:4px 16px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+        <span>⏱ 274.1s</span>
+        <span style="color:var(--textDim);">|</span>
+        <span>🐢 Slow</span>
+        <span style="color:var(--textDim);">|</span>
+        <span>🎯 Elementary</span>
       </div>
       <div class="explain-block">
         <div class="explain-label">Why "pude"?</div>
-        "Podí" follows the regular -er pattern, but "poder" is irregular in
-        the preterite — its stem becomes "pud-". The full form is "pude".
+        <div class="explain-text">
+          "Podí" follows the regular -er pattern, but "poder" is irregular in
+          the preterite — its stem becomes "pud-". The full form is "pude".
+        </div>
+        <div class="explain-readmore">Read more ▾</div>
       </div>
-      <div class="gap-sm"></div>
+      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="post-actions">
+        <div class="pill-btn">📚 Teach me more</div>
+        <div class="pill-btn">💫 Bookmark</div>
+        <div class="pill-btn primary">▶️  Next question</div>
+        <div class="pill-btn">↩️  Back</div>
+      </div>
     </div>
   </div>
 
@@ -975,25 +1007,34 @@
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
         <div class="nav-back">‹ Back</div>
-        <div class="nav-title">Quiz</div>
+        <div class="nav-title">📝 Quiz — spanish-irregular-verbs</div>
       </div>
       <div class="quiz-score" style="color:var(--correct)">score: 88 ↑</div>
       <div class="question-block">
-        <div class="question-number">📝 Quiz — spanish-irregular-verbs</div>
         <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
       </div>
       <div class="screen-body" style="padding-top:8px;gap:6px;">
         <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
       </div>
+      <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin:4px 16px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+        <span>⏱ 274.1s</span>
+        <span style="color:var(--textDim);">|</span>
+        <span>🐢 Slow</span>
+        <span style="color:var(--textDim);">|</span>
+        <span>🎯 Elementary</span>
+      </div>
       <div class="explain-block" style="border-left-color:var(--gradEnd);">
         <div class="explain-label" style="color:var(--gradEnd);">📚 Teach me more</div>
-        Spanish has roughly a dozen verbs with irregular preterite stems.
-        Here are the most common patterns:<br><br>
-        • <b>u-stem:</b> poder→pud-, poner→pus-, saber→sup-, tener→tuv-<br>
-        • <b>i-stem:</b> hacer→hic-, querer→quis-, venir→vin-<br>
-        • <b>j-stem:</b> decir→dij-, traer→traj-, conducir→conduj-<br><br>
-        All share the same endings: -e, -iste, -o, -imos, -isteis, -ieron
-        (j-stem verbs drop the i in -ieron → -eron).
+        <div class="explain-text">
+          Spanish has roughly a dozen verbs with irregular preterite stems.
+          Here are the most common patterns:<br><br>
+          • <b>u-stem:</b> poder→pud-, poner→pus-, saber→sup-, tener→tuv-<br>
+          • <b>i-stem:</b> hacer→hic-, querer→quis-, venir→vin-<br>
+          • <b>j-stem:</b> decir→dij-, traer→traj-, conducir→conduj-<br><br>
+          All share the same endings: -e, -iste, -o, -imos, -isteis, -ieron
+          (j-stem verbs drop the i in -ieron → -eron).
+        </div>
+        <div class="explain-readmore">Read more ▾</div>
       </div>
       <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
       <div class="post-actions">
@@ -1022,7 +1063,6 @@
           <div class="zero-title">No questions answered yet.</div>
           <div class="zero-subtitle">Once you start playing, every question you answer shows up here.</div>
         </div>
-        <div class="primary-btn">▶ Play</div>
       </div>
     </div>
   </div>
@@ -1065,6 +1105,45 @@
     </div>
   </div>
 
+  <!-- 19b. Question Detail (from History) -->
+  <div>
+    <div class="screen-label">19b · Question Detail (from History)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">📜 Question 14 of 14</div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Today · 14:22</div>
+        <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
+        <div style="font-size:12px;color:var(--textSec);padding:4px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
+        <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+          <span>⏱ 4.2s</span>
+          <span style="color:var(--textDim);">|</span>
+          <span>🐇 Fast</span>
+          <span style="color:var(--textDim);">|</span>
+          <span>🎯 Elementary</span>
+        </div>
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 0;">Actions:</div>
+        <div class="post-actions" style="padding:4px 0;">
+          <div class="pill-btn">💡 Explain answer</div>
+          <div class="pill-btn">⭐ Remove bookmark</div>
+        </div>
+        <div class="spacer"></div>
+        <div style="display:flex;gap:8px;">
+          <div class="pill-btn" style="flex:1;text-align:center;">⬅️ Previous</div>
+          <div class="pill-btn" style="flex:1;text-align:center;">Next ➡️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 20. Bookmarks — empty -->
   <div>
     <div class="screen-label">20 · Bookmarks — empty</div>
@@ -1096,7 +1175,7 @@
         <div class="nav-title">⭐ Bookmarks — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;">Bookmark 1 of 2</div>
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;">2 bookmarked questions</div>
         <div class="domain-row" style="min-height:auto;padding:10px 12px;">
           <div class="domain-info">
             <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Conjugate 'poder' in the preterite, first-person singular.</div>
@@ -1115,34 +1194,85 @@
     </div>
   </div>
 
-  <!-- 22. Question Detail (S9b) -->
+  <!-- 21b. Question Detail (from Bookmarks) -->
   <div>
-    <div class="screen-label">22 · Question Detail (from History/Bookmarks)</div>
+    <div class="screen-label">21b · Question Detail (from Bookmarks)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
       <div class="nav-header">
         <div class="nav-back">‹ Back</div>
-        <div class="nav-title">Question 12 of 14</div>
+        <div class="nav-title">⭐ Bookmark 1 of 2</div>
       </div>
       <div class="screen-body">
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Apr 23 · 14:22</div>
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Saved 2 days ago · Apr 23 · 14:22</div>
         <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
         <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
         <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
         <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
         <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
-        <div style="font-size:12px;color:var(--textSec);padding:6px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Correct answer: <span style="color:var(--correct);font-weight:600;">B</span><br>Score: <span style="color:var(--correct);font-weight:600;">+5</span> · Speed: fast · Time: 4.2s</div>
+        <div style="font-size:12px;color:var(--textSec);padding:4px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
+        <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+          <span>⏱ 4.2s</span>
+          <span style="color:var(--textDim);">|</span>
+          <span>🐇 Fast</span>
+          <span style="color:var(--textDim);">|</span>
+          <span>🎯 Elementary</span>
+        </div>
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 0;">Actions:</div>
+        <div class="post-actions" style="padding:4px 0;">
+          <div class="pill-btn">💡 Explain answer</div>
+          <div class="pill-btn">⭐ Remove bookmark</div>
+        </div>
+        <div class="spacer"></div>
+        <div style="display:flex;gap:8px;">
+          <div class="pill-btn" style="flex:1;text-align:center;">⬅️ Previous</div>
+          <div class="pill-btn" style="flex:1;text-align:center;">Next ➡️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 22. Question Detail (from Bookmarks — with Explain) -->
+  <div>
+    <div class="screen-label">22 · Question Detail (from Bookmarks — with Explain)</div>
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+      <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
+      <div class="nav-header">
+        <div class="nav-back">‹ Back</div>
+        <div class="nav-title">⭐ Bookmark 1 of 2</div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Saved 2 days ago · Apr 23 · 14:22</div>
+        <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
+        <div style="font-size:12px;color:var(--textSec);padding:4px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
+        <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+          <span>⏱ 4.2s</span>
+          <span style="color:var(--textDim);">|</span>
+          <span>🐇 Fast</span>
+          <span style="color:var(--textDim);">|</span>
+          <span>🎯 Elementary</span>
+        </div>
         <div class="explain-block" style="margin:0;">
           <div class="explain-label">Explanation</div>
-          "Poder" has an irregular preterite stem "pud-", giving "pude".
+          <div class="explain-text">
+            "Poder" has an irregular preterite stem "pud-", giving "pude".
+          </div>
+          <div class="explain-readmore">Read more ▾</div>
         </div>
         <div class="post-actions">
-          <div class="pill-btn primary">💡 Explain answer</div>
           <div class="pill-btn">📚 Teach me more</div>
           <div class="pill-btn">⭐ Remove bookmark</div>
-          <div class="pill-btn">⬅️  Previous</div>
-          <div class="pill-btn">➡️  Next</div>
+        </div>
+        <div class="spacer"></div>
+        <div style="display:flex;gap:8px;">
+          <div class="pill-btn" style="flex:1;text-align:center;">⬅️ Previous</div>
+          <div class="pill-btn" style="flex:1;text-align:center;">Next ➡️</div>
         </div>
       </div>
     </div>
@@ -1167,25 +1297,15 @@
         <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📈 Starting difficulty:</span><span class="settings-value">3 — Intermediate</span></div>
         <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📈 Current difficulty:</span><span class="settings-value">4 — Advanced</span></div>
         <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🔄 Score trend (30 days):</span><span class="settings-value" style="color:var(--correct);">Growing 📈</span></div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;height:80px;display:flex;align-items:flex-end;gap:3px;margin-top:4px;">
-          <div style="flex:1;background:var(--accent);height:30%;opacity:0.4;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:45%;opacity:0.5;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:55%;opacity:0.6;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:50%;opacity:0.5;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:70%;opacity:0.7;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:80%;opacity:0.8;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:90%;opacity:0.9;border-radius:2px;"></div>
-          <div style="flex:1;background:var(--accent);height:100%;border-radius:2px;"></div>
-        </div>
         <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📅 Days since first session:</span><span class="settings-value">14</span></div>
         <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🔥 Return streak:</span><span class="settings-value" style="color:var(--accent);">7 days</span></div>
       </div>
     </div>
   </div>
 
-  <!-- 24. Stats — empty / My Coach — empty -->
+  <!-- 24. My Coach — empty -->
   <div>
-    <div class="screen-label">24 · Stats &amp; My Coach — empty (no data yet)</div>
+    <div class="screen-label">24 · My Coach — empty (no data yet)</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
@@ -1218,7 +1338,10 @@
         <div style="font-size:11px;color:var(--textSec);text-transform:uppercase;letter-spacing:0.06em;">Generated Apr 22 at 09:14</div>
         <div class="explain-block" style="margin:0;">
           <div class="explain-label">Coaching report</div>
-          You've made strong progress on preterite conjugations — your accuracy on 'tener', 'venir', and 'poder' has climbed from 60% to 87% in the last two weeks. The pattern that still trips you up is the e→i stem change in verbs like 'pedir' and 'servir'. Try 5 questions specifically on -ir stem-changing verbs this week to lock that in.
+          <div class="explain-text">
+            You've made strong progress on preterite conjugations — your accuracy on 'tener', 'venir', and 'poder' has climbed from 60% to 87% in the last two weeks. The pattern that still trips you up is the e→i stem change in verbs like 'pedir' and 'servir'. Try 5 questions specifically on -ir stem-changing verbs this week to lock that in.
+          </div>
+          <div class="explain-readmore">Read more ▾</div>
         </div>
         <div style="font-size:12px;color:var(--textSec);font-style:italic;padding:6px 4px;">Tip: Reports become more accurate with at least 25 answered questions.</div>
         <div class="spacer"></div>
@@ -1241,26 +1364,38 @@
       </div>
       <div class="screen-body" style="position:relative;">
         <div class="menu-group" style="opacity:0.4;">
-          <div class="menu-item"><span class="menu-icon">▶️</span><span class="menu-label">Play</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">▶</span><span class="menu-label">Play</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⏱️</span><span class="menu-label">Challenge</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📜</span><span class="menu-label">History</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⭐</span><span class="menu-label">Bookmarks</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📊</span><span class="menu-label">Statistics</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🏋️</span><span class="menu-label">My Coach</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🎨</span><span class="menu-label">ASCII Art ✨</span><span class="chevron">›</span></div>
+        </div>
+        <div class="menu-group" style="opacity:0.4;">
           <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
+          <div class="menu-item menu-destructive"><span class="menu-icon">🗑</span><span class="menu-label">Delete</span><span class="chevron">›</span></div>
         </div>
         <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;">
           <div style="background:#1c1c1c;border-radius:14px;width:92%;overflow:hidden;">
             <div style="padding:16px 16px 12px;text-align:center;border-bottom:1px solid var(--border);">
               <div style="font-size:15px;font-weight:600;color:var(--textPri);margin-bottom:4px;">Archive "spanish-irregular-verbs"?</div>
-              <div style="font-size:12px;color:var(--textSec);line-height:1.45;">You can unarchive it later from ⚙️ Settings → 🗄 Archived domains.</div>
+              <div style="font-size:12px;color:var(--textSec);line-height:1.45;">You can unarchive it later from 🗄 Archived domains on the home screen.</div>
             </div>
-            <div style="padding:14px;text-align:center;font-size:15px;color:var(--accent);font-weight:600;border-bottom:1px solid var(--border);">🗄  Archive</div>
-            <div style="padding:14px;text-align:center;font-size:15px;color:var(--textSec);">↩️  Cancel</div>
+            <div style="padding:12px 16px;">
+              <div class="primary-btn" style="margin:0;">🗄  Archive</div>
+              <div class="gap-sm"></div>
+              <div class="primary-btn outline" style="margin:0;">↩️  Cancel</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 27. Delete confirmation (native alert) -->
+  <!-- 27. Delete confirmation -->
   <div>
-    <div class="screen-label">27 · Delete domain — native confirmation</div>
+    <div class="screen-label">27 · Delete domain — confirmation action sheet</div>
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
@@ -1270,18 +1405,28 @@
       </div>
       <div class="screen-body" style="position:relative;">
         <div class="menu-group" style="opacity:0.4;">
-          <div class="menu-item"><div class="menu-icon">🎯</div><div class="menu-label">Play</div><div class="chevron">›</div></div>
-          <div class="menu-item menu-destructive"><div class="menu-icon">🗑️</div><div class="menu-label">Delete</div><div class="chevron">›</div></div>
+          <div class="menu-item"><span class="menu-icon">▶</span><span class="menu-label">Play</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⏱️</span><span class="menu-label">Challenge</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📜</span><span class="menu-label">History</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">⭐</span><span class="menu-label">Bookmarks</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">📊</span><span class="menu-label">Statistics</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🏋️</span><span class="menu-label">My Coach</span><span class="chevron">›</span></div>
+          <div class="menu-item"><span class="menu-icon">🎨</span><span class="menu-label">ASCII Art ✨</span><span class="chevron">›</span></div>
         </div>
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;">
-          <div style="background:#222;border-radius:14px;width:88%;overflow:hidden;text-align:center;">
-            <div style="padding:20px 16px 12px;">
-              <div style="font-size:15px;font-weight:600;color:#fff;">Delete "spanish-irregular-verbs" permanently?</div>
-              <div style="font-size:12px;color:#aaa;margin-top:6px;line-height:1.45;">This cannot be undone.</div>
+        <div class="menu-group" style="opacity:0.4;">
+          <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
+          <div class="menu-item menu-destructive"><span class="menu-icon">🗑</span><span class="menu-label">Delete</span><span class="chevron">›</span></div>
+        </div>
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;">
+          <div style="background:#1c1c1c;border-radius:14px;width:92%;overflow:hidden;">
+            <div style="padding:16px 16px 12px;text-align:center;border-bottom:1px solid var(--border);">
+              <div style="font-size:15px;font-weight:600;color:var(--textPri);margin-bottom:4px;">Delete "spanish-irregular-verbs" permanently?</div>
+              <div style="font-size:12px;color:var(--textSec);line-height:1.45;">This will remove all questions, history, and stats. This cannot be undone.</div>
             </div>
-            <div style="display:flex;border-top:1px solid #333;">
-              <div style="flex:1;padding:12px;font-size:15px;color:#0a84ff;border-right:1px solid #333;">Cancel</div>
-              <div style="flex:1;padding:12px;font-size:15px;color:#ff453a;font-weight:600;">Delete</div>
+            <div style="padding:12px 16px;">
+              <div class="primary-btn" style="margin:0;">🗑  Delete</div>
+              <div class="gap-sm"></div>
+              <div class="primary-btn outline" style="margin:0;">↩️  Cancel</div>
             </div>
           </div>
         </div>
@@ -1340,6 +1485,7 @@
           <div class="settings-row"><span>🎨 ASCII Art Milestone</span><span class="settings-value">Classic (100) ›</span></div>
           <div class="settings-row"><span>🌓 Theme</span><span class="settings-value">Dark ›</span></div>
           <div class="settings-row"><span>🎬 Welcome &amp; Exit screen</span><span class="settings-value" style="color:var(--correct)">ON</span></div>
+          <div class="settings-row"><span>ℹ️ About</span><span class="settings-value">›</span></div>
         </div>
         <div class="spacer"></div>
         <div class="primary-btn">💾 Save</div>
@@ -1418,10 +1564,8 @@
         <div style="font-size:36px;">📡</div>
         <div style="font-size:16px;font-weight:600;color:var(--textPri);">You're offline</div>
         <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Brain Break needs the internet to call your AI provider.<br>Reconnect and try again — your place is saved.</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <div class="pill-btn primary">🔄 Retry</div>
-          <div class="pill-btn">↩️  Back</div>
-        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn" style="width:100%;">🔄 Retry</div>
       </div>
     </div>
   </div>
@@ -1440,10 +1584,8 @@
         <div style="font-size:36px;">🤖</div>
         <div style="font-size:16px;font-weight:600;color:var(--textPri);">AI provider not configured</div>
         <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Set up an AI provider in ⚙️ Settings to play, explain, or generate a coaching report.</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <div class="pill-btn primary">🔧 Set up AI provider</div>
-          <div class="pill-btn">↩️  Back</div>
-        </div>
+        <div class="spacer"></div>
+        <div class="primary-btn" style="width:100%;">🔧 Set up AI provider</div>
       </div>
     </div>
   </div>
@@ -1471,6 +1613,18 @@
 <p style="text-align:center;color:#333;font-size:12px;margin-top:48px;">
   brain-break mobile · ux-design-directions.html · Direction C: Balanced Cards · April 2026
 </p>
+
+<script>
+  document.querySelectorAll('.explain-readmore').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var text = this.previousElementSibling;
+      var expanded = text.style.webkitLineClamp === 'unset';
+      text.style.webkitLineClamp = expanded ? '3' : 'unset';
+      text.style.overflow = expanded ? 'hidden' : 'visible';
+      this.textContent = expanded ? 'Read more ▾' : 'Read less ▴';
+    });
+  });
+</script>
 
 </body>
 </html>
