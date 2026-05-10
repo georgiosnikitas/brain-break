@@ -315,7 +315,149 @@
       margin-top: 6px;
       cursor: pointer;
     }
+
+    /* Metrics card (speed · difficulty bar) */
+    .metrics-card {
+      background: var(--surfaceEl);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin: 4px 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--textSec);
+    }
+    .metrics-card.inline { margin: 0; }
+    .metrics-sep { color: var(--textDim); }
+
+    /* Timestamp / section label */
+    .timestamp {
+      font-size: 11px;
+      color: var(--textDim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Question detail title */
+    .detail-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--textPri);
+      line-height: 1.4;
+      padding: 4px 0 8px;
+    }
+
+    /* Answer result summary */
+    .answer-summary {
+      font-size: 12px;
+      color: var(--textSec);
+      padding: 4px 0;
+      line-height: 1.7;
+    }
+
+    /* Compact answer card */
+    .answer-card.compact { min-height: auto; padding: 10px 14px; }
+
+    /* Compact list row */
+    .domain-row.compact { min-height: auto; padding: 10px 12px; }
+
+    /* List item question text */
+    .list-question {
+      font-size: 14px;
+      color: var(--textPri);
+      line-height: 1.4;
+    }
+
+    /* Prev/Next navigation */
+    .prev-next-row {
+      display: flex;
+      gap: 8px;
+    }
+    .prev-next-row .pill-btn { flex: 1; text-align: center; }
+
+    /* Action sheet overlay */
+    .action-sheet-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 24px;
+    }
+    .action-sheet-card {
+      background: #1c1c1c;
+      border-radius: 14px;
+      width: 92%;
+      overflow: hidden;
+    }
+    .action-sheet-header {
+      padding: 16px 16px 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .action-sheet-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--textPri);
       margin-bottom: 4px;
+    }
+    .action-sheet-desc {
+      font-size: 12px;
+      color: var(--textSec);
+      line-height: 1.45;
+    }
+    .action-sheet-body {
+      padding: 12px 16px;
+    }
+
+    /* Next-action label */
+    .next-action-label {
+      font-size: 11px;
+      color: var(--textDim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0 16px;
+    }
+
+    /* Centered screen body (error/gated states) */
+    .screen-body.centered {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px 24px;
+      gap: 12px;
+    }
+
+    /* Stat row (single bordered) */
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      height: 52px;
+      background: var(--surface);
+      font-size: 15px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    /* Helper text */
+    .helper-text {
+      font-size: 13px;
+      color: var(--textSec);
+      line-height: 1.5;
+    }
+    .helper-text.small { font-size: 12px; }
+
+    /* Subtext (centered dim) */
+    .hint-text {
+      font-size: 12px;
+      color: var(--textDim);
+      text-align: center;
+      padding: 8px 0;
     }
 
     /* Post-answer actions */
@@ -937,16 +1079,16 @@
         <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
       </div>
       <div class="screen-body" style="padding-top:8px;gap:6px;">
-        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card correct compact" ><span class="answer-letter">B)</span>✓ pude</div>
       </div>
-      <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin:4px 16px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+      <div class="metrics-card">
         <span>⏱ 274.1s</span>
-        <span style="color:var(--textDim);">|</span>
+        <span class="metrics-sep">|</span>
         <span>🐢 Slow</span>
-        <span style="color:var(--textDim);">|</span>
+        <span class="metrics-sep">|</span>
         <span>🎯 Elementary</span>
       </div>
-      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="next-action-label">Next action:</div>
       <div class="post-actions">
         <div class="pill-btn">💡 Explain answer</div>
         <div class="pill-btn">💫 Bookmark</div>
@@ -972,13 +1114,13 @@
       </div>
       <div class="screen-body" style="padding-top:8px;gap:6px;">
         <div class="answer-card" style="border-color:var(--incorrect);background:rgba(248,113,113,0.08);color:var(--incorrect);min-height:auto;padding:10px 14px;"><span class="answer-letter" style="color:var(--incorrect);">A)</span>✗ podí</div>
-        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude (correct)</div>
+        <div class="answer-card correct compact" ><span class="answer-letter">B)</span>✓ pude (correct)</div>
       </div>
-      <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin:4px 16px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+      <div class="metrics-card">
         <span>⏱ 274.1s</span>
-        <span style="color:var(--textDim);">|</span>
+        <span class="metrics-sep">|</span>
         <span>🐢 Slow</span>
-        <span style="color:var(--textDim);">|</span>
+        <span class="metrics-sep">|</span>
         <span>🎯 Elementary</span>
       </div>
       <div class="explain-block">
@@ -989,7 +1131,7 @@
         </div>
         <div class="explain-readmore">Read more ▾</div>
       </div>
-      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="next-action-label">Next action:</div>
       <div class="post-actions">
         <div class="pill-btn">📚 Teach me more</div>
         <div class="pill-btn">💫 Bookmark</div>
@@ -1014,13 +1156,13 @@
         <div class="question-text">Conjugate 'poder' in the preterite, first-person singular.</div>
       </div>
       <div class="screen-body" style="padding-top:8px;gap:6px;">
-        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card correct compact" ><span class="answer-letter">B)</span>✓ pude</div>
       </div>
-      <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin:4px 16px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+      <div class="metrics-card">
         <span>⏱ 274.1s</span>
-        <span style="color:var(--textDim);">|</span>
+        <span class="metrics-sep">|</span>
         <span>🐢 Slow</span>
-        <span style="color:var(--textDim);">|</span>
+        <span class="metrics-sep">|</span>
         <span>🎯 Elementary</span>
       </div>
       <div class="explain-block" style="border-left-color:var(--gradEnd);">
@@ -1036,7 +1178,7 @@
         </div>
         <div class="explain-readmore">Read more ▾</div>
       </div>
-      <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:0 16px;">Next action:</div>
+      <div class="next-action-label">Next action:</div>
       <div class="post-actions">
         <div class="pill-btn">💫 Bookmark</div>
         <div class="pill-btn primary">▶️  Next question</div>
@@ -1078,25 +1220,25 @@
         <div class="nav-title">📜 History — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body">
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;">Question 14 of 14 · Today</div>
-        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+        <div class="timestamp" style="padding:4px 0;">Question 14 of 14 · Today</div>
+        <div class="domain-row compact">
           <div class="domain-info">
-            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Conjugate 'poder' in the preterite, first-person singular.</div>
+            <div class="list-question">Conjugate 'poder' in the preterite, first-person singular.</div>
             <div class="domain-meta" style="margin-top:4px;">✅ Correct · ⭐ bookmarked</div>
           </div>
           <div class="chevron">›</div>
         </div>
-        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+        <div class="domain-row compact">
           <div class="domain-info">
-            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Which verb means "to know (a fact)"?</div>
+            <div class="list-question">Which verb means "to know (a fact)"?</div>
             <div class="domain-meta" style="margin-top:4px;color:var(--incorrect);">❌ Incorrect</div>
           </div>
           <div class="chevron">›</div>
         </div>
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:8px 0 4px;">Yesterday</div>
-        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+        <div class="timestamp" style="padding:8px 0 4px;">Yesterday</div>
+        <div class="domain-row compact">
           <div class="domain-info">
-            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">What is the preterite stem of 'venir'?</div>
+            <div class="list-question">What is the preterite stem of 'venir'?</div>
             <div class="domain-meta" style="margin-top:4px;">✅ Correct</div>
           </div>
           <div class="chevron">›</div>
@@ -1116,18 +1258,18 @@
         <div class="nav-title">📜 Question 14 of 14</div>
       </div>
       <div class="screen-body">
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Today · 14:22</div>
-        <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
-        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
-        <div style="font-size:12px;color:var(--textSec);padding:4px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
-        <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+        <div class="timestamp">Today · 14:22</div>
+        <div class="detail-title">Conjugate 'poder' in the preterite, first-person singular.</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct compact" ><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">D)</span>puede</div>
+        <div class="answer-summary">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
+        <div class="metrics-card inline">
           <span>⏱ 4.2s</span>
-          <span style="color:var(--textDim);">|</span>
+          <span class="metrics-sep">|</span>
           <span>🐇 Fast</span>
-          <span style="color:var(--textDim);">|</span>
+          <span class="metrics-sep">|</span>
           <span>🎯 Elementary</span>
         </div>
         <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 0;">Actions:</div>
@@ -1136,9 +1278,9 @@
           <div class="pill-btn">⭐ Remove bookmark</div>
         </div>
         <div class="spacer"></div>
-        <div style="display:flex;gap:8px;">
-          <div class="pill-btn" style="flex:1;text-align:center;">⬅️ Previous</div>
-          <div class="pill-btn" style="flex:1;text-align:center;">Next ➡️</div>
+        <div class="prev-next-row">
+          <div class="pill-btn">⬅️ Previous</div>
+          <div class="pill-btn">Next ➡️</div>
         </div>
       </div>
     </div>
@@ -1176,16 +1318,16 @@
       </div>
       <div class="screen-body">
         <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0;">2 bookmarked questions</div>
-        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+        <div class="domain-row compact">
           <div class="domain-info">
-            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Conjugate 'poder' in the preterite, first-person singular.</div>
+            <div class="list-question">Conjugate 'poder' in the preterite, first-person singular.</div>
             <div class="domain-meta" style="margin-top:4px;">⭐ Saved · 2 days ago</div>
           </div>
           <div class="chevron">›</div>
         </div>
-        <div class="domain-row" style="min-height:auto;padding:10px 12px;">
+        <div class="domain-row compact">
           <div class="domain-info">
-            <div style="font-size:14px;color:var(--textPri);line-height:1.4;">Why is 'pude' irregular while 'comí' is regular?</div>
+            <div class="list-question">Why is 'pude' irregular while 'comí' is regular?</div>
             <div class="domain-meta" style="margin-top:4px;">⭐ Saved · 5 days ago</div>
           </div>
           <div class="chevron">›</div>
@@ -1205,18 +1347,18 @@
         <div class="nav-title">⭐ Bookmark 1 of 2</div>
       </div>
       <div class="screen-body">
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Saved 2 days ago · Apr 23 · 14:22</div>
-        <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
-        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
-        <div style="font-size:12px;color:var(--textSec);padding:4px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
-        <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+        <div class="timestamp">Saved 2 days ago · Apr 23 · 14:22</div>
+        <div class="detail-title">Conjugate 'poder' in the preterite, first-person singular.</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct compact" ><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">D)</span>puede</div>
+        <div class="answer-summary">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
+        <div class="metrics-card inline">
           <span>⏱ 4.2s</span>
-          <span style="color:var(--textDim);">|</span>
+          <span class="metrics-sep">|</span>
           <span>🐇 Fast</span>
-          <span style="color:var(--textDim);">|</span>
+          <span class="metrics-sep">|</span>
           <span>🎯 Elementary</span>
         </div>
         <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;padding:4px 0 0;">Actions:</div>
@@ -1225,9 +1367,9 @@
           <div class="pill-btn">⭐ Remove bookmark</div>
         </div>
         <div class="spacer"></div>
-        <div style="display:flex;gap:8px;">
-          <div class="pill-btn" style="flex:1;text-align:center;">⬅️ Previous</div>
-          <div class="pill-btn" style="flex:1;text-align:center;">Next ➡️</div>
+        <div class="prev-next-row">
+          <div class="pill-btn">⬅️ Previous</div>
+          <div class="pill-btn">Next ➡️</div>
         </div>
       </div>
     </div>
@@ -1244,18 +1386,18 @@
         <div class="nav-title">⭐ Bookmark 1 of 2</div>
       </div>
       <div class="screen-body">
-        <div style="font-size:11px;color:var(--textDim);text-transform:uppercase;letter-spacing:0.06em;">Saved 2 days ago · Apr 23 · 14:22</div>
-        <div style="font-size:17px;font-weight:600;color:var(--textPri);line-height:1.4;padding:4px 0 8px;">Conjugate 'poder' in the preterite, first-person singular.</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">A)</span>podí</div>
-        <div class="answer-card correct" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">B)</span>✓ pude</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">C)</span>podía</div>
-        <div class="answer-card incorrect" style="min-height:auto;padding:10px 14px;"><span class="answer-letter">D)</span>puede</div>
-        <div style="font-size:12px;color:var(--textSec);padding:4px 0;line-height:1.7;">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
-        <div style="background:var(--surfaceEl);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--textSec);">
+        <div class="timestamp">Saved 2 days ago · Apr 23 · 14:22</div>
+        <div class="detail-title">Conjugate 'poder' in the preterite, first-person singular.</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">A)</span>podí</div>
+        <div class="answer-card correct compact" ><span class="answer-letter">B)</span>✓ pude</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">C)</span>podía</div>
+        <div class="answer-card incorrect compact" ><span class="answer-letter">D)</span>puede</div>
+        <div class="answer-summary">Your answer: <span style="color:var(--correct);font-weight:600;">B</span> · Result: <span style="color:var(--correct);font-weight:600;">✅ Correct</span> · Score: <span style="color:var(--correct);font-weight:600;">+5</span></div>
+        <div class="metrics-card inline">
           <span>⏱ 4.2s</span>
-          <span style="color:var(--textDim);">|</span>
+          <span class="metrics-sep">|</span>
           <span>🐇 Fast</span>
-          <span style="color:var(--textDim);">|</span>
+          <span class="metrics-sep">|</span>
           <span>🎯 Elementary</span>
         </div>
         <div class="explain-block" style="margin:0;">
@@ -1270,9 +1412,9 @@
           <div class="pill-btn">⭐ Remove bookmark</div>
         </div>
         <div class="spacer"></div>
-        <div style="display:flex;gap:8px;">
-          <div class="pill-btn" style="flex:1;text-align:center;">⬅️ Previous</div>
-          <div class="pill-btn" style="flex:1;text-align:center;">Next ➡️</div>
+        <div class="prev-next-row">
+          <div class="pill-btn">⬅️ Previous</div>
+          <div class="pill-btn">Next ➡️</div>
         </div>
       </div>
     </div>
@@ -1289,16 +1431,16 @@
         <div class="nav-title">📊 Statistics — spanish-irregular-verbs</div>
       </div>
       <div class="screen-body" style="gap:6px;">
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🏆 Score:</span><span class="settings-value" style="color:var(--correct);font-weight:700;">127</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📝 Questions answered:</span><span class="settings-value">42</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>✅ Correct / Incorrect:</span><span class="settings-value">35 / 7</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🎯 Accuracy:</span><span class="settings-value" style="color:var(--correct);">83%</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>⏱️ Total time played:</span><span class="settings-value">38 min</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📈 Starting difficulty:</span><span class="settings-value">3 — Intermediate</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📈 Current difficulty:</span><span class="settings-value">4 — Advanced</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🔄 Score trend (30 days):</span><span class="settings-value" style="color:var(--correct);">Growing 📈</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>📅 Days since first session:</span><span class="settings-value">14</span></div>
-        <div class="settings-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:10px;"><span>🔥 Return streak:</span><span class="settings-value" style="color:var(--accent);">7 days</span></div>
+        <div class="stat-row"><span>🏆 Score:</span><span class="settings-value" style="color:var(--correct);font-weight:700;">127</span></div>
+        <div class="stat-row"><span>📝 Questions answered:</span><span class="settings-value">42</span></div>
+        <div class="stat-row"><span>✅ Correct / Incorrect:</span><span class="settings-value">35 / 7</span></div>
+        <div class="stat-row"><span>🎯 Accuracy:</span><span class="settings-value" style="color:var(--correct);">83%</span></div>
+        <div class="stat-row"><span>⏱️ Total time played:</span><span class="settings-value">38 min</span></div>
+        <div class="stat-row"><span>📈 Starting difficulty:</span><span class="settings-value">3 — Intermediate</span></div>
+        <div class="stat-row"><span>📈 Current difficulty:</span><span class="settings-value">4 — Advanced</span></div>
+        <div class="stat-row"><span>🔄 Score trend (30 days):</span><span class="settings-value" style="color:var(--correct);">Growing 📈</span></div>
+        <div class="stat-row"><span>📅 Days since first session:</span><span class="settings-value">14</span></div>
+        <div class="stat-row"><span>🔥 Return streak:</span><span class="settings-value" style="color:var(--accent);">7 days</span></div>
       </div>
     </div>
   </div>
@@ -1376,13 +1518,13 @@
           <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
           <div class="menu-item menu-destructive"><span class="menu-icon">🗑</span><span class="menu-label">Delete</span><span class="chevron">›</span></div>
         </div>
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;">
-          <div style="background:#1c1c1c;border-radius:14px;width:92%;overflow:hidden;">
-            <div style="padding:16px 16px 12px;text-align:center;border-bottom:1px solid var(--border);">
-              <div style="font-size:15px;font-weight:600;color:var(--textPri);margin-bottom:4px;">Archive "spanish-irregular-verbs"?</div>
-              <div style="font-size:12px;color:var(--textSec);line-height:1.45;">You can unarchive it later from 🗄 Archived domains on the home screen.</div>
+        <div class="action-sheet-overlay">
+          <div class="action-sheet-card">
+            <div class="action-sheet-header">
+              <div class="action-sheet-title">Archive "spanish-irregular-verbs"?</div>
+              <div class="action-sheet-desc">You can unarchive it later from 🗄 Archived domains on the home screen.</div>
             </div>
-            <div style="padding:12px 16px;">
+            <div class="action-sheet-body">
               <div class="primary-btn" style="margin:0;">🗄  Archive</div>
               <div class="gap-sm"></div>
               <div class="primary-btn outline" style="margin:0;">↩️  Cancel</div>
@@ -1417,13 +1559,13 @@
           <div class="menu-item"><span class="menu-icon">🗄</span><span class="menu-label">Archive</span><span class="chevron">›</span></div>
           <div class="menu-item menu-destructive"><span class="menu-icon">🗑</span><span class="menu-label">Delete</span><span class="chevron">›</span></div>
         </div>
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;">
-          <div style="background:#1c1c1c;border-radius:14px;width:92%;overflow:hidden;">
-            <div style="padding:16px 16px 12px;text-align:center;border-bottom:1px solid var(--border);">
-              <div style="font-size:15px;font-weight:600;color:var(--textPri);margin-bottom:4px;">Delete "spanish-irregular-verbs" permanently?</div>
-              <div style="font-size:12px;color:var(--textSec);line-height:1.45;">This will remove all questions, history, and stats. This cannot be undone.</div>
+        <div class="action-sheet-overlay">
+          <div class="action-sheet-card">
+            <div class="action-sheet-header">
+              <div class="action-sheet-title">Delete "spanish-irregular-verbs" permanently?</div>
+              <div class="action-sheet-desc">This will remove all questions, history, and stats. This cannot be undone.</div>
             </div>
-            <div style="padding:12px 16px;">
+            <div class="action-sheet-body">
               <div class="primary-btn" style="margin:0;">🗑  Delete</div>
               <div class="gap-sm"></div>
               <div class="primary-btn outline" style="margin:0;">↩️  Cancel</div>
@@ -1560,7 +1702,7 @@
         <div class="nav-title">Offline</div>
       </div>
       <div class="quiz-score">Score 87</div>
-      <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:12px;">
+      <div class="screen-body centered">
         <div style="font-size:36px;">📡</div>
         <div style="font-size:16px;font-weight:600;color:var(--textPri);">You're offline</div>
         <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Brain Break needs the internet to call your AI provider.<br>Reconnect and try again — your place is saved.</div>
@@ -1580,7 +1722,7 @@
         <div class="nav-back">‹ Back</div>
         <div class="nav-title">Play</div>
       </div>
-      <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:12px;">
+      <div class="screen-body centered">
         <div style="font-size:36px;">🤖</div>
         <div style="font-size:16px;font-weight:600;color:var(--textPri);">AI provider not configured</div>
         <div style="font-size:13px;color:var(--textSec);line-height:1.5;">Set up an AI provider in ⚙️ Settings to play, explain, or generate a coaching report.</div>
@@ -1596,7 +1738,7 @@
     <div class="phone">
       <div class="status-bar"><span>9:41</span><span>●●●</span></div>
       <div class="banner"><div class="banner-title"><span class="emoji">🧠🔨</span> <span class="brand">Brain Break</span></div><div class="banner-shadow"></div></div>
-      <div class="screen-body" style="align-items:center;justify-content:center;text-align:center;padding:32px 24px;gap:14px;">
+      <div class="screen-body centered" style="gap:14px;">
         <div style="font-size:48px;">⚠️</div>
         <div style="font-size:18px;font-weight:700;color:var(--textPri);">Something went wrong</div>
         <div style="font-size:13px;color:var(--textSec);line-height:1.55;">Brain Break hit an unexpected error. Your data is safe.<br><br>No information about this error was sent — Brain Break doesn't have a crash reporter installed.</div>
