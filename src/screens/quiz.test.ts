@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile, defaultSettings } from '../domain/schema.js'
 import type { AnswerOption } from '../domain/schema.js'
+import { makeVerifiedQuestion, muteLog, muteWarn, muteError } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Hoisted variables needed inside mock factories
@@ -64,21 +65,6 @@ const mockSelect = vi.mocked(select)
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function makeQuestion(correctAnswer: AnswerOption = 'A') {
-  return {
-    question: 'What is TypeScript?',
-    options: {
-      A: 'A typed JS superset',
-      B: 'A framework',
-      C: 'A runtime',
-      D: 'A test tool',
-    },
-    correctAnswer,
-    difficultyLevel: 2,
-    speedThresholds: { fastMs: 8000, slowMs: 20000 },
-  }
-}
-
 function getLogs(spy: ReturnType<typeof vi.spyOn>): string {
   return spy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
 }
@@ -89,7 +75,7 @@ function getChoiceValues(callIndex: number): string[] {
 }
 
 function setupQuestion(correctAnswer: AnswerOption = 'A') {
-  mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeQuestion(correctAnswer) })
+  mockGenerateQuestion.mockResolvedValue({ ok: true, data: makeVerifiedQuestion({ correctAnswer }) })
 }
 
 function setupExplainSuccess(text = 'Explanation.') {
@@ -99,10 +85,6 @@ function setupExplainSuccess(text = 'Explanation.') {
 function setupTeachSuccess(text = 'Lesson.') {
   mockGenerateMicroLesson.mockResolvedValueOnce({ ok: true, data: text })
 }
-
-const muteLog = () => vi.spyOn(console, 'log').mockReturnValue(undefined)
-const muteWarn = () => vi.spyOn(console, 'warn').mockReturnValue(undefined)
-const muteError = () => vi.spyOn(console, 'error').mockReturnValue(undefined)
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -234,7 +216,7 @@ describe('showQuiz', () => {
   it('returns null when the next question generation fails after earlier answers', async () => {
     const consoleSpy = muteError()
     mockGenerateQuestion
-      .mockResolvedValueOnce({ ok: true, data: makeQuestion('A') })
+      .mockResolvedValueOnce({ ok: true, data: makeVerifiedQuestion({ correctAnswer: 'A' }) })
       .mockResolvedValueOnce({ ok: false, error: AI_ERRORS.NETWORK_OPENAI })
     mockSelect
       .mockResolvedValueOnce('A')

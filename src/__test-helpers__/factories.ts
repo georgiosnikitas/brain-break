@@ -2,6 +2,7 @@
  * Shared test factories for data objects used across multiple test files.
  * Import these instead of redefining makeRecord / makeMeta / makeSettings locally.
  */
+import { vi } from 'vitest'
 import type { QuestionRecord, DomainMeta, SettingsFile } from '../domain/schema.js'
 import { defaultSettings } from '../domain/schema.js'
 import type { VerifiedQuestion } from '../ai/prompts.js'
@@ -52,3 +53,25 @@ export function makeVerifiedQuestion(overrides: Partial<VerifiedQuestion> = {}):
     ...overrides,
   }
 }
+
+/**
+ * Generate an array of QuestionRecord entries for testing paginated views.
+ * @param count Number of records to generate
+ * @param overrides Optional per-item override function (receives 0-based index)
+ */
+export function makeHistory(count: number, overrides?: (index: number) => Partial<QuestionRecord>): QuestionRecord[] {
+  return Array.from({ length: count }, (_, i) =>
+    makeRecord({
+      question: `Q${i + 1}`,
+      answeredAt: new Date(2026, 2, i + 1).toISOString(),
+      ...(overrides?.(i) ?? {}),
+    }),
+  )
+}
+
+/** Spy on console.log and suppress output. Returns the spy for assertion access. */
+export const muteLog = () => vi.spyOn(console, 'log').mockReturnValue(undefined)
+/** Spy on console.warn and suppress output. Returns the spy for assertion access. */
+export const muteWarn = () => vi.spyOn(console, 'warn').mockReturnValue(undefined)
+/** Spy on console.error and suppress output. Returns the spy for assertion access. */
+export const muteError = () => vi.spyOn(console, 'error').mockReturnValue(undefined)

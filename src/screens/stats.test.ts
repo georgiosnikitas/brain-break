@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile } from '../domain/schema.js'
 import { makeRecord } from '../__test-helpers__/factories.js'
@@ -44,11 +44,17 @@ const mockSelect = vi.mocked(select)
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
+let consoleSpy: ReturnType<typeof vi.spyOn>
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockShowDomainMenu.mockResolvedValue(undefined)
   mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
   mockSelect.mockResolvedValue('back')
+  consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+})
+
+afterEach(() => {
 })
 
 // ---------------------------------------------------------------------------
@@ -217,27 +223,23 @@ describe('showStats — empty history', () => {
   it('displays "No data yet" placeholders and calls showHome after Back', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showStats('some-topic')
 
     const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
     expect(logged).toContain('No data yet')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
   })
 
   it('shows score 0 for empty domain', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showStats('some-topic')
 
     const scoreCall = consoleSpy.mock.calls.find((c) => (c[0] as string).includes('Score:'))
     expect(scoreCall).toBeDefined()
     expect(scoreCall?.[0]).toContain(' 0')
-    consoleSpy.mockRestore()
   })
 })
 
@@ -260,10 +262,8 @@ function makeDomainWithHistory(records: QuestionRecord[]) {
 async function runStatsAndCapture(records: QuestionRecord[], nowMs?: number): Promise<string> {
   mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithHistory(records) })
   mockSelect.mockResolvedValue('back')
-  const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
   await showStats('some-topic', nowMs)
   const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
-  consoleSpy.mockRestore()
   return logged
 }
 
@@ -314,7 +314,6 @@ describe('showStats — with history', () => {
 describe('showStats — navigation', () => {
   it('calls router.showHome when Back is selected', async () => {
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showStats('some-topic')
 
@@ -323,7 +322,6 @@ describe('showStats — navigation', () => {
 
   it('calls router.showHome on ExitPromptError', async () => {
     mockSelect.mockRejectedValue(new ExitPromptError())
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showStats('some-topic')
 
@@ -338,7 +336,6 @@ describe('showStats — corrupted domain', () => {
   it('warns and shows empty stats on corrupted domain read', async () => {
     mockReadDomain.mockResolvedValue({ ok: false, error: 'Domain data appears corrupted.' })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
 
     await showStats('bad-topic')
@@ -346,7 +343,6 @@ describe('showStats — corrupted domain', () => {
     expect(warnSpy).toHaveBeenCalledOnce()
     const logged = consoleSpy.mock.calls.map((c) => c[0] as string).join('\n')
     expect(logged).toContain('No data yet')
-    consoleSpy.mockRestore()
     warnSpy.mockRestore()
   })
 })
@@ -355,7 +351,6 @@ describe('showStats — clearScreen', () => {
   it('calls clearScreen before rendering the stats dashboard', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showStats('typescript')
 
@@ -368,7 +363,6 @@ describe('showStats — non-ExitPromptError re-throw', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     const boom = new Error('unexpected stats select failure')
     mockSelect.mockRejectedValueOnce(boom)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await expect(showStats('typescript')).rejects.toThrow('unexpected stats select failure')
   })

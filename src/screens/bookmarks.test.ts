@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
-import { makeRecord, setupNavScreenBeforeEach } from './__test-helpers__/nav-test-setup.js'
+import { makeRecord, makeHistory, setupNavScreenBeforeEach } from './__test-helpers__/nav-test-setup.js'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -54,9 +54,7 @@ const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 // Helpers
 // ---------------------------------------------------------------------------
 function makeBookmarkedHistory(count: number): QuestionRecord[] {
-  return Array.from({ length: count }, (_, i) =>
-    makeRecord({ question: `Question ${i + 1}`, answeredAt: new Date(2026, 2, i + 1).toISOString(), bookmarked: true }),
-  )
+  return makeHistory(count, (i) => ({ question: `Question ${i + 1}`, bookmarked: true }))
 }
 
 function makeMixedHistory(): QuestionRecord[] {
@@ -67,11 +65,17 @@ function makeMixedHistory(): QuestionRecord[] {
   ]
 }
 
+let consoleSpy: ReturnType<typeof vi.spyOn>
+
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   setupNavScreenBeforeEach({ mockShowDomainMenu, mockWriteDomain, mockReadDomain, mockReadSettings, mockGenerateExplanation, mockGenerateMicroLesson })
+  consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+})
+
+afterEach(() => {
 })
 
 // ---------------------------------------------------------------------------
@@ -162,7 +166,6 @@ describe('showBookmarks — renders only bookmarked questions', () => {
     const domain = { ...defaultDomainFile(), history: makeMixedHistory() }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -171,21 +174,18 @@ describe('showBookmarks — renders only bookmarked questions', () => {
     expect(allLogs).toContain('Bookmarked 2')
     expect(allLogs).not.toContain('Not bookmarked')
     expect(allLogs).not.toContain('Bookmarked 1')
-    consoleSpy.mockRestore()
   })
 
   it('shows the most recent bookmarked question first', async () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('Question 3')
     expect(allLogs).not.toContain('Question 1')
-    consoleSpy.mockRestore()
   })
 })
 
@@ -196,7 +196,6 @@ describe('showBookmarks — empty state', () => {
   it('shows "No bookmarked questions." when no bookmarks exist', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -209,7 +208,6 @@ describe('showBookmarks — empty state', () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -220,7 +218,6 @@ describe('showBookmarks — empty state', () => {
   it('shows only Back choice when no bookmarks', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -238,7 +235,6 @@ describe('showBookmarks — navigation', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -252,13 +248,11 @@ describe('showBookmarks — navigation', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     const secondMessage = mockSelect.mock.calls[1][0].message
     expect(secondMessage).toContain('Bookmark 2 of')
-    consoleSpy.mockRestore()
   })
 
   it('selecting Previous after Next returns to first bookmark', async () => {
@@ -268,20 +262,17 @@ describe('showBookmarks — navigation', () => {
       .mockResolvedValueOnce('next')
       .mockResolvedValueOnce('prev')
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     const thirdMessage = mockSelect.mock.calls[2][0].message
     expect(thirdMessage).toContain('Bookmark 1 of')
-    consoleSpy.mockRestore()
   })
 
   it('selecting Back calls router.showDomainMenu', async () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -297,7 +288,6 @@ describe('showBookmarks — progress indicator', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(5) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -309,7 +299,6 @@ describe('showBookmarks — progress indicator', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -327,7 +316,6 @@ describe('showBookmarks — Bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -343,7 +331,6 @@ describe('showBookmarks — Bookmark toggle', () => {
       .mockResolvedValueOnce('bookmark')  // toggle off
       .mockResolvedValueOnce('bookmark')  // toggle back on
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -358,7 +345,6 @@ describe('showBookmarks — Bookmark toggle', () => {
     mockSelect
       .mockResolvedValueOnce('bookmark')  // toggle on first question
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -372,7 +358,6 @@ describe('showBookmarks — Bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -389,7 +374,6 @@ describe('showBookmarks — Bookmark toggle', () => {
       .mockResolvedValueOnce('bookmark')  // toggle off
       .mockResolvedValueOnce('bookmark')  // toggle on
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -405,7 +389,6 @@ describe('showBookmarks — Bookmark toggle', () => {
     mockWriteDomain.mockResolvedValue({ ok: false, error: 'Write failed' })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -421,14 +404,12 @@ describe('showBookmarks — Bookmark toggle', () => {
       .mockResolvedValueOnce('bookmark')  // toggle first question off (bookmarked → false)
       .mockResolvedValueOnce('next')      // navigate next → list recalculated, Q1 removed
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     // After removing Q3's bookmark and pressing next, we land on Q2 at index 0 of [Q2, Q1]
     const thirdMessage = mockSelect.mock.calls[2][0].message
     expect(thirdMessage).toContain('Bookmark 1 of 2')
-    consoleSpy.mockRestore()
   })
 
   it('removes unbookmarked item from list on prev navigation', async () => {
@@ -440,14 +421,12 @@ describe('showBookmarks — Bookmark toggle', () => {
       .mockResolvedValueOnce('bookmark')  // toggle Q2 off
       .mockResolvedValueOnce('prev')      // navigate prev → list recalculated, Q2 removed, land on Q1
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     // After removing Q2's bookmark and pressing prev, we land on Q3 at index 0 of [Q3, Q1]
     const fourthMessage = mockSelect.mock.calls[3][0].message
     expect(fourthMessage).toContain('Bookmark 1 of 2')
-    consoleSpy.mockRestore()
   })
 
   it('shows empty state when all bookmarks are removed via navigation', async () => {
@@ -459,7 +438,6 @@ describe('showBookmarks — Bookmark toggle', () => {
       .mockResolvedValueOnce('next')      // navigate → recalculate to [Q2]
       .mockResolvedValueOnce('bookmark')  // toggle Q2 off
       .mockResolvedValueOnce('back')      // back from empty state
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -467,7 +445,6 @@ describe('showBookmarks — Bookmark toggle', () => {
     // But since Q2 is the last item, no next/prev is available
     // so the user presses back. The flow exits via showDomainMenu.
     expect(mockShowDomainMenu).toHaveBeenCalledWith('typescript')
-    consoleSpy.mockRestore()
   })
 })
 
@@ -480,7 +457,6 @@ describe('showBookmarks — Explain answer', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -495,20 +471,17 @@ describe('showBookmarks — Explain answer', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('Because A is the correct answer.')
-    consoleSpy.mockRestore()
   })
 
   it('hides Explain after explanation is displayed', async () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -524,7 +497,6 @@ describe('showBookmarks — Explain answer', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -546,7 +518,6 @@ describe('showBookmarks — Teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -564,13 +535,11 @@ describe('showBookmarks — Teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('Deep dive into TS.')
-    consoleSpy.mockRestore()
   })
 
   it('removes Teach me more from choices after display', async () => {
@@ -580,7 +549,6 @@ describe('showBookmarks — Teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -599,7 +567,6 @@ describe('showBookmarks — ExitPromptError', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockRejectedValue(new ExitPromptError('exit'))
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -609,7 +576,6 @@ describe('showBookmarks — ExitPromptError', () => {
   it('returns gracefully on ExitPromptError during empty-state Back', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockRejectedValue(new ExitPromptError('exit'))
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 
@@ -621,7 +587,6 @@ describe('showBookmarks — ExitPromptError', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     const boom = new Error('unexpected failure')
     mockSelect.mockRejectedValueOnce(boom)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await expect(showBookmarks('typescript')).rejects.toThrow('unexpected failure')
   })
@@ -630,7 +595,6 @@ describe('showBookmarks — ExitPromptError', () => {
     const domain = { ...defaultDomainFile(), history: makeBookmarkedHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showBookmarks('typescript')
 

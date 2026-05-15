@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { MAX_COACH_REPORT_LENGTH, defaultDomainFile, defaultSettings, type DomainFile, type QuestionRecord, type SettingsFile } from '../domain/schema.js'
-import { makeRecord } from '../__test-helpers__/factories.js'
+import { makeRecord, makeHistory } from '../__test-helpers__/factories.js'
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks
@@ -65,15 +65,11 @@ function makeDomain(history: QuestionRecord[] = [], metaOverrides: Partial<Domai
   }
 }
 
-function makeHistory(n: number): QuestionRecord[] {
-  return Array.from({ length: n }, (_, i) =>
-    makeRecord({ question: `Q${i + 1}`, answeredAt: new Date(2026, 3, 1, 0, 0, i).toISOString() }),
-  )
-}
-
 function settingsWithScope(scope: SettingsFile['myCoachScope']): SettingsFile {
   return { ...defaultSettings(), myCoachScope: scope }
 }
+
+let consoleSpy: ReturnType<typeof vi.spyOn>
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -86,6 +82,10 @@ beforeEach(() => {
   mockGenerateCoachReport.mockResolvedValue({ ok: true, data: 'COACH REPORT' })
   // Default: press back
   mockSelect.mockResolvedValue('back')
+  consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+})
+
+afterEach(() => {
 })
 
 // ---------------------------------------------------------------------------
@@ -143,62 +143,51 @@ describe('formatCoachTimestamp', () => {
 // ---------------------------------------------------------------------------
 describe('showMyCoachScreen — rendering', () => {
   it('calls clearAndBanner and renders the domain header', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     expect(mockClearAndBanner).toHaveBeenCalled()
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('🏋️ My Coach — typescript')
-    consoleSpy.mockRestore()
   })
 
   it('renders the coaching report from the AI', async () => {
     mockGenerateCoachReport.mockResolvedValueOnce({ ok: true, data: 'My personal coaching report.' })
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('My personal coaching report.')
-    consoleSpy.mockRestore()
   })
 
   it('renders a generation timestamp in dim text below the header', async () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toMatch(/\[dim\]Generated: /)
-    consoleSpy.mockRestore()
   })
 
   it('renders the tip when history has fewer than 25 answered questions', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomain(makeHistory(10)) })
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('Tip: Reports become more accurate with at least 25 answered questions.')
-    consoleSpy.mockRestore()
   })
 
   it('hides the tip when history has 25 or more questions', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomain(makeHistory(30)) })
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('Tip: Reports become more accurate')
-    consoleSpy.mockRestore()
   })
 
   it('shows a warning and does not generate a report when the domain has no answered questions', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomain([]) })
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
@@ -207,7 +196,6 @@ describe('showMyCoachScreen — rendering', () => {
     expect(mockGenerateCoachReport).not.toHaveBeenCalled()
     expect(mockWriteDomain).not.toHaveBeenCalled()
     expect(mockSelect).toHaveBeenCalledTimes(1) // Back-only navigation prompt
-    consoleSpy.mockRestore()
   })
 })
 
@@ -283,7 +271,6 @@ describe('showMyCoachScreen — persistence', () => {
 
   it('surfaces writeDomain errors to the user instead of silently succeeding', async () => {
     mockWriteDomain.mockResolvedValueOnce({ ok: false, error: 'Failed to write domain file' })
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
@@ -292,7 +279,6 @@ describe('showMyCoachScreen — persistence', () => {
     // No report should be rendered when the write fails
     expect(logged).not.toContain('COACH REPORT')
     expect(mockSelect).not.toHaveBeenCalled()
-    consoleSpy.mockRestore()
   })
 
   it('truncates oversized coaching reports before persisting them', async () => {
@@ -329,14 +315,12 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
       .mockResolvedValueOnce('regenerate')
       .mockResolvedValueOnce('back')
 
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('Only 0 new questions answered since your last report')
     expect(logged).toContain('may not differ significantly')
-    consoleSpy.mockRestore()
   })
 
   it('does NOT show staleness notice before Regenerate when ≥25 new questions since last report', async () => {
@@ -349,13 +333,11 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
     }) })
     mockSelect.mockResolvedValueOnce('back')
 
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('may not differ significantly')
-    consoleSpy.mockRestore()
   })
 
   it('does NOT show staleness notice after the first-ever generation (no prior report)', async () => {
@@ -363,14 +345,12 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
     // should NOT show a staleness notice, since there's no "last report" to compare against.
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomain(makeHistory(30)) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('may not differ significantly')
     expect(mockGenerateCoachReport).toHaveBeenCalledTimes(1)
-    consoleSpy.mockRestore()
   })
 
   it('shows the staleness notice on every iteration of the regenerate loop', async () => {
@@ -391,7 +371,6 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
       .mockResolvedValueOnce('regenerate') // after second generation
       .mockResolvedValueOnce('back')       // after third generation
 
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
@@ -399,7 +378,6 @@ describe('showMyCoachScreen — regenerate & staleness', () => {
     const matches = logged.match(/may not differ significantly/g) ?? []
     expect(matches.length).toBe(2) // shown before the 2nd and 3rd Regenerate/Back prompts
     expect(mockGenerateCoachReport).toHaveBeenCalledTimes(3)
-    consoleSpy.mockRestore()
   })
 })
 
@@ -424,7 +402,6 @@ describe('showMyCoachScreen — navigation', () => {
 
   it('shows the AI error message and returns to menu on provider failure', async () => {
     mockGenerateCoachReport.mockResolvedValueOnce({ ok: false, error: 'AI provider not ready. Go to Settings to configure.' })
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
@@ -432,7 +409,6 @@ describe('showMyCoachScreen — navigation', () => {
     expect(logged).toContain('AI provider not ready')
     expect(mockWriteDomain).not.toHaveBeenCalled()
     expect(mockSelect).not.toHaveBeenCalled()
-    consoleSpy.mockRestore()
   })
 
   it('shows error and exits when readDomain fails in the regenerate loop', async () => {
@@ -440,13 +416,11 @@ describe('showMyCoachScreen — navigation', () => {
       .mockResolvedValueOnce({ ok: true, data: makeDomain(makeHistory(5)) }) // initial entry
       .mockResolvedValueOnce({ ok: false, error: 'Domain corrupted in loop' }) // regenerate loop
     mockSelect.mockResolvedValueOnce('regenerate')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('Domain corrupted in loop')
-    consoleSpy.mockRestore()
   })
 
   it('shows error and exits when AI generation fails in the regenerate loop', async () => {
@@ -455,13 +429,11 @@ describe('showMyCoachScreen — navigation', () => {
       .mockResolvedValueOnce({ ok: true, data: 'First report' }) // initial generation
       .mockResolvedValueOnce({ ok: false, error: 'AI quota exceeded in loop' }) // regenerate loop
     mockSelect.mockResolvedValueOnce('regenerate')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('AI quota exceeded in loop')
-    consoleSpy.mockRestore()
   })
 })
 
@@ -494,7 +466,6 @@ describe('showMyCoachScreen — cached report', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(10, 0) })
     mockGenerateCoachReport.mockResolvedValueOnce({ ok: true, data: 'Fresh report from actual history.' })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
@@ -502,55 +473,46 @@ describe('showMyCoachScreen — cached report', () => {
     expect(mockGenerateCoachReport).toHaveBeenCalledTimes(1)
     expect(logged).toContain('Fresh report from actual history.')
     expect(logged).not.toContain(CACHED_REPORT)
-    consoleSpy.mockRestore()
   })
 
   it('renders the cached report text on initial view', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(30) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain(CACHED_REPORT)
-    consoleSpy.mockRestore()
   })
 
   it('renders the cached timestamp when showing a cached report', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(30) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toMatch(/\[dim\]Generated: /)
-    consoleSpy.mockRestore()
   })
 
   it('shows the tip for <25 questions even when displaying a cached report', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(10) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('Tip: Reports become more accurate with at least 25 answered questions.')
-    consoleSpy.mockRestore()
   })
 
   it('does NOT show staleness notice on initial cached report view', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(30, 5) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('may not differ significantly')
-    consoleSpy.mockRestore()
   })
 
   it('calls generateCoachReport on Regenerate after showing the cached report', async () => {
@@ -569,7 +531,6 @@ describe('showMyCoachScreen — cached report', () => {
     // Staleness warning now appears BEFORE the user selects Regenerate, acting as a deterrent.
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(30, 28) }) // 2 new questions
     mockSelect.mockResolvedValueOnce('back') // user sees warning and decides not to regenerate
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
@@ -577,7 +538,6 @@ describe('showMyCoachScreen — cached report', () => {
     expect(logged).toContain('Only 2 new questions answered since your last report')
     expect(logged).toContain('may not differ significantly')
     expect(mockGenerateCoachReport).not.toHaveBeenCalled() // warning shown before any generation
-    consoleSpy.mockRestore()
   })
 
   it('shows staleness notice on Regenerate when <25 new questions since cached report', async () => {
@@ -588,26 +548,22 @@ describe('showMyCoachScreen — cached report', () => {
     mockSelect
       .mockResolvedValueOnce('regenerate')
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('Only 2 new questions answered since your last report')
-    consoleSpy.mockRestore()
   })
 
   it('does NOT show staleness notice before Regenerate when ≥25 new questions since cached report', async () => {
     // 40 new questions ≥ threshold → no staleness warning before the Regenerate option.
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(60, 20) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('may not differ significantly')
-    consoleSpy.mockRestore()
   })
 
   it('returns without generating when Back is selected from the cached report view', async () => {
@@ -623,25 +579,21 @@ describe('showMyCoachScreen — cached report', () => {
   it('shows fresh-data hint on cached entry when 25+ new questions since last report', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(60, 20) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).toContain('40 new questions since this report')
     expect(logged).toContain('consider regenerating')
-    consoleSpy.mockRestore()
   })
 
   it('does NOT show fresh-data hint on cached entry when <25 new questions', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: makeDomainWithCache(30, 28) })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showMyCoachScreen('typescript')
 
     const logged = consoleSpy.mock.calls.map(c => String(c[0])).join('\n')
     expect(logged).not.toContain('consider regenerating')
-    consoleSpy.mockRestore()
   })
 })

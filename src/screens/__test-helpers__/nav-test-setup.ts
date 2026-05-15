@@ -6,7 +6,7 @@ import { vi } from 'vitest'
 import { defaultDomainFile } from '../../domain/schema.js'
 import { makeSettings } from '../../__test-helpers__/factories.js'
 
-export { makeRecord } from '../../__test-helpers__/factories.js'
+export { makeRecord, makeHistory } from '../../__test-helpers__/factories.js'
 
 /**
  * Standard beforeEach setup for nav screen tests.

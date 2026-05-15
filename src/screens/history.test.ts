@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ExitPromptError } from '@inquirer/core'
 import { defaultDomainFile, type QuestionRecord } from '../domain/schema.js'
-import { makeRecord, setupNavScreenBeforeEach } from './__test-helpers__/nav-test-setup.js'
+import { makeRecord, makeHistory as _makeHistory, setupNavScreenBeforeEach } from './__test-helpers__/nav-test-setup.js'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -50,16 +50,20 @@ const mockGenerateMicroLesson = vi.mocked(generateMicroLesson)
 // Helpers
 // ---------------------------------------------------------------------------
 function makeHistory(count: number): QuestionRecord[] {
-  return Array.from({ length: count }, (_, i) =>
-    makeRecord({ question: `Question ${i + 1}`, answeredAt: new Date(2026, 2, i + 1).toISOString() }),
-  )
+  return _makeHistory(count, (i) => ({ question: `Question ${i + 1}` }))
 }
+
+let consoleSpy: ReturnType<typeof vi.spyOn>
 
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   setupNavScreenBeforeEach({ mockShowDomainMenu, mockWriteDomain, mockReadDomain, mockReadSettings, mockGenerateExplanation, mockGenerateMicroLesson })
+  consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
+})
+
+afterEach(() => {
 })
 
 // ---------------------------------------------------------------------------
@@ -143,20 +147,17 @@ describe('showHistory — empty history', () => {
   it('logs "No questions answered yet." and calls showHome after Back', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('No questions answered yet.')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
   })
 
   it('shows only Back choice when history is empty', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -175,7 +176,6 @@ describe('showHistory — single question', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(5) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -183,14 +183,12 @@ describe('showHistory — single question', () => {
     // Most recent is Question 5; Question 1 is oldest and must NOT appear on first view
     expect(allLogs).toContain('Question 5')
     expect(allLogs).not.toContain('#2 —')
-    consoleSpy.mockRestore()
   })
 
   it('shows Explain + Back when there is exactly one question', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -206,20 +204,17 @@ describe('showHistory — single question', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const selectMessage = mockSelect.mock.calls[0][0].message
     expect(selectMessage).toContain('Question 1 of 1')
-    consoleSpy.mockRestore()
   })
 
   it('selecting Back calls router.showHome', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -231,14 +226,12 @@ describe('showHistory — single question', () => {
     const domain = { ...defaultDomainFile(), history: records }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     // Most recent is Question 3. The plain question text is logged.
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('Question 3')
-    consoleSpy.mockRestore()
   })
 
   it('each entry log contains required fields', async () => {
@@ -255,7 +248,6 @@ describe('showHistory — single question', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -265,20 +257,17 @@ describe('showHistory — single question', () => {
     expect(allLogs).toContain('✗ Incorrect') // isCorrect: false
     expect(allLogs).toContain('Advanced')    // difficultyLevel: 4
     expect(allLogs).toContain('Answered:')   // showTimestamp: true in displayEntry
-    consoleSpy.mockRestore()
   })
 
   it('shows progress "Question 1 of N" in select message', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(5) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValue('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const selectMessage = mockSelect.mock.calls[0][0].message
     expect(selectMessage).toContain('Question 1 of 5')
-    consoleSpy.mockRestore()
   })
 })
 
@@ -290,7 +279,6 @@ describe('showHistory — navigation', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(15) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -306,20 +294,17 @@ describe('showHistory — navigation', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(15) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const secondMessage = mockSelect.mock.calls[1][0].message
     expect(secondMessage).toContain('Question 2 of')
-    consoleSpy.mockRestore()
   })
 
   it('second question shows Previous + Explain + Back, no Next (when total is 2)', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(2) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -338,7 +323,6 @@ describe('showHistory — navigation', () => {
       .mockResolvedValueOnce('next')
       .mockResolvedValueOnce('prev')
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -349,14 +333,12 @@ describe('showHistory — navigation', () => {
     expect(values).toContain('next')
     expect(values).toContain('explain')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
-    consoleSpy.mockRestore()
   })
 
   it('only one entry is logged per navigation step', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -365,7 +347,6 @@ describe('showHistory — navigation', () => {
     expect(allLogs).toContain('Question 3')
     expect(allLogs).not.toContain('Question 2')
     expect(allLogs).not.toContain('Question 1')
-    consoleSpy.mockRestore()
   })
 })
 
@@ -378,7 +359,6 @@ describe('showHistory — explain answer', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -396,20 +376,17 @@ describe('showHistory — explain answer', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('Because A is the correct answer.')
-    consoleSpy.mockRestore()
   })
 
   it('hides Explain after explanation is displayed', async () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -432,7 +409,6 @@ describe('showHistory — explain answer', () => {
       .mockResolvedValueOnce('next')
       .mockResolvedValueOnce('prev')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -449,7 +425,6 @@ describe('showHistory — explain answer', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -471,7 +446,6 @@ describe('showHistory — explain answer', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -484,7 +458,6 @@ describe('showHistory — explain answer', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
     const mockClearAndBanner = vi.mocked(clearAndBanner)
 
     await showHistory('typescript')
@@ -502,16 +475,14 @@ describe('showHistory — corrupted domain', () => {
     mockReadDomain.mockResolvedValue({ ok: false, error: 'Domain data for typescript appears corrupted' })
     mockSelect.mockResolvedValue('back')
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    const logSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('corrupted'))
-    const allLogs = logSpy.mock.calls.map((c) => String(c[0])).join('\n')
+    const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('No questions answered yet.')
     expect(mockShowDomainMenu).toHaveBeenCalledOnce()
     warnSpy.mockRestore()
-    logSpy.mockRestore()
   })
 })
 
@@ -523,7 +494,6 @@ describe('showHistory — ExitPromptError', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockRejectedValue(new ExitPromptError('exit'))
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -533,7 +503,6 @@ describe('showHistory — ExitPromptError', () => {
   it('calls showHome on ExitPromptError during empty-history Back select', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockRejectedValue(new ExitPromptError('exit'))
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -544,7 +513,6 @@ describe('showHistory — ExitPromptError', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(1) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -554,7 +522,6 @@ describe('showHistory — ExitPromptError', () => {
   it('calls clearScreen before rendering the empty history screen', async () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     mockSelect.mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -566,7 +533,6 @@ describe('showHistory — ExitPromptError', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     const boom = new Error('unexpected select failure')
     mockSelect.mockRejectedValueOnce(boom)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await expect(showHistory('typescript')).rejects.toThrow('unexpected select failure')
   })
@@ -575,7 +541,6 @@ describe('showHistory — ExitPromptError', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: defaultDomainFile() })
     const boom = new Error('empty history select failure')
     mockSelect.mockRejectedValueOnce(boom)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await expect(showHistory('typescript')).rejects.toThrow('empty history select failure')
   })
@@ -590,7 +555,6 @@ describe('showHistory — teach me more', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     // explain → then back
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -610,7 +574,6 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -630,13 +593,11 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('Deep dive into TypeScript generics.')
-    consoleSpy.mockRestore()
   })
 
   it('"Teach me more" is removed from choices after micro-lesson is displayed', async () => {
@@ -646,7 +607,6 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -668,7 +628,6 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('prev')
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -688,7 +647,6 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -709,7 +667,6 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -726,7 +683,6 @@ describe('showHistory — teach me more', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -802,7 +758,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -815,7 +770,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -827,7 +781,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: false })] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -841,7 +794,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -853,7 +805,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord({ bookmarked: true })] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -869,7 +820,6 @@ describe('showHistory — bookmark toggle', () => {
       .mockResolvedValueOnce('bookmark')
       .mockResolvedValueOnce('bookmark')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -882,7 +832,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord()] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -895,7 +844,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: [makeRecord()] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('explain').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -911,7 +859,6 @@ describe('showHistory — bookmark toggle', () => {
       .mockResolvedValueOnce('explain')
       .mockResolvedValueOnce('teach')
       .mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -924,7 +871,6 @@ describe('showHistory — bookmark toggle', () => {
     const domain = { ...defaultDomainFile(), history: makeHistory(3) }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('next').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -941,14 +887,12 @@ describe('showHistory — question display', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('What is TypeScript?')
     expect(allLogs).not.toContain('⭐ What is TypeScript?')
-    consoleSpy.mockRestore()
   })
 
   it('shows question text when record is not bookmarked', async () => {
@@ -956,13 +900,11 @@ describe('showHistory — question display', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('back')
-    const consoleSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
     const allLogs = consoleSpy.mock.calls.map((c) => String(c[0])).join('\n')
     expect(allLogs).toContain('What is TypeScript?')
-    consoleSpy.mockRestore()
   })
 
   it('bookmark toggle does not trigger screen re-render (clearAndBanner called once)', async () => {
@@ -970,7 +912,6 @@ describe('showHistory — question display', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -983,7 +924,6 @@ describe('showHistory — question display', () => {
     const domain = { ...defaultDomainFile(), history: [record] }
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
@@ -997,7 +937,6 @@ describe('showHistory — question display', () => {
     mockReadDomain.mockResolvedValue({ ok: true, data: domain })
     mockSelect.mockResolvedValueOnce('bookmark').mockResolvedValueOnce('back')
     const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
-    vi.spyOn(console, 'log').mockReturnValue(undefined)
 
     await showHistory('typescript')
 
