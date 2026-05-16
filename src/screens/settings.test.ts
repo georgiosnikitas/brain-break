@@ -102,6 +102,32 @@ describe('showSettingsScreen', () => {
     expect(mockSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ default: 'expressive' }))
   })
 
+  it('Tone of Voice selector includes a Back option after a separator', async () => {
+    mockSelect
+      .mockResolvedValueOnce('tone')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('back')
+
+    await showSettingsScreen()
+
+    const tonePrompt = mockSelect.mock.calls[1]?.[0]
+    expect(tonePrompt).toEqual(expect.objectContaining({ message: 'Tone of Voice' }))
+    expect(tonePrompt?.choices).toHaveLength(9)
+    expect(tonePrompt?.choices[8]).toEqual({ name: '↩️  Back', value: 'back' })
+  })
+
+  it('Back from Tone of Voice selector leaves the value unchanged', async () => {
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), tone: 'calm' } })
+    mockSelect
+      .mockResolvedValueOnce('tone')
+      .mockResolvedValueOnce('back')
+      .mockResolvedValueOnce('save')
+
+    await showSettingsScreen()
+
+    expect(mockWriteSettings).toHaveBeenCalledWith(expect.objectContaining({ tone: 'calm' }))
+  })
+
   it('Save path: calls writeSettings with user inputs and then router.showHome()', async () => {
     // Select language → type Spanish, select tone → pick robot, then save
     mockSelect.mockResolvedValueOnce('language').mockResolvedValueOnce('tone').mockResolvedValueOnce('robot').mockResolvedValueOnce('save')

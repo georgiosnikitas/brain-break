@@ -93,13 +93,19 @@ async function handleLanguageAction(currentLanguage: string): Promise<string> {
 }
 
 async function handleToneAction(currentTone: ToneOfVoice): Promise<ToneOfVoice> {
-  return await select<ToneOfVoice>({
+  const selectedTone = await select<ToneOfVoice | 'back'>({
     message: 'Tone of Voice',
-    choices: TONE_CHOICES,
+    choices: [
+      ...TONE_CHOICES,
+      new Separator(),
+      { name: '↩️  Back', value: 'back' as const },
+    ],
     default: currentTone,
     theme: menuTheme,
     pageSize: SETTINGS_PAGE_SIZE,
   })
+  if (selectedTone === 'back') return currentTone
+  return selectedTone
 }
 
 async function handleSaveAction(settings: SettingsFile): Promise<void> {
