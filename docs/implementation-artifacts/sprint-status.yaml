@@ -157,11 +157,11 @@ development_status:
   # Epic 14: License Activation (PRD Feature 20, FR53–FR57)
   # Suggested implement order: 14.1 → 14.2 → 14.3 → 14.4 → 14.5 → 14.6 → 14.7
   epic-14: in-progress
-  14-1-license-settings-schema-types: ready-for-dev
+  14-1-license-settings-schema-types: done
   14-2-lemon-squeezy-license-api-client: done
   14-3-launch-time-license-validation: done
   14-4-home-screen-menu-adaptation: done
-  14-5-activate-license-screen: ready-for-dev
+  14-5-activate-license-screen: done
   14-6-license-info-screen: ready-for-dev
   14-7-domain-cap-enforcement-at-create-domain: ready-for-dev
   epic-14-retrospective: optional

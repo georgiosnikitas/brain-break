@@ -17,6 +17,7 @@ import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
 import { showExitScreen } from './screens/exit.js'
+import { showActivateLicenseScreen } from './screens/activate-license.js'
 import { readDomain, writeDomain, deleteDomain as deleteDomainStore, readSettings } from './domain/store.js'
 import { defaultDomainFile, defaultSettings } from './domain/schema.js'
 import { preloadQuestions } from './ai/client.js'
@@ -29,19 +30,8 @@ export async function showHome(launchNotice: LaunchNotice | null = null): Promis
   await showHomeScreen(launchNotice)
 }
 
-// STUB — replaced by screens/activate-license.ts in Story 14.5
 export async function showActivateLicense(): Promise<void> {
-  clearAndBanner()
-  console.log('\n  🔑 Activate License — coming in Story 14.5\n')
-  try {
-    await select({
-      message: 'Navigation',
-      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (!(err instanceof ExitPromptError)) throw err
-  }
+  await showActivateLicenseScreen()
 }
 
 // STUB — replaced by screens/license-info.ts in Story 14.6

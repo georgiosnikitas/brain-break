@@ -45,6 +45,7 @@ vi.mock('./screens/settings.js', () => ({ showSettingsScreen: vi.fn() }))
 vi.mock('./screens/provider-setup.js', () => ({ showProviderSetupScreen: vi.fn() }))
 vi.mock('./screens/welcome.js', () => ({ showWelcomeScreen: vi.fn() }))
 vi.mock('./screens/exit.js', () => ({ showExitScreen: vi.fn() }))
+vi.mock('./screens/activate-license.js', () => ({ showActivateLicenseScreen: vi.fn() }))
 
 // ---------------------------------------------------------------------------
 // archiveDomain
@@ -132,6 +133,7 @@ import { showSettingsScreen } from './screens/settings.js'
 import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
 import { showExitScreen } from './screens/exit.js'
+import { showActivateLicenseScreen } from './screens/activate-license.js'
 
 describe('showHome', () => {
   it('delegates to showHomeScreen', async () => {
@@ -145,10 +147,10 @@ describe('showHome', () => {
   })
 })
 
-describe('showActivateLicense / showLicenseInfo (stubs)', () => {
-  it('exports showActivateLicense as an async function', () => {
-    expect(typeof showActivateLicense).toBe('function')
-    expect(showActivateLicense.constructor.name).toBe('AsyncFunction')
+describe('showActivateLicense / showLicenseInfo', () => {
+  it('delegates showActivateLicense to showActivateLicenseScreen', async () => {
+    await showActivateLicense()
+    expect(showActivateLicenseScreen).toHaveBeenCalledOnce()
   })
 
   it('exports showLicenseInfo as an async function', () => {

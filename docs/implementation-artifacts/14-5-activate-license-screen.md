@@ -1,6 +1,6 @@
 # Story 14.5: Activate License Screen
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -54,12 +54,12 @@ So that I can unlock unlimited domains in one place without leaving the app.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create the new screen module** (AC: #1, #2, #4, #5, #6, #7, #8, #9, #10)
-  - [ ] 1.1 Create `src/screens/activate-license.ts` with named export `export async function showActivateLicenseScreen(): Promise<void>`
-  - [ ] 1.2 Module-scoped constants near the top:
+- [x] **Task 1: Create the new screen module** (AC: #1, #2, #4, #5, #6, #7, #8, #9, #10)
+  - [x] 1.1 Create `src/screens/activate-license.ts` with named export `export async function showActivateLicenseScreen(): Promise<void>`
+  - [x] 1.2 Module-scoped constants near the top:
     - `const ORDERS_URL = 'https://app.lemonsqueezy.com/my-orders'`
     - `const CHECKOUT_URL = 'https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147'`
-  - [ ] 1.3 Module-scoped NFR2 error-message map (avoids inline string literals scattered through the dispatcher):
+  - [x] 1.3 Module-scoped NFR2 error-message map (avoids inline string literals scattered through the dispatcher):
     ```typescript
     const LICENSE_ERROR_MESSAGES: Record<LicenseErrorKind, string> = {
       invalid_key: 'License key not recognized. Check the key and try again.',
@@ -70,71 +70,84 @@ So that I can unlock unlimited domains in one place without leaving the app.
       unknown_api_error: 'Could not reach the licensing server. Check your connection and try again.',
     }
     ```
-  - [ ] 1.4 Imports: `select`, `input`, `Separator` from `@inquirer/prompts`; `ExitPromptError` from `@inquirer/core`; `ora` default; `qrcode` from `qrcode-terminal`; `activateLicense`, type `LicenseErrorKind` from `../domain/license-client.js`; `readSettings`, `writeSettings` from `../domain/store.js`; `defaultSettings` from `../domain/schema.js`; `clearAndBanner` from `../utils/screen.js` (NOT `utils/format.js` — verified path); `menuTheme`, `success`, `error as errorFmt` from `../utils/format.js` (verified: both `success` and `error` are exported theme-aware helpers)
-  - [ ] 1.5 Pattern: top-level `while (true)` action loop with `select` returning a discriminated union: `'paste' | 'orders' | 'checkout' | 'back'`. `back` breaks the loop; all other actions handle their work then `continue` back to re-render the menu
+  - [x] 1.4 Imports: `select`, `input`, `Separator` from `@inquirer/prompts`; `ExitPromptError` from `@inquirer/core`; `ora` default; `qrcode` from `qrcode-terminal`; `activateLicense`, type `LicenseErrorKind` from `../domain/license-client.js`; `readSettings`, `writeSettings` from `../domain/store.js`; `defaultSettings` from `../domain/schema.js`; `clearAndBanner` from `../utils/screen.js` (NOT `utils/format.js` — verified path); `menuTheme`, `success`, `error as errorFmt` from `../utils/format.js` (verified: both `success` and `error` are exported theme-aware helpers)
+  - [x] 1.5 Pattern: top-level `while (true)` action loop with `select` returning a discriminated union: `'paste' | 'orders' | 'checkout' | 'back'`. `back` breaks the loop; all other actions handle their work then `continue` back to re-render the menu
 
-- [ ] **Task 2: Implement layout (header + value prop)** (AC: #1)
-  - [ ] 2.1 At the top of `showActivateLicenseScreen`, call `clearAndBanner()`
-  - [ ] 2.2 Print header line `'🔑 Activate License'` and a blank line
-  - [ ] 2.3 Print value-prop paragraph: `'Activate your license to unlock unlimited domains. Free tier is limited to 1 domain.'`
-  - [ ] 2.4 Helper: extract a local `renderHeader()` function so it can be called at the top of each loop iteration after errors to keep the screen consistent
+- [x] **Task 2: Implement layout (header + value prop)** (AC: #1)
+  - [x] 2.1 At the top of `showActivateLicenseScreen`, call `clearAndBanner()`
+  - [x] 2.2 Print header line `'🔑 Activate License'` and a blank line
+  - [x] 2.3 Print value-prop paragraph: `'Activate your license to unlock unlimited domains. Free tier is limited to 1 domain.'`
+  - [x] 2.4 Helper: extract a local `renderHeader()` function so it can be called at the top of each loop iteration after errors to keep the screen consistent
 
-- [ ] **Task 3: Implement Paste action with input prompt and spinner** (AC: #2, #3, #4, #5, #6)
-  - [ ] 3.1 On `'paste'`: `const key = (await input({ message: 'License key:', theme: menuTheme })).trim()`
-  - [ ] 3.2 If `key === ''`: print a brief retry-friendly notice (`'No key entered.'`) and `continue` the outer loop
-  - [ ] 3.3 Spinner: `const spinner = ora('Activating license…').start()`. Wrap the call in try/finally to guarantee `spinner.stop()` runs even if `activateLicense` throws unexpectedly (defensive: the function returns `Result` so it shouldn't throw, but a try/finally is cheap insurance)
-  - [ ] 3.4 `const result = await activateLicense(key)`
-  - [ ] 3.5 `spinner.stop()` on both branches (or `spinner.succeed(...)` / `spinner.fail(...)` if format.ts provides matching helpers — check first)
-  - [ ] 3.6 Success branch (`result.ok === true`):
+- [x] **Task 3: Implement Paste action with input prompt and spinner** (AC: #2, #3, #4, #5, #6)
+  - [x] 3.1 On `'paste'`: `const key = (await input({ message: 'License key:', theme: menuTheme })).trim()`
+  - [x] 3.2 If `key === ''`: print a brief retry-friendly notice (`'No key entered.'`) and `continue` the outer loop
+  - [x] 3.3 Spinner: `const spinner = ora('Activating license…').start()`. Wrap the call in try/finally to guarantee `spinner.stop()` runs even if `activateLicense` throws unexpectedly (defensive: the function returns `Result` so it shouldn't throw, but a try/finally is cheap insurance)
+  - [x] 3.4 `const result = await activateLicense(key)`
+  - [x] 3.5 `spinner.stop()` on both branches (or `spinner.succeed(...)` / `spinner.fail(...)` if format.ts provides matching helpers — check first)
+  - [x] 3.6 Success branch (`result.ok === true`):
     - Read current settings: `const cur = await readSettings(); const settings = cur.ok ? cur.data : defaultSettings()`
     - `settings.license = result.data`
     - `await writeSettings(settings)` — if `writeSettings` returns a `Result`, log a generic error and remain on screen if `!ok`; otherwise proceed
     - Print success line in green: `'License activated successfully. Unlimited domains unlocked.'`
     - Short pause / Continue prompt so user reads confirmation, then `return` (NOT `break` — explicit return for clarity)
-  - [ ] 3.7 Failure branch (`result.ok === false`):
+  - [x] 3.7 Failure branch (`result.ok === false`):
     - Render `LICENSE_ERROR_MESSAGES[result.error.kind]` in red (use `errorFmt` or red color helper from format.ts)
     - DO NOT mutate or write settings
     - `continue` the outer loop (which re-renders header + action menu)
 
-- [ ] **Task 4: Implement Manage your keys + Buy a license url-rendering branches** (AC: #7, #8)
-  - [ ] 4.1 Extract a local helper `renderUrlScreen(title: string, url: string): Promise<void>`:
+- [x] **Task 4: Implement Manage your keys + Buy a license url-rendering branches** (AC: #7, #8)
+  - [x] 4.1 Extract a local helper `renderUrlScreen(title: string, url: string): Promise<void>`:
     - Calls `clearAndBanner()`
     - Prints `title` line
     - Renders QR via `qrcode.generate(url, { small: true }, cb)` wrapped in `new Promise<void>(resolve => …)` exactly like `showCoffeeScreen` does
     - Prints the raw `url` on its own line
     - Awaits a `select` with a single `↩️  Back` Continue choice (theme: `menuTheme`)
     - Catches `ExitPromptError` (do not rethrow on Ctrl+C from this sub-prompt; just return — same pattern as Coffee)
-  - [ ] 4.2 On `'orders'`: `await renderUrlScreen('🔛 Manage your keys', ORDERS_URL)`, then `continue`
-  - [ ] 4.3 On `'checkout'`: `await renderUrlScreen('💳 Buy a license', CHECKOUT_URL)`, then `continue`
-  - [ ] 4.4 Confirm with `package.json`: `qrcode-terminal` is already a dep (verified — line 42) so no new dependencies
+  - [x] 4.2 On `'orders'`: `await renderUrlScreen('🔛 Manage your keys', ORDERS_URL)`, then `continue`
+  - [x] 4.3 On `'checkout'`: `await renderUrlScreen('💳 Buy a license', CHECKOUT_URL)`, then `continue`
+  - [x] 4.4 Confirm with `package.json`: `qrcode-terminal` is already a dep (verified — line 42) so no new dependencies
 
-- [ ] **Task 5: Implement Back + Ctrl+C handling** (AC: #9, #10)
-  - [ ] 5.1 On `'back'`: `break` the outer loop and return (or `return` directly inside the switch)
-  - [ ] 5.2 Wrap the top-level `select` in a `try / catch (err)` block. On `err instanceof ExitPromptError`: `return` (same convention as showCoffeeScreen). Do NOT call `process.exit` from this screen — let `showHomeScreen`'s top-level handler manage exit
-  - [ ] 5.3 Likewise wrap the input prompt in Task 3.1 — `ExitPromptError` from the key input should `continue` the loop (treat Ctrl+C in the key field as "cancel this attempt")
+- [x] **Task 5: Implement Back + Ctrl+C handling** (AC: #9, #10)
+  - [x] 5.1 On `'back'`: `break` the outer loop and return (or `return` directly inside the switch)
+  - [x] 5.2 Wrap the top-level `select` in a `try / catch (err)` block. On `err instanceof ExitPromptError`: `return` (same convention as showCoffeeScreen). Do NOT call `process.exit` from this screen — let `showHomeScreen`'s top-level handler manage exit
+  - [x] 5.3 Likewise wrap the input prompt in Task 3.1 — `ExitPromptError` from the key input should `continue` the loop (treat Ctrl+C in the key field as "cancel this attempt")
 
-- [ ] **Task 6: Re-wire `router.showActivateLicense` to call the real screen** (AC: #11)
-  - [ ] 6.1 Open `src/router.ts`
-  - [ ] 6.2 Add import: `import { showActivateLicenseScreen } from './screens/activate-license.js'`
-  - [ ] 6.3 Replace the stub `showActivateLicense` body (added by Story 14.4) with: `export async function showActivateLicense(): Promise<void> { await showActivateLicenseScreen() }`
-  - [ ] 6.4 Remove the `// STUB — replaced by screens/activate-license.ts in Story 14.5` comment
-  - [ ] 6.5 DO NOT touch the Story 14.4 `showLicenseInfo` stub — that's owned by Story 14.6
-  - [ ] 6.6 Run `grep -n "STUB" src/router.ts` — should show only the License Info stub line remaining
+- [x] **Task 6: Re-wire `router.showActivateLicense` to call the real screen** (AC: #11)
+  - [x] 6.1 Open `src/router.ts`
+  - [x] 6.2 Add import: `import { showActivateLicenseScreen } from './screens/activate-license.js'`
+  - [x] 6.3 Replace the stub `showActivateLicense` body (added by Story 14.4) with: `export async function showActivateLicense(): Promise<void> { await showActivateLicenseScreen() }`
+  - [x] 6.4 Remove the `// STUB — replaced by screens/activate-license.ts in Story 14.5` comment
+  - [x] 6.5 DO NOT touch the Story 14.4 `showLicenseInfo` stub — that's owned by Story 14.6
+  - [x] 6.6 Run `grep -n "STUB" src/router.ts` — should show only the License Info stub line remaining
 
-- [ ] **Task 7: Tests** (AC: #12)
-  - [ ] 7.1 Create `src/screens/activate-license.test.ts` mirroring the style of `src/screens/home.test.ts` (vitest + `vi.mock` for `@inquirer/prompts`, `ora`, `qrcode-terminal`, `../domain/license-client.js`, `../domain/store.js`)
-  - [ ] 7.2 Mock `activateLicense` to return controllable `Result<LicenseRecord, LicenseError>` values per test
-  - [ ] 7.3 Mock `writeSettings` to capture the persisted settings object for the success-path assertion
-  - [ ] 7.4 Mock the inquirer `select` to return scripted action choices and `input` to return scripted key values per test (use `vi.mocked(select).mockResolvedValueOnce(...)` chains)
-  - [ ] 7.5 Cover the 12 test cases enumerated in AC #12
-  - [ ] 7.6 Spinner ordering test: capture call order via `const order: string[] = []; spinner.start.mockImplementation(() => order.push('start')); activateLicense.mockImplementation(async () => { order.push('call'); return ... })` then assert `order` is `['start','call']`
-  - [ ] 7.7 Confirm baseline + new test count: ~1131 (after 14.1+14.2+14.3+14.4) + ~12 new tests = ~1143
+- [x] **Task 7: Tests** (AC: #12)
+  - [x] 7.1 Create `src/screens/activate-license.test.ts` mirroring the style of `src/screens/home.test.ts` (vitest + `vi.mock` for `@inquirer/prompts`, `ora`, `qrcode-terminal`, `../domain/license-client.js`, `../domain/store.js`)
+  - [x] 7.2 Mock `activateLicense` to return controllable `Result<LicenseRecord, LicenseError>` values per test
+  - [x] 7.3 Mock `writeSettings` to capture the persisted settings object for the success-path assertion
+  - [x] 7.4 Mock the inquirer `select` to return scripted action choices and `input` to return scripted key values per test (use `vi.mocked(select).mockResolvedValueOnce(...)` chains)
+  - [x] 7.5 Cover the 12 test cases enumerated in AC #12
+  - [x] 7.6 Spinner ordering test: capture call order via `const order: string[] = []; spinner.start.mockImplementation(() => order.push('start')); activateLicense.mockImplementation(async () => { order.push('call'); return ... })` then assert `order` is `['start','call']`
+  - [x] 7.7 Confirm baseline + new test count: ~1131 (after 14.1+14.2+14.3+14.4) + ~12 new tests = ~1143
 
-- [ ] **Task 8: Boundary verification** (AC compliance)
-  - [ ] 8.1 `grep -rn "showActivateLicenseScreen" src/` — should match `src/screens/activate-license.ts` (declaration), `src/router.ts` (import + call), and `src/screens/activate-license.test.ts` only
-  - [ ] 8.2 `grep -n "STUB" src/router.ts` — should only show the `showLicenseInfo` stub
-  - [ ] 8.3 `npm test` — green
-  - [ ] 8.4 `npm run typecheck` — clean
+- [x] **Task 8: Boundary verification** (AC compliance)
+  - [x] 8.1 `grep -rn "showActivateLicenseScreen" src/` — should match `src/screens/activate-license.ts` (declaration), `src/router.ts` (import + call), and `src/screens/activate-license.test.ts` only
+  - [x] 8.2 `grep -n "STUB" src/router.ts` — should only show the `showLicenseInfo` stub
+  - [x] 8.3 `npm test` — green
+  - [x] 8.4 `npm run typecheck` — clean
+
+### Review Findings
+
+- [x] [Review][Patch] Add `new Separator()` before the Back choice in the main action menu [src/screens/activate-license.ts:promptAction] — Spec skeleton (Dev Notes line ~305) and the screen's own sub-menus (`renderUrlScreen`, `confirmSuccess`) both place `new Separator()` before Back; main menu omits it, breaking visual consistency. **Applied 2026-05-16.**
+- [x] [Review][Patch] Add trailing newline to new files [src/screens/activate-license.ts:EOF, src/screens/activate-license.test.ts:EOF] — Both new files end without a final newline (`\ No newline at end of file` in diff). Cosmetic but inconsistent with project hygiene. **Applied 2026-05-16.**
+- [x] [Review][Defer] Test coverage gap — `ExitPromptError` paths inside `confirmSuccess()` and `renderUrlScreen()` back prompts are not exercised by tests [src/screens/activate-license.test.ts] — deferred, pre-existing pattern (mirrors `showCoffeeScreen` which also lacks these tests); behavior is correct, just untested.
+
+**Dismissed (recorded for traceability):**
+- `LICENSE_ERROR_MESSAGES[unknown kind]` returning `undefined` — `Record<LicenseErrorKind, string>` with all 6 keys mapped is statically guaranteed by TypeScript; `kind` originates from validated API client output (Story 14.2).
+- `.trim()` on non-string from `input()` — `input()` is typed `Promise<string>` by `@inquirer/prompts`; defensive guard would be paranoid noise.
+- Non-`ExitPromptError` rethrow from `select()` in `confirmSuccess`/`renderUrlScreen` — identical pattern to `showCoffeeScreen` in this codebase; @inquirer/prompts contract is "throws only ExitPromptError on user cancel"; surfacing other errors is intentional.
+- QR callback never resolving or throwing — `qrcode-terminal` is fully synchronous internally; callback body is `split/map/join/console.log/resolve` with no realistic throw path.
+- Router import "placed after function body" — false positive; the import is at the top of `src/router.ts` alongside other screen imports (diff hunk context only shows nearby function).
 
 ## Dev Notes
 
@@ -365,20 +378,40 @@ export async function showActivateLicense(): Promise<void> {
 
 ### Agent Model Used
 
-_To be filled by dev agent._
+GitHub Copilot — Amelia (bmad-agent-dev)
 
 ### Debug Log References
 
-_To be filled by dev agent._
+- `npm test -- src/screens/activate-license.test.ts` → red first (expected TDD failure: missing `src/screens/activate-license.ts`).
+- `npm test -- src/screens/activate-license.test.ts` → 16/16 passing.
+- `npm test -- src/screens/activate-license.test.ts src/router.test.ts` → 42/42 passing.
+- `grep -rn "showActivateLicenseScreen" src/` → confined to `src/screens/activate-license.ts`, `src/router.ts`, and their tests.
+- `grep -n "STUB" src/router.ts` → only the Story 14.6 License Info stub remains.
+- `get_errors` on `src/screens/activate-license.ts` → clean after cognitive-complexity refactor.
+- `npm test && npm run typecheck` → 35 files, 1239 tests passing; `tsc --noEmit` clean.
 
 ### Completion Notes List
 
-_To be filled by dev agent._
+- Added `src/screens/activate-license.ts` with a standalone action loop, `clearAndBanner()` header/value prop render, paste-key input, empty-key retry notice, `ora('Activating license…')` spinner discipline, success persistence via `readSettings()` / `defaultSettings()` / `writeSettings()`, and inline NFR2 error rendering for all 6 `LicenseErrorKind` values.
+- Added QR + raw URL rendering for Manage your keys and Buy a license using the existing `showCoffeeScreen` parity pattern; both branches return to the Activate License action menu.
+- Handled `ExitPromptError` at the action prompt, key input, URL Back prompt, and success confirmation prompt without unhandled rejections; Back exits without settings mutation.
+- Replaced the Story 14.4 `router.showActivateLicense` stub with `await showActivateLicenseScreen()` and left the Story 14.6 `showLicenseInfo` stub untouched.
+- Added 16 screen tests plus router delegation coverage; refactored screen helpers to keep diagnostics clean.
 
 ### File List
 
-_To be filled by dev agent._
+**New:**
+- `src/screens/activate-license.ts` — Activate License screen module.
+- `src/screens/activate-license.test.ts` — Activate License screen tests covering AC #12 paths.
+
+**Modified:**
+- `src/router.ts` — imports and delegates to `showActivateLicenseScreen`; retains only License Info stub.
+- `src/router.test.ts` — mocks `showActivateLicenseScreen` and asserts router delegation.
+- `docs/implementation-artifacts/14-5-activate-license-screen.md` — task checklist, status, Dev Agent Record.
+- `docs/implementation-artifacts/sprint-status.yaml` — reconciled stale `14-1` status to `done`; moved `14-5` to `review`.
 
 ### Change Log
 
 - 2026-05-16: Story file created via bmad-create-story workflow — context engine reviewed showCoffeeScreen pattern, NFR2 error map, and Story 14.4 router stub.
+- 2026-05-16: Implementation complete — Activate License screen shipped with 16 new screen tests, router delegation coverage, full suite 1239 passing, typecheck clean. Status: review.
+- 2026-05-16: Code review complete — 2 patches applied (Separator before Back in main menu, EOF newlines on new files), 1 finding deferred to deferred-work.md, 5 dismissed as noise. Status: done.
