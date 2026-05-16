@@ -129,8 +129,17 @@ Welcome and Exit screens intentionally break the normal pattern:
 App start
 -> Provider Setup (only if settings.provider is null)
 -> Welcome (only if settings.showWelcome is true)
+-> License launch validation (only if settings.license.status === "active")
 -> Home
 ```
+
+License launch validation step:
+
+- Runs synchronously between Welcome and Home, only when `settings.license.status === "active"`. Free-tier and inactive-license launches skip this step entirely (no network call, no spinner).
+- Displays an `ora` spinner with the message `Checking license…` for parity with every other network-bound operation in the app (provider connection test, AI calls, etc.).
+- A single `POST /v1/licenses/validate` call is made, bounded by a 2-second `AbortSignal.timeout(2000)` so worst-case launch latency is capped at ~2s for active-license users on slow networks.
+- The outcome (revoked / offline / null) is handed to Home and surfaced as a one-time banner above the menu on first render.
+- Rationale for serial rather than concurrent execution: the codebase uses spinners for every other network call (a documented guardrail); concurrent fire-and-forget would introduce the only piece of module-scoped background work in the app, with race-condition surface against Activate License / License Info screens, in exchange for at most ~2s saved in the worst case.
 
 ### Main navigation map
 
@@ -138,11 +147,19 @@ App start
 Home
 -> Select domain -> Domain Menu
 -> Create new domain -> Create Domain -> Home
+   (free tier with >=1 domain: shows Domain Cap Upsell variant -> Activate License or Back)
 -> Archived domains -> Archived Domains -> Home
 -> Settings -> Settings -> Home
--> Buy me a coffee -> Coffee screen -> Home
+-> Activate License (free tier or inactive) -> Activate License -> Home
+-> License Info (active license) -> License Info -> Home
+-> Buy me a coffee (free tier or inactive only) -> Coffee screen -> Home
 -> Exit -> Exit screen or immediate process exit
 ```
+
+License state determines which actions appear in the Home menu:
+
+- Free tier or `license.status === "inactive"`: shows `Activate License` and `Buy me a coffee`
+- `license.status === "active"`: shows `License Info` only; `Buy me a coffee` is hidden entirely (not greyed out — omitted from the choice array)
 
 ### Domain-level navigation map
 
@@ -304,18 +321,36 @@ Content:
 - Each domain row shows bold slug plus dim metadata: score and number of questions
 - If there are no active domains, the list shows the empty-state separator `No domains yet.`
 
-Actions in implemented order:
+Actions in implemented order (free tier or inactive license):
 
 - `➕ Create new domain`
 - `🗄  Archived domains`
 - `⚙️  Settings`
 - separator
+- `🔑 Activate License`
 - `🍵 Buy me a coffee`
 - `🚪 Exit`
+
+Actions in implemented order (active license):
+
+- `➕ Create new domain`
+- `🗄  Archived domains`
+- `⚙️  Settings`
+- separator
+- `🔑 License Info`
+- `🚪 Exit`
+
+Launch-validation banner (one-time, above the menu on first iteration only):
+
+- After a revoked-license validation: red error line `"Your license is no longer active. You've been returned to the free tier."`
+- After a network failure / unreachable server: dim line `"License could not be validated — offline mode"`
+- After a successful validation: no banner
+- Banner is consumed on first read; subsequent home re-renders within the same process do not show it
 
 Behavior notes:
 
 - Selecting a domain opens Domain Menu, not Quiz directly
+- Settings are re-read at the top of every home loop iteration so license state updates from Activate License or License Info are reflected immediately without an app restart
 - Ctrl+C exits the app immediately
 - Exit shows the branded Exit screen only when `showWelcome` is enabled
 
@@ -324,7 +359,7 @@ Behavior notes:
 Goal:
 Let the user create a new learning domain with minimal friction and a meaningful starting level.
 
-Flow:
+Flow (standard, runs when the free-tier cap is not hit):
 
 - Input prompt: `New domain name:`
 - Validation blocks empty or non-sluggable names
@@ -335,6 +370,18 @@ Flow:
 - After a unique name is entered, the user selects `Starting difficulty:`
 - Difficulty choices are 1 through 5 with labels Beginner through Expert
 - Final prompt is `Navigation` with `💾  Save` and `←  Back`
+
+Cap-blocked variant (free tier or inactive license with >=1 existing domain, active + archived + corrupted combined):
+
+- Header: `➕ Create new domain`
+- Upsell line (yellow/warning tone): `"Free version is limited to 1 domain. Activate a license to create more."`
+- Actions: `🔑 Activate License`, `↩️  Back`
+- No name input, no difficulty prompt, no Save action
+- Selecting Activate License routes to the Activate License screen; on return, the home loop drives the next iteration (no looping back into this variant)
+- An active license always bypasses this variant
+- The very first domain on a free-tier account is always allowed (cap kicks in at length >= 1)
+- Existing over-cap domains remain fully readable, playable, archivable, and deletable — only domain creation is gated
+- Filesystem failure when counting domains fails open (standard flow runs) to avoid locking the user out
 
 Behavior notes:
 
@@ -347,6 +394,7 @@ UX intent:
 - Short linear setup
 - Duplicate prevention before any file write
 - Difficulty framing at creation time instead of hidden defaults
+- Free-tier upsell appears at the exact moment the cap matters, with a one-click path to activation
 
 ### 5. Archived Domains
 
@@ -696,9 +744,15 @@ Content:
 - Plain-text support URL
 - Back-only navigation
 
+Visibility:
+
+- Available from the Home menu only when there is no active license (free tier or `license.status === "inactive"`)
+- Hidden entirely (not greyed out — omitted from the choice array) when `license.status === "active"`
+
 UX intent:
 
 - Brief, skippable, and visually different enough to feel like a side quest
+- Coffee is the free-tier support path; License is the paid support path — the two are mutually exclusive in the menu to avoid soliciting both
 
 ### 16. Exit
 
@@ -749,6 +803,115 @@ UX intent:
 - Fun, zero-latency visual reward — no network calls or AI dependency
 - Regenerate lets the user browse different font styles without leaving the screen
 
+### 18. Activate License
+
+Goal:
+Let a free-tier or inactive-license user activate a Lemon Squeezy license key and unlock the unlimited-domain tier without leaving the terminal.
+
+Reachability:
+
+- Home menu action `🔑 Activate License`, visible only when there is no active license (free tier or `license.status === "inactive"`)
+- Also reached from the Create Domain cap-blocked variant via its `🔑 Activate License` action
+
+Content:
+
+- Standard banner + header `🔑 Activate License`
+- Short value-prop paragraph: `"Activate your license to unlock unlimited domains. Free tier is limited to 1 domain."`
+- Menu actions in implemented order:
+  - `📋 Paste license key`
+  - `🔛 Manage your keys`
+  - `💳 Buy a license`
+  - separator
+  - `↩️  Back`
+
+Paste license key flow:
+
+- `input` prompt: `License key:` (trimmed, empty rejected with `"Please enter a license key."`)
+- `ora` spinner: `Activating license…`
+- On success: success line `"License activated. Unlimited domains unlocked."`, settings updated to `license.status === "active"`, screen falls back to Home on Enter
+- On failure: spinner stops with red error line and the screen returns to the action menu so the user can retry or pick a different action
+
+Activation error states (NFR2, exact strings, mapped from `LicenseError.kind`):
+
+- `invalid` → `"License key is invalid. Check the key and try again."`
+- `expired` → `"License has expired. Please renew or buy a new one."`
+- `revoked` → `"License has been revoked. Contact support if this is unexpected."`
+- `usage_exceeded` → `"License activation limit reached. Deactivate another instance first."`
+- `wrong_product` → `"This license key is for a different product."`
+- `network` → `"Could not reach the license server. Check your connection and try again."`
+
+Manage your keys / Buy a license:
+
+- Both render the same shape as the Coffee screen: header, ASCII QR code, plain-text URL, Back
+- Manage URL: `https://app.lemonsqueezy.com/my-orders`
+- Buy URL: `https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147`
+- The epic prose described "opens in default browser" but the implemented pattern uses in-terminal QR + URL for parity with `🍵 Buy me a coffee` and to keep the experience offline-friendly
+
+UX intent:
+
+- Self-contained activation without context switching
+- Failure feedback is specific enough to act on, never a stack trace
+- Buying and managing keys live next to activation so the journey is one screen, not three
+
+### 19. License Info
+
+Goal:
+Show the current license state and let the user deactivate, re-activate, or jump to license management.
+
+Reachability:
+
+- Home menu action `🔑 License Info`, visible only when `license.status === "active"`
+
+Content:
+
+- Standard banner + header `🔑 License Info`
+- Six status fields rendered with the shared `bold('Label:') + ' value'` detail pattern (same grammar as Statistics):
+  - `Status:` — green `Active` when `license.status === "active"`, red `Inactive` otherwise
+  - `Key:` — masked as `XXXX…YYYY` (first 4 + ellipsis + last 4 characters of the original key, no length leakage in between)
+  - `Activated:` — long-form English date via `Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' })`, e.g. `May 15, 2026`
+  - `Instance:` — verbatim instance ID from Lemon Squeezy
+  - `Product:` — verbatim product name from Lemon Squeezy
+  - `Store:` — verbatim store name from Lemon Squeezy
+
+Actions (status-dependent):
+
+- When status is `active`:
+  - `❌ Deactivate license`
+  - `🔛 Manage your keys`
+  - separator
+  - `↩️  Back`
+- When status is `inactive` (license previously revoked/deactivated but record still on disk):
+  - `🔁 Re-activate license`
+  - `🔛 Manage your keys`
+  - separator
+  - `↩️  Back`
+
+Deactivate flow:
+
+- Hard confirmation prompt with `Cancel` selected first to prevent accidental deactivation: `"Deactivate this license? Your free-tier limits will apply again."`
+- Choices: `↩️  Cancel`, `❌ Deactivate`
+- On Cancel: returns to the License Info menu, no network call
+- On Deactivate: `ora` spinner `Deactivating license…`, then `POST /v1/licenses/deactivate`
+- On success: license record is removed from settings entirely (object rest-destructuring, not `delete` operator, to satisfy `exactOptionalPropertyTypes`); success line `"License deactivated. Free-tier limits now apply."`; screen returns to Home
+- On failure: red error line, screen returns to the License Info menu so the user can retry; license record is not modified
+
+Deactivation error states (NFR2, exact strings):
+
+- `network` → `"Could not reach the license server. Check your connection and try again."`
+- any other API error → `"Could not deactivate license. Try again or contact support."`
+
+Re-activate flow:
+
+- Triggered when the user has a stored license record but `status === "inactive"` (typical after a launch validation detected revocation)
+- Same code path as Activate License's paste flow but pre-fills the stored key
+- Same six error strings as Activate License
+
+UX intent:
+
+- Single screen surfaces everything a user needs to verify, manage, or release their license
+- Hard confirmation with Cancel-first respects the destructive nature of deactivation
+- Field grammar matches Statistics so the surface feels native, not bolted-on
+
 ## Shared Detail Rendering Pattern
 
 Question feedback and review surfaces use a single presentation grammar:
@@ -798,6 +961,8 @@ Design rule:
 - Reuse `renderQuestionDetail()` and `question-nav.ts` for any new question review surface
 - Preserve emoji-led labels when adding sibling actions to existing menus
 - Keep configuration screens shallow, menu-driven, and global unless there is a strong product reason to create domain-specific settings
+- When a feature gates an action behind a paid tier, hide it conditionally rather than greying it out; show the upsell at the exact moment the limit matters, with a one-click path to the activation surface
+- Network-bound startup work uses an `ora` spinner and is bounded by an `AbortSignal` timeout; the outcome is surfaced as a one-time banner on Home, never as a blocking modal
 
 ## Known Inconsistencies And Technical Debt
 

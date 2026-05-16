@@ -1,8 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-lastEdited: '2026-04-19'
+lastEdited: '2026-05-15'
 status: 'complete'
 editHistory:
+  - date: '2026-05-15'
+    changes: 'Feature 20 (License Activation) added: FR53 (Free-tier 1-domain cap — active + archived combined; enforced at create-domain entry with upsell pointing to Activate License), FR54 (Activate License screen + Lemon Squeezy /v1/licenses/activate call with defensive product-ID `1049453` match guard + persistence of `license` sub-object in settings.json), FR55 (License Info screen displaying masked key/status/activation date/instance/product/store + Deactivate with hard confirmation + Re-activate when inactive), FR56 (Launch-time license validation via /v1/licenses/validate with offline grace on network failure and one-time inactive notice on revoked), FR57 (Home screen menu adaptation — 🔑 Activate License / 🔑 License Info conditional action; ☕ Buy me a coffee hidden when license active). NFR2 updated with license-specific error cases. NFR5 updated to include Activate License and License Info screens in terminal reset list. FR3 updated (home screen menu actions include license action; Buy me a coffee conditional). FR2 updated (create-domain entry pre-checks free-tier cap). FR17 updated (settings.json schema extended with optional `license` sub-object). FR25 updated (Buy me a coffee conditionally hidden when license active). FR Coverage Map updated (FR53 → Epic 14/Epic 2; FR54/FR55/FR56/FR57 → Epic 14; FR25 cross-references Epic 14). Epic 2 description updated (cap enforcement at create-domain). Epic 5 description updated (license sub-object persisted alongside settings). Epic 14 (License Activation) added with 7 stories (14.1–14.7): License Settings Schema & Types, Lemon Squeezy License API Client, Launch-Time License Validation, Home Screen Menu Adaptation, Activate License Screen, License Info Screen, Domain Cap Enforcement at Create Domain. Reflects PRD edits 2026-05-15 (Feature 20 License Activation + product ID hardening).'
   - date: '2026-04-19'
     changes: 'Feature 19 (My Coach) added: FR51 (My Coach screen — AI coaching report from scoped history, no gate, soft tip for <25 questions, generation timestamp, staleness notice on Regenerate, Regenerate/Back nav), FR52 (My Coach scope setting — Recent 25/Extended 100/Complete all, default Extended 100). FR3 updated (My Coach added to domain sub-menu actions). FR15 updated (Settings screen gains My Coach scope selector). FR17 updated (settings defaults include myCoachScope: "100"). FR Coverage Map updated (FR51 → Epic 13, FR52 → Epic 5/Epic 13). NFR5 updated (my coach screen in terminal reset list). Epic 2 description updated (My Coach in sub-menu action list). Epic 5 description and FRs covered updated (FR52 added). Epic 13 (My Coach) added with 3 stories (13.1–13.3): My Coach Screen, My Coach Scope Setting, Domain Schema Coach Fields. Reflects PRD edit 2026-04-19 (Feature 19 My Coach).'
   - date: '2026-04-05'
@@ -77,7 +79,7 @@ This document provides the complete epic and story breakdown for brain-break, de
 
 FR1: On every launch, the app displays a home screen listing all configured active domains, each showing current score and total questions answered. If no domains exist, the only available action is to create a new one. Selecting a domain opens a domain sub-menu (not the quiz directly).
 
-FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. After entering the domain name, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
+FR2: Users can create a new domain at any time from the home screen by typing any free-text topic name; the name is slugified and saved as a new domain file. Before showing the name input prompt, the create-domain entry checks the free-tier domain cap (see FR53): when no active license is present and the total number of domains (active + archived) is ≥ 1, an upsell message is displayed instead of the name prompt and the user is offered an Activate License action or a Back action. When the cap is not hit (or a license is active), the user proceeds with the standard flow: enter the domain name, then select a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary). The selected difficulty becomes the domain's initial `difficultyLevel`. The create-domain screen shows an input prompt followed by a Save/Back navigation menu; pressing Ctrl+C or selecting Back returns the user to the home screen without creating a domain.
 
 FR3: Selecting an active domain from the home screen opens a domain sub-menu. The sub-menu prompt header displays the domain name, current score, and total questions answered (refreshed each time). Available actions: Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, and Back. The ASCII Art label dynamically reflects the domain's unlock status: when the domain has fewer correct answers than the configured ASCII Art Milestone threshold (FR49, default: 100), the label shows a cyan-to-magenta gradient progress bar with percentage (e.g., `ASCII Art [████░░░░░░] 42%`); when the domain has reached the threshold, the label shows `ASCII Art ✨`. Selecting Play displays a contextual motivational message (if the user returned within 7 days or score is trending upward), then begins the quiz. Selecting Challenge opens the sprint setup screen (see FR44). Selecting ASCII Art opens the milestone-gated ASCII Art screen (see FR48). After a quiz or challenge sprint session ends, the user returns to the domain sub-menu; on this first re-render, a session summary block is displayed between the domain header and the action menu (see FR39). On the home screen, selecting Exit follows `showWelcome`: if `true`, the app shows the branded Exit Message screen (FR40) before terminating; if `false`, the app terminates immediately.
 
@@ -107,7 +109,7 @@ FR15: The Settings screen allows configuring: AI Provider (selectable from 6 pro
 
 FR16: Settings are global — they apply to all domains and all AI-generated content (questions, answer options, motivational messages).
 
-FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, myCoachScope: "100", theme: "dark", showWelcome: true }`. OpenAI Compatible API fields (`openaiCompatibleEndpoint`, `openaiCompatibleModel`) are stored only when the user configures them — no defaults are applied.
+FR17: Settings persist between sessions in a global settings file at `~/.brain-break/settings.json`. Defaults on missing file: `{ provider: null, language: "English", tone: "natural", openaiModel: "gpt-5.4", anthropicModel: "claude-opus-4-6", geminiModel: "gemini-2.5-pro", ollamaEndpoint: "http://localhost:11434", ollamaModel: "llama4", asciiArtMilestone: 100, myCoachScope: "100", theme: "dark", showWelcome: true }` (no `license` key). OpenAI Compatible API fields (`openaiCompatibleEndpoint`, `openaiCompatibleModel`) are stored only when the user configures them — no defaults are applied. An optional `license` sub-object (see FR54) is added when a Lemon Squeezy license is activated and removed on deactivation; absent on free-tier installations.
 
 FR18: Every AI call (questions, motivational messages, answer explanations) injects the active language and tone from global settings — generated content renders in the configured language and voice.
 
@@ -123,7 +125,7 @@ FR23: Difficulty level badge colors: L1 = cyan (Dark) / blue (Light), L2 = green
 
 FR24: Users can permanently delete a domain from the domain sub-menu. Selecting Delete presents a blocking confirmation dialog ("Delete '[domain]' permanently? This cannot be undone.") — confirming permanently removes the domain file and all associated data (history, score, progress) with no recovery path and returns the user to the home screen; declining returns the user to the domain sub-menu.
 
-FR25: The home screen includes a "☕ Buy me a coffee" action positioned between the archived domains separator and the Exit action. Selecting it opens a dedicated screen displaying an ASCII QR code (small, indented) encoding the creator's support URL and the URL in plain text, with a single Back action that returns the user to the home screen.
+FR25: The home screen includes a "☕ Buy me a coffee" action positioned between the license action (FR57) and the Exit action — the action is shown **only when no active license is present**; when a license is active (FR54), Buy me a coffee is hidden from the menu. Selecting it opens a dedicated screen displaying an ASCII QR code (small, indented) encoding the creator's support URL and the URL in plain text, with a single Back action that returns the user to the home screen.
 
 FR26: On first launch (no `settings.json` exists), a one-time Provider Setup screen appears before the home screen. The user selects an AI provider from a fixed list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) using arrow key navigation — followed by a line separator and a **⏭️ Skip — set up later in ⚙️ Settings** option. Selecting Skip saves settings with `provider: null`, skips the connection test entirely, and navigates directly to the home screen.
 
@@ -179,17 +181,27 @@ FR51: The domain sub-menu includes a **🏋️  My Coach** action positioned aft
 
 FR52: The Settings screen includes a **🏋️  My Coach Scope** selector positioned after **Tone of Voice** and before **ASCII Art Milestone**. The selector offers three options via arrow key navigation: **Recent (25 questions)**, **Extended (100 questions)** (default), and **Complete (all questions)**. The setting is global — applies to all domains. When the domain has fewer questions than the selected scope, all available questions are included. The selected value is stored as `myCoachScope` (string: `"25"` | `"100"` | `"all"`) in `settings.json`.
 
+FR53: Free-tier domain cap. When no active license is present in `settings.json` (the `license` sub-object is absent or has `status: "inactive"`), the total number of domain files in `~/.brain-break/` (active + archived combined) is capped at 1. Cap enforcement occurs only at the home screen "Create new domain" entry point: if the count is already ≥ 1, the upsell message *"Free version is limited to 1 domain. Activate a license to create more."* is shown along with two actions — **🔑 Activate License** (navigates to the Activate License screen, FR54) and **↩️  Back** (returns to home). Existing domains beyond the cap (after a license is revoked, deactivated, or downgraded) remain fully readable, playable, archivable, and deletable; only new creation is blocked. When a license is active, the cap is not enforced.
+
+FR54: License activation flow. The home screen includes a **🔑 Activate License** action (FR57, shown when no active license is present) that opens an Activate License screen. The screen renders `clearAndBanner()` with header `🔑 Activate License`, a short value-proposition paragraph, a free-text license-key input (`License key:`, paste supported), a **🔛 Manage your keys** action that opens `https://app.lemonsqueezy.com/my-orders` in the default browser, a **💳 Buy a license** action that opens `https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147`, and a **↩️  Back** action. On key submission the app calls `POST https://api.lemonsqueezy.com/v1/licenses/activate` with form fields `license_key=<key>` and `instance_name=brain-break@<hostname>` (loading spinner during the call). On success the app verifies the response's `meta.product_id` equals `1049453`; on mismatch the just-created instance is released via an immediate `POST /v1/licenses/deactivate` call and the user sees *"This license key is not valid for brain-break."* On product-ID match the app persists a `license` sub-object inside `settings.json` with fields `{ key, instanceId, instanceName, activatedAt, productId, productName, storeId, storeName, status: "active" }`, shows the confirmation *"License activated successfully. Unlimited domains unlocked."*, and returns to home where the menu re-renders with **🔑 License Info** in place of **🔑 Activate License** and the Coffee action hidden. On failure (invalid key, refunded/revoked, activation limit reached, network error, product-ID mismatch) the corresponding NFR2 license error is displayed inline and the user remains on the Activate License screen.
+
+FR55: License Info screen. When a license is active, the home screen includes a **🔑 License Info** action in the same slot as FR54's Activate License. Selecting it opens a screen rendered via `clearAndBanner()` with header `🔑 License Info` and the following fields (using the same `bold('Label:') + ' value'` format as the Stats Dashboard): **Status** (`Active` green or `Inactive` red), **License key** (masked: first 4 + last 4 characters), **Activated** (human-readable date from `activatedAt`), **Instance** (`instanceName`), **Product** (`productName`), **Store** (`storeName`). When `status` is `"inactive"`, a dim line is shown below the field block: *"This license was deactivated or could not be validated. Activate again to unlock unlimited domains."* The screen exposes the following actions: **🔌 Deactivate** (shown only when `status` is `"active"`) prompts a hard confirmation *"Deactivate this license? You'll be limited to 1 domain again. Existing domains beyond the cap remain readable but you won't be able to create new ones until you re-activate."* and on confirm calls `POST https://api.lemonsqueezy.com/v1/licenses/deactivate` with `license_key` and `instance_id`; on success the `license` sub-object is removed from `settings.json` and the user is returned to home with the menu re-rendered; on failure the NFR2 deactivation error is displayed and local state is unchanged. **🔑 Re-activate** (shown only when `status` is `"inactive"`) navigates to the Activate License screen. **🔛 Manage your keys** opens `https://app.lemonsqueezy.com/my-orders` in the default browser. **↩️  Back** returns to the home screen.
+
+FR56: Launch-time license validation. On every app launch where `settings.json` contains a `license` sub-object with `status: "active"`, the app calls `POST https://api.lemonsqueezy.com/v1/licenses/validate` with the stored `license_key` and `instance_id` before rendering the home screen. The validation call is bounded to ≤ 2 seconds and runs concurrently with other startup work to preserve NFR4. Response handling: `valid: true` keeps the license active and the home screen renders normally; `valid: false` (invalid/refunded/revoked) flips `license.status` to `"inactive"` in `settings.json` and displays a one-time notice on the next home screen render *"Your license is no longer active. You've been returned to the free tier."*; network unreachable or HTTP 5xx keeps `license.status` unchanged (offline grace), displays a dim *"License could not be validated — offline mode"* line on the home screen, and retries validation on the next launch.
+
+FR57: Home screen menu adaptation by license state. The home screen menu renders one of two license-related actions in the slot between **⚙️  Settings** and the Coffee/Exit actions: when no active license is present, the menu shows **🔑 Activate License** (opens the Activate License screen, FR54); when an active license is present (`settings.license.status === "active"`), the menu shows **🔑 License Info** (opens the License Info screen, FR55) and the **☕ Buy me a coffee** action is hidden entirely (FR25). The menu re-renders immediately after a successful activation or deactivation — no app restart is required.
+
 ### NonFunctional Requirements
 
 NFR1: The next question must appear within ≤ 5 seconds of the user submitting an answer (covering Copilot API call + local persistence). A loading spinner (ora) is displayed during generation so the terminal does not appear frozen.
 
-NFR2: If the configured AI provider is unreachable, the app displays a provider-specific error message and returns the user to the domain sub-menu without crashing. Per-provider messages: GitHub Copilot — "Could not reach the Copilot API. Check your connection and try again."; OpenAI/Anthropic/Gemini — "Could not reach [Provider] API. Check your connection and try again."; Ollama — "Could not reach Ollama at [endpoint]. Ensure Ollama is running and try again."; OpenAI Compatible API — "Could not reach the OpenAI Compatible API at [endpoint]. Check your connection and endpoint URL and try again." If authentication fails: GitHub Copilot — "Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."; OpenAI/Anthropic/Gemini — "[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."; Ollama — "Could not connect to Ollama. Check that the endpoint and model are correct in Settings."; OpenAI Compatible API — "OpenAI Compatible API key is invalid or missing. Set the `OPENAI_COMPATIBLE_API_KEY` environment variable with a valid key and restart the app." In all error cases, the app remains running and the user can navigate to Settings to reconfigure.
+NFR2: If the configured AI provider is unreachable, the app displays a provider-specific error message and returns the user to the domain sub-menu without crashing. Per-provider messages: GitHub Copilot — "Could not reach the Copilot API. Check your connection and try again."; OpenAI/Anthropic/Gemini — "Could not reach [Provider] API. Check your connection and try again."; Ollama — "Could not reach Ollama at [endpoint]. Ensure Ollama is running and try again."; OpenAI Compatible API — "Could not reach the OpenAI Compatible API at [endpoint]. Check your connection and endpoint URL and try again." If authentication fails: GitHub Copilot — "Copilot authentication failed. Ensure you have an active GitHub Copilot subscription and are logged in."; OpenAI/Anthropic/Gemini — "[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."; Ollama — "Could not connect to Ollama. Check that the endpoint and model are correct in Settings."; OpenAI Compatible API — "OpenAI Compatible API key is invalid or missing. Set the `OPENAI_COMPATIBLE_API_KEY` environment variable with a valid key and restart the app." In all error cases, the app remains running and the user can navigate to Settings to reconfigure. License activation/validation/deactivation errors (FR54/FR55/FR56) display inline on the Activate License or License Info screen and the user remains on that screen — never crash the app. License error messages: **Invalid key** — "License key not recognized. Check the key and try again."; **Product-ID mismatch** — "This license key is not valid for brain-break."; **Revoked / refunded** — "This license has been revoked or refunded and can no longer be used."; **Activation limit reached** — "This license has reached its activation limit. Deactivate it on another device or buy an additional seat."; **Network unreachable on activation** — "Could not reach the licensing server. Check your connection and try again."; **Network unreachable on validation (launch)** — silent inline notice "License could not be validated — offline mode" (offline grace, no error screen); **Network unreachable on deactivation** — "Could not reach the licensing server. Deactivation failed — try again when online."
 
 NFR3: Missing domain file → treated as a new domain (score 0, no history, no error displayed). Corrupted domain file → warning displayed, domain reset to clean state, corrupted file overwritten on next save.
 
 NFR4: The app must reach the home screen within ≤ 2 seconds of launch on a standard developer machine.
 
-NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, my coach screen, welcome screen, exit message screen, settings screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
+NFR5: All screen transitions (home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, stats dashboard, my coach screen, welcome screen, exit message screen, settings screen, activate license screen, license info screen) perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. Exception: the post-answer feedback panel does not trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. A terminal reset occurs only when the user selects Next question (loading the next question) or exits the quiz. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content via the shared `clearAndBanner()` utility.
 
 NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseline — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application ships two color palettes (Dark and Light) to ensure readability across both dark and light terminal backgrounds; the active palette is determined by the 🌓 Theme setting (FR50, default: Dark). All semantic color mappings are defined in FR20–FR23. The application is interactive-only; non-TTY and piped execution modes are out of scope.
 
@@ -245,7 +257,7 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR22 | Epic 6 | Speed tier badge colors |
 | FR23 | Epic 6 | Difficulty level badge colors |
 | FR24 | Epic 2 | Delete domain from sub-menu — confirmation dialog, permanent removal, navigate home |
-| FR25 | Epic 1 | Coffee Supporter Screen — QR code + URL + Back navigation |
+| FR25 | Epic 1, Epic 14 | Coffee Supporter Screen — QR code + URL + Back navigation; conditionally hidden when license is active |
 | FR26 | Epic 7 | First-launch Provider Setup screen |
 | FR27 | Epic 7 | Provider readiness validation (non-blocking) |
 | FR28 | Epic 7 | Settings screen — AI Provider selector + per-provider model config + Ollama config |
@@ -273,6 +285,11 @@ NFR6: All ANSI color output uses standard 8/16-color ANSI escape codes as baseli
 | FR50 | Epic 5, Epic 6 | Theme toggle (Dark/Light, default Dark) — controls color palette for readability on dark and light terminal backgrounds |
 | FR51 | Epic 13 | My Coach screen — cached report shown on entry (preview); AI auto-generated on first use; opt-in Regenerate; generation timestamp; staleness notice on Regenerate; `lastCoachReport` persisted |
 | FR52 | Epic 5, Epic 13 | My Coach Scope setting — Recent (25) / Extended (100) / Complete (all), default Extended; stored as `myCoachScope` in settings.json |
+| FR53 | Epic 14, Epic 2 | Free-tier 1-domain cap (active + archived combined) enforced at create-domain entry with upsell |
+| FR54 | Epic 14 | License activation flow — Activate License screen + Lemon Squeezy /v1/licenses/activate + product-ID 1049453 match guard + persist `license` sub-object |
+| FR55 | Epic 14 | License Info screen — masked key/status/activation date/instance/product/store + Deactivate (hard confirm) + Re-activate when inactive + Manage keys |
+| FR56 | Epic 14 | Launch-time license validation via /v1/licenses/validate with offline grace + one-time inactive notice on revoked |
+| FR57 | Epic 14 | Home screen menu adaptation by license state — Activate License / License Info toggle + Coffee hidden when active |
 
 | NFR | Epic | Coverage |
 |---|---|---|
@@ -292,8 +309,8 @@ Users can clone the repo, install dependencies, and run `tsx src/index.ts` to re
 **Additional requirements covered:** TypeScript scaffold, ESM/NodeNext/strict, full `src/` directory structure, `Result<T>` type, Zod domain schema, `defaultDomainFile()`, atomic write store, CI pipeline, npm/npx distribution config
 
 ### Epic 2: Domain Management
-Users can launch the app, see their domain list with scores, create a new domain, select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
-**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24, FR47
+Users can launch the app, see their domain list with scores, create a new domain (subject to the free-tier 1-domain cap when no license is active — see Epic 14, FR53), select a domain to open its sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back), archive domains they're not actively using, unarchive them to resume exactly where they left off, and permanently delete domains they no longer need.
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR24, FR47, FR53
 **NFRs covered:** NFR3 (missing/corrupted file handling), NFR4 (≤ 2s startup)
 
 ### Epic 3: AI-Powered Adaptive Quiz
@@ -357,6 +374,13 @@ Users can select My Coach from the domain sub-menu to receive a personalized AI-
 **FRs covered:** FR51, FR52
 **FRs updated:** FR3 (My Coach added to domain sub-menu actions), FR15 (Settings screen gains My Coach Scope selector), FR17 (settings defaults include myCoachScope)
 **NFRs covered:** NFR2 (AI provider error handling), NFR5 (My Coach screen in terminal reset list)
+
+### Epic 14: License Activation
+Users on the free tier can use brain-break with up to one domain (active + archived combined). To unlock unlimited domains, a Lemon Squeezy license key is purchased from the storefront and activated from a dedicated Activate License screen on the home menu — the app calls Lemon Squeezy's `/v1/licenses/activate` endpoint, defensively verifies the response's `meta.product_id` matches `1049453` (releasing the instance if it doesn't), and persists a `license` sub-object inside `settings.json`. Once active, the home menu replaces the Activate License action with a License Info screen exposing masked key/status/activation date/instance/product/store fields, a hard-confirm Deactivate action, and a Manage keys link; the Buy me a coffee action is hidden when a license is active. On every launch with a stored license, the app validates the license via `/v1/licenses/validate` (bounded to ≤ 2s to honor NFR4); a revoked license flips `status` to `"inactive"` with a one-time notice, while network errors keep the cached state active under an offline grace policy.
+**FRs covered:** FR53, FR54, FR55, FR56, FR57
+**FRs updated:** FR2 (create-domain entry checks free-tier cap), FR3 (home screen menu includes license action; Buy me a coffee conditional), FR17 (settings.json schema extended with optional `license` sub-object), FR25 (Buy me a coffee hidden when license active)
+**NFRs covered:** NFR2 (license-specific error cases for invalid key, product-ID mismatch, revoked/refunded, activation limit, network failure on activate/validate/deactivate), NFR4 (launch validation bounded to ≤ 2s with concurrent execution), NFR5 (Activate License and License Info screens in terminal reset list)
+**Additional requirements covered:** `domain/license-client.ts` — Lemon Squeezy HTTP client (activate / validate / deactivate) using global `fetch`, form-encoded bodies, hostname-derived instance name, product-ID 1049453 match guard, structured error result types; `domain/schema.ts` — `LicenseRecord` Zod schema added to optional `license` field of `SettingsFile`; `screens/activate-license.ts` and `screens/license-info.ts` — new screens; `index.ts` startup flow — launch validation orchestrator; `screens/home.ts` — menu adaptation by license state; `screens/create-domain.ts` — cap pre-check.
 
 ---
 
@@ -2736,3 +2760,333 @@ So that the My Coach screen can track when the last report was generated and how
 **Given** `domain/schema.ts` and `domain/store.ts` are updated  
 **When** I run `npm test`  
 **Then** all existing tests pass with no regressions, and new tests cover: schema accepts domain files with and without coach fields; `lastCoachQuestionCount` and `lastCoachTimestamp` round-trip through write/read; fields are absent from `defaultDomainFile()` output
+
+---
+
+## Epic 14: License Activation
+
+Users on the free tier can use brain-break with up to one domain (active + archived combined). Activating a Lemon Squeezy license from the home menu lifts that cap to unlimited and unlocks a License Info screen with masked key, status, activation date, instance, product, and store fields plus a hard-confirm Deactivate action. The app calls Lemon Squeezy's activate/validate/deactivate endpoints, defensively verifies the product matches `1049453`, persists the license alongside settings, and re-validates on every launch with an offline-grace policy that never blocks startup.
+
+### Story 14.1: License Settings Schema & Types
+
+As a developer,
+I want a `license` optional sub-object added to the `SettingsFile` Zod schema with all Lemon Squeezy activation fields,
+So that license state can be persisted alongside other global settings in `~/.brain-break/settings.json` and read by every screen that needs to gate behaviour on license state.
+
+**Acceptance Criteria:**
+
+**Given** `domain/schema.ts` is updated  
+**When** I inspect the `SettingsFile` schema  
+**Then** it includes an optional `license` field whose value (when present) is a `LicenseRecord` object with required fields: `key` (string), `instanceId` (string), `instanceName` (string), `activatedAt` (string, ISO 8601), `productId` (number), `productName` (string), `storeId` (number), `storeName` (string), `status` (enum: `"active"` | `"inactive"`)  
+**And** existing `settings.json` files without a `license` key pass Zod validation (backward compatible)  
+
+**Given** `defaultSettings()` is called  
+**When** I inspect the returned object  
+**Then** the `license` field is not present (free-tier installations have no license by default)  
+
+**Given** a `settings.json` file contains a malformed `license` sub-object (missing required fields or invalid types)  
+**When** the settings file is loaded  
+**Then** Zod validation fails for the license sub-object only; the rest of the settings are preserved; the corrupted `license` is dropped and the user is treated as free-tier — no crash  
+
+**Given** the schema is exported  
+**When** I import `LicenseRecord` from `domain/schema.ts`  
+**Then** the TypeScript type matches the Zod schema and is used by `domain/license-client.ts` and the license screens  
+
+**Given** `domain/schema.ts` is updated  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests cover: schema accepts settings with and without `license`; schema rejects malformed `license` sub-objects; round-trip read/write preserves all license fields; default settings have no `license` key
+
+---
+
+### Story 14.2: Lemon Squeezy License API Client
+
+As a developer,
+I want a `domain/license-client.ts` module that exposes `activateLicense(key)`, `validateLicense(key, instanceId, opts)`, and `deactivateLicense(key, instanceId)` functions wrapping the Lemon Squeezy License API,
+So that screens can call clean typed helpers without dealing with HTTP, form-encoded bodies, hostname derivation, product-ID matching, or error mapping themselves.
+
+**Acceptance Criteria:**
+
+**Given** `domain/license-client.ts` is implemented  
+**When** I call `activateLicense(key)`  
+**Then** it issues `POST https://api.lemonsqueezy.com/v1/licenses/activate` using global `fetch` with `Content-Type: application/x-www-form-urlencoded` and body fields `license_key=<key>` and `instance_name=brain-break@<hostname>` (where `<hostname>` comes from `os.hostname()`)  
+
+**Given** `activateLicense` receives a successful response  
+**When** the response body is parsed  
+**Then** the client verifies `meta.product_id === 1049453`  
+**And** if the IDs match, the client returns `Result.ok(LicenseRecord)` populated from `instance.id`, `instance.name`, `instance.created_at`, `meta.product_id`, `meta.product_name`, `meta.store_id`, `meta.store_name`, with `key` set to the submitted key and `status: "active"`  
+**And** if the IDs do not match, the client immediately calls `deactivateLicense(key, instance.id)` to release the just-created instance, then returns `Result.err({ kind: "product_mismatch" })`  
+
+**Given** `activateLicense` receives an error response  
+**When** the body is parsed  
+**Then** the client returns a typed error: `kind: "invalid_key"` (response indicates key not found), `kind: "revoked"` (response indicates license disabled/refunded), `kind: "limit_reached"` (response indicates activation_limit exceeded), or `kind: "unknown_api_error"` with the upstream message  
+
+**Given** `activateLicense` cannot reach the server  
+**When** `fetch` throws or returns a 5xx status  
+**Then** the client returns `Result.err({ kind: "network" })` with no retries (caller decides what to do)  
+
+**Given** `validateLicense(key, instanceId, { timeoutMs })` is called  
+**When** the call is issued  
+**Then** the client posts `POST /v1/licenses/validate` with form fields `license_key=<key>` and `instance_id=<instanceId>`  
+**And** the call is bounded by `AbortSignal.timeout(timeoutMs ?? 2000)` so it cannot exceed the NFR4 launch budget  
+**And** on `valid: true` the client returns `Result.ok({ valid: true })`  
+**And** on `valid: false` the client returns `Result.ok({ valid: false, reason })` where `reason` is mapped from the response (revoked/refunded/invalid)  
+**And** on timeout or network failure the client returns `Result.err({ kind: "network" })` (signal to apply offline grace)  
+
+**Given** `deactivateLicense(key, instanceId)` is called  
+**When** the call is issued  
+**Then** the client posts `POST /v1/licenses/deactivate` with form fields `license_key=<key>` and `instance_id=<instanceId>`  
+**And** on success (`deactivated: true`) returns `Result.ok(true)`  
+**And** on API error returns `Result.err({ kind: "unknown_api_error", message })`  
+**And** on network failure returns `Result.err({ kind: "network" })`  
+
+**Given** `domain/license-client.ts` is exported  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests (with `fetch` mocked) cover: successful activate with matching product ID 1049453 returns a populated `LicenseRecord`; successful activate with non-matching product ID triggers an immediate deactivate call and returns `product_mismatch`; invalid key, revoked, and activation-limit error responses are mapped correctly; network failure returns `network` error; `validateLicense` respects `timeoutMs`; `deactivateLicense` posts the expected payload and surfaces success/failure
+
+---
+
+### Story 14.3: Launch-Time License Validation
+
+As a user,
+I want the app to validate my stored license on every launch and gracefully fall back to offline mode when the network is unreachable,
+So that revoked or refunded keys lose privileges automatically without ever blocking my startup when I'm offline.
+
+**Acceptance Criteria:**
+
+**Given** `settings.json` has no `license` sub-object (free tier)  
+**When** the app launches  
+**Then** no validation call is made; the home screen renders normally  
+
+**Given** `settings.json` contains a `license` sub-object with `status: "active"`  
+**When** the app launches  
+**Then** `validateLicense(key, instanceId, { timeoutMs: 2000 })` is invoked before the home screen renders  
+**And** the call runs concurrently with other startup work so the total time-to-home-screen stays within NFR4 (≤ 2 s)  
+
+**Given** the validation call returns `valid: true`  
+**When** the result is handled  
+**Then** `license.status` is left as `"active"` in `settings.json`  
+**And** no notice is displayed on the home screen  
+
+**Given** the validation call returns `valid: false`  
+**When** the result is handled  
+**Then** `license.status` is flipped to `"inactive"` and persisted to `settings.json`  
+**And** a one-time notice is rendered above the home menu: *"Your license is no longer active. You've been returned to the free tier."*  
+**And** the notice is shown only on this launch — the next launch does not re-render it  
+
+**Given** the validation call returns a `network` error (timeout or HTTP 5xx)  
+**When** the result is handled  
+**Then** `license.status` remains `"active"` (offline grace — local state is not mutated)  
+**And** a dim line is rendered on the home screen: *"License could not be validated — offline mode"*  
+**And** the next launch re-attempts validation  
+
+**Given** `settings.json` has `license.status: "inactive"`  
+**When** the app launches  
+**Then** no validation call is made (the license is already known to be inactive)  
+**And** the home screen renders with the menu in free-tier mode (Activate License visible, Coffee visible)  
+
+**Given** the launch validation orchestrator is implemented  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests (with `validateLicense` mocked) cover: no call when license absent; no call when license already inactive; status persists on `valid: true`; flip to inactive on `valid: false`; offline grace on `network` error (no mutation); one-time notice rendered once and cleared on next render; validation completes within 2 s under normal conditions; concurrent execution does not delay home screen beyond NFR4
+
+---
+
+### Story 14.4: Home Screen Menu Adaptation
+
+As a user,
+I want the home screen menu to reflect my current license state — showing Activate License when I'm on the free tier and License Info plus a hidden Coffee action when I have an active license,
+So that the menu only surfaces actions that are relevant to my current tier.
+
+**Acceptance Criteria:**
+
+**Given** `settings.json` has no `license` sub-object (or `license.status === "inactive"`)  
+**When** the home screen renders  
+**Then** the menu shows in order: domain entries, `➕ Create new domain`, archived domains separator (if any), `⚙️  Settings`, `🔑 Activate License`, `☕ Buy me a coffee`, `🚪 Exit`  
+
+**Given** `settings.json` has `license.status === "active"`  
+**When** the home screen renders  
+**Then** the menu shows in order: domain entries, `➕ Create new domain`, archived domains separator (if any), `⚙️  Settings`, `🔑 License Info`, `🚪 Exit` (the Coffee action is omitted entirely)  
+
+**Given** I am on the home screen with `license.status === "active"` and I select `🔑 License Info`  
+**When** the screen routes  
+**Then** the License Info screen (Story 14.6) is displayed  
+
+**Given** I am on the home screen with no active license and I select `🔑 Activate License`  
+**When** the screen routes  
+**Then** the Activate License screen (Story 14.5) is displayed  
+
+**Given** I have just completed a successful activation and returned to the home screen  
+**When** the home screen re-renders  
+**Then** the menu reflects the new state immediately (License Info shown, Coffee hidden) — no app restart is required  
+
+**Given** I have just completed a successful deactivation and returned to the home screen  
+**When** the home screen re-renders  
+**Then** the menu reflects the new state immediately (Activate License shown, Coffee shown again)  
+
+**Given** the home screen is updated  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests cover: menu order with no license; menu order with active license (Coffee omitted, License Info present); menu order with inactive license (same as no license); menu re-renders correctly after activation; menu re-renders correctly after deactivation; routing from each license action lands on the correct screen
+
+---
+
+### Story 14.5: Activate License Screen
+
+As a user,
+I want a dedicated Activate License screen where I can paste my license key, jump to the storefront to buy one, or jump to my orders to manage existing keys,
+So that I can unlock unlimited domains in one place without leaving the app.
+
+**Acceptance Criteria:**
+
+**Given** I select `🔑 Activate License` from the home screen  
+**When** the screen renders  
+**Then** `clearAndBanner()` is called and the screen displays header `🔑 Activate License`  
+**And** a short value-proposition paragraph is shown explaining that activation lifts the 1-domain cap  
+
+**Given** the Activate License screen is displayed  
+**When** I view the actions  
+**Then** the following options are available in order: free-text input labeled `License key:` (paste supported), `🔛 Manage your keys`, `💳 Buy a license`, `↩️  Back`  
+
+**Given** I submit a license key  
+**When** the activation call is in flight  
+**Then** an ora spinner is shown with text such as *"Activating license…"*  
+
+**Given** the activation succeeds and the product ID matches `1049453`  
+**When** the result is handled  
+**Then** the `license` sub-object is persisted into `settings.json` via `domain/license-client.ts` (`activateLicense` already validated product ID and returned a populated `LicenseRecord`)  
+**And** a green confirmation line is shown: *"License activated successfully. Unlimited domains unlocked."*  
+**And** the user is returned to the home screen which re-renders with the License Info action (Story 14.4)  
+
+**Given** the activation fails (any error kind from Story 14.2)  
+**When** the error is handled  
+**Then** the corresponding NFR2 license error message is rendered inline on the same Activate License screen (Invalid key / Product-ID mismatch / Revoked / Activation limit / Network) — never crashes  
+**And** the user remains on the Activate License screen with the license-key input cleared and ready for another attempt  
+
+**Given** I select `🔛 Manage your keys`  
+**When** the action runs  
+**Then** the URL `https://app.lemonsqueezy.com/my-orders` is opened in the default browser (via the same browser-open helper used by `screens/coffee.ts`)  
+**And** the user remains on the Activate License screen  
+
+**Given** I select `💳 Buy a license`  
+**When** the action runs  
+**Then** the URL `https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147` is opened in the default browser  
+**And** the user remains on the Activate License screen  
+
+**Given** I select `↩️  Back`  
+**When** the action runs  
+**Then** the user is returned to the home screen with no changes  
+
+**Given** the Activate License screen is implemented  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests (with `activateLicense` and the browser-open helper mocked) cover: layout (header, value prop, input, actions); spinner during activation; successful activate persists `license` and routes home; product-mismatch error is displayed without persisting any license; each error kind from Story 14.2 maps to its NFR2 message; Manage keys and Buy a license open the correct URLs; Back returns to home
+
+---
+
+### Story 14.6: License Info Screen
+
+As a licensed user,
+I want a License Info screen that shows my license details with a hard-confirm Deactivate action and a Manage keys shortcut,
+So that I can audit my license at a glance and release my activation when I move to another machine.
+
+**Acceptance Criteria:**
+
+**Given** `license.status === "active"` and I select `🔑 License Info` from the home screen  
+**When** the screen renders  
+**Then** `clearAndBanner()` is called and the screen displays header `🔑 License Info`  
+**And** the following fields are displayed using the same `bold('Label:') + ' value'` format as the Stats Dashboard:  
+  - **Status:** `Active` rendered in green  
+  - **License key:** masked as first 4 + `…` + last 4 characters (e.g., `38B1…D4F9`)  
+  - **Activated:** human-readable date derived from `activatedAt` (e.g., `May 15, 2026`)  
+  - **Instance:** the stored `instanceName` (e.g., `brain-break@georges-mac`)  
+  - **Product:** the stored `productName`  
+  - **Store:** the stored `storeName`  
+
+**Given** `license.status === "inactive"` and I select `🔑 License Info`  
+**When** the screen renders  
+**Then** the Status field is rendered in red as `Inactive`  
+**And** a dim line is rendered below the field block: *"This license was deactivated or could not be validated. Activate again to unlock unlimited domains."*  
+
+**Given** the License Info screen is displayed with `status === "active"`  
+**When** I view the actions  
+**Then** the actions are: `🔌 Deactivate`, `🔛 Manage your keys`, `↩️  Back`  
+
+**Given** the License Info screen is displayed with `status === "inactive"`  
+**When** I view the actions  
+**Then** the actions are: `🔑 Re-activate`, `🔛 Manage your keys`, `↩️  Back` (Deactivate is not shown)  
+
+**Given** I select `🔌 Deactivate`  
+**When** the action runs  
+**Then** a hard-confirm prompt is shown: *"Deactivate this license? You'll be limited to 1 domain again. Existing domains beyond the cap remain readable but you won't be able to create new ones until you re-activate."*  
+**And** the prompt offers `Yes, deactivate` and `Cancel` options (default focus on Cancel)  
+
+**Given** I confirm deactivation  
+**When** the deactivation call is in flight  
+**Then** an ora spinner is shown with text *"Deactivating license…"*  
+
+**Given** the deactivation call succeeds  
+**When** the result is handled  
+**Then** the `license` sub-object is removed entirely from `settings.json`  
+**And** the user is returned to the home screen which re-renders in free-tier mode (Activate License and Coffee both visible — Story 14.4)  
+
+**Given** the deactivation call fails (network error or API error)  
+**When** the result is handled  
+**Then** the corresponding NFR2 deactivation error is rendered inline on the License Info screen — local state is unchanged (`license` remains in `settings.json` with its prior `status`)  
+**And** the user remains on the License Info screen  
+
+**Given** I select `🔑 Re-activate` from the inactive state  
+**When** the action runs  
+**Then** the Activate License screen (Story 14.5) is displayed; the existing inactive `license` sub-object is overwritten only on a successful re-activation  
+
+**Given** I select `🔛 Manage your keys`  
+**When** the action runs  
+**Then** the URL `https://app.lemonsqueezy.com/my-orders` is opened in the default browser  
+**And** the user remains on the License Info screen  
+
+**Given** I select `↩️  Back`  
+**When** the action runs  
+**Then** the user is returned to the home screen with no changes  
+
+**Given** the License Info screen is implemented  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests (with `deactivateLicense` and the browser-open helper mocked) cover: field rendering with active status (green); field rendering with inactive status (red + dim notice); key masking format; date formatting; action list differs by status (Deactivate vs Re-activate); hard-confirm prompt defaults to Cancel; successful deactivation removes the `license` sub-object and routes home; failed deactivation preserves local state and displays the inline error; Re-activate navigates to the Activate License screen; Manage keys opens the correct URL; Back returns to home
+
+---
+
+### Story 14.7: Domain Cap Enforcement at Create Domain
+
+As a free-tier user,
+I want the Create new domain action to politely block me with an upsell when I already have one domain (active or archived), with a fast path to the Activate License screen,
+So that I learn about the paid tier exactly when the cap matters without losing access to any of my existing data.
+
+**Acceptance Criteria:**
+
+**Given** `settings.json` has `license.status === "active"`  
+**When** I select `➕ Create new domain` from the home screen  
+**Then** the cap is not enforced; the standard create-domain flow runs unchanged (FR2 — name input → starting difficulty → Save/Back)  
+
+**Given** no active license is present and the total number of domain files in `~/.brain-break/` is `0` (active + archived combined)  
+**When** I select `➕ Create new domain`  
+**Then** the cap is not enforced; the standard create-domain flow runs (this is the very first domain — must always be allowed on the free tier)  
+
+**Given** no active license is present and the total number of domain files in `~/.brain-break/` is `≥ 1` (active + archived combined)  
+**When** I select `➕ Create new domain`  
+**Then** the create-domain screen displays the upsell message *"Free version is limited to 1 domain. Activate a license to create more."* instead of the name input prompt  
+**And** the screen shows two actions: `🔑 Activate License` and `↩️  Back`  
+
+**Given** the cap-blocked create-domain screen is displayed  
+**When** I select `🔑 Activate License`  
+**Then** the Activate License screen (Story 14.5) is displayed  
+
+**Given** the cap-blocked create-domain screen is displayed  
+**When** I select `↩️  Back`  
+**Then** the user is returned to the home screen with no changes  
+
+**Given** I had 2 domains while licensed, then deactivated the license  
+**When** I select `➕ Create new domain` from the home screen  
+**Then** the upsell is displayed (2 ≥ 1, no active license) — but the 2 existing domains remain fully readable, playable, archivable, and deletable from the home screen and their sub-menus  
+
+**Given** I deleted my over-cap domains until the total reached `0`  
+**When** I select `➕ Create new domain` from the home screen  
+**Then** the standard create-domain flow runs (count is now `0`, so the cap allows creating a single fresh domain)  
+
+**Given** the cap enforcement is implemented  
+**When** I run `npm test`  
+**Then** all existing tests pass with no regressions, and new tests cover: licensed user with any count passes through to the standard flow; free-tier user with 0 domains passes through; free-tier user with 1 active domain sees the upsell; free-tier user with 1 archived domain sees the upsell; free-tier user with 1 active + 1 archived sees the upsell; Activate License action routes to Story 14.5; Back returns to home; existing over-cap domains remain functional (play/history/stats/delete) — only creation is blocked

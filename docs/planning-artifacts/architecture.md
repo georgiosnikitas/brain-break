@@ -7,8 +7,10 @@ workflowType: 'architecture'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-03-07'
-lastEdited: '2026-04-19'
+lastEdited: '2026-05-15'
 editHistory:
+  - date: '2026-05-15'
+    changes: 'License Activation (PRD Feature 20, Epic 14, FR53–FR57): Requirements Overview updated (16→17 features, License Activation added to feature list + free/licensed tier mention). Estimated components updated (18–20→19–21). Technical Constraints expanded (Lemon Squeezy License API endpoints, expected product ID 1049453, hostname-derived instance name, global `fetch`-based HTTP client — no new SDK dependency). Cross-Cutting Concerns updated (license activation/validation/deactivation, launch-time validation with offline grace, free-tier domain cap enforcement). Settings File Schema updated (optional `license` sub-object with key/instanceId/instanceName/activatedAt/productId/productName/storeId/storeName/status — absent on free-tier). Authentication & Security updated (license key stored locally — never logged, masked in UI; auto-release of instance on product-ID mismatch). API & Communication Patterns expanded with new Lemon Squeezy License API subsection (endpoints, form-encoded bodies, product-ID 1049453 match guard, error kind mapping, `AbortSignal.timeout(2000)` for launch validation). Terminal UI navigation flow updated (showActivateLicense + showLicenseInfo routes, conditional license action on home menu, conditional Coffee action hidden when license active, launch validation step prior to home render). Screen count updated (17→19 routes). New License Activation Architecture section added (activate/validate/deactivate flow, product-ID guard with auto-release, offline grace policy, one-time inactive notice, free-tier cap enforcement at create-domain entry, browser-open helper). Module Architecture src/ tree updated (new domain/license-client.ts, screens/activate-license.ts, screens/license-info.ts, utils/open-url.ts; create-domain.ts comment expanded with cap pre-check; home.ts comment expanded with conditional menu; router count 17→19). Complete Project Directory Structure updated (matching new files with .test.ts siblings). External Boundaries updated (Lemon Squeezy row added — domain/license-client.ts is the only module that calls Lemon Squeezy; utils/open-url.ts is the only module that spawns OS browser-open commands). Internal Boundaries updated (license-client.ts is only module that imports `os` for hostname and only module that calls Lemon Squeezy). Feature to Structure Mapping updated (F17 row added). Cross-Cutting Concern Mapping updated (license API integration row, launch validation row, free-tier cap enforcement row). Implementation Sequence updated (license-client added after step 8). Data Flow — Startup updated (launch validation step inserted before home render). New Data Flow — License Activation and Data Flow — License Deactivation sections added. Anti-Patterns expanded (no fs writes outside store.ts and license activation/deactivation flows; no Lemon Squeezy HTTP calls outside license-client.ts). Requirements Coverage Validation updated (F17 row added). Coherence Validation updated with License Activation paragraph. All changes additive — no architectural decisions changed for prior features.'
   - date: '2026-04-19'
     changes: 'My Coach (PRD Feature 19, Epic 13, FR51–FR52): Requirements Overview updated (15→16 features, My Coach added to feature list). Estimated components updated (17–19→18–20). Cross-cutting concerns updated (coaching report AI path, myCoachScope setting). Domain File Schema updated (optional lastCoachQuestionCount and lastCoachTimestamp fields in meta). Settings schema expanded with myCoachScope field and default. Settings screen description updated (My Coach Scope option). Navigation pattern updated (My Coach route in domain sub-menu, showMyCoach router export). New My Coach Screen Architecture section added — coaching report generation via generateCoachReport() in ai/client.ts, scoped history (25/100/all), soft tip for <25 questions, staleness notice on regenerate, generation timestamp display. ai/client.ts public exports updated (generateCoachReport). ai/prompts.ts role updated (coaching prompt template). Module Architecture src/ tree updated (my-coach.ts added, domain-menu.ts comment expanded, router count 16→17). Complete Project Directory Structure updated (my-coach.ts + my-coach.test.ts added, router count 16→17). Feature to Structure Mapping updated (F16 row added). Cross-Cutting Concern Mapping updated (coaching report generation row added). Requirements Coverage Validation updated (F16 row added). Coherence Validation updated with My Coach mention. All changes additive — no architectural decisions changed.'
   - date: '2026-04-07'
@@ -59,7 +61,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-16 features covering: domain lifecycle management (create, select, archive, unarchive, delete), multi-provider AI-powered question generation (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, my coach scope, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen, a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls, and a per-domain AI-powered coaching report (My Coach) that analyzes scoped question history to surface strengths, weaknesses, trajectory, and recommendations — with configurable history scope (recent 25, extended 100, or complete).
+17 features covering: domain lifecycle management (create, select, archive, unarchive, delete) with a free-tier 1-domain cap (active + archived combined) lifted by license activation, multi-provider AI-powered question generation (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) with adaptive difficulty (5 levels, user-selected starting level at domain creation, streak-driven adjustment) and language/tone injection, interactive terminal quiz with silent response timer, challenge mode (timed sprint — user-configured question count and time budget with all questions preloaded upfront, visible countdown timer, limited post-answer navigation), a scoring system using a base-points × speed-multiplier formula, full persistent question history per domain, single-question history navigation, question bookmarking with per-domain favorites view, a stats dashboard with trend analysis, global settings (AI provider, language & tone of voice, my coach scope, welcome & exit screen toggle) with first-launch provider setup, terminal UI highlighting with semantic color system, a coffee supporter screen (conditionally hidden when a license is active), a welcome screen with animated ASCII-art, typewriter tagline, and 3-second auto-proceed timer, an exit screen with dynamic session-summary message, typewriter animation, and 3-second auto-exit timer, a domain-level ASCII Art screen that renders the selected domain locally via `figlet` using one of 14 curated fonts with cyan-to-magenta gradient coloring and immediate regenerate/back controls, a per-domain AI-powered coaching report (My Coach) that analyzes scoped question history to surface strengths, weaknesses, trajectory, and recommendations — with configurable history scope (recent 25, extended 100, or complete), and Lemon Squeezy license activation with launch-time validation, offline grace, and a hard-confirm deactivation flow that lifts the free-tier domain cap when an active license is present.
 
 **Non-Functional Requirements:**
 - Performance: Question generation ≤ 5s (API + persist); startup ≤ 2s
@@ -73,14 +75,15 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Primary domain: CLI / terminal application (Unix-like: macOS, Linux, WSL)
 - Complexity level: Low-Medium
 - External dependencies: 6 AI provider adapters via Vercel AI SDK (`ai` + `@ai-sdk/*` provider packages) for OpenAI, Anthropic, Gemini, Ollama, and OpenAI Compatible API; GitHub Copilot SDK as a custom adapter — one provider active at runtime, user-selected; `figlet` for local ASCII Art banner rendering
-- Estimated architectural components: 18–20 focused modules
+- Estimated architectural components: 19–21 focused modules
 
 ### Technical Constraints & Dependencies
 
 - Runtime: Node.js v22.0.0
 - Interface: Terminal only — no web UI, no GUI
 - AI: 6 interchangeable providers — OpenAI (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`), Google Gemini (`@ai-sdk/google`), OpenAI Compatible API (`@ai-sdk/openai-compatible`) via the Vercel AI SDK (`ai`), Ollama via raw HTTP fetch, plus GitHub Copilot SDK (`@github/copilot-sdk`) as a custom adapter wrapping the `AiProvider` interface. All providers receive identical generation and verification prompt structures and must support the same JSON contracts: generation returns question text, options A–D, difficulty, and speed tier thresholds; verification returns `correctAnswer` and `correctOptionText`. API keys read from environment variables at runtime — never stored in settings
-- Storage: `~/.brain-break/<domain-slug>.json` — one file per domain; `~/.brain-break/settings.json` — global settings (includes provider selection)
+- Storage: `~/.brain-break/<domain-slug>.json` — one file per domain; `~/.brain-break/settings.json` — global settings (includes provider selection + optional `license` sub-object when a Lemon Squeezy license is activated)
+- Licensing: Lemon Squeezy License API at `https://api.lemonsqueezy.com/v1/licenses/{activate,validate,deactivate}` — form-encoded bodies via global `fetch` (no SDK dependency); expected `meta.product_id = 1049453` (defensive product-match guard auto-releases instance on mismatch); instance name derived from `os.hostname()`; launch-time validation bounded by `AbortSignal.timeout(2000)` to honor the ≤ 2 s startup budget; URLs for checkout (`https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147`) and manage-orders (`https://app.lemonsqueezy.com/my-orders`) opened in the default browser via `utils/open-url.ts` (platform-specific `open` / `xdg-open` spawn — no `open` npm package required)
 - Distribution: npm / npx — must reach home screen in ≤ 2s cold start
 - Platform: Unix-like only (macOS, Linux, WSL)
 
@@ -95,6 +98,9 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - **Semantic color system:** Post-answer feedback, speed tier badges, difficulty level badges, and menu highlighting all use a consistent color vocabulary defined in a single utility module
 - **Sprint countdown timer:** Challenge mode renders a visible `M:SS` countdown on every question and post-answer screen; the timer never pauses and must be able to interrupt the active `inquirer` prompt when it expires (auto-submit). Uses wall-clock `Date.now()` deltas — not `setInterval` ticks — to avoid drift
 - **Batch question preloading:** Challenge mode preloads all N questions before the sprint starts. The preload loop accumulates hashes to prevent intra-batch duplicates in addition to domain-history hashes. AI provider failure during preload aborts the entire sprint
+- **License activation — Lemon Squeezy integration:** All HTTP traffic to `api.lemonsqueezy.com` routes through `domain/license-client.ts` (the only module that imports `os` for hostname and the only module that calls Lemon Squeezy). Activate/validate/deactivate calls use global `fetch` with `application/x-www-form-urlencoded` bodies. The activate path enforces a defensive product-ID match (`meta.product_id === 1049453`); on mismatch, the just-created instance is released via an immediate deactivate call before reporting the error. The `license` sub-object in `settings.json` carries activation metadata; it is added on success and removed on deactivation
+- **Launch-time license validation — offline grace:** On every launch where `settings.license.status === "active"`, `validateLicense()` is called with `AbortSignal.timeout(2000)` so the home screen render is never delayed beyond NFR 4. `valid: true` is a no-op; `valid: false` flips `license.status` to `"inactive"` and surfaces a one-time notice; network/timeout failure preserves the cached active state and surfaces a dim offline-mode line. Runs concurrently with other startup work
+- **Free-tier domain cap enforcement:** The 1-domain cap (active + archived combined) is enforced only at the home screen's Create new domain entry point. `screens/create-domain.ts` reads settings + counts existing domain files before showing the name prompt; when no active license is present and the count is ≥ 1, the screen renders an upsell with Activate License / Back actions instead of the standard flow. Existing over-cap domains (after deactivation) remain fully readable, playable, archivable, and deletable — only new creation is blocked
 
 ## Starter Template Evaluation
 
@@ -284,7 +290,18 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
   "openaiCompatibleEndpoint": "",              // OpenAI Compatible API only — endpoint URL (no default)
   "openaiCompatibleModel": "",                 // OpenAI Compatible API only — model name (no default)
   "myCoachScope": "100",       // My Coach history scope: "25" (Recent) | "100" (Extended, default) | "all" (Complete)
-  "showWelcome": true            // Boolean — show animated welcome screen on startup and exit screen on quit
+  "showWelcome": true,           // Boolean — show animated welcome screen on startup and exit screen on quit
+  "license": {                   // OPTIONAL — absent on free-tier installations; added on successful activation, removed on deactivation
+    "key": "38B1...",                                              // Lemon Squeezy license key (full value; UI masks first-4/last-4)
+    "instanceId": "a1b2c3d4-e5f6-...",                              // Lemon Squeezy instance UUID returned by activate
+    "instanceName": "brain-break@georges-mac",                       // Hostname-derived, sent to Lemon Squeezy as instance_name
+    "activatedAt": "2026-05-15T14:32:00.000Z",                       // ISO 8601 timestamp from instance.created_at
+    "productId": 1049453,                                             // Lemon Squeezy product ID (defensive match value)
+    "productName": "brain-break Pro",                                // From meta.product_name in activation response
+    "storeId": 12345,                                                 // From meta.store_id
+    "storeName": "georgiosnikitas",                                  // From meta.store_name
+    "status": "active"                                                // Enum: "active" | "inactive" — flipped to inactive on revocation
+  }
 }
 ```
 
@@ -311,7 +328,7 @@ A single global settings file at `~/.brain-break/settings.json` stores user pref
 | `robot` | Robot | Terse, mechanical, emotionless phrasing |
 | `pirate` | Pirate | Pirate vernacular, nautical metaphors |
 
-**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` types live in `domain/schema.ts` alongside domain types. `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), `ModelChoice` type (`{ name: string; value: string; description: string }`), per-provider model choice arrays (`OPENAI_MODEL_CHOICES`, `ANTHROPIC_MODEL_CHOICES`, `GEMINI_MODEL_CHOICES` — each containing 3 models labelled Fast / Normal / Complex), and named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-opus-4-6'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-pro'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama4'`). Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', openaiCompatibleEndpoint: '', openaiCompatibleModel: '', myCoachScope: '100', showWelcome: true }`. The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit. The `myCoachScope` field controls the number of recent questions included in My Coach report generation (`"25"` = Recent 25, `"100"` = Extended 100, `"all"` = Complete history).
+**Schema types:** `SettingsFileSchema` (Zod) and `SettingsFile` / `ToneOfVoice` / `AiProviderType` / `LicenseRecord` types live in `domain/schema.ts` alongside domain types. `LicenseRecord` is a Zod object with required string fields `key`, `instanceId`, `instanceName`, `activatedAt`, `productName`, `storeName`, required number fields `productId`, `storeId`, and a `status` enum (`"active"` | `"inactive"`). On `SettingsFile`, `license` is `LicenseRecord.optional()` — absent on free-tier; backward compatible with existing `settings.json` files. A malformed `license` sub-object is dropped on read (settings reader returns the rest of the file with `license` omitted; user is treated as free-tier — no crash). `domain/schema.ts` also exports `PROVIDER_CHOICES` (array of `{ name, value }` for inquirer select prompts), `PROVIDER_LABELS` (record mapping `AiProviderType` to display names), `ModelChoice` type (`{ name: string; value: string; description: string }`), per-provider model choice arrays (`OPENAI_MODEL_CHOICES`, `ANTHROPIC_MODEL_CHOICES`, `GEMINI_MODEL_CHOICES` — each containing 3 models labelled Fast / Normal / Complex), named default constants: `DEFAULT_OPENAI_MODEL` (`'gpt-5.4'`), `DEFAULT_ANTHROPIC_MODEL` (`'claude-opus-4-6'`), `DEFAULT_GEMINI_MODEL` (`'gemini-2.5-pro'`), `DEFAULT_OLLAMA_ENDPOINT` (`'http://localhost:11434'`), `DEFAULT_OLLAMA_MODEL` (`'llama4'`), and the license-related constant `EXPECTED_PRODUCT_ID` (`1049453`) used by `domain/license-client.ts` for the defensive product-ID match. Factory function `defaultSettings()` returns `{ provider: null, language: 'English', tone: 'natural', openaiModel: 'gpt-5.4', anthropicModel: 'claude-opus-4-6', geminiModel: 'gemini-2.5-pro', ollamaEndpoint: 'http://localhost:11434', ollamaModel: 'llama4', openaiCompatibleEndpoint: '', openaiCompatibleModel: '', myCoachScope: '100', showWelcome: true }` (no `license` key on free-tier installations). The `showWelcome` field controls both the animated welcome screen on startup and the exit screen on quit. The `myCoachScope` field controls the number of recent questions included in My Coach report generation (`"25"` = Recent 25, `"100"` = Extended 100, `"all"` = Complete history). The `license` field, when present with `status: "active"`, lifts the free-tier 1-domain cap and replaces the home screen's Activate License action with License Info; it is added on successful activation and removed on successful deactivation.
 
 **Store functions:** `readSettings()` and `writeSettings()` in `domain/store.ts` follow the same atomic write-then-rename pattern. `readSettings()` returns `defaultSettings()` on ENOENT — no error propagated.
 
@@ -338,8 +355,9 @@ If validation fails, the app displays what’s needed and proceeds to the home s
   - OpenAI / Anthropic / Gemini: API keys read from environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) at runtime — never stored in `settings.json`, never prompted in-app
   - Ollama: local instance, no API key — endpoint URL and model name stored in settings
   - OpenAI Compatible API: API key read from `OPENAI_COMPATIBLE_API_KEY` environment variable at runtime — never stored in `settings.json`; endpoint URL and model name stored in settings
-- **Input validation:** All AI provider responses validated with Zod before use — treats AI output as an untrusted external boundary regardless of provider
-- **No user-facing auth:** Zero credentials handled directly by the app — env vars and SDK auth are the only mechanisms
+- **License key handling — stored locally, masked in UI, never logged:** Lemon Squeezy license keys are pasted by the user into the Activate License screen and persisted to `settings.json` under the `license.key` field. The key is required on every Lemon Squeezy API call (activate/validate/deactivate) and therefore cannot be one-way hashed. **All UI display of the key uses a first-4 + ellipsis + last-4 mask** (e.g., `38B1…D4F9`); the full key never appears in any rendered screen. The key is never written to logs or telemetry (the app emits no telemetry). On product-ID mismatch during activation, `domain/license-client.ts` immediately calls `/v1/licenses/deactivate` to release the just-created instance before reporting the error to the user — the rejected key is not persisted to `settings.json`
+- **Input validation:** All AI provider responses validated with Zod before use — treats AI output as an untrusted external boundary regardless of provider. Lemon Squeezy responses are also Zod-validated before any field is read or persisted; unexpected response shapes map to `kind: "unknown_api_error"` rather than silently coercing to defaults
+- **No user-facing auth:** Zero credentials handled directly by the app — env vars and SDK auth are the only mechanisms for AI providers; license keys are the only user-supplied secret persisted locally and are treated with the masking discipline above
 
 ---
 
@@ -463,6 +481,98 @@ export const AI_ERRORS = {
 } as const
 ```
 
+**Lemon Squeezy License API**
+
+All Lemon Squeezy traffic routes through `domain/license-client.ts` — the single chokepoint for license activation, validation, and deactivation. No SDK is used; the client speaks the REST API directly via global `fetch` with `application/x-www-form-urlencoded` bodies (Lemon Squeezy requires form encoding on `/v1/licenses/*` endpoints — not JSON).
+
+```typescript
+// domain/license-client.ts
+export type LicenseErrorKind =
+  | 'invalid_key'         // license_key field is invalid / unknown
+  | 'product_mismatch'    // activated key belongs to a different product
+  | 'revoked'             // server returned valid: false on validate
+  | 'limit_reached'       // activation_limit reached on the key
+  | 'network'             // fetch failure or AbortSignal.timeout
+  | 'unknown_api_error'   // unexpected response shape or HTTP 5xx
+
+export type LicenseError = { kind: LicenseErrorKind; message: string }
+
+export async function activateLicense(key: string): Promise<Result<LicenseRecord, LicenseError>>
+export async function validateLicense(key: string, instanceId: string, signal?: AbortSignal): Promise<Result<{ valid: boolean }, LicenseError>>
+export async function deactivateLicense(key: string, instanceId: string): Promise<Result<void, LicenseError>>
+```
+
+**Endpoints and request shapes:**
+
+| Operation | Endpoint | Required form fields | Notes |
+|---|---|---|---|
+| Activate | `POST https://api.lemonsqueezy.com/v1/licenses/activate` | `license_key`, `instance_name` | `instance_name` = ``brain-break@${os.hostname()}`` |
+| Validate | `POST https://api.lemonsqueezy.com/v1/licenses/validate` | `license_key`, `instance_id` | Called on every launch when `settings.license.status === "active"`; bounded by `AbortSignal.timeout(2000)` to honour NFR 4 |
+| Deactivate | `POST https://api.lemonsqueezy.com/v1/licenses/deactivate` | `license_key`, `instance_id` | Called from License Info screen after hard confirm; also called internally on product-ID mismatch to release just-created instance |
+
+All responses are JSON; the client Zod-validates the response shape (`license_key.status`, `instance.id`, `instance.name`, `instance.created_at`, `meta.product_id`, `meta.product_name`, `meta.store_id`, `meta.store_name`, top-level `valid` on validate) before reading any field. Unexpected shapes map to `kind: "unknown_api_error"` rather than coercing missing fields to defaults.
+
+**Defensive product-ID match — `EXPECTED_PRODUCT_ID = 1049453`:** On activation, after the API returns a successful response, the client checks `meta.product_id === EXPECTED_PRODUCT_ID`. On mismatch, the client immediately calls `/v1/licenses/deactivate` with the just-returned `instance.id` to release the activation, then returns `{ ok: false, error: { kind: 'product_mismatch', message: ... } }`. The rejected key and instance are **never** persisted to `settings.json`.
+
+**Instance naming:** `instance_name` is derived once per activation as ``brain-break@${os.hostname()}``. This value is sent verbatim to Lemon Squeezy and persisted to `settings.json` as `license.instanceName`. It is human-readable in the customer's Lemon Squeezy dashboard and helps the user identify which machine to deactivate.
+
+**Error classification:**
+
+| HTTP / payload signal | Mapped `LicenseErrorKind` | User-facing message |
+|---|---|---|
+| 400 / `errors[0].detail` mentions “invalid” or “not found” | `invalid_key` | *“That license key isn't valid. Check it and try again.”* |
+| Activation succeeded but `meta.product_id` mismatch | `product_mismatch` | *“This license key is for a different product. Activate a brain-break license from the checkout link.”* |
+| Validate returns `valid: false` (or activate returns `license_key.status` ∈ {`disabled`, `inactive`}) | `revoked` | *“Your license is no longer active. Contact support or activate a new key.”* |
+| 400 / `errors[0].detail` mentions “activation limit” | `limit_reached` | *“This license has reached its activation limit. Deactivate it on another machine first.”* |
+| `fetch` rejection / DNS / TLS / `AbortSignal.timeout` | `network` | Operation-specific: *“Could not reach the license server…”* on activate/deactivate; on launch validation, the cached active state is preserved and a dim *“Offline mode — license validation skipped”* line is shown |
+| 5xx / unexpected Zod shape | `unknown_api_error` | *“An unexpected response was received from the license server. Please try again.”* |
+
+**No client-side retry:** `activateLicense` and `deactivateLicense` are user-initiated single-shot operations — the user re-runs the flow if it fails. `validateLicense` at launch is also single-shot but with the 2 s timeout, and a failure is interpreted as offline grace rather than an error.
+
+**Browser-open helper — `utils/open-url.ts`:** Two URLs are opened in the user's default browser from license screens: the checkout URL (`https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147`) from the Activate License screen and the manage-orders URL (`https://app.lemonsqueezy.com/my-orders`) from the License Info screen. `utils/open-url.ts` exports `openInBrowser(url: string): Promise<Result<void>>` which spawns the platform-specific opener (`open` on macOS, `xdg-open` on Linux/WSL) via `child_process.spawn` with `detached: true` and `stdio: 'ignore'`. **No `open` npm package is added** — the helper uses Node's built-in `child_process`. The URL is also always printed to the terminal as a fallback for users on environments where browser launching fails. This is the only module that spawns child processes anywhere in the app.
+
+---
+
+### License Activation Architecture
+
+License activation is orthogonal to the AI provider stack — it does not pass through `ai/client.ts` or `ai/providers.ts`. Three modules collaborate:
+
+- `domain/license-client.ts` — HTTP client + product-ID guard + error classification (described in API & Communication Patterns above)
+- `domain/store.ts` — read/write `settings.license` via the existing `readSettings()` / `writeSettings()` atomic primitives; no new disk-writing module is introduced
+- `screens/activate-license.ts` + `screens/license-info.ts` — user-facing screens for the activate and view/deactivate flows
+- `screens/home.ts` — hosts the conditional menu branching (Activate License vs License Info; Coffee hidden when active)
+- `screens/create-domain.ts` — hosts the free-tier cap pre-check at the Create new domain entry point
+- `index.ts` — hosts the launch-time validation step
+
+**Activate flow (`screens/activate-license.ts`):**
+1. `clearScreen()` and render header + checkout URL + Buy/Paste/Back menu
+2. **Buy** → `utils/open-url.ts.openInBrowser(CHECKOUT_URL)` + print URL fallback + return to menu
+3. **Paste a license key** → inquirer text input (no inline validation — the server is authoritative)
+4. Show inquirer spinner “Activating…” and call `domain/license-client.ts.activateLicense(key)`
+5. On success → `domain/store.ts.readSettings()` → set `settings.license = record` → `writeSettings(settings)` (atomic rename) → render success screen with masked key + product/store names + `activatedAt` + Continue action → return to `router.showHome()`
+6. On `LicenseError` → render the kind-specific error message + Try again / Back actions; no settings write
+
+**Launch validation (`index.ts`):**
+1. After `readSettings()`, if `settings.license?.status === 'active'`, call `validateLicense(key, instanceId, AbortSignal.timeout(2000))`
+2. `valid: true` → no-op, home renders normally
+3. `valid: false` (`kind: 'revoked'`) → `settings.license.status = 'inactive'` → `writeSettings()` → set a one-time-notice flag (in-memory; not persisted) so `screens/home.ts` displays *“Your license is no longer active. Open License Info to reactivate.”* once on this launch
+4. `kind: 'network'` or `AbortSignal.timeout` fires → preserve cached `status: 'active'` (offline grace) → home renders a dim *“Offline mode — license validation skipped”* line below the domains list
+5. The validation runs concurrently with other startup work; it must not block the home screen render past the 2 s NFR 4 budget. If still in flight when home renders, the offline-mode line is shown until the result arrives (then the line is removed or replaced with the revoked notice on next interaction)
+
+**License Info flow (`screens/license-info.ts`):**
+1. `clearScreen()` and render: masked key, product name, store name, instance name, `activatedAt` (formatted), current `status`
+2. Menu: **Manage subscription** → `openInBrowser('https://app.lemonsqueezy.com/my-orders')`; **Deactivate this device** → hard-confirm prompt; **Back**
+3. Hard-confirm requires typing the word `DEACTIVATE` (case-sensitive) — not just yes/no — to prevent accidental deactivation
+4. On confirm → spinner + `deactivateLicense(key, instanceId)` → on success: `readSettings()` → delete `settings.license` → `writeSettings()` → success screen + Continue → `router.showHome()` (which now shows Activate License + Coffee actions again)
+5. On `LicenseError` → render kind-specific message + Try again / Back; no settings write
+
+**Free-tier cap enforcement (`screens/create-domain.ts`):**
+1. On entry, `readSettings()` + `domain/store.ts.listAllDomainSlugs()` (active + archived combined)
+2. If `settings.license?.status === 'active'` → standard create-domain flow (name prompt + starting difficulty + duplicate check)
+3. Else if `slugs.length >= 1` → render upsell screen: *“Free tier supports 1 domain. Activate a license to create unlimited domains.”* + Activate License / Back actions; **no name prompt is shown**
+4. Else (no license and 0 existing domains) → standard create-domain flow
+5. The cap is **not** enforced on any other screen — existing over-cap domains (after deactivation) remain fully readable, playable, archivable, bookmarkable, and deletable. Only new creation is blocked. Archive does not free a slot; only Delete does
+
 ---
 
 ### Terminal UI Architecture
@@ -471,17 +581,24 @@ export const AI_ERRORS = {
 
 No state machine framework. Navigation is explicit function calls dispatched from a `router.ts` module. The app uses a two-level menu model:
 
-- **Level 1 — Home screen:** Lists active domains (with score/count) + actions: create domain, view archived, settings, buy me a coffee, exit
+- **Level 1 — Home screen:** Lists active domains (with score/count) + actions: create domain, view archived, settings, **conditional license action (Activate License when no active license / License Info when active), conditional Buy me a coffee (hidden when license active)**, exit
 - **Level 2 — Domain sub-menu:** Selected from home; shows Play, Challenge, History, Bookmarks, Statistics, ASCII Art, Archive, Delete, Back
 
 ```
 startup → readSettings()
   → provider === null         → router.showProviderSetup() → (fall through)
+  → settings.license?.status === 'active'
+                                → validateLicense(key, instanceId, AbortSignal.timeout(2000)) [non-blocking]
+                                  → valid: false  → settings.license.status = 'inactive' + one-time revoked notice on home
+                                  → network/timeout → preserve cached active + offline-mode dim notice on home
   → settings.showWelcome      → router.showWelcome() → (auto-proceed after 3s or Enter)
   → router.showHome()
 
 router.showHome()
-  → user creates domain     → router.showCreateDomain() → router.showHome()
+  → user creates domain     → router.showCreateDomain()
+                                  → license active OR 0 existing slugs → standard flow → router.showHome()
+                                  → no license AND ≥1 slugs           → upsell screen → Activate License OR Back
+                                                                          → Activate → router.showActivateLicense() → router.showHome()
   → user selects domain      → router.showDomainMenu(slug)
     → Play                   → router.showQuiz(slug) → router.showDomainMenu(slug)
     → Challenge              → router.showChallenge(slug) → router.showDomainMenu(slug)
@@ -497,6 +614,12 @@ router.showHome()
     → Back                    → router.showHome()
   → user views archived      → router.showArchived() → router.showHome()
   → user opens settings      → router.showSettings() → router.showHome()
+  → user opens Activate License (no active license)
+                              → router.showActivateLicense() → router.showHome()
+  → user opens License Info  (license active)
+                              → router.showLicenseInfo() → router.showHome()
+  → user opens Buy me a coffee (hidden when license active)
+                              → router.showCoffeeScreen() → router.showHome()
   → user exits
     → showWelcome ON          → router.showExit(totalQuestions) → (auto-exit after 3s or Enter) → process.exit(0)
     → showWelcome OFF         → process.exit(0)
@@ -504,7 +627,7 @@ router.showHome()
 
 Each screen is a standalone `async` function that resolves when the user exits it. `router.ts` is the only place that calls other screens — screens never call each other directly.
 
-*Rationale:* 16 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
+*Rationale:* 19 screens with clear parent-child flows, no concurrent state. A full state machine would be abstraction for its own sake.
 
 **Screen Clearing Pattern — `clearScreen()` before every render**
 
@@ -577,7 +700,7 @@ All semantic coloring logic is centralized in `utils/format.ts`. No screen modul
 
 ### Coffee Supporter Screen
 
-`screens/home.ts` exports `showCoffeeScreen()` — a dedicated screen that clears the terminal and displays an ASCII QR code (via `qrcode-terminal`) encoding the creator's Buy Me a Coffee URL, followed by the URL in plain text. A single Back action returns to the home screen. The coffee action is positioned between the archived domains separator and the Exit action on the home screen.
+`screens/home.ts` exports `showCoffeeScreen()` — a dedicated screen that clears the terminal and displays an ASCII QR code (via `qrcode-terminal`) encoding the creator's Buy Me a Coffee URL, followed by the URL in plain text. A single Back action returns to the home screen. **The coffee action is conditionally hidden on the home screen when `settings.license?.status === 'active'`** — licensed users have already supported the project. When shown, the action is positioned between the archived domains separator and the license action on the home screen.
 
 ---
 
@@ -762,11 +885,11 @@ After termination, the challenge screen returns session data to the router: `{ q
 
 ```
 src/
-├── index.ts              # Entry point — bootstraps and calls router
-├── router.ts             # Navigation dispatcher — 17 exported functions, only file that calls screens
+├── index.ts              # Entry point — bootstraps, reads settings, runs launch license validation (non-blocking, AbortSignal.timeout(2000)), calls router
+├── router.ts             # Navigation dispatcher — 19 exported functions, only file that calls screens
 ├── screens/
-│   ├── home.ts           # F1: domain list + coffee screen (F10)
-│   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check
+│   ├── home.ts           # F1: domain list + conditional license action (Activate License vs License Info) + conditional coffee screen (F10, hidden when license active) + revoked/offline notices
+│   ├── create-domain.ts  # F1: new domain input + starting difficulty selection + validation + duplicate check + F17 free-tier cap pre-check (upsell when no license AND ≥1 existing slugs)
 │   ├── domain-menu.ts    # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back)
 │   ├── select-domain.ts  # F1/F2: motivational message + quiz transition
 │   ├── archived.ts       # F1: archived domain list + unarchive
@@ -781,6 +904,8 @@ src/
 │   ├── settings.ts       # F8: language, tone, welcome & exit screen toggle, AI provider settings screen
 │   ├── provider-settings.ts # F8: per-provider model/endpoint prompts with defaults
 │   ├── provider-setup.ts # F8: first-launch provider selection + validation
+│   ├── activate-license.ts  # F17: license activation screen (checkout link + paste key + product-ID match + persist)
+│   ├── license-info.ts      # F17: license info screen (masked key + product/store + manage subscription + hard-confirm deactivate)
 │   ├── welcome.ts        # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
 │   └── exit.ts           # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
 ├── ai/
@@ -788,20 +913,24 @@ src/
 │   ├── providers.ts      # F2: AiProvider interface + 6 adapters (5 via Vercel AI SDK + 1 custom Copilot)
 │   └── prompts.ts        # F2/F16: generation + verification + coaching prompt templates + Zod response schemas + voice injection
 ├── domain/
-│   ├── store.ts          # F5: read/write domain + settings files (atomic)
-│   ├── schema.ts         # F5/F8: types + Zod schemas (DomainFile, SettingsFile, AiProviderType, ToneOfVoice)
-│   └── scoring.ts        # F4: score delta formula, difficulty progression
+│   ├── store.ts          # F5: read/write domain + settings files (atomic) — settings includes optional license sub-object (F17)
+│   ├── schema.ts         # F5/F8/F17: types + Zod schemas (DomainFile, SettingsFile, LicenseRecord, AiProviderType, ToneOfVoice) + EXPECTED_PRODUCT_ID constant
+│   ├── scoring.ts        # F4: score delta formula, difficulty progression
+│   └── license-client.ts # F17: Lemon Squeezy License API client — activateLicense/validateLicense/deactivateLicense + product-ID guard + error classification
 └── utils/
     ├── hash.ts           # SHA-256 hashing helpers
     ├── slugify.ts        # Domain name → file slug
     ├── screen.ts         # clearScreen() — viewport reset before every render
+    ├── open-url.ts       # F17: openInBrowser() — platform-specific browser launcher (macOS open / Linux xdg-open via child_process.spawn)
     └── format.ts         # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz, history, and bookmarks screens
 ```
 
 **Dependency Rules:**
 - `screens/` may import from `domain/`, `ai/`, and `utils/` — never the reverse
 - `router.ts` may import from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)
-- `domain/store.ts` is the **only** module that writes to disk (domain files and settings)
+- `domain/store.ts` is the **only** module that writes to disk (domain files and settings — including the `license` sub-object on activate and its removal on deactivate)
+- `domain/license-client.ts` is the **only** module that makes HTTP calls to `api.lemonsqueezy.com`, the **only** module that imports `os.hostname()` for instance naming, and never writes to disk — it returns `LicenseRecord` data; persistence is performed by the caller via `domain/store.ts`
+- `utils/open-url.ts` is the **only** module that spawns child processes (`child_process.spawn` for browser-open helpers); no other module calls `child_process.*`
 - `ai/providers.ts` is the **only** module that imports provider SDKs (`@github/copilot-sdk`, `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`) and makes raw HTTP calls (Ollama via `fetch()`)
 - `ai/client.ts` is the **only** module that calls `createProvider()` and orchestrates AI completions — screens never call providers directly
 - `utils/format.ts` may use **type-only** imports from `domain/schema.ts` (e.g. `QuestionRecord`, `SpeedTier`) — no runtime imports from other `src/` directories
@@ -810,14 +939,15 @@ src/
 
 **Implementation Sequence:**
 1. Scaffold: `package.json`, `tsconfig.json`, directory structure
-2. `domain/schema.ts` — define types and Zod schema first (everything else depends on this) — includes `AiProviderType`
-3. `domain/store.ts` — atomic reads/writes
-4. `utils/` — hash, slugify, screen, format
+2. `domain/schema.ts` — define types and Zod schema first (everything else depends on this) — includes `AiProviderType` and `LicenseRecord` + `EXPECTED_PRODUCT_ID`
+3. `domain/store.ts` — atomic reads/writes (settings reader gracefully drops malformed `license` sub-objects)
+4. `utils/` — hash, slugify, screen, format, open-url
 5. `ai/providers.ts` — `AiProvider` interface + 6 adapters (5 via Vercel AI SDK `generateText()` + 1 custom Copilot adapter)
 6. `ai/prompts.ts` + `ai/client.ts` — provider-agnostic AI integration with Zod validation
 7. `domain/scoring.ts` — scoring formula and difficulty logic
-8. `screens/` — provider-setup, home, quiz, history, stats, settings
-9. `router.ts` + `index.ts` — wire everything together (first-launch provider setup flow)
+8. `domain/license-client.ts` — Lemon Squeezy HTTP client + product-ID guard + error classification
+9. `screens/` — provider-setup, home, quiz, history, stats, settings, activate-license, license-info
+10. `router.ts` + `index.ts` — wire everything together (first-launch provider setup flow + launch license validation)
 
 **Cross-Component Dependencies:**
 - Schema types flow from `domain/schema.ts` → all modules (includes `AiProviderType`)
@@ -963,6 +1093,10 @@ meta.streakCount++
 - Place all disk writes in `domain/store.ts` exclusively
 - Place all provider SDK imports in `ai/providers.ts` exclusively
 - Route all AI completions through `ai/client.ts` — screens never call providers directly
+- Route all Lemon Squeezy HTTP calls through `domain/license-client.ts` — screens and `index.ts` never call `api.lemonsqueezy.com` directly
+- Use `EXPECTED_PRODUCT_ID` from `domain/schema.ts` for the activation product-match guard — never hard-code `1049453` in screens or other modules
+- Mask license keys in all UI rendering with first-4 + ellipsis + last-4 — the full key value never appears in any rendered screen
+- Route all browser-open calls through `utils/open-url.ts` — no direct `child_process.spawn('open', ...)` or `'xdg-open'` calls outside that module
 - Treat verification as a mandatory approval gate — questions without a successful verification response must never be returned to callers
 - Enforce the bounded retry budget of 3 candidate attempts total (initial attempt + 2 retries) for both quiz and preload flows
 - Use `applyAnswer()` for all difficulty/streak/score mutations
@@ -975,10 +1109,19 @@ meta.streakCount++
 - `fs.writeFile()` called outside `domain/store.ts`
 - Provider SDK imports (`CopilotClient`, `generateText`, `openai()`, etc.) outside `ai/providers.ts`
 - Direct calls to `provider.generateCompletion()` outside `ai/client.ts`
+- `fetch('https://api.lemonsqueezy.com/...')` calls outside `domain/license-client.ts`
+- `child_process.spawn` calls outside `utils/open-url.ts`
+- `os.hostname()` imports outside `domain/license-client.ts`
+- Hard-coded `1049453` literal outside `domain/schema.ts` (use `EXPECTED_PRODUCT_ID` constant)
+- Rendering the full `license.key` value to the terminal (always mask)
+- Persisting a rejected license (product-mismatch / invalid / limit-reached) to `settings.json`
+- Skipping the hard-confirm `DEACTIVATE` typed input for deactivation — never use a yes/no prompt for deactivation
+- Blocking the home screen render on `validateLicense` — launch validation is bounded by `AbortSignal.timeout(2000)` and must run non-blocking with offline grace on failure
+- Enforcing the free-tier cap outside the Create new domain entry point (read/play/archive/delete must work on existing over-cap domains)
 - `meta.streakCount++` or any direct mutation of domain state
 - Importing with bare specifiers (no `.js` extension) in ESM modules
 - Barrel `index.ts` re-exports
-- Storing API keys in `settings.json` or prompting users to enter them in-app
+- Storing AI provider API keys in `settings.json` or prompting users to enter them in-app (license keys are the only user-supplied secret persisted locally and are masked in UI)
 
 ## Project Structure & Boundaries
 
@@ -994,12 +1137,12 @@ brain-break/
 │   └── workflows/
 │       └── ci.yml                  # tsc --noEmit + vitest
 ├── src/
-│   ├── index.ts                    # Entry: bootstraps app, reads settings, routes to provider setup / welcome / home
-│   ├── router.ts                   # Navigation dispatcher — 17 exported functions, only file that calls screens
+│   ├── index.ts                    # Entry: bootstraps app, reads settings, runs launch license validation (non-blocking, AbortSignal.timeout(2000)), routes to provider setup / welcome / home
+│   ├── router.ts                   # Navigation dispatcher — 19 exported functions, only file that calls screens
 │   ├── screens/
-│   │   ├── home.ts                 # F1/F10: domain list + coffee screen
+│   │   ├── home.ts                 # F1/F10/F17: domain list + conditional license action + conditional coffee + revoked/offline notices
 │   │   ├── home.test.ts
-│   │   ├── create-domain.ts        # F1: new domain input + starting difficulty selection + validation + duplicate check
+│   │   ├── create-domain.ts        # F1/F17: new domain input + starting difficulty + duplicate check + free-tier cap pre-check (upsell when no license AND ≥1 slugs)
 │   │   ├── create-domain.test.ts
 │   │   ├── domain-menu.ts          # F1: domain sub-menu (Play, Challenge, History, Bookmarks, Statistics, My Coach, ASCII Art, Archive, Delete, Back)
 │   │   ├── domain-menu.test.ts
@@ -1028,6 +1171,10 @@ brain-break/
 │   │   ├── provider-settings.ts     # F8: per-provider model/endpoint prompts with defaults
 │   │   ├── provider-setup.ts       # F8: first-launch provider selection + validation
 │   │   ├── provider-setup.test.ts
+│   │   ├── activate-license.ts     # F17: license activation screen — checkout link + paste key + product-ID match guard + persist
+│   │   ├── activate-license.test.ts
+│   │   ├── license-info.ts         # F17: license info screen — masked key + product/store + manage subscription + hard-confirm deactivate
+│   │   ├── license-info.test.ts
 │   │   ├── welcome.ts              # F11: animated ASCII-art welcome screen with typewriter tagline + 3s auto-proceed timer
 │   │   ├── welcome.test.ts
 │   │   ├── exit.ts                 # F13: animated ASCII-art exit screen with dynamic session message + 3s auto-exit timer
@@ -1040,12 +1187,14 @@ brain-break/
 │   │   ├── prompts.ts              # F2/F16: prompt templates + Zod QuestionResponseSchema + coaching prompt template + voice injection
 │   │   └── prompts.test.ts
 │   ├── domain/
-│   │   ├── schema.ts               # F5/F8: DomainFile + SettingsFile + AiProviderType + ToneOfVoice types + Zod schemas + PROVIDER_CHOICES/LABELS + DEFAULT_* constants
+│   │   ├── schema.ts               # F5/F8/F17: DomainFile + SettingsFile + LicenseRecord + AiProviderType + ToneOfVoice types + Zod schemas + PROVIDER_CHOICES/LABELS + DEFAULT_* constants + EXPECTED_PRODUCT_ID
 │   │   ├── schema.test.ts
-│   │   ├── store.ts                # F5/F8: read/write domain + settings files (atomic) + tone migration
+│   │   ├── store.ts                # F5/F8/F17: read/write domain + settings files (atomic) + tone migration + graceful drop of malformed license sub-object
 │   │   ├── store.test.ts
 │   │   ├── scoring.ts              # F4: applyAnswer(), score delta formula
-│   │   └── scoring.test.ts
+│   │   ├── scoring.test.ts
+│   │   ├── license-client.ts       # F17: Lemon Squeezy License API client — activateLicense/validateLicense/deactivateLicense + product-ID guard + error classification
+│   │   └── license-client.test.ts
 │   └── utils/
 │       ├── hash.ts                 # SHA-256 hashing for deduplication
 │       ├── hash.test.ts
@@ -1053,6 +1202,8 @@ brain-break/
 │       ├── slugify.test.ts
 │       ├── screen.ts               # NFR 5: clearScreen() — ANSI viewport reset
 │       ├── screen.test.ts
+│       ├── open-url.ts             # F17: openInBrowser() — platform-specific browser launcher (macOS open / Linux xdg-open via child_process.spawn)
+│       ├── open-url.test.ts
 │       ├── format.ts               # F9: semantic color helpers, menuTheme, gradient rendering utilities, formatting utilities; renderQuestionDetail() — unified options + feedback block used by quiz, history, and bookmarks screens
 │       └── format.test.ts
 ├── patches/                            # patch-package patches for transitive dependencies
@@ -1067,6 +1218,8 @@ brain-break/
 | Boundary | Owner | Entry Point |
 |---|---|---|
 | AI Providers (Copilot, OpenAI, Anthropic, Gemini, Ollama, OpenAI Compatible API) | `ai/providers.ts` | Only module that imports provider SDKs (Vercel AI SDK `generateText` + `@ai-sdk/*` for 5 providers; `@github/copilot-sdk` for Copilot); `ai/client.ts` orchestrates via `AiProvider` interface |
+| Lemon Squeezy License API (`api.lemonsqueezy.com`) | `domain/license-client.ts` | Only module that calls `api.lemonsqueezy.com` (form-encoded `fetch` to `/v1/licenses/{activate,validate,deactivate}`); only module that imports `os.hostname()`; only module that uses `EXPECTED_PRODUCT_ID` for the activation product-match guard |
+| Default browser (OS browser launch) | `utils/open-url.ts` | Only module that calls `child_process.spawn` — invokes `open` on macOS, `xdg-open` on Linux/WSL; no `open` npm package added |
 | File system (`~/.brain-break/`) | `domain/store.ts` | Only module that calls `fs.*` write operations |
 | Terminal I/O (stdout/stdin) | `screens/*` + `router.ts` | `inquirer`, `ora`, `chalk` used only here; `utils/screen.ts` owns the viewport-clear primitive |
 
@@ -1075,7 +1228,9 @@ brain-break/
 - `router.ts` → imports from `screens/` only — never from `domain/` or `ai/` directly (exception: `router.ts` may import from `domain/store.ts` for archiveDomain/deleteDomain operations that are thin wrappers)
 - `ai/client.ts` → imports from `ai/providers.ts` and `ai/prompts.ts` — never imports provider SDKs directly
 - `ai/providers.ts` → the only module that imports provider SDKs (Vercel AI SDK + Copilot SDK); exports the `AiProvider` interface
+- `domain/license-client.ts` → the only module that calls `api.lemonsqueezy.com` and the only module that imports `os.hostname()`; never writes to disk (persistence is done by callers via `domain/store.ts`); never imported by `ai/*`
 - `domain/scoring.ts` → pure computation, no imports from `screens/` or `ai/`
+- `utils/open-url.ts` → the only module that calls `child_process.spawn`; never imported by `ai/*` or `domain/*` (only by `screens/*`)
 - `utils/` → no runtime imports from any other `src/` directory; `utils/format.ts` uses **type-only** imports from `domain/schema.ts` (`QuestionRecord`, `SpeedTier`)
 
 ### Feature to Structure Mapping
@@ -1098,6 +1253,7 @@ brain-break/
 | F14 — Challenge Mode (Sprint) | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution loop + timer + per-answer write), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` (`renderQuestionDetail`) |
 | F15 — ASCII Art Screen | `screens/ascii-art.ts` (local FIGlet rendering + randomized font selection + gradient coloring), `screens/domain-menu.ts` (ASCII Art action), `router.ts` (`showAsciiArt()`), `utils/format.ts` (`gradientText`) |
 | F16 — My Coach | `screens/my-coach.ts` (cached report preview + coaching report generation + regenerate + staleness notice + generation timestamp), `screens/domain-menu.ts` (My Coach action), `router.ts` (`showMyCoach()`), `ai/client.ts` (`generateCoachReport()`), `ai/prompts.ts` (coaching prompt template), `domain/store.ts` (read domain + write coach metadata), `domain/schema.ts` (optional `lastCoachQuestionCount` + `lastCoachTimestamp` + `lastCoachReport` fields, `myCoachScope` setting) |
+| F17 — License Activation | `screens/activate-license.ts` (checkout link + paste + activate + product-ID match), `screens/license-info.ts` (masked key view + manage subscription + hard-confirm deactivate), `screens/home.ts` (conditional license menu + conditional coffee + revoked/offline notices), `screens/create-domain.ts` (free-tier cap pre-check + upsell), `domain/license-client.ts` (Lemon Squeezy HTTP client + product-ID guard + error classification), `domain/schema.ts` (`LicenseRecord` Zod schema + `EXPECTED_PRODUCT_ID`), `domain/store.ts` (settings write of `license` sub-object), `utils/open-url.ts` (browser launch for checkout + manage URLs), `index.ts` (launch-time validation with `AbortSignal.timeout(2000)`), `router.ts` (`showActivateLicense()` + `showLicenseInfo()`) |
 | NFR 5 — Terminal Screen Mgmt | `utils/screen.ts` (primitive) + all `screens/*.ts` (consumers) |
 | NFR 6 — Color Rendering | `utils/format.ts` (ANSI 8/16-color baseline) |
 
@@ -1120,6 +1276,10 @@ brain-break/
 | Sprint countdown timer | `screens/challenge.ts` — wall-clock `Date.now()` delta rendered as `M:SS` on every question + post-answer screen; `AbortController` + `setTimeout` interrupts active `inquirer` prompt on timer expiry |
 | Batch question preloading | `ai/client.ts` → `preloadQuestions()` — sequential N-question generation with intra-batch + domain-history dedup; `ora` spinner progress in `screens/challenge.ts`; provider failure aborts entire sprint |
 | Coaching report generation | `ai/client.ts` → `generateCoachReport()` — sends scoped question history to AI provider, receives free-form prose (not structured JSON); `ai/prompts.ts` builds coaching prompt with voice injection; `screens/my-coach.ts` owns spinner lifecycle, timestamp display, tip/staleness notices, and coach metadata persistence |
+| License API integration | `domain/license-client.ts` → `activateLicense()` / `validateLicense()` / `deactivateLicense()` — form-encoded `fetch` to `api.lemonsqueezy.com/v1/licenses/*`; product-ID match guard with auto-release on mismatch; typed `LicenseError` kinds (`invalid_key` / `product_mismatch` / `revoked` / `limit_reached` / `network` / `unknown_api_error`) |
+| Launch license validation (offline grace) | `index.ts` → `validateLicense(key, instanceId, AbortSignal.timeout(2000))` on every launch when `settings.license?.status === 'active'`; `valid: false` → flip to `inactive` + one-time notice on home; network/timeout → preserve cached active + dim offline-mode line on home; non-blocking — never delays home render past NFR 4 |
+| Free-tier cap enforcement | `screens/create-domain.ts` — pre-check at Create new domain entry: when no active license AND `listAllDomainSlugs().length >= 1`, render upsell screen with Activate License / Back instead of name prompt; existing over-cap domains remain fully readable, playable, archivable, deletable |
+| Browser-open launcher | `utils/open-url.ts` → `openInBrowser(url)` — single chokepoint for `child_process.spawn` with platform-specific opener (`open` on macOS, `xdg-open` on Linux/WSL); URL also always printed to terminal as fallback |
 
 ### Integration Points
 
@@ -1155,6 +1315,12 @@ index.ts
     → screens/provider-setup.ts
       → ai/providers.ts.validateProvider(type, settings) [checks auth/env var/endpoint]
       → domain/store.ts.writeSettings(updated)           [saves selected provider]
+  → settings.license?.status === 'active'              [launch license validation — non-blocking]
+    → fire-and-track: domain/license-client.ts.validateLicense(key, instanceId, AbortSignal.timeout(2000))
+      → valid: true                                       → no-op
+      → valid: false (revoked)                            → settings.license.status = 'inactive' + writeSettings() + flag one-time revoked notice for home
+      → network / AbortSignal.timeout fires               → preserve cached active + flag dim offline-mode notice for home
+    → must NOT block home render past NFR 4 (2s)
   → settings.showWelcome === true
     → router.showWelcome()                              [animated ASCII-art splash screen]
     → screens/welcome.ts
@@ -1164,7 +1330,7 @@ index.ts
   → router.showHome()
     → screens/home.ts
     → domain/store.ts.listDomains()                     [reads ~/.brain-break/]
-    → renders domain list with scores
+    → renders domain list with scores + conditional license action (Activate License / License Info) + conditional Buy me a coffee (hidden when license active) + revoked or offline notice if flagged by launch validation
 ```
 
 **Data Flow — Exit:**
@@ -1190,6 +1356,57 @@ screens/settings.ts
   → if provider changed: ai/providers.ts.validateProvider(type, settings)
   → domain/store.ts.writeSettings(updatedSettings)     [fs.rename atomic]
   → returns to home screen
+```
+
+**Data Flow — License Activation:**
+```
+router.showActivateLicense()
+  → screens/activate-license.ts
+  → clearScreen() + render checkout URL + menu (Buy / Paste a license key / Back)
+  → Buy                                                 → utils/open-url.ts.openInBrowser(CHECKOUT_URL) + print URL fallback → menu
+  → Paste a license key                                 → inquirer text input (key)
+    → spinner "Activating…"
+    → domain/license-client.ts.activateLicense(key)
+      → instance_name = `brain-break@${os.hostname()}`
+      → fetch POST https://api.lemonsqueezy.com/v1/licenses/activate (form-encoded: license_key, instance_name)
+      → Zod parse response
+      → meta.product_id !== EXPECTED_PRODUCT_ID (1049453)?
+        → fetch POST /v1/licenses/deactivate (license_key, instance_id) [auto-release]
+        → return { ok: false, error: { kind: 'product_mismatch', ... } }
+      → meta.product_id === EXPECTED_PRODUCT_ID?
+        → return { ok: true, data: LicenseRecord }
+    → on success:
+      → domain/store.ts.readSettings()
+      → settings.license = record
+      → domain/store.ts.writeSettings(settings)         [fs.rename atomic]
+      → render success screen (masked key + product/store names + activatedAt) + Continue
+      → router.showHome()
+    → on LicenseError (invalid_key / limit_reached / network / unknown_api_error):
+      → render kind-specific message + Try again / Back actions; no settings write
+```
+
+**Data Flow — License Info & Deactivation:**
+```
+router.showLicenseInfo()
+  → screens/license-info.ts
+  → domain/store.ts.readSettings() (license required)
+  → clearScreen() + render masked key + product/store + instance name + activatedAt + status
+  → Menu: Manage subscription / Deactivate this device / Back
+  → Manage subscription → utils/open-url.ts.openInBrowser('https://app.lemonsqueezy.com/my-orders') + print URL fallback → menu
+  → Deactivate this device:
+    → hard-confirm prompt — type DEACTIVATE (case-sensitive)
+    → confirmed?
+      → spinner "Deactivating…"
+      → domain/license-client.ts.deactivateLicense(key, instanceId)
+        → fetch POST /v1/licenses/deactivate (form-encoded: license_key, instance_id)
+        → Zod parse response
+        → return Result<void, LicenseError>
+      → on success:
+        → domain/store.ts.readSettings()
+        → delete settings.license
+        → domain/store.ts.writeSettings(settings)       [fs.rename atomic]
+        → success screen + Continue → router.showHome() (shows Activate License + Coffee actions again)
+      → on LicenseError → render message + Try again / Back; no settings write
 ```
 
 **Data Flow — Sprint Cycle (Challenge Mode):**
@@ -1273,14 +1490,15 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 | F14 — Challenge Mode (Sprint) | ✅ | `screens/sprint-setup.ts` (setup UI), `screens/challenge.ts` (preload + execution + timer), `screens/domain-menu.ts` (Challenge action), `ai/client.ts` (`preloadQuestions()`), `domain/store.ts`, `domain/scoring.ts`, `utils/format.ts` |
 | F15 — ASCII Art Screen | ✅ | `screens/ascii-art.ts` (local FIGlet rendering + randomized font selection + gradient coloring), `screens/domain-menu.ts` (ASCII Art action), `router.ts` (`showAsciiArt()`), `utils/format.ts` (`gradientText`) |
 | F16 — My Coach | ✅ | `screens/my-coach.ts` (coaching report display + regenerate + staleness notice + generation timestamp), `screens/domain-menu.ts` (My Coach action), `router.ts` (`showMyCoach()`), `ai/client.ts` (`generateCoachReport()`), `ai/prompts.ts` (coaching prompt template), `domain/store.ts` (read domain + write coach metadata), `domain/schema.ts` (optional `lastCoachQuestionCount` + `lastCoachTimestamp` fields, `myCoachScope` setting) |
+| F17 — License Activation | ✅ | `screens/activate-license.ts` + `screens/license-info.ts` (UI + masked key + hard-confirm deactivate), `screens/home.ts` (conditional license menu + conditional coffee + notices), `screens/create-domain.ts` (free-tier cap pre-check), `domain/license-client.ts` (Lemon Squeezy HTTP client + product-ID guard + typed `LicenseError`), `domain/schema.ts` (`LicenseRecord` + `EXPECTED_PRODUCT_ID`), `domain/store.ts` (settings persistence of `license` sub-object), `utils/open-url.ts` (browser launch), `index.ts` (non-blocking launch validation with `AbortSignal.timeout(2000)`), `router.ts` (`showActivateLicense()` + `showLicenseInfo()`) |
 
 | NFR | Status | Addressed By |
 |---|---|---|
 | NFR 1 — ≤5s question generation | ✅ | `ora` spinner + `Result<T>` fast-fail path |
-| NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state; same error path for `preloadQuestions()` batch failures |
-| NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT; sprint per-answer write ensures crash safety |
-| NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design |
-| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer feedback (quiz and challenge) renders inline (no clear between question and feedback); sprint-setup, challenge, and my-coach screens follow standard clearScreen pattern |
+| NFR 2 — API error handling | ✅ | Per-provider `AI_ERRORS` constants + `Result<T>` in `ai/client.ts`; `NO_PROVIDER` guard for unconfigured state; same error path for `preloadQuestions()` batch failures; typed `LicenseError` kinds in `domain/license-client.ts` with user-facing messages for invalid_key / product_mismatch / revoked / limit_reached / network / unknown_api_error |
+| NFR 3 — Data integrity / corruption | ✅ | Write-then-rename atomic + Zod schema on read + `defaultDomainFile()` on ENOENT; sprint per-answer write ensures crash safety; settings reader gracefully drops a malformed `license` sub-object rather than failing the whole file |
+| NFR 4 — ≤2s startup | ✅ | No heavy imports at startup; `meta`-first schema design; launch license validation is non-blocking and bounded by `AbortSignal.timeout(2000)` so home renders on time even when offline |
+| NFR 5 — Terminal screen management | ✅ | `utils/screen.ts` → `clearScreen()` called as first operation in every screen render path; post-answer feedback (quiz and challenge) renders inline (no clear between question and feedback); sprint-setup, challenge, my-coach, activate-license, and license-info screens follow standard clearScreen pattern |
 | NFR 6 — Terminal color rendering | ✅ | `utils/format.ts` → ANSI 8/16-color baseline; `chalk` handles terminal capability detection |
 
 ### Implementation Readiness Validation ✅
@@ -1288,6 +1506,12 @@ All technology choices are mutually compatible — Node.js v22.0.0+, ESM, NodeNe
 All critical decisions are documented with explicit versions. Patterns are comprehensive with concrete examples and anti-patterns. Project structure is fully specified with feature-to-file mapping. All potential AI agent conflict points have been addressed with clear enforcement guidelines.
 
 **2026-03-17 update (multi-provider):** Architecture updated for multi-provider AI integration (PRD 2026-03-17). Copilot-only backend replaced with 5-provider abstraction. Added `ai/providers.ts`, `screens/provider-setup.ts`. Settings schema expanded with `provider`, `ollamaEndpoint`, `ollamaModel`. All sections updated: auth, API patterns, error handling, navigation, boundaries, enforcement, validation. PRD Feature 8 tone inconsistency flagged (4 vs 7 tones — architecture keeps 7).
+
+**2026-05-15 update (License Activation — PRD Feature 20 / Epic 14):** Architecture extended with a Lemon Squeezy license tier (FR53–FR57). The license stack is fully orthogonal to the AI provider stack and reuses existing primitives wherever possible — no new SDK dependency is added (form-encoded `fetch` against `api.lemonsqueezy.com/v1/licenses/{activate,validate,deactivate}`; no `open` npm package added — browser launching uses Node's built-in `child_process.spawn` via `utils/open-url.ts`). New modules: `domain/license-client.ts` (HTTP client + defensive product-ID 1049453 match with auto-release on mismatch + typed `LicenseError` kinds), `screens/activate-license.ts`, `screens/license-info.ts` (hard-confirm `DEACTIVATE` typed input), and `utils/open-url.ts`. `domain/schema.ts` gains the optional `LicenseRecord` (key/instanceId/instanceName/activatedAt/productId/productName/storeId/storeName/status) and the `EXPECTED_PRODUCT_ID` constant; `defaultSettings()` deliberately omits the `license` field so free-tier installations are byte-identical to today's settings file. Launch-time validation in `index.ts` runs non-blocking with `AbortSignal.timeout(2000)` to honour NFR 4 — a revoked result flips status to `inactive` and surfaces a one-time notice; a network/timeout failure preserves the cached active state with a dim offline-mode notice (offline grace). The free-tier 1-domain cap is enforced exclusively at the Create new domain entry point in `screens/create-domain.ts` — existing over-cap domains (after deactivation) remain fully readable, playable, archivable, and deletable; only new creation is blocked. The home screen shows a conditional license action (Activate License when no active license / License Info when active) and hides the Buy me a coffee action when a license is active. License keys are persisted to `settings.json` (they are the credential and cannot be one-way hashed) and masked in all UI rendering with a first-4 + ellipsis + last-4 mask — the full key value never appears in any rendered screen. All Lemon Squeezy HTTP calls route through `domain/license-client.ts` exclusively; all browser-open calls route through `utils/open-url.ts` exclusively; both modules are codified in the External Boundaries table and in the Enforcement section.
+
+### Coherence Validation — License Activation (2026-05-15)
+
+The License Activation stack reuses existing patterns without introducing new architectural primitives. HTTP transport uses Node 22's built-in global `fetch` and `URLSearchParams` for form-encoded bodies — no new npm dependency. Hostname for instance naming uses Node's built-in `os.hostname()` — no new npm dependency. Browser launching uses Node's built-in `child_process.spawn` with platform-specific binaries (`open` / `xdg-open`) — no `open` npm package added. License persistence reuses the existing `readSettings()` / `writeSettings()` atomic write-then-rename pattern in `domain/store.ts`; no new disk-writing module is added. Error handling reuses the `Result<T>` pattern with a discriminated `LicenseError` payload (typed `kind` enum + `message`) — consistent with the discriminated `AI_ERRORS` keys used by the AI stack. Launch-time validation is bounded by `AbortSignal.timeout(2000)` to preserve NFR 4 (≤2 s startup) and runs concurrently with other startup work; offline grace prevents lockout during transient network failure while still honouring server-side revocation when reachable. The defensive product-ID 1049453 match guard with auto-release on mismatch ensures that an accidental activation against a different Lemon Squeezy product in the same store does not consume a brain-break activation slot and does not persist invalid credentials to settings. The free-tier cap is enforced at a single chokepoint (the Create new domain entry) rather than on every screen — minimising the change surface and ensuring archive/delete/read paths remain unconditional (an over-cap user post-deactivation can still manage their existing domains). The hard-confirm `DEACTIVATE` typed input on the License Info screen prevents accidental loss of access to the licensed tier via fat-finger selection of a menu item. All license-relevant UI rendering applies the first-4 + ellipsis + last-4 mask to the key, ensuring the full credential never appears in terminal screens.
 
 **2026-03-17 update:** Architecture synced with PRD 2026-03-15 and implemented codebase — added Feature 8 (Global Settings), Feature 9 (Color System), Feature 10 (Coffee Screen), Feature 1 Delete action; expanded screen list to 9 modules; updated navigation model to two-level menu; added `qrcode-terminal` and `@inquirer/prompts` dependencies; updated all coverage and mapping tables.
 

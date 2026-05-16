@@ -29,8 +29,15 @@ stepsCompleted:
   - step-e-01-discovery
   - step-e-02-review
   - step-e-03-edit
-lastEdited: '2026-04-19'
+  - step-e-01-discovery
+  - step-e-02-review
+  - step-e-03-edit
+lastEdited: '2026-05-15'
 editHistory:
+  - date: '2026-05-15'
+    changes: 'Feature 20 hardening: Lemon Squeezy product ID `1049453` recorded in Implementation Decisions (License activation mechanism) as the expected product. Activation flow updated with a defensive product-ID match — if the activation response''s `meta.product_id` does not equal `1049453`, the just-created instance is released via an immediate deactivation call and the user sees "This license key is not valid for brain-break." NFR 2 extended with the product ID mismatch error case.'
+  - date: '2026-05-15'
+    changes: 'Feature 20 (License Activation) added: a Lemon Squeezy-based offline license activation flow that gates the free tier at a hard cap of 1 total domain (active + archived combined) and unlocks unlimited domains for licensed users. Home screen menu now includes a 🔑 Activate License action (when inactive) which is renamed to 🔑 License Info (when active); the ☕ Buy me a coffee action is conditionally hidden when a license is active. Activate License screen accepts a license key, offers a "🛒 Manage your keys" action that opens the Lemon Squeezy order URL (https://app.lemonsqueezy.com/my-orders), and exposes a checkout link to https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147. License Info screen displays masked key, activation date, instance metadata, product/store info, and a Deactivate action (with hard confirmation). Activation calls Lemon Squeezy /v1/licenses/activate; deactivation calls /v1/licenses/deactivate. On every app launch when a license exists, the app calls /v1/licenses/validate — if invalid/revoked the license is marked inactive locally; if the network is unreachable the cached license remains trusted for the session (offline grace). License state is persisted in settings.json under a new `license` sub-object: { key, instanceId, instanceName, activatedAt, productId, productName, storeId, storeName, status }. Feature 1 updated with create-domain enforcement at the 1-domain cap and upsell flow. Feature 10 updated with conditional visibility. NFR 2 extended with license error cases. NFR 5 extended to include Activate License and License Info screens. Product Scope updated from 19 to 20 capabilities. Out of Scope extended with subscriptions, transfers, multi-seat, and anti-tampering exclusions. Business Objectives updated with a sustainable maintenance objective. Executive Summary, User Journeys (Onboarding and Long-term), Implementation Decisions (settings persistence + new license activation mechanism subsection), and FR preamble updated.'
   - date: '2026-04-19'
     changes: 'Feature 19 (My Coach) added: a new domain sub-menu action that sends the user''s scoped question history to the AI provider and returns a qualitative coaching report (strengths, weaknesses, trajectory, recommendations). No minimum question gate — works from 1 answered question; when the domain has fewer than 25 questions, a soft tip is displayed. Report displays a generation timestamp below the header. On Regenerate, if fewer than 25 new questions have been answered since the last report, a staleness notice is shown. Two new optional fields added to domain JSON: `lastCoachQuestionCount` (number) and `lastCoachTimestamp` (ISO 8601 string). My Coach scope setting added to Feature 8 (Global Settings): Recent (25) / Extended (100) / Complete (all), default Extended (100); stored as `myCoachScope` (string: `"25"` | `"100"` | `"all"`, default `"100"`) in settings.json. Product Scope updated from 18 to 19 capabilities. Executive Summary, User Journeys (Core Usage, Long-term), Innovation Analysis, Feature 1 domain sub-menu, Feature 5 domain data, Feature 8 settings, Implementation Decisions (settings persistence), FR preamble, and NFR 5 updated with My Coach references.'
   - date: '2026-04-07'
@@ -129,6 +136,8 @@ Curious people want to stay sharp across a wide variety of topics, but existing 
 
 `brain-break` targets anyone with daily terminal use and access to an LLM provider (OpenAI, Anthropic, Google Gemini, GitHub Copilot, a local Ollama instance, or any OpenAI-compatible endpoint via OpenAI Compatible API) who wants short, purposeful learning sessions on topics they care about.
 
+`brain-break` is free to use with **all** features available; the free tier is capped at 1 total domain (active + archived combined). Users who want to track multiple domains can activate a perpetual license via Lemon Squeezy directly inside the CLI — unlocking unlimited domain creation while every other feature remains identical between free and licensed tiers.
+
 ---
 
 ## Success Criteria
@@ -167,7 +176,7 @@ The MVP is considered successful when:
 
 ### In Scope — MVP
 
-The following 19 capabilities define the complete MVP:
+The following 20 capabilities define the complete MVP:
 
 1. In-App Domain Management
 2. AI-Powered Question Generation (Multi-Provider)
@@ -188,6 +197,7 @@ The following 19 capabilities define the complete MVP:
 17. Challenge Mode (Sprint)
 18. ASCII Art (Milestone Unlock)
 19. My Coach
+20. License Activation
 
 ### Out of Scope
 
@@ -198,6 +208,10 @@ The following are explicitly out of scope for the MVP:
 - Leaderboards or team comparison features
 - Web UI or any non-terminal interface
 - User accounts or cloud sync
+- Subscription / recurring licenses (license is perpetual; one-time purchase only)
+- Multi-seat or team licenses
+- In-app license transfer between machines (user must deactivate on the source machine, then activate on the new machine)
+- Cryptographic license signing or anti-tampering protection (license state is plain JSON; matches the open, honor-system ethos of the tool)
 - Any feature not listed in this document
 
 *No Growth or Vision phases are defined. Scope is MVP-only.*
@@ -206,12 +220,13 @@ The following are explicitly out of scope for the MVP:
 
 ## Business Objectives
 
-`brain-break` is an open-source tool — success is measured in adoption depth and genuine utility, not revenue.
+`brain-break` is an open-source tool — success is measured primarily in adoption depth and genuine utility. A lightweight paid tier (perpetual Lemon Squeezy license unlocking unlimited domains) funds ongoing maintenance without compromising the free experience — every feature remains available to free users.
 
 1. **Adoption:** Users install and actively use `brain-break` within 30 days of discovering it
 2. **Habit formation:** Active users engage daily rather than sporadically — the tool earns a permanent place in their routine
 3. **Perceived value:** Users voluntarily recommend the tool to others — organic spread
 4. **Knowledge reinforcement:** Users report that their knowledge in configured domains feels sharper and more confident over time
+5. **Sustainable maintenance:** Power users who need more than one domain convert to a perpetual license, generating predictable revenue that funds ongoing development; the free tier remains fully featured at a 1-domain cap
 
 ---
 
@@ -267,7 +282,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Discovery:** User sees the repo shared or mentioned online. One-line README install hook. Cloned and running in under 2 minutes.
 
-**Onboarding:** Runs `node index.js`. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) using arrow keys, below a line separator, a **⏭️ Skip — set up later in ⚙️ Settings** option is also available. If the user selects a provider, the app configures provider-specific settings (model name, endpoint) and makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and offers **🔄 Retry** and **⏭️ Skip** options. If the user skips (either from the provider list or after a failed connection test), the app saves settings with `provider: null` and proceeds directly to the home screen — the user can explore all features except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. This behavior is controlled by the Settings toggle labeled **🎬 Welcome & Exit screen**. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic; the app validates the name against existing active and archived domains (if a duplicate is found, a context-specific message is displayed and the user is returned to the name prompt); once a unique name is entered, the user selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
+**Onboarding:** Runs `node index.js`. First-time users land in the free tier (1 total domain cap, all features available) with no friction \u2014 no license prompt, no signup, no payment wall. On first launch, a one-time Provider Setup screen appears — the user selects their AI provider from a list (OpenAI, Anthropic, Google Gemini, GitHub Copilot, Ollama, OpenAI Compatible API) using arrow keys, below a line separator, a **⏭️ Skip — set up later in ⚙️ Settings** option is also available. If the user selects a provider, the app configures provider-specific settings (model name, endpoint) and makes a real one-shot API test call to verify connectivity. If validation fails, the app displays what’s needed and offers **🔄 Retry** and **⏭️ Skip** options. If the user skips (either from the provider list or after a failed connection test), the app saves settings with `provider: null` and proceeds directly to the home screen — the user can explore all features except Play. The selected provider is saved to `settings.json`. After provider setup (and on every subsequent launch where `showWelcome` is enabled), a branded Welcome Screen displays: gradient-colored ASCII art of the app name, a styled subtitle (`> Train your brain, one question at a time_`) where `>` renders in cyan and `_` renders in magenta, the current version number, and a “Press enter to continue” prompt. This behavior is controlled by the Settings toggle labeled **🎬 Welcome & Exit screen**. After dismissing the welcome screen, the home screen appears — listing all configured domains with their score and question count. With no domains configured yet, the only available action is to create a new one — the user types any topic; the app validates the name against existing active and archived domains (if a duplicate is found, a context-specific message is displayed and the user is returned to the name prompt); once a unique name is entered, the user selects a starting difficulty, hits Save, selects the new domain, and the first question appears. On subsequent launches, the saved provider is used automatically. No config file, no account, no signup.
 
 **Core Usage:**
 - Triggered by natural break moments: between tasks, waiting for a process, lunch, commute
@@ -284,7 +299,7 @@ None. `brain-break` is a purely self-serve individual tool. No admin, team manag
 
 **Settings:** User navigates to Settings from the home screen, sets language to `Greek` and tone to `Pirate`, returns to the quiz, and sees questions and answers rendered in Greek with pirate-voiced phrasing. User switches Theme from Dark to Light because they're using a terminal with a white background — all colors immediately adapt for readability. Changing settings takes effect on the next AI call (language, tone) or next screen render (theme) — no restart required.
 
-**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via Bookmarks for targeted review. My Coach takes the learning loop further — users open their coaching report to see which subtopics they're strong in, where they plateau, and what to focus on next, turning raw history into strategic learning direction. Users start tracking multiple domains — "what's your Greek mythology score?" becomes a casual conversation.
+**Long-term:** The question history becomes a personal knowledge log. The score becomes a genuine, self-earned signal of how well the user knows a topic. Users revisit past questions, hit "Explain answer" to reinforce understanding, and "Teach me more" to explore concepts in depth — turning history from a passive record into an active learning tool. Bookmarked questions serve as a curated study list — users flag tricky or surprising questions during quizzes and return to them via Bookmarks for targeted review. My Coach takes the learning loop further — users open their coaching report to see which subtopics they're strong in, where they plateau, and what to focus on next, turning raw history into strategic learning direction. Eventually, a power user wants to track a second topic — they attempt to create a new domain, hit the free-tier 1-domain cap, are pointed to the **🔑 Activate License** action, complete a one-time Lemon Squeezy purchase, paste the license key into the CLI, and immediately unlock unlimited domain creation. From that point forward, multiple domains coexist — "what's your Greek mythology score?" becomes a casual conversation.
 
 ---
 
@@ -336,7 +351,28 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 - **Provider configuration:** The selected provider is stored in `~/.brain-break/settings.json` as `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`). Each hosted provider stores its preferred model: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`). For Ollama, the settings also store `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`). For OpenAI Compatible API, the settings store `openaiCompatibleEndpoint` (string, no default — must be provided by the user) and `openaiCompatibleModel` (string, no default — must be provided by the user). API keys are read from environment variables at runtime — never stored in settings
 - **Question generation:** The active provider is called via structured chat completion prompts; the generation prompt returns a **JSON structured response** with question text, answer options (A–D), difficulty level, and speed tier time thresholds (fast / normal / slow in ms). The generation step does **not** supply the trusted answer key
 - **Language and tone injection:** Every AI prompt (questions, motivational messages, answer explanations) includes a voice instruction derived from global settings — e.g., `"Respond in Greek using a pirate tone of voice."` — prepended to the system or user message before the generation instruction
-- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), and for OpenAI Compatible API: `openaiCompatibleEndpoint` (string) and `openaiCompatibleModel` (string), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `myCoachScope` (string: `"25"` | `"100"` | `"all"`, default `"100"`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), and `showWelcome` (boolean, default `true`); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "myCoachScope": "100", "theme": "dark", "showWelcome": true }`
+- **Settings persistence:** Global settings are stored at `~/.brain-break/settings.json` as a flat JSON object with fields `provider` (string enum: `openai` | `anthropic` | `gemini` | `copilot` | `ollama` | `openai-compatible`), `language` (string), `tone` (string enum: `natural` | `expressive` | `calm` | `humorous` | `sarcastic` | `robot` | `pirate`), per-provider model fields: `openaiModel` (string, default `gpt-5.4`), `anthropicModel` (string, default `claude-opus-4-6`), `geminiModel` (string, default `gemini-2.5-pro`), for Ollama: `ollamaEndpoint` (string, default `http://localhost:11434`) and `ollamaModel` (string, default `llama4`), and for OpenAI Compatible API: `openaiCompatibleEndpoint` (string) and `openaiCompatibleModel` (string), `asciiArtMilestone` (number: `0` | `10` | `100`, default `100`), `myCoachScope` (string: `"25"` | `"100"` | `"all"`, default `"100"`), `theme` (string: `"dark"` | `"light"`, default `"dark"`), `showWelcome` (boolean, default `true`), and an optional `license` sub-object (see License activation mechanism below; absent on free-tier installations); defaults applied on missing file: `{ "provider": null, "language": "English", "tone": "natural", "openaiModel": "gpt-5.4", "anthropicModel": "claude-opus-4-6", "geminiModel": "gemini-2.5-pro", "asciiArtMilestone": 100, "myCoachScope": "100", "theme": "dark", "showWelcome": true }` (no `license` key)
+- **License activation mechanism:** Brain-break integrates with Lemon Squeezy's license API for offline, perpetual licenses unlocking unlimited domain creation (free tier is capped at 1 total domain — active + archived combined).
+  - **Storefront URLs:**
+    - Checkout: `https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147`
+    - Manage orders / retrieve key: `https://app.lemonsqueezy.com/my-orders`
+    - Storefront landing: `https://georgiosnikitas.lemonsqueezy.com/`
+  - **Expected product ID:** `1049453` — the Lemon Squeezy product ID for the brain-break unlimited-domains license. Activation responses are matched against this value to defensively reject keys from unrelated products (see Activation below).
+  - **Activation:** When the user enters a key on the Activate License screen, the app calls `POST https://api.lemonsqueezy.com/v1/licenses/activate` with form fields `license_key=<key>` and `instance_name=brain-break@<hostname>`. On success (HTTP 200 with `activated: true`), the app verifies that the response's `meta.product_id` equals `1049453` — if the product ID does not match, the activation is rejected, the API call is followed by an immediate `POST /v1/licenses/deactivate` to release the just-activated instance, and the user sees: *"This license key is not valid for brain-break."* On a matching product ID, the app persists a `license` sub-object inside `settings.json`. On failure (invalid key, refunded, revoked, activation limit reached, network error) the app displays a license-specific error from NFR 2 and the license sub-object is not written.
+  - **Validation on launch:** On every app launch where `settings.json` contains a `license` sub-object with `status: "active"`, the app calls `POST https://api.lemonsqueezy.com/v1/licenses/validate` with the stored `license_key` and `instance_id` before rendering the home screen. Behavior by response:
+    - `valid: true` — license remains active, the home screen renders normally.
+    - `valid: false` (invalid, refunded, or revoked) — the app sets `license.status` to `"inactive"`, displays a one-time notice (*"Your license is no longer active. You've been returned to the free tier."*), and the user reverts to free-tier behavior.
+    - Network unreachable or HTTP 5xx — the app keeps `license.status` unchanged (offline grace), displays a dim status line on the home screen (*"License could not be validated — offline mode"*), and continues normally; validation is retried on next launch.
+    - Validation latency is bounded to ≤ 2 seconds and runs concurrently with other startup work to honor NFR 4.
+  - **Deactivation:** Selecting Deactivate on the License Info screen prompts a hard confirmation (*"Deactivate this license? You'll be limited to 1 domain again. Existing domains beyond the cap remain readable but you won't be able to create new ones until you re-activate."*). On confirm, the app calls `POST https://api.lemonsqueezy.com/v1/licenses/deactivate` with `license_key` and `instance_id`. On success the `license` sub-object is removed from `settings.json`. On failure (network or API error) the app displays the relevant NFR 2 error and the local state is left unchanged.
+  - **License sub-object schema (when present in `settings.json`):**
+    - `key` (string) — full license key as entered by the user (used for re-validation and deactivation)
+    - `instanceId` (string) — `instance.id` returned by Lemon Squeezy on activation
+    - `instanceName` (string) — `brain-break@<hostname>` value sent at activation
+    - `activatedAt` (ISO 8601 string) — local timestamp when activation succeeded
+    - `productId` (string), `productName` (string), `storeId` (string), `storeName` (string) — copied from the activation response for display on the License Info screen
+    - `status` (string enum: `"active"` | `"inactive"`) — `"active"` after a successful activation or validation; set to `"inactive"` by the launch validator when the license is no longer valid (a `"inactive"` license is treated identically to a missing license for cap enforcement; the entry is retained only so the License Info screen can explain why the user reverted to the free tier)
+  - **Cap enforcement:** Domain creation is blocked at the home screen "Create new domain" entry point when `license` is absent or has `status: "inactive"` AND the total count of domain files in `~/.brain-break/` (active + archived) is ≥ 1. Cap enforcement is purely a write-side gate; existing domains beyond the cap (e.g., after a license is revoked or deactivated) remain fully readable and playable — the user is only prevented from creating additional ones until they re-activate.
 - **Deduplication mechanism:** Each generated question is hashed using SHA-256 on its normalized text (lowercased, whitespace-stripped); a match against any stored hash triggers regeneration — *Future enhancement: fuzzy/similarity-based deduplication*
 - **Answer verification mechanism:** After generating and shuffling a candidate question, a separate verification prompt asks the AI to determine the correct answer for the finalized question **without seeing any pre-selected answer**. The verification response must return both `correctAnswer` (`A` | `B` | `C` | `D`) and `correctOptionText` (the exact copied text of the selected option). The app accepts the candidate only when `correctAnswer` points to the same option whose text exactly matches `correctOptionText`. Verification is **fail-closed**: any mismatch, network error, JSON parse error, or schema mismatch discards the entire candidate and triggers a fresh generation cycle. Each question has a bounded retry budget of **3 candidate attempts total** (initial attempt + 2 retries); if all attempts fail, the question is rejected and never shown to the user
 - **Domain file naming:** User-typed domain names are slugified for file system use — lowercased, spaces and special characters replaced with hyphens (e.g. `Spring Boot microservices` → `spring-boot-microservices.json`). Duplicate validation compares the slugified form against existing domain files — ensuring visually distinct inputs that normalize to the same slug (e.g. `Python 3` and `python-3`) are detected as duplicates
@@ -345,7 +381,7 @@ Not applicable. `brain-break` operates in no regulated domain (no healthcare, fi
 
 ## Functional Requirements
 
-The following 19 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
+The following 20 features define the complete MVP capability set. Each feature is specified as a user-facing capability. Implementation details are documented in Project-Type Requirements — Implementation Decisions.
 
 **Terminal rendering (cross-cutting):** All screens perform a full terminal reset on every navigation action — clearing the visible viewport and scroll-back buffer so all content renders at the top of the terminal window with no prior output accessible by scrolling.
 
@@ -357,8 +393,8 @@ The following 19 features define the complete MVP capability set. Each feature i
 - If no domains exist, the list is empty and the only available action is to create a new one
 - Domain names are free-text — any topic the user types becomes a valid domain, and the AI will generate domain-specific questions for it
 - All state (history, score, time played) is domain-scoped and isolated
-- The home screen actions are: select a domain, create a new domain, archived domains, settings, buy me a coffee, and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen; when `showWelcome` is `true`, selecting Exit displays the Exit Message screen (Feature 15) before terminating the app; when `showWelcome` is `false`, the app terminates immediately
-- Selecting "Create new domain" shows an input prompt (`New domain name:`); after entering a name, the app validates uniqueness by comparing the slugified form of the entered name against all active and archived domain files. If a matching active domain exists, the app displays: *"A domain named '[name]' already exists."* and returns the user to the name input prompt. If a matching archived domain exists, the app displays: *"A domain named '[name]' already exists in your archived domains."* and returns the user to the name input prompt. If no duplicate is found, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary); a Save/Back navigation prompt follows — selecting Save creates the domain, selecting Back returns to the home screen without creating a domain; pressing Ctrl+C at any prompt returns the user to the home screen without creating a domain
+- The home screen actions are: select a domain, create a new domain, archived domains, settings, license action (**🔑 Activate License** when no active license, or **🔑 License Info** when a license is active — see Feature 20), buy me a coffee (hidden when a license is active — see Feature 10), and exit — archive/history/stats/delete actions for a domain are **not** shown on the home screen; when `showWelcome` is `true`, selecting Exit displays the Exit Message screen (Feature 15) before terminating the app; when `showWelcome` is `false`, the app terminates immediately
+- Selecting "Create new domain" first checks the free-tier domain cap: when no active license is present and the total number of domains (active + archived combined) is ≥ 1, the app displays an upsell message — *"Free version is limited to 1 domain. Activate a license to create more."* — with two actions: **🔑 Activate License** (navigates to the Activate License screen — Feature 20) and **↩️ Back** (returns to the home screen); no name prompt is shown. When the cap is not hit (or a license is active), the app shows an input prompt (`New domain name:`); after entering a name, the app validates uniqueness by comparing the slugified form of the entered name against all active and archived domain files. If a matching active domain exists, the app displays: *"A domain named '[name]' already exists."* and returns the user to the name input prompt. If a matching archived domain exists, the app displays: *"A domain named '[name]' already exists in your archived domains."* and returns the user to the name input prompt. If no duplicate is found, the user selects a starting difficulty level via arrow key navigation from labeled options (1 — Beginner, 2 — Elementary, 3 — Intermediate, 4 — Advanced, 5 — Expert; default: 2 — Elementary); a Save/Back navigation prompt follows — selecting Save creates the domain, selecting Back returns to the home screen without creating a domain; pressing Ctrl+C at any prompt returns the user to the home screen without creating a domain
 
 **Domain sub-menu (Level 2)**
 
@@ -613,7 +649,8 @@ The application ships two color palettes — **Dark** and **Light** — controll
 
 ### Feature 10 — Coffee Supporter Screen
 
-- The home screen includes a **☕ Buy me a coffee** action, positioned between the "Archived domains" separator and the Exit action
+- The home screen includes a **☔ Buy me a coffee** action, positioned between the license action (🔑 Activate License / 🔑 License Info — Feature 20) and the Exit action
+- The action is shown **only when no active license is present** — when a license is active (Feature 20), the Buy me a coffee action is hidden from the home screen menu (licensed users have already supported the project via the perpetual license purchase)
 - Selecting it opens a dedicated screen that clears the terminal and displays an ASCII QR code linking to the creator's Buy Me a Coffee page, followed by the URL (`https://www.buymeacoffee.com/georgiosnikitas`) in plain text
 - The screen provides a single **Back** action that returns the user to the home screen
 
@@ -815,6 +852,60 @@ The sprint ends on whichever condition occurs first:
 - Selecting **Back** or pressing Ctrl+C returns the user to the domain sub-menu
 - If the AI provider is unreachable or the call fails, the app displays the same provider-specific error message as NFR 2 and returns the user to the domain sub-menu — the failure is non-critical and does not crash the app
 
+### Feature 20 — License Activation
+
+- `brain-break` ships with two tiers, both granting access to all features defined in this PRD:
+  - **Free tier** (default for all users): cap of **1 total domain** (active + archived combined). All features (AI providers, quiz, history, statistics, bookmarks, challenge, ASCII art, my coach, settings) work identically to the licensed tier within that single domain.
+  - **Licensed tier** (one-time perpetual Lemon Squeezy purchase): unlimited domain creation. All other behavior is identical to the free tier.
+- The home screen menu adapts to license state:
+  - When **no active license** is present, the menu shows a **🔑 Activate License** action positioned between Settings and the Buy me a coffee action.
+  - When **an active license** is present, the same menu slot is renamed to **🔑 License Info**, and the **☕ Buy me a coffee** action is hidden from the menu (see Feature 10).
+- License state is persisted as a `license` sub-object inside `~/.brain-break/settings.json` — see Project-Type Requirements → Implementation Decisions → License activation mechanism for the schema, endpoints, and lifecycle.
+
+**Launch-time validation**
+
+- On every app launch where `settings.json` contains a `license` sub-object with `status: "active"`, the app calls Lemon Squeezy's validate endpoint before rendering the home screen. The call is bounded to ≤ 2 seconds and runs concurrently with other startup work to preserve NFR 4.
+- Responses are handled per the Implementation Decisions License activation mechanism: `valid: true` keeps the license active; `valid: false` flips status to `"inactive"` and shows a one-time notice on the next home screen render; network/5xx failures keep the cached license active for the session (offline grace) and display a dim *"License could not be validated — offline mode"* line on the home screen.
+
+**Activate License screen (shown when license is absent or inactive)**
+
+- Accessed via the **🔑 Activate License** action on the home screen
+- Uses the standard `clearAndBanner()` flow with a header: `🔑 Activate License`
+- Below the header, a short description paragraph explains the value proposition: *"Activating a license unlocks unlimited domains. All features are already available for free within your 1 domain — activation only lifts the domain cap. Purchase is a one-time perpetual fee."*
+- Displays the following controls in order:
+  1. **Enter license key:** free-text input prompt (`License key:`) — accepts the full key as copied from the Lemon Squeezy order page; pasting is supported
+  2. **🛒 Manage your keys** — opens `https://app.lemonsqueezy.com/my-orders` in the user's default browser (via the system `open` / `xdg-open` mechanism); the action does not change app state and the screen redisplays unchanged afterwards
+  3. **💳 Buy a license** — opens `https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147` in the user's default browser; same non-destructive behavior as Manage your keys
+  4. **↩️  Back** — returns the user to the home screen with no changes
+- Submitting a license key triggers the activation flow:
+  - A loading spinner is displayed during the API call
+  - On success, the app persists the `license` sub-object in `settings.json`, displays a confirmation message (*"License activated successfully. Unlimited domains unlocked."*), and returns the user to the home screen on the next input — the home screen menu re-renders with the action renamed to **🔑 License Info** and the **☕ Buy me a coffee** action hidden
+  - On failure, the app displays the relevant NFR 2 license error message inline and keeps the user on the Activate License screen so they can correct the key or retry
+- Pressing Ctrl+C at any point on this screen returns the user to the home screen with no changes
+
+**License Info screen (shown when a license is active)**
+
+- Accessed via the **🔑 License Info** action on the home screen
+- Uses the standard `clearAndBanner()` flow with a header: `🔑 License Info`
+- Displays the following fields in order, using the same `bold('Label:') + ' value'` format as the Statistics dashboard (Feature 7):
+  1. **Status:** `Active` (rendered in green) or `Inactive` (rendered in red, when status is `"inactive"`)
+  2. **License key:** masked form showing only the first 4 and last 4 characters (e.g., `1A2B-XXXX-XXXX-7Y8Z`) — full key is not displayed to avoid shoulder-surfing
+  3. **Activated:** human-readable date and time derived from `activatedAt` (e.g., `May 15, 2026 at 14:32`)
+  4. **Instance:** the `instanceName` value (e.g., `brain-break@hostname`)
+  5. **Product:** `productName` (e.g., `Brain Break — Unlimited Domains`)
+  6. **Store:** `storeName`
+- When status is `"inactive"`, a dim explanatory line is displayed below the field block: *"This license was deactivated or could not be validated. Activate again to unlock unlimited domains."*
+- Displays the following actions in order:
+  1. **🔌 Deactivate** — shown only when `status` is `"active"`; prompts a blocking confirmation dialog: *"Deactivate this license? You'll be limited to 1 domain again. Existing domains beyond the cap remain readable but you won't be able to create new ones until you re-activate."* Confirming triggers the deactivation flow (loading spinner during the API call); on success the `license` sub-object is removed from `settings.json` and the user is returned to the home screen with the menu re-rendered (action becomes **🔑 Activate License**, Buy me a coffee action reappears); on failure the NFR 2 deactivation error is displayed inline and local state is unchanged
+  2. **🔑 Re-activate** — shown only when `status` is `"inactive"`; navigates to the Activate License screen
+  3. **🛒 Manage your keys** — opens `https://app.lemonsqueezy.com/my-orders` in the user's default browser
+  4. **↩️  Back** — returns the user to the home screen
+- Pressing Ctrl+C at any point on this screen returns the user to the home screen with no changes
+
+**Cap enforcement (cross-reference)**
+
+- The 1-domain cap is enforced **only at the home screen "Create new domain" entry point** — see Feature 1 for the upsell flow. Existing domains beyond the cap (after a license is revoked, deactivated, or downgraded) remain fully readable, playable, archivable, and deletable; the user is only prevented from creating new ones until they re-activate.
+
 ---
 
 ## Non-Functional Requirements
@@ -834,6 +925,15 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
   - OpenAI / Anthropic / Gemini: *"[Provider] API key is invalid or missing. Set the `[VAR_NAME]` environment variable with a valid key and restart the app."*
   - Ollama: *"Could not connect to Ollama. Check that the endpoint and model are correct in Settings."*
   - OpenAI Compatible API: *"OpenAI Compatible API key is invalid or missing. Set the `OPENAI_COMPATIBLE_API_KEY` environment variable with a valid key and restart the app."*
+- **License activation / validation failures (Feature 20):**
+  - Invalid or unknown key: *"This license key is invalid. Check the key and try again, or visit your order page to retrieve it."*
+  - Activation limit reached: *"This license key has reached its activation limit. Deactivate it on another machine before activating here."*
+  - Refunded / revoked / disabled key: *"This license key has been revoked or refunded and can no longer be activated."*
+  - Product ID mismatch on activation: *"This license key is not valid for brain-break."* — the just-created Lemon Squeezy instance is released via an immediate deactivation call and no `license` sub-object is persisted.
+  - Lemon Squeezy unreachable during activation: *"Could not reach Lemon Squeezy. Check your connection and try again."* — the activation is not persisted; the user can retry.
+  - Lemon Squeezy unreachable during launch validation: the app keeps the cached license active for the session and renders a dim status line on the home screen — *"License could not be validated — offline mode"*; validation retries on next launch.
+  - Launch validation returns invalid / refunded / revoked: the app sets `license.status` to `"inactive"` and displays a one-time notice — *"Your license is no longer active. You've been returned to the free tier."*
+  - Deactivation API failure: *"Could not deactivate the license. Check your connection and try again."* — local license state is left unchanged.
 - In all error cases, the app remains running and the user can navigate to Settings to reconfigure.
 
 ### NFR 3 — Data Integrity
@@ -844,7 +944,7 @@ The next question must appear within **≤ 5 seconds** of the user submitting an
 The app must reach the home screen within **≤ 2 seconds** of launch (`npx brain-break` or `node index.js`) on a standard developer machine.
 
 ### NFR 5 — Terminal Screen Management
-All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, statistics dashboard, my coach report, welcome screen, exit message screen, settings screen, and sprint setup screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. This exception applies to both Play mode (Feature 3) and Challenge Mode (Feature 17). A terminal reset occurs only when the user selects Next question (loading the next question) or exits the session. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
+All screen transitions — including home screen, domain sub-menu, quiz questions, history navigation, bookmarks navigation, statistics dashboard, my coach report, welcome screen, exit message screen, settings screen, sprint setup screen, activate license screen, and license info screen — perform a full terminal reset, clearing both the visible viewport and the scroll-back buffer. All content renders at the top of the terminal window; no prior output is visible or accessible by scrolling after any navigation action. **Exception:** the post-answer feedback panel does **not** trigger a terminal reset — it renders inline on the same screen as the quiz question so the user can see the original question alongside the feedback. This exception applies to both Play mode (Feature 3) and Challenge Mode (Feature 17). A terminal reset occurs only when the user selects Next question (loading the next question) or exits the session. On all screens except the Welcome Screen, Exit Message screen, and Provider Setup screen, a static banner (`🧠🔨 Brain Break` + gradient shadow bar) is rendered immediately after the terminal reset and before any screen content — this is handled by the shared `clearAndBanner()` utility. The session summary block (Feature 14) renders on the domain sub-menu screen as part of the standard `clearAndBanner()` flow — it does not trigger an additional terminal reset; it is content rendered between the banner and the action menu on the domain sub-menu's normal screen draw. Measurable: every state-changing user input produces a fully redrawn terminal at scroll position zero, with zero residual output from the previous state — except post-answer feedback, which appends to the current question screen.
 
 ### NFR 6 — Terminal Color Rendering
 All ANSI color output uses standard 8/16-color ANSI escape codes — ensuring compatibility across macOS Terminal, iTerm2, Linux terminals, and WSL. Extended 256-color or true-color codes may be used where supported. The application ships two color palettes (Dark and Light) to ensure readability across both dark and light terminal backgrounds; the active palette is determined by the 🌓 Theme setting in Feature 8 (default: Dark). All semantic color mappings are defined in Feature 9. The application is interactive-only; non-TTY and piped execution modes are out of scope.

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-21
-last_updated: 2026-04-20
+last_updated: 2026-05-16
 project: brain-break
 project_key: NOKEY
 tracking_system: file-system
@@ -153,3 +153,15 @@ development_status:
   13-2-my-coach-scope-setting: done
   13-1-my-coach-screen: done
   epic-13-retrospective: optional
+
+  # Epic 14: License Activation (PRD Feature 20, FR53–FR57)
+  # Suggested implement order: 14.1 → 14.2 → 14.3 → 14.4 → 14.5 → 14.6 → 14.7
+  epic-14: in-progress
+  14-1-license-settings-schema-types: ready-for-dev
+  14-2-lemon-squeezy-license-api-client: ready-for-dev
+  14-3-launch-time-license-validation: ready-for-dev
+  14-4-home-screen-menu-adaptation: ready-for-dev
+  14-5-activate-license-screen: ready-for-dev
+  14-6-license-info-screen: ready-for-dev
+  14-7-domain-cap-enforcement-at-create-domain: ready-for-dev
+  epic-14-retrospective: optional
