@@ -48,7 +48,12 @@ const DeactivateResponseSchema = z.object({
   deactivated: z.boolean(),
 })
 
-const ErrorResponseSchema = z.object({
+// Lemon Squeezy license endpoints return errors as a flat `{ error: string, ... }` body.
+// The general Lemon Squeezy API uses the JSON:API `{ errors: [{ detail }] }` shape; we accept
+// both so tests written against the JSON:API shape continue to work and so the real license
+// endpoint responses are parsed correctly.
+const FlatErrorSchema = z.object({ error: z.string().min(1) })
+const JsonApiErrorSchema = z.object({
   errors: z.array(z.object({ detail: z.string().min(1) })).min(1),
 })
 
@@ -69,11 +74,15 @@ function classifyActivateError(detail: string): LicenseErrorKind {
 }
 
 function extractDetail(json: unknown, fallback: string): string {
-  const parsed = ErrorResponseSchema.safeParse(json)
-  if (!parsed.success) {
-    return fallback
+  const flat = FlatErrorSchema.safeParse(json)
+  if (flat.success) {
+    return flat.data.error
   }
-  return parsed.data.errors[0]?.detail ?? fallback
+  const jsonApi = JsonApiErrorSchema.safeParse(json)
+  if (jsonApi.success) {
+    return jsonApi.data.errors[0]?.detail ?? fallback
+  }
+  return fallback
 }
 
 export async function activateLicense(
