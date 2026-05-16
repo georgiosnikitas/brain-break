@@ -134,7 +134,12 @@ import { showExitScreen } from './screens/exit.js'
 describe('showHome', () => {
   it('delegates to showHomeScreen', async () => {
     await showHome()
-    expect(showHomeScreen).toHaveBeenCalledOnce()
+    expect(showHomeScreen).toHaveBeenCalledWith(null)
+  })
+
+  it('passes a launch notice to showHomeScreen', async () => {
+    await showHome('offline')
+    expect(showHomeScreen).toHaveBeenCalledWith('offline')
   })
 })
 

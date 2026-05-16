@@ -1,7 +1,7 @@
 import { readFile, writeFile, rename, mkdir, readdir, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { DomainFileSchema, DomainFile, DomainMeta, defaultDomainFile, Result, SettingsFileSchema, SettingsFile, defaultSettings } from './schema.js'
+import { DomainFileSchema, DomainFile, DomainMeta, defaultDomainFile, Result, SettingsFileSchema, SettingsFile, defaultSettings, LicenseRecordSchema } from './schema.js'
 
 // ---------------------------------------------------------------------------
 // DomainListEntry — discriminated union to surface corrupted domains to screens
@@ -140,13 +140,21 @@ const TONE_MIGRATIONS: Record<string, string> = {
 }
 
 function migrateSettings(parsed: unknown): unknown {
-  if (parsed !== null && typeof parsed === 'object' && 'tone' in parsed) {
-    const tone = (parsed as Record<string, unknown>).tone
-    if (typeof tone === 'string' && tone in TONE_MIGRATIONS) {
-      return { ...parsed as object, tone: TONE_MIGRATIONS[tone] }
+  if (parsed === null || typeof parsed !== 'object') return parsed
+  let result = parsed as Record<string, unknown>
+  // Tone migration
+  if ('tone' in result && typeof result.tone === 'string' && result.tone in TONE_MIGRATIONS) {
+    result = { ...result, tone: TONE_MIGRATIONS[result.tone] }
+  }
+  // Surgically strip a malformed license sub-object so the rest of the settings survive
+  if ('license' in result && result.license !== undefined) {
+    const licenseParse = LicenseRecordSchema.safeParse(result.license)
+    if (!licenseParse.success) {
+      const { license: _drop, ...rest } = result
+      result = rest
     }
   }
-  return parsed
+  return result
 }
 
 export async function readSettings(): Promise<Result<SettingsFile>> {

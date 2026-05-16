@@ -1,6 +1,6 @@
 # Story 14.2: Lemon Squeezy License API Client
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -113,6 +113,13 @@ So that screens can call clean typed helpers without dealing with HTTP, form-enc
   - [ ] 7.1 `grep -rn "api.lemonsqueezy.com" src/` should return matches ONLY in `src/domain/license-client.ts` (and its `.test.ts` if you choose to inline the URL in test assertions)
   - [ ] 7.2 `grep -rn "from 'node:os'" src/` should return matches ONLY in `src/domain/license-client.ts` (other files may use other `node:*` imports, but `node:os` for `hostname()` is exclusively license-client's)
   - [ ] 7.3 `grep -rn "1049453" src/` should return matches ONLY in `src/domain/schema.ts` (the `EXPECTED_PRODUCT_ID` constant), `src/domain/license-client.ts` (consuming it via import), and their `.test.ts` files
+
+### Review Findings
+
+- [x] [Review][Patch] Activation stores `activated: false` responses as active licenses [src/domain/license-client.ts:122]
+- [x] [Review][Patch] `activation_limit` API error text is not mapped to `limit_reached` [src/domain/license-client.ts:59]
+- [x] [Review][Patch] Error response bodies are read without Zod validation [src/domain/license-client.ts:67]
+- [x] [Review][Patch] `validateLicense` treats non-5xx non-OK valid-shaped responses as successful validation results [src/domain/license-client.ts:187]
 
 ## Dev Notes
 

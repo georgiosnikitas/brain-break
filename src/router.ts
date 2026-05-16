@@ -22,9 +22,10 @@ import { defaultDomainFile, defaultSettings } from './domain/schema.js'
 import { preloadQuestions } from './ai/client.js'
 import { warn, error as errorFmt, colorIncorrect, menuTheme } from './utils/format.js'
 import type { SettingsFile, SessionData } from './domain/schema.js'
+import type { LaunchNotice } from './domain/license-launch.js'
 
-export async function showHome(): Promise<void> {
-  await showHomeScreen()
+export async function showHome(launchNotice: LaunchNotice | null = null): Promise<void> {
+  await showHomeScreen(launchNotice)
 }
 
 export async function showQuiz(slug: string): Promise<SessionData | null> {

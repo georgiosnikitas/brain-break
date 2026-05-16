@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { buildHomeChoices, filterDomains, showHomeScreen, showCoffeeScreen, type HomeEntry, type HomeAction } from './home.js'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import chalk from 'chalk'
+import { buildHomeChoices, filterDomains, showHomeScreen, showCoffeeScreen, renderLaunchNotice, type HomeEntry, type HomeAction } from './home.js'
 import { makeMeta } from '../__test-helpers__/factories.js'
 
 // Prevent the real SDK (CJS/ESM issue) from loading via home → router → quiz → ai/client chain
@@ -302,6 +303,57 @@ describe('showHomeScreen — routing', () => {
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
     exitSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// launch notice rendering
+// ---------------------------------------------------------------------------
+describe('launch notice rendering', () => {
+  let originalChalkLevel: typeof chalk.level
+
+  beforeEach(() => {
+    originalChalkLevel = chalk.level
+    chalk.level = 1
+  })
+
+  afterEach(() => {
+    chalk.level = originalChalkLevel
+  })
+
+  it('returns null when no launch notice is present', () => {
+    expect(renderLaunchNotice(null)).toBeNull()
+  })
+
+  it('renders revoked notices with red formatting', () => {
+    const result = renderLaunchNotice('revoked')
+
+    expect(result).toContain('no longer active')
+    expect(result).toMatch(/\x1B\[.*31m/)
+  })
+
+  it('renders offline notices with dim formatting', () => {
+    const result = renderLaunchNotice('offline')
+
+    expect(result).toContain('offline mode')
+    expect(result).toMatch(/\x1B\[2m/)
+  })
+
+  it('prints the launch notice once across multiple home iterations', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    mockSelect
+      .mockResolvedValueOnce({ action: 'settings' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen('revoked')).rejects.toThrow('process.exit')
+
+    const noticeCalls = logSpy.mock.calls.filter(([message]) => String(message).includes('no longer active'))
+    expect(noticeCalls).toHaveLength(1)
+    exitSpy.mockRestore()
+    logSpy.mockRestore()
   })
 })
 

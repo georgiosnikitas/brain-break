@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainFileSchema, MAX_COACH_REPORT_LENGTH, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema, PROVIDER_CHOICES, PROVIDER_LABELS } from './schema.js'
+import { DomainFileSchema, MAX_COACH_REPORT_LENGTH, defaultDomainFile, AnswerOptionSchema, SpeedTierSchema, SettingsFileSchema, defaultSettings, AiProviderTypeSchema, QuestionRecordSchema, PROVIDER_CHOICES, PROVIDER_LABELS, LicenseRecordSchema, LicenseStatusSchema, EXPECTED_PRODUCT_ID, type LicenseRecord } from './schema.js'
 
 const validMeta = {
   score: 100,
@@ -749,5 +749,119 @@ describe('DomainMetaSchema — coach fields', () => {
       },
     })
     expect(result.success).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// License — Story 14.1
+// ---------------------------------------------------------------------------
+
+const validLicense: LicenseRecord = {
+  key: 'AAAA-BBBB-CCCC-DDDD',
+  instanceId: 'inst_123',
+  instanceName: 'george-laptop',
+  activatedAt: '2026-05-15T10:00:00.000Z',
+  productId: 1049453,
+  productName: 'brain-break',
+  storeId: 42,
+  storeName: 'georgiosnikitas',
+  status: 'active',
+}
+
+describe('EXPECTED_PRODUCT_ID', () => {
+  it('equals 1049453 (number)', () => {
+    expect(EXPECTED_PRODUCT_ID).toBe(1049453)
+    expect(typeof EXPECTED_PRODUCT_ID).toBe('number')
+  })
+})
+
+describe('LicenseStatusSchema', () => {
+  it('accepts "active" and "inactive"', () => {
+    expect(LicenseStatusSchema.safeParse('active').success).toBe(true)
+    expect(LicenseStatusSchema.safeParse('inactive').success).toBe(true)
+  })
+
+  it('rejects "revoked" (revocation maps to inactive at the call site)', () => {
+    expect(LicenseStatusSchema.safeParse('revoked').success).toBe(false)
+  })
+})
+
+describe('LicenseRecordSchema', () => {
+  it('accepts a valid record with status "active"', () => {
+    expect(LicenseRecordSchema.safeParse(validLicense).success).toBe(true)
+  })
+
+  it('accepts a valid record with status "inactive"', () => {
+    expect(LicenseRecordSchema.safeParse({ ...validLicense, status: 'inactive' }).success).toBe(true)
+  })
+
+  it.each(['key', 'instanceId', 'instanceName', 'productName', 'storeName'] as const)(
+    'rejects when required string field "%s" is missing',
+    (field) => {
+      const { [field]: _drop, ...rest } = validLicense
+      expect(LicenseRecordSchema.safeParse(rest).success).toBe(false)
+    },
+  )
+
+  it.each(['key', 'instanceId', 'instanceName', 'productName', 'storeName'] as const)(
+    'rejects when required string field "%s" is empty',
+    (field) => {
+      expect(LicenseRecordSchema.safeParse({ ...validLicense, [field]: '' }).success).toBe(false)
+    },
+  )
+
+  it.each(['productId', 'storeId'] as const)('rejects when number field "%s" is missing', (field) => {
+    const { [field]: _drop, ...rest } = validLicense
+    expect(LicenseRecordSchema.safeParse(rest).success).toBe(false)
+  })
+
+  it.each(['productId', 'storeId'] as const)('rejects when number field "%s" is non-integer', (field) => {
+    expect(LicenseRecordSchema.safeParse({ ...validLicense, [field]: 1.5 }).success).toBe(false)
+  })
+
+  it('rejects when activatedAt is not ISO 8601', () => {
+    expect(LicenseRecordSchema.safeParse({ ...validLicense, activatedAt: 'yesterday' }).success).toBe(false)
+  })
+
+  it('rejects an unknown status value', () => {
+    expect(LicenseRecordSchema.safeParse({ ...validLicense, status: 'revoked' }).success).toBe(false)
+  })
+
+  it('LicenseRecord type compiles for a fully-populated object literal', () => {
+    const literal = {
+      key: 'k',
+      instanceId: 'i',
+      instanceName: 'n',
+      activatedAt: '2026-05-15T10:00:00.000Z',
+      productId: 1,
+      productName: 'p',
+      storeId: 2,
+      storeName: 's',
+      status: 'active' as const,
+    } satisfies LicenseRecord
+    expect(literal.status).toBe('active')
+  })
+})
+
+describe('SettingsFileSchema — license field', () => {
+  it('accepts settings WITHOUT a license key (backward compatible)', () => {
+    expect(SettingsFileSchema.safeParse({ language: 'English', tone: 'natural' }).success).toBe(true)
+  })
+
+  it('accepts settings WITH a valid license', () => {
+    const result = SettingsFileSchema.safeParse({ language: 'English', tone: 'natural', license: validLicense })
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.license).toEqual(validLicense)
+  })
+
+  it('rejects settings with a malformed license (missing key)', () => {
+    const { key: _drop, ...badLicense } = validLicense
+    const result = SettingsFileSchema.safeParse({ language: 'English', tone: 'natural', license: badLicense })
+    expect(result.success).toBe(false)
+  })
+
+  it('defaultSettings() does NOT contain a license key', () => {
+    expect('license' in defaultSettings()).toBe(false)
   })
 })

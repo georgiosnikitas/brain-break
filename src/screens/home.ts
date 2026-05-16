@@ -2,7 +2,8 @@ import { select, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, readSettings, type DomainListEntry } from '../domain/store.js'
 import { defaultSettings } from '../domain/schema.js'
-import { dim, bold, error as errorFmt, menuTheme } from '../utils/format.js'
+import type { LaunchNotice } from '../domain/license-launch.js'
+import { dim, bold, error, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 import type { Result } from '../domain/schema.js'
@@ -30,7 +31,7 @@ export async function loadDomainEntries(
 ): Promise<HomeEntry[]> {
   if (!listResult.ok) {
     if (opts.logErrors ?? true) {
-      console.error(errorFmt(`Failed to load domains: ${listResult.error}`))
+      console.error(error(`Failed to load domains: ${listResult.error}`))
     }
     return []
   }
@@ -128,9 +129,26 @@ export async function showCoffeeScreen(): Promise<void> {
   }
 }
 
-export async function showHomeScreen(): Promise<void> {
+export function renderLaunchNotice(notice: LaunchNotice | null): string | null {
+  if (notice === 'revoked') return error("Your license is no longer active. You've been returned to the free tier.")
+  if (notice === 'offline') return dim('License could not be validated — offline mode')
+  return null
+}
+
+export async function showHomeScreen(launchNotice: LaunchNotice | null = null): Promise<void> {
+  let noticeShown = false
+
   while (true) {
     clearAndBanner()
+    if (launchNotice && !noticeShown) {
+      const notice = renderLaunchNotice(launchNotice)
+      if (notice) {
+        console.log(notice)
+        console.log('')
+      }
+      noticeShown = true
+    }
+
     const listResult = await listDomains()
     const homeEntries = await loadDomainEntries(listResult, { archived: false })
 

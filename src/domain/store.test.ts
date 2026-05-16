@@ -378,6 +378,108 @@ describe('writeSettings + readSettings', () => {
 })
 
 // ---------------------------------------------------------------------------
+// License field round-trip + graceful-drop (Story 14.1)
+// ---------------------------------------------------------------------------
+describe('readSettings + writeSettings — license field', () => {
+  let settingsFile: string
+
+  const validLicense = {
+    key: 'AAAA-BBBB-CCCC-DDDD',
+    instanceId: 'inst_123',
+    instanceName: 'george-laptop',
+    activatedAt: '2026-05-15T10:00:00.000Z',
+    productId: 1049453,
+    productName: 'brain-break',
+    storeId: 42,
+    storeName: 'georgiosnikitas',
+    status: 'active' as const,
+  }
+
+  beforeEach(() => {
+    settingsFile = join(testDir, 'settings.json')
+    _setSettingsPath(settingsFile)
+  })
+
+  afterEach(() => {
+    _setSettingsPath(null)
+  })
+
+  it('round-trips all 9 license fields when license is present', async () => {
+    const settings = { ...defaultSettings(), license: validLicense }
+    expect((await writeSettings(settings)).ok).toBe(true)
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.license).toEqual(validLicense)
+  })
+
+  it('returns license: undefined when settings have no license key', async () => {
+    expect((await writeSettings(defaultSettings())).ok).toBe(true)
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.license).toBeUndefined()
+  })
+
+  it('drops a malformed license sub-object while preserving the rest of the settings', async () => {
+    const onDisk = {
+      provider: 'openai',
+      language: 'Greek',
+      tone: 'pirate',
+      openaiModel: 'gpt-5.4',
+      anthropicModel: 'claude-opus-4-6',
+      geminiModel: 'gemini-2.5-pro',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'llama3.2',
+      openaiCompatibleEndpoint: '',
+      openaiCompatibleModel: '',
+      asciiArtMilestone: 100,
+      myCoachScope: '100',
+      theme: 'dark',
+      showWelcome: true,
+      // Malformed: missing required `key`
+      license: { ...validLicense, key: undefined },
+    }
+    await writeFile(settingsFile, JSON.stringify(onDisk), 'utf8')
+
+    const result = await readSettings()
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.license).toBeUndefined()
+    expect(result.data.provider).toBe('openai')
+    expect(result.data.language).toBe('Greek')
+    expect(result.data.tone).toBe('pirate')
+  })
+
+  it('migrates legacy tone and drops a malformed license in the same pass', async () => {
+    const onDisk = {
+      language: 'Greek',
+      tone: 'normal',
+      license: { ...validLicense, key: undefined },
+    }
+    await writeFile(settingsFile, JSON.stringify(onDisk), 'utf8')
+
+    const result = await readSettings()
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.language).toBe('Greek')
+    expect(result.data.tone).toBe('natural')
+    expect(result.data.license).toBeUndefined()
+  })
+
+  it('preserves license.status === "inactive" (revocation state is not auto-dropped)', async () => {
+    const inactive = { ...validLicense, status: 'inactive' as const }
+    expect((await writeSettings({ ...defaultSettings(), license: inactive })).ok).toBe(true)
+    const result = await readSettings()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.license).toEqual(inactive)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // loadDomainOrDefault
 // ---------------------------------------------------------------------------
 describe('loadDomainOrDefault', () => {

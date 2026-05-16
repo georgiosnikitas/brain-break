@@ -158,8 +158,8 @@ development_status:
   # Suggested implement order: 14.1 → 14.2 → 14.3 → 14.4 → 14.5 → 14.6 → 14.7
   epic-14: in-progress
   14-1-license-settings-schema-types: ready-for-dev
-  14-2-lemon-squeezy-license-api-client: ready-for-dev
-  14-3-launch-time-license-validation: ready-for-dev
+  14-2-lemon-squeezy-license-api-client: done
+  14-3-launch-time-license-validation: done
   14-4-home-screen-menu-adaptation: ready-for-dev
   14-5-activate-license-screen: ready-for-dev
   14-6-license-info-screen: ready-for-dev

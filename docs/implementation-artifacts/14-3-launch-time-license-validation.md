@@ -1,6 +1,6 @@
 # Story 14.3: Launch-Time License Validation
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,56 +32,62 @@ So that revoked or refunded keys lose privileges automatically without ever bloc
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create launch-validation orchestrator module** (AC: #1, #2, #3, #4, #5, #6, #8)
-  - [ ] 1.1 Create `src/domain/license-launch.ts`
-  - [ ] 1.2 Define and export `LaunchNotice = 'revoked' | 'offline'` type
-  - [ ] 1.3 Export `async function validateLicenseOnLaunch(): Promise<LaunchNotice | null>` — the main orchestrator. Takes NO arguments — it reads the freshest settings itself via `readSettings()`. This makes the function self-contained and robust to any prior step in the launch flow that may have written to settings (notably `showProviderSetup` which persists `provider`/`apiKey`/`model`). If `readSettings()` fails, OR the parsed settings have no `license` field, OR `license.status !== 'active'`, returns `null` immediately (no spinner, no network call). Otherwise creates an `ora('Checking license…').start()` spinner, calls `validateLicense(license.key, license.instanceId, AbortSignal.timeout(2000))`, stops the spinner silently (no success/fail line), handles the three outcomes per ACs #4, #5, #6, and returns the resulting notice
-  - [ ] 1.4 On `valid: false` outcome: re-read settings via `readSettings()` one more time (defensive against any further write between the initial read and the validation completing — e.g., the `AbortSignal` timeout window can be up to 2s), then if the re-read shows `license.status` still active, set `license.status = 'inactive'` and call `writeSettings()`. Return `'revoked'`. If the re-read shows the license has been removed or already flipped, do not write — still return `'revoked'`
-  - [ ] 1.5 On `network` outcome (or any non-`ok` Result): do NOT call `writeSettings()`; return `'offline'`
-  - [ ] 1.6 On `valid: true` outcome: do NOT call `writeSettings()`; return `null`
-  - [ ] 1.7 Wrap the entire orchestrator body in `try/catch`. On any unexpected exception, stop the spinner (`spinner.stop()`), do NOT mutate settings, and return `'offline'` (defensive treat-as-network). The exception must never escape — an uncaught error in the launch path would abort the user's session
+- [x] **Task 1: Create launch-validation orchestrator module** (AC: #1, #2, #3, #4, #5, #6, #8)
+  - [x] 1.1 Create `src/domain/license-launch.ts`
+  - [x] 1.2 Define and export `LaunchNotice = 'revoked' | 'offline'` type
+  - [x] 1.3 Export `async function validateLicenseOnLaunch(): Promise<LaunchNotice | null>` — the main orchestrator. Takes NO arguments — it reads the freshest settings itself via `readSettings()`. This makes the function self-contained and robust to any prior step in the launch flow that may have written to settings (notably `showProviderSetup` which persists `provider`/`apiKey`/`model`). If `readSettings()` fails, OR the parsed settings have no `license` field, OR `license.status !== 'active'`, returns `null` immediately (no spinner, no network call). Otherwise creates an `ora('Checking license…').start()` spinner, calls `validateLicense(license.key, license.instanceId, AbortSignal.timeout(2000))`, stops the spinner silently (no success/fail line), handles the three outcomes per ACs #4, #5, #6, and returns the resulting notice
+  - [x] 1.4 On `valid: false` outcome: re-read settings via `readSettings()` one more time (defensive against any further write between the initial read and the validation completing — e.g., the `AbortSignal` timeout window can be up to 2s), then if the re-read shows `license.status` still active, set `license.status = 'inactive'` and call `writeSettings()`. Return `'revoked'`. If the re-read shows the license has been removed or already flipped, do not write — still return `'revoked'`
+  - [x] 1.5 On `network` outcome (or any non-`ok` Result): do NOT call `writeSettings()`; return `'offline'`
+  - [x] 1.6 On `valid: true` outcome: do NOT call `writeSettings()`; return `null`
+  - [x] 1.7 Wrap the entire orchestrator body in `try/catch`. On any unexpected exception, stop the spinner (`spinner.stop()`), do NOT mutate settings, and return `'offline'` (defensive treat-as-network). The exception must never escape — an uncaught error in the launch path would abort the user's session
 
-- [ ] **Task 2: Wire orchestrator into `src/index.ts` and propagate notice via parameter** (AC: #1, #2, #3)
-  - [ ] 2.1 Add import: `import { validateLicenseOnLaunch } from './domain/license-launch.js'`
-  - [ ] 2.2 Immediately before the existing `await showHome()` line, add: `const launchNotice = await validateLicenseOnLaunch()` (no arg — the orchestrator reads its own settings)
-  - [ ] 2.3 Change the existing `await showHome()` to `await showHome(launchNotice)`
-  - [ ] 2.4 Placement rationale: validation runs AFTER both `showProviderSetup()` and `showWelcome()` (whichever ran, or none), and BEFORE `showHome()` so the banner is passed in directly. The orchestrator's own `readSettings()` call picks up any settings mutation that `showProviderSetup` performed during the launch flow
-  - [ ] 2.5 Update `src/router.ts` `showHome()` signature: change `export async function showHome(): Promise<void>` to `export async function showHome(launchNotice: LaunchNotice | null = null): Promise<void>`; pass through to `showHomeScreen(launchNotice)`. Import `LaunchNotice` from `./domain/license-launch.js`. The default `= null` keeps all other callers (none exist today, but defensive) working without changes
+- [x] **Task 2: Wire orchestrator into `src/index.ts` and propagate notice via parameter** (AC: #1, #2, #3)
+  - [x] 2.1 Add import: `import { validateLicenseOnLaunch } from './domain/license-launch.js'`
+  - [x] 2.2 Immediately before the existing `await showHome()` line, add: `const launchNotice = await validateLicenseOnLaunch()` (no arg — the orchestrator reads its own settings)
+  - [x] 2.3 Change the existing `await showHome()` to `await showHome(launchNotice)`
+  - [x] 2.4 Placement rationale: validation runs AFTER both `showProviderSetup()` and `showWelcome()` (whichever ran, or none), and BEFORE `showHome()` so the banner is passed in directly. The orchestrator's own `readSettings()` call picks up any settings mutation that `showProviderSetup` performed during the launch flow
+  - [x] 2.5 Update `src/router.ts` `showHome()` signature: change `export async function showHome(): Promise<void>` to `export async function showHome(launchNotice: LaunchNotice | null = null): Promise<void>`; pass through to `showHomeScreen(launchNotice)`. Import `LaunchNotice` from `./domain/license-launch.js`. The default `= null` keeps all other callers (none exist today, but defensive) working without changes
 
-- [ ] **Task 3: Render the one-time notice in `src/screens/home.ts`** (AC: #5, #6, #7)
-  - [ ] 3.1 Add import: `import type { LaunchNotice } from '../domain/license-launch.js'` and ensure `error`, `dim` are already imported from `'../utils/format.js'`
-  - [ ] 3.2 Change the `showHomeScreen` signature: `export async function showHomeScreen(launchNotice: LaunchNotice | null = null): Promise<void>`. Inside the function body, declare `let noticeShown = false` outside the `while (true)` loop so it persists across loop iterations
-  - [ ] 3.3 Add a new exported pure helper `renderLaunchNotice(notice: LaunchNotice | null): string | null` that returns the formatted notice text (or `null` for no banner): `'revoked'` → `error("Your license is no longer active. You've been returned to the free tier.")`; `'offline'` → `dim('License could not be validated — offline mode')`. Reuse the existing `error()` / `dim()` helpers from `utils/format.ts`
-  - [ ] 3.4 After `clearAndBanner()` and before the `select<HomeAction>(...)` call, if `launchNotice` is non-null AND `noticeShown === false`: `console.log(renderLaunchNotice(launchNotice))` followed by a blank line for visual separation; then set `noticeShown = true`
-  - [ ] 3.5 Ensure the notice is rendered exactly ONCE — the second iteration of the home loop (after the user returns from any sub-screen) must NOT show it again, even though `launchNotice` is still in scope. The `noticeShown` flag enforces this
-  - [ ] 3.6 Do NOT touch `buildHomeChoices()` or the menu structure — that work belongs to Story 14.4
+- [x] **Task 3: Render the one-time notice in `src/screens/home.ts`** (AC: #5, #6, #7)
+  - [x] 3.1 Add import: `import type { LaunchNotice } from '../domain/license-launch.js'` and ensure `error`, `dim` are already imported from `'../utils/format.js'`
+  - [x] 3.2 Change the `showHomeScreen` signature: `export async function showHomeScreen(launchNotice: LaunchNotice | null = null): Promise<void>`. Inside the function body, declare `let noticeShown = false` outside the `while (true)` loop so it persists across loop iterations
+  - [x] 3.3 Add a new exported pure helper `renderLaunchNotice(notice: LaunchNotice | null): string | null` that returns the formatted notice text (or `null` for no banner): `'revoked'` → `error("Your license is no longer active. You've been returned to the free tier.")`; `'offline'` → `dim('License could not be validated — offline mode')`. Reuse the existing `error()` / `dim()` helpers from `utils/format.ts`
+  - [x] 3.4 After `clearAndBanner()` and before the `select<HomeAction>(...)` call, if `launchNotice` is non-null AND `noticeShown === false`: `console.log(renderLaunchNotice(launchNotice))` followed by a blank line for visual separation; then set `noticeShown = true`
+  - [x] 3.5 Ensure the notice is rendered exactly ONCE — the second iteration of the home loop (after the user returns from any sub-screen) must NOT show it again, even though `launchNotice` is still in scope. The `noticeShown` flag enforces this
+  - [x] 3.6 Do NOT touch `buildHomeChoices()` or the menu structure — that work belongs to Story 14.4
 
-- [ ] **Task 4: Write `src/domain/license-launch.test.ts`** (AC: #9)
-  - [ ] 4.1 `beforeEach`: stub `validateLicense` via `vi.spyOn(licenseClient, 'validateLicense')` (import the module namespace style: `import * as licenseClient from './license-client.js'`); stub `readSettings` and `writeSettings` via `vi.spyOn(store, 'readSettings' / 'writeSettings')`
-  - [ ] 4.2 `afterEach`: restore all spies
-  - [ ] 4.3 **No license:** stub `readSettings` to return settings with `license: undefined`; await `validateLicenseOnLaunch()`; assert return value is `null`; assert `validateLicense` was NOT called
-  - [ ] 4.4 **Inactive license:** stub `readSettings` to return settings with `license.status: 'inactive'`; await; assert return value is `null`; assert `validateLicense` NOT called
-  - [ ] 4.5 **readSettings fails:** stub `readSettings` to resolve `{ ok: false, error: '...' }`; await; assert return value is `null`; assert `validateLicense` NOT called (defensive — if we can't read settings we can't validate)
-  - [ ] 4.6 **Active + valid:** stub `readSettings` to return settings with `license.status: 'active'`; stub `validateLicense` to resolve `{ ok: true, data: { valid: true } }`; await; assert `validateLicense` was called once with the correct `(key, instanceId, signal)` args; assert `writeSettings` NOT called; assert return value is `null`
-  - [ ] 4.7 **Active + valid:false → revoked:** stub `readSettings` to return the same active settings on BOTH calls (initial read + post-validation re-read); stub `validateLicense` to resolve `{ ok: true, data: { valid: false } }`; stub `writeSettings` to resolve `{ ok: true, data: undefined }`; await; assert `writeSettings` was called with `license.status = 'inactive'`; assert return value is `'revoked'`
-  - [ ] 4.8 **Active + valid:false but post-validation race (license removed between reads):** stub `readSettings` to return active settings on first call, then settings WITHOUT `license` on second call; assert `writeSettings` NOT called; assert return value is still `'revoked'` (harmless redundant message — do NOT silence it)
-  - [ ] 4.9 **Active + network error → offline:** stub `validateLicense` to resolve `{ ok: false, error: { kind: 'network', message: 'timeout' } }`; await; assert `writeSettings` NOT called; assert return value is `'offline'`
-  - [ ] 4.10 **Active + unknown_api_error → offline:** stub returns `{ kind: 'unknown_api_error' }`; assert treated same as network (no write, return value = `'offline'`). Rationale: an unexpected server response on launch is indistinguishable from offline from the user's perspective; we err toward grace
-  - [ ] 4.11 **Unexpected exception caught:** stub `validateLicense` to throw a synchronous exception OR reject with a non-`LicenseError`-shaped rejection; await `validateLicenseOnLaunch` and confirm it resolves to `'offline'` (does not throw)
-  - [ ] 4.12 **AbortSignal passed:** capture the `signal` argument from the `validateLicense` mock call; assert it is an `AbortSignal` instance (further timing-based assertions are unnecessary — the spec is that the signal exists and is wired)
+- [x] **Task 4: Write `src/domain/license-launch.test.ts`** (AC: #9)
+  - [x] 4.1 `beforeEach`: stub `validateLicense` via `vi.spyOn(licenseClient, 'validateLicense')` (import the module namespace style: `import * as licenseClient from './license-client.js'`); stub `readSettings` and `writeSettings` via `vi.spyOn(store, 'readSettings' / 'writeSettings')`
+  - [x] 4.2 `afterEach`: restore all spies
+  - [x] 4.3 **No license:** stub `readSettings` to return settings with `license: undefined`; await `validateLicenseOnLaunch()`; assert return value is `null`; assert `validateLicense` was NOT called
+  - [x] 4.4 **Inactive license:** stub `readSettings` to return settings with `license.status: 'inactive'`; await; assert return value is `null`; assert `validateLicense` NOT called
+  - [x] 4.5 **readSettings fails:** stub `readSettings` to resolve `{ ok: false, error: '...' }`; await; assert return value is `null`; assert `validateLicense` NOT called (defensive — if we can't read settings we can't validate)
+  - [x] 4.6 **Active + valid:** stub `readSettings` to return settings with `license.status: 'active'`; stub `validateLicense` to resolve `{ ok: true, data: { valid: true } }`; await; assert `validateLicense` was called once with the correct `(key, instanceId, signal)` args; assert `writeSettings` NOT called; assert return value is `null`
+  - [x] 4.7 **Active + valid:false → revoked:** stub `readSettings` to return the same active settings on BOTH calls (initial read + post-validation re-read); stub `validateLicense` to resolve `{ ok: true, data: { valid: false } }`; stub `writeSettings` to resolve `{ ok: true, data: undefined }`; await; assert `writeSettings` was called with `license.status = 'inactive'`; assert return value is `'revoked'`
+  - [x] 4.8 **Active + valid:false but post-validation race (license removed between reads):** stub `readSettings` to return active settings on first call, then settings WITHOUT `license` on second call; assert `writeSettings` NOT called; assert return value is still `'revoked'` (harmless redundant message — do NOT silence it)
+  - [x] 4.9 **Active + network error → offline:** stub `validateLicense` to resolve `{ ok: false, error: { kind: 'network', message: 'timeout' } }`; await; assert `writeSettings` NOT called; assert return value is `'offline'`
+  - [x] 4.10 **Active + unknown_api_error → offline:** stub returns `{ kind: 'unknown_api_error' }`; assert treated same as network (no write, return value = `'offline'`). Rationale: an unexpected server response on launch is indistinguishable from offline from the user's perspective; we err toward grace
+  - [x] 4.11 **Unexpected exception caught:** stub `validateLicense` to throw a synchronous exception OR reject with a non-`LicenseError`-shaped rejection; await `validateLicenseOnLaunch` and confirm it resolves to `'offline'` (does not throw)
+  - [x] 4.12 **AbortSignal passed:** capture the `signal` argument from the `validateLicense` mock call; assert it is an `AbortSignal` instance (further timing-based assertions are unnecessary — the spec is that the signal exists and is wired)
 
-- [ ] **Task 5: Write home-screen notice rendering test** (AC: #5, #6, #7)
-  - [ ] 5.1 Add tests to `src/screens/home.test.ts` (or create one if it doesn't exist for the notice helper specifically) — prefer adding a focused unit test for `renderLaunchNotice(notice)` which returns the formatted string for each input
-  - [ ] 5.2 Test: `renderLaunchNotice(null)` returns `null`
-  - [ ] 5.3 Test: `renderLaunchNotice('revoked')` returns a string containing the substring `"no longer active"` AND the red `error()` ANSI color
-  - [ ] 5.4 Test: `renderLaunchNotice('offline')` returns a string containing the substring `"offline mode"` AND the dim ANSI color
-  - [ ] 5.5 Integration-style test (optional): drive `showHomeScreen('revoked')` once; assert the notice was rendered to stdout. Skip if integrating against inquirer is too heavy; the pure helper test + the parameter-passing wiring cover the contract
+- [x] **Task 5: Write home-screen notice rendering test** (AC: #5, #6, #7)
+  - [x] 5.1 Add tests to `src/screens/home.test.ts` (or create one if it doesn't exist for the notice helper specifically) — prefer adding a focused unit test for `renderLaunchNotice(notice)` which returns the formatted string for each input
+  - [x] 5.2 Test: `renderLaunchNotice(null)` returns `null`
+  - [x] 5.3 Test: `renderLaunchNotice('revoked')` returns a string containing the substring `"no longer active"` AND the red `error()` ANSI color
+  - [x] 5.4 Test: `renderLaunchNotice('offline')` returns a string containing the substring `"offline mode"` AND the dim ANSI color
+  - [x] 5.5 Integration-style test (optional): drive `showHomeScreen('revoked')` once; assert the notice was rendered to stdout. Skip if integrating against inquirer is too heavy; the pure helper test + the parameter-passing wiring cover the contract
 
-- [ ] **Task 6: Verify launch boundary discipline** (AC: #2)
-  - [ ] 6.1 `grep -rn "validateLicense" src/` should match: `src/domain/license-client.ts` (definition), `src/domain/license-launch.ts` (the orchestrator), and their `.test.ts` siblings — and NO OTHER files. The launch orchestrator is the only consumer of `validateLicense` in this story
-  - [ ] 6.2 `grep -rn "validateLicenseOnLaunch\|renderLaunchNotice" src/` should show `index.ts` calls `validateLicenseOnLaunch` exactly once, `home.ts` exports `renderLaunchNotice` exactly once
-  - [ ] 6.3 Confirm `src/index.ts` `await`s `validateLicenseOnLaunch()` and passes the result into `showHome(launchNotice)` — serial execution + parameter propagation is the contract
-  - [ ] 6.4 Run full suite (`npm test`) — confirm no regressions; baseline after 14.1+14.2 lands should be ~1119 tests; this story adds ~12 new tests for ~1131
+- [x] **Task 6: Verify launch boundary discipline** (AC: #2)
+  - [x] 6.1 `grep -rn "validateLicense" src/` should match: `src/domain/license-client.ts` (definition), `src/domain/license-launch.ts` (the orchestrator), and their `.test.ts` siblings — and NO OTHER files. The launch orchestrator is the only consumer of `validateLicense` in this story
+  - [x] 6.2 `grep -rn "validateLicenseOnLaunch\|renderLaunchNotice" src/` should show `index.ts` calls `validateLicenseOnLaunch` exactly once, `home.ts` exports `renderLaunchNotice` exactly once
+  - [x] 6.3 Confirm `src/index.ts` `await`s `validateLicenseOnLaunch()` and passes the result into `showHome(launchNotice)` — serial execution + parameter propagation is the contract
+  - [x] 6.4 Run full suite (`npm test`) — confirm no regressions; baseline after 14.1+14.2 lands should be ~1119 tests; this story adds ~12 new tests for ~1131
+
+### Review Findings
+
+- [x] [Review][Patch] Missing trailing newline at end of `src/domain/license-launch.ts` [src/domain/license-launch.ts:46] — fixed
+- [x] [Review][Defer] TOCTOU race on settings — concurrent process mutating `settings.json` between defensive re-read and `writeSettings` could overwrite unrelated fields [src/domain/license-launch.ts:27-35] — deferred, pre-existing pattern (codebase has no locking; single-user CLI threat model)
+- [x] [Review][Defer] `writeSettings()` Result is not inspected — on persistent write failure, function returns `'revoked'` but `settings.license.status` stays `active`, causing the revoked notice to repeat every launch [src/domain/license-launch.ts:31] — deferred, spec does not specify write-error UX; current behavior is recoverable next launch
 
 ## Dev Notes
 
@@ -298,22 +304,47 @@ export async function showHomeScreen(launchNotice: LaunchNotice | null = null): 
 
 ### Agent Model Used
 
-_To be filled by dev agent._
+GitHub Copilot
 
 ### Debug Log References
 
-_To be filled by dev agent._
+- `npm test -- src/domain/license-launch.test.ts` — red phase confirmed missing `src/domain/license-launch.ts`
+- `npm test -- src/domain/license-launch.test.ts` — 10 tests passed after Task 1 implementation
+- `npm test -- src/index.test.ts src/router.test.ts` — red phase confirmed missing startup/router notice wiring
+- `npm test -- src/index.test.ts src/router.test.ts` — 30 tests passed after Task 2 wiring
+- `npm test -- src/screens/home.test.ts` — red phase confirmed missing `renderLaunchNotice` export and one-time notice path
+- `npm test -- src/screens/home.test.ts` — 31 tests passed after Task 3 rendering
+- `npm test -- src/domain/license-launch.test.ts` — 10 tests passed for Task 4 orchestrator coverage checklist
+- `npm test -- src/screens/home.test.ts` — 31 tests passed for Task 5 launch notice rendering coverage
+- `rg -n "\bvalidateLicense\b" src && rg -n "validateLicenseOnLaunch\(|renderLaunchNotice" src` — Task 6 boundary check passed
+- `npm test` — 34 test files passed, 1211 tests passed
+- `npm run typecheck` — passed
 
 ### Completion Notes List
 
-_To be filled by dev agent._
+- Task 1 implemented `validateLicenseOnLaunch()` with active-only launch validation, 2s abort signal, offline grace, revoked status persistence, and exception safety.
+- Task 2 wired launch validation after provider setup/welcome and before home, passing the launch notice through `showHome()`.
+- Task 3 added formatted revoked/offline launch notices and a per-launch `noticeShown` guard inside the home loop without changing menu choices.
+- Task 4 added focused orchestrator coverage for no-op paths, validation outcomes, race-safe revocation persistence, offline grace, exception safety, and abort signal propagation.
+- Task 5 added pure formatting tests for revoked/offline/null notices plus a one-time home-loop render test.
+- Task 6 verified launch boundary discipline, full regression suite, and TypeScript typecheck with no regressions.
 
 ### File List
 
-_To be filled by dev agent._
+- src/domain/license-launch.ts
+- src/domain/license-launch.test.ts
+- src/index.ts
+- src/index.test.ts
+- src/router.ts
+- src/router.test.ts
+- src/screens/home.ts
+- src/screens/home.test.ts
+- docs/implementation-artifacts/14-3-launch-time-license-validation.md
+- docs/implementation-artifacts/sprint-status.yaml
 
 ### Change Log
 
 - 2026-05-16: Story file created via bmad-create-story workflow — comprehensive context engine analysis completed.
 - 2026-05-16: Rewritten from concurrent fire-and-forget to serial-with-`ora`-spinner execution. Rationale: codebase consistency (every other network call uses `ora`), elimination of race surface with Activate/Info screens, and worst-case saving of only ~2s for the niche slice of active-license + slow-network + Welcome-disabled users. Architecture is now bounded by the same 2s `AbortSignal.timeout` but uses an awaited promise + spinner UX. Module surface changes: `startLaunchValidation` → `validateLicenseOnLaunch` (async, returns `LaunchNotice | null`); added `setLaunchNotice(notice)` for `index.ts` to push the result into module state; removed `_waitForLaunchValidation` test helper (no longer needed with serial execution).
 - 2026-05-16: Adversarial-review polish pass. (1) Removed module-scoped notice state (`pendingNotice` / `setLaunchNotice` / `consumeLaunchNotice` / `_resetLaunchState`); the notice is now propagated as a parameter through `showHome(launchNotice)` → `showHomeScreen(launchNotice)` — simpler shape, no test-state-reset concern. (2) `validateLicenseOnLaunch()` now takes NO arguments and calls `readSettings()` itself for self-contained correctness against any settings mutation by prior launch steps (notably `showProviderSetup`). (3) AC #2 phrasing tightened ("immediately before `showHome(...)`" instead of OR-of-alternatives). (4) Added dev-note about Ctrl+C/SIGINT during spinner (known pre-existing behavior shared with provider-setup). (5) Task 2 now explicitly covers the `src/router.ts` signature update. Net effect: 3 fewer exports, 1 fewer module global, 1 extra disk read per launch, AC count unchanged at 9.
+- 2026-05-16: Implemented launch-time license validation with serial startup wiring, revoked/offline home notices, focused tests, and full regression/typecheck validation. Status moved to review.

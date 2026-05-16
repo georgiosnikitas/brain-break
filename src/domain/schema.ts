@@ -3,7 +3,7 @@ import { z } from 'zod'
 // ---------------------------------------------------------------------------
 // Result<T> — universal return type for all I/O and AI operations
 // ---------------------------------------------------------------------------
-export type Result<T> = { ok: true; data: T } | { ok: false; error: string }
+export type Result<T, E = string> = { ok: true; data: T } | { ok: false; error: E }
 
 // ---------------------------------------------------------------------------
 // Speed tier
@@ -20,6 +20,27 @@ export type AnswerOption = z.infer<typeof AnswerOptionSchema>
 export const MAX_COACH_REPORT_LENGTH = 50_000
 export const LAST_COACH_REPORT_DEPENDENCY_MESSAGE =
   'lastCoachReport requires lastCoachTimestamp and lastCoachQuestionCount to also be present'
+
+// ---------------------------------------------------------------------------
+// License — Lemon Squeezy activation record (F17 / Feature 20)
+// ---------------------------------------------------------------------------
+export const EXPECTED_PRODUCT_ID = 1049453
+
+export const LicenseStatusSchema = z.enum(['active', 'inactive'])
+export type LicenseStatus = z.infer<typeof LicenseStatusSchema>
+
+export const LicenseRecordSchema = z.object({
+  key: z.string().min(1),
+  instanceId: z.string().min(1),
+  instanceName: z.string().min(1),
+  activatedAt: z.iso.datetime(),
+  productId: z.number().int(),
+  productName: z.string().min(1),
+  storeId: z.number().int(),
+  storeName: z.string().min(1),
+  status: LicenseStatusSchema,
+})
+export type LicenseRecord = z.infer<typeof LicenseRecordSchema>
 
 const NonNegativeIntegerSchema = z.number().int().min(0)
 
@@ -183,6 +204,7 @@ export const SettingsFileSchema = z.object({
   myCoachScope: MyCoachScopeSchema.default('100'),
   theme: ThemeSchema.default('dark'),
   showWelcome: z.boolean().default(true),
+  license: LicenseRecordSchema.optional(),
 })
 export type SettingsFile = z.infer<typeof SettingsFileSchema>
 
