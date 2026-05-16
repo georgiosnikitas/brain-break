@@ -269,6 +269,41 @@ describe('filterDomains', () => {
 // ---------------------------------------------------------------------------
 // showHomeScreen — routing
 // ---------------------------------------------------------------------------
+describe('showHomeScreen — pageSize', () => {
+  it('uses a pageSize tall enough to show at least 10 domain rows plus the trailing menu', async () => {
+    mockListDomains.mockResolvedValue({ ok: true, data: [] })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    const pageSize = mockSelect.mock.calls[0]?.[0]?.pageSize
+    expect(pageSize).toBeGreaterThanOrEqual(18)
+    exitSpy.mockRestore()
+  })
+
+  it('grows pageSize with the number of domains so all entries and trailing menu fit', async () => {
+    const entries = Array.from({ length: 25 }, (_, i) => ({
+      slug: `domain-${i}`,
+      meta: defaultDomainFile().meta,
+      corrupted: false as const,
+    }))
+    mockListDomains.mockResolvedValue({ ok: true, data: entries })
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    const pageSize = mockSelect.mock.calls[0]?.[0]?.pageSize
+    expect(pageSize).toBeGreaterThanOrEqual(25 + 8)
+    exitSpy.mockRestore()
+  })
+})
+
 describe('showHomeScreen — routing', () => {
   it('calls router.showExit before process.exit when showWelcome is true and exit is selected', async () => {
     mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: true } })

@@ -175,7 +175,7 @@ export async function showHomeScreen(launchNotice: LaunchNotice | null = null): 
       answer = await select<HomeAction>({
         message: '👨‍💻 Choose a domain:',
         choices: buildHomeChoices(homeEntries, { hasActiveLicense }),
-        pageSize: 20,
+        pageSize: Math.max(10, homeEntries.length) + 8,
         theme: menuTheme,
       })
     } catch (err) {
