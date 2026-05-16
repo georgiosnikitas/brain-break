@@ -18,11 +18,11 @@ import { showProviderSetupScreen } from './screens/provider-setup.js'
 import { showWelcomeScreen } from './screens/welcome.js'
 import { showExitScreen } from './screens/exit.js'
 import { showActivateLicenseScreen } from './screens/activate-license.js'
+import { showLicenseInfoScreen } from './screens/license-info.js'
 import { readDomain, writeDomain, deleteDomain as deleteDomainStore, readSettings } from './domain/store.js'
 import { defaultDomainFile, defaultSettings } from './domain/schema.js'
 import { preloadQuestions } from './ai/client.js'
 import { warn, error as errorFmt, colorIncorrect, menuTheme } from './utils/format.js'
-import { clearAndBanner } from './utils/screen.js'
 import type { SettingsFile, SessionData } from './domain/schema.js'
 import type { LaunchNotice } from './domain/license-launch.js'
 
@@ -34,19 +34,8 @@ export async function showActivateLicense(): Promise<void> {
   await showActivateLicenseScreen()
 }
 
-// STUB — replaced by screens/license-info.ts in Story 14.6
 export async function showLicenseInfo(): Promise<void> {
-  clearAndBanner()
-  console.log('\n  🔑 License Info — coming in Story 14.6\n')
-  try {
-    await select({
-      message: 'Navigation',
-      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
-      theme: menuTheme,
-    })
-  } catch (err) {
-    if (!(err instanceof ExitPromptError)) throw err
-  }
+  await showLicenseInfoScreen()
 }
 
 export async function showQuiz(slug: string): Promise<SessionData | null> {
