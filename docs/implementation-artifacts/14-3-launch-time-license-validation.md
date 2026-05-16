@@ -85,9 +85,9 @@ So that revoked or refunded keys lose privileges automatically without ever bloc
 
 ### Review Findings
 
-- [x] [Review][Patch] Missing trailing newline at end of `src/domain/license-launch.ts` [src/domain/license-launch.ts:46] — fixed
-- [x] [Review][Defer] TOCTOU race on settings — concurrent process mutating `settings.json` between defensive re-read and `writeSettings` could overwrite unrelated fields [src/domain/license-launch.ts:27-35] — deferred, pre-existing pattern (codebase has no locking; single-user CLI threat model)
-- [x] [Review][Defer] `writeSettings()` Result is not inspected — on persistent write failure, function returns `'revoked'` but `settings.license.status` stays `active`, causing the revoked notice to repeat every launch [src/domain/license-launch.ts:31] — deferred, spec does not specify write-error UX; current behavior is recoverable next launch
+- [x] Review/Patch: Missing trailing newline at end of `src/domain/license-launch.ts` [src/domain/license-launch.ts:46] — fixed
+- [x] Review/Defer: TOCTOU race on settings — concurrent process mutating `settings.json` between defensive re-read and `writeSettings` could overwrite unrelated fields [src/domain/license-launch.ts:27-35] — deferred, pre-existing pattern (codebase has no locking; single-user CLI threat model)
+- [x] Review/Defer: `writeSettings()` Result is not inspected — on persistent write failure, function returns `'revoked'` but `settings.license.status` stays `active`, causing the revoked notice to repeat every launch [src/domain/license-launch.ts:31] — deferred, spec does not specify write-error UX; current behavior is recoverable next launch
 
 ## Dev Notes
 
@@ -237,7 +237,7 @@ export async function showHomeScreen(launchNotice: LaunchNotice | null = null): 
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---|---|---|
+| --- | --- | --- |
 | Optional parameter with default for backward-compatible signature change | None directly comparable — `showHome(launchNotice = null)` is a focused addition | new |
 | `ora` spinner for network calls | Provider connection test, AI question generation, explanation generation | `src/screens/provider-setup.ts`, `src/screens/quiz.ts` |
 | `vi.spyOn(globalThis, 'fetch')` for HTTP stubbing | All AI provider tests | `src/ai/providers/*.test.ts` |
@@ -272,15 +272,18 @@ export async function showHomeScreen(launchNotice: LaunchNotice | null = null): 
 ### Project Structure Notes
 
 **Modified files (this story only):**
+
 - `src/index.ts` — add 1 import + 1 line (`const launchNotice = await validateLicenseOnLaunch()`) + update existing `await showHome()` to `await showHome(launchNotice)`
 - `src/router.ts` — update `showHome` signature to accept optional `launchNotice: LaunchNotice | null = null`; import `LaunchNotice` type; pass through to `showHomeScreen(launchNotice)`
 - `src/screens/home.ts` — update `showHomeScreen` signature to accept optional `launchNotice` parameter; add `noticeShown` flag + render block; export `renderLaunchNotice()` helper; import `LaunchNotice` type
 
 **New files:**
+
 - `src/domain/license-launch.ts` — the orchestrator module
 - `src/domain/license-launch.test.ts` — orchestrator tests
 
 **Files NOT touched in this story:**
+
 - `src/domain/license-client.ts` (Story 14.2 — already exists)
 - `src/domain/schema.ts` (no schema changes — `LicenseRecord` already has the `status` enum)
 - `src/domain/store.ts` (we call `readSettings` / `writeSettings` as already exported — no internal changes)

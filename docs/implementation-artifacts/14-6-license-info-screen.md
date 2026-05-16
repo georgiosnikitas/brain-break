@@ -61,7 +61,7 @@ So that I can audit my license at a glance and release my activation when I move
     - Failed deactivation (network): `writeSettings` is NOT called; inline error message matches AC #9; user remains on screen
     - Re-activate action invokes `router.showActivateLicense` exactly once and then loops back to re-render
     - Manage your keys renders the orders URL via QR helper; user remains on screen
-    - Back returns from the function (resolves Promise<void>)
+    - Back returns from the function (resolves `Promise<void>`)
     - ExitPromptError on any prompt resolves cleanly
 
 ## Tasks / Subtasks
@@ -70,6 +70,7 @@ So that I can audit my license at a glance and release my activation when I move
   - [x] 1.1 Create `src/screens/license-info.ts` with named export `export async function showLicenseInfoScreen(): Promise<void>`
   - [x] 1.2 Module-scoped constant: `const ORDERS_URL = 'https://app.lemonsqueezy.com/my-orders'`
   - [x] 1.3 Module-scoped NFR2 deactivation error-message map keyed by `LicenseErrorKind`:
+
     ```typescript
     const DEACTIVATION_ERROR_MESSAGES: Record<LicenseErrorKind, string> = {
       network: 'Could not reach the licensing server. Deactivation failed — try again when online.',
@@ -80,16 +81,19 @@ So that I can audit my license at a glance and release my activation when I move
       product_mismatch: 'Deactivation failed. The licensing server reported an unexpected error — try again later.',
     }
     ```
+
   - [x] 1.4 Imports: `select`, `Separator` from `@inquirer/prompts`; `ExitPromptError` from `@inquirer/core`; `ora`; `qrcode` from `qrcode-terminal`; `deactivateLicense`, type `LicenseErrorKind` from `../domain/license-client.js`; `readSettings`, `writeSettings` from `../domain/store.js`; `defaultSettings` from `../domain/schema.js`; `clearAndBanner` from `../utils/screen.js` (NOT `utils/format.js` — verified path); `bold`, `menuTheme`, `success`, `error as errorFmt`, `dim` from `../utils/format.js` (all five are exported theme-aware helpers); `import * as router from '../router.js'` for `showActivateLicense` on Re-activate
 
 - [x] **Task 2: Implement field rendering** (AC: #1, #2, #3)
   - [x] 2.1 At loop top, call `clearAndBanner()` and print header `'🔑 License Info'`
   - [x] 2.2 Re-read settings at the top of each iteration so re-activate path picks up changes:
+
     ```typescript
     const cur = await readSettings()
     const settings = cur.ok ? cur.data : defaultSettings()
     const license = settings.license
     ```
+
   - [x] 2.3 Defensive no-license guard: `if (!license) { … render the AC #3 notice, await a Back prompt, return }`
   - [x] 2.4 Status field (use the theme-aware helpers, not raw `chalk`):
     - active → `console.log('  📍 ' + bold('Status:') + ' ' + success('Active'))`
@@ -112,6 +116,7 @@ So that I can audit my license at a glance and release my activation when I move
 
 - [x] **Task 4: Implement action menu and dispatch** (AC: #4, #5, #6, #7, #8, #9, #10, #11, #12)
   - [x] 4.1 Build choices array conditionally:
+
     ```typescript
     const choices = license.status === 'active'
       ? [
@@ -127,6 +132,7 @@ So that I can audit my license at a glance and release my activation when I move
           { name: '↩️  Back', value: 'back' as const },
         ]
     ```
+
   - [x] 4.2 Top-level `select<Action>({ message: 'Choose an action', choices, theme: menuTheme })` wrapped in try/catch for `ExitPromptError` (return on Ctrl+C)
   - [x] 4.3 `back` → `return`
   - [x] 4.4 `orders` → `await renderUrlScreen('🔛 Manage your keys', ORDERS_URL)` (helper extracted in Task 5); `continue`
@@ -139,6 +145,7 @@ So that I can audit my license at a glance and release my activation when I move
 
 - [x] **Task 6: Implement hard-confirm and deactivate flow** (AC: #6, #7, #8, #9)
   - [x] 6.1 Hard-confirm prompt:
+
     ```typescript
     const confirm = await select<'cancel' | 'confirm'>({
       message: "Deactivate this license? You'll be limited to 1 domain again. Existing domains beyond the cap remain readable but you won't be able to create new ones until you re-activate.",
@@ -150,15 +157,18 @@ So that I can audit my license at a glance and release my activation when I move
     })
     if (confirm === 'cancel') continue
     ```
+
   - [x] 6.2 Spinner: `const spinner = ora('Deactivating license…').start()`
   - [x] 6.3 Call: `let result; try { result = await deactivateLicense(license.key, license.instanceId) } finally { spinner.stop() }`
   - [x] 6.4 Success branch:
     - `const cur2 = await readSettings(); const s2 = cur2.ok ? cur2.data : defaultSettings()`
     - Remove the license property. Prefer object rest-destructuring over `delete` to satisfy strict TypeScript (`exactOptionalPropertyTypes` may flag `delete` on optional fields):
+
       ```typescript
       const { license: _omit, ...rest } = s2
       const updated: SettingsFile = rest
       ```
+
       If `tsconfig.json` does NOT have `exactOptionalPropertyTypes: true`, `delete s2.license` also works. Verify before choosing
     - `const w = await writeSettings(updated)` — if `!w.ok`, render `'Could not save settings after deactivation. Local state may be inconsistent.'` and `continue`; otherwise:
     - `console.log(success('License deactivated.'))`
@@ -417,13 +427,12 @@ export async function showLicenseInfo(): Promise<void> {
 ```
 
 > **Cross-check before authoring:** `clearAndBanner` lives in `src/utils/screen.ts`, NOT `utils/format.ts`. The five color helpers (`success`, `error`, `warn`, `dim`, `bold`) ARE in `utils/format.ts` and are theme-aware. Story 14.5 will have established the same import split; align with what 14.5's dev agent chose.
-
 > **Circular import safety:** `import * as router from '../router.js'` creates `router → screens/license-info → router` cycle. This is safe because `router.showActivateLicense` is only called inside an `async` function body — the reference is resolved at call time, not at module evaluation. NEVER call `router.X()` at module top level in this file. Same pattern is used by `home.ts` (existing) and `create-domain.ts` (Story 14.7).
 
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---|---|---|
+| --- | --- | --- |
 | `'<emoji> ' + bold('Label:') + ' value'` field rendering | Stats screen | `src/screens/stats.ts` lines 95–122 |
 | Action loop with re-read on each iteration | Story 14.4 home loop; Story 14.5 activate-license loop | `src/screens/home.ts`, `src/screens/activate-license.ts` |
 | Hard-confirm via select with Cancel-first | Existing delete-domain confirmation (if present) | check `src/screens/domain-menu.ts` |
@@ -457,13 +466,16 @@ export async function showLicenseInfo(): Promise<void> {
 ### Project Structure Notes
 
 **New files (this story only):**
+
 - `src/screens/license-info.ts` — the screen module
 - `src/screens/license-info.test.ts` — tests
 
 **Modified files:**
+
 - `src/router.ts` — re-wire `showLicenseInfo` to call `showLicenseInfoScreen` (replace Story 14.4 stub)
 
 **Files NOT touched in this story:**
+
 - `src/domain/schema.ts` (no schema changes)
 - `src/domain/store.ts` (no persistence-layer changes; only consumed)
 - `src/domain/license-client.ts` (only consumed)

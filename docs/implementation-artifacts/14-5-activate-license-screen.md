@@ -49,7 +49,7 @@ So that I can unlock unlimited domains in one place without leaving the app.
     - Failed activation re-renders the action menu (user can retry)
     - `🔛 Manage your keys` action renders the orders URL and remains on the screen
     - `💳 Buy a license` action renders the checkout URL and remains on the screen
-    - `↩️  Back` returns from the function (resolves Promise<void>)
+    - `↩️  Back` returns from the function (resolves `Promise<void>`)
     - ExitPromptError on any prompt resolves cleanly (no throw)
 
 ## Tasks / Subtasks
@@ -60,6 +60,7 @@ So that I can unlock unlimited domains in one place without leaving the app.
     - `const ORDERS_URL = 'https://app.lemonsqueezy.com/my-orders'`
     - `const CHECKOUT_URL = 'https://georgiosnikitas.lemonsqueezy.com/checkout/buy/8581b2a9-5a89-45af-9367-d93acb044147'`
   - [x] 1.3 Module-scoped NFR2 error-message map (avoids inline string literals scattered through the dispatcher):
+
     ```typescript
     const LICENSE_ERROR_MESSAGES: Record<LicenseErrorKind, string> = {
       invalid_key: 'License key not recognized. Check the key and try again.',
@@ -70,6 +71,7 @@ So that I can unlock unlimited domains in one place without leaving the app.
       unknown_api_error: 'Could not reach the licensing server. Check your connection and try again.',
     }
     ```
+
   - [x] 1.4 Imports: `select`, `input`, `Separator` from `@inquirer/prompts`; `ExitPromptError` from `@inquirer/core`; `ora` default; `qrcode` from `qrcode-terminal`; `activateLicense`, type `LicenseErrorKind` from `../domain/license-client.js`; `readSettings`, `writeSettings` from `../domain/store.js`; `defaultSettings` from `../domain/schema.js`; `clearAndBanner` from `../utils/screen.js` (NOT `utils/format.js` — verified path); `menuTheme`, `success`, `error as errorFmt` from `../utils/format.js` (verified: both `success` and `error` are exported theme-aware helpers)
   - [x] 1.5 Pattern: top-level `while (true)` action loop with `select` returning a discriminated union: `'paste' | 'orders' | 'checkout' | 'back'`. `back` breaks the loop; all other actions handle their work then `continue` back to re-render the menu
 
@@ -138,11 +140,12 @@ So that I can unlock unlimited domains in one place without leaving the app.
 
 ### Review Findings
 
-- [x] [Review][Patch] Add `new Separator()` before the Back choice in the main action menu [src/screens/activate-license.ts:promptAction] — Spec skeleton (Dev Notes line ~305) and the screen's own sub-menus (`renderUrlScreen`, `confirmSuccess`) both place `new Separator()` before Back; main menu omits it, breaking visual consistency. **Applied 2026-05-16.**
-- [x] [Review][Patch] Add trailing newline to new files [src/screens/activate-license.ts:EOF, src/screens/activate-license.test.ts:EOF] — Both new files end without a final newline (`\ No newline at end of file` in diff). Cosmetic but inconsistent with project hygiene. **Applied 2026-05-16.**
-- [x] [Review][Defer] Test coverage gap — `ExitPromptError` paths inside `confirmSuccess()` and `renderUrlScreen()` back prompts are not exercised by tests [src/screens/activate-license.test.ts] — deferred, pre-existing pattern (mirrors `showCoffeeScreen` which also lacks these tests); behavior is correct, just untested.
+- [x] Review/Patch: Add `new Separator()` before the Back choice in the main action menu [src/screens/activate-license.ts:promptAction] — Spec skeleton (Dev Notes line ~305) and the screen's own sub-menus (`renderUrlScreen`, `confirmSuccess`) both place `new Separator()` before Back; main menu omits it, breaking visual consistency. **Applied 2026-05-16.**
+- [x] Review/Patch: Add trailing newline to new files [src/screens/activate-license.ts:EOF, src/screens/activate-license.test.ts:EOF] — Both new files end without a final newline (`\ No newline at end of file` in diff). Cosmetic but inconsistent with project hygiene. **Applied 2026-05-16.**
+- [x] Review/Defer: Test coverage gap — `ExitPromptError` paths inside `confirmSuccess()` and `renderUrlScreen()` back prompts are not exercised by tests [src/screens/activate-license.test.ts] — deferred, pre-existing pattern (mirrors `showCoffeeScreen` which also lacks these tests); behavior is correct, just untested.
 
 **Dismissed (recorded for traceability):**
+
 - `LICENSE_ERROR_MESSAGES[unknown kind]` returning `undefined` — `Record<LicenseErrorKind, string>` with all 6 keys mapped is statically guaranteed by TypeScript; `kind` originates from validated API client output (Story 14.2).
 - `.trim()` on non-string from `input()` — `input()` is typed `Promise<string>` by `@inquirer/prompts`; defensive guard would be paranoid noise.
 - Non-`ExitPromptError` rethrow from `select()` in `confirmSuccess`/`renderUrlScreen` — identical pattern to `showCoffeeScreen` in this codebase; @inquirer/prompts contract is "throws only ExitPromptError on user cancel"; surfacing other errors is intentional.
@@ -317,7 +320,7 @@ export async function showActivateLicense(): Promise<void> {
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---|---|---|
+| --- | --- | --- |
 | Action-loop screen (while+select+continue) | `showCoffeeScreen` (single iteration) and `showSettingsScreen` (multi-action loop) | `src/screens/home.ts`, `src/screens/settings.ts` |
 | Spinner around an awaited call | `ora('…').start()` then `.stop()` after await | `src/router.ts`, `src/ai/client.ts` |
 | QR + URL rendering | `showCoffeeScreen` | `src/screens/home.ts` lines 108–129 |
@@ -350,13 +353,16 @@ export async function showActivateLicense(): Promise<void> {
 ### Project Structure Notes
 
 **New files (this story only):**
+
 - `src/screens/activate-license.ts` — the screen module
 - `src/screens/activate-license.test.ts` — tests
 
 **Modified files:**
+
 - `src/router.ts` — re-wire `showActivateLicense` to call `showActivateLicenseScreen` (replace Story 14.4 stub)
 
 **Files NOT touched in this story:**
+
 - `src/domain/schema.ts` (no schema changes)
 - `src/domain/store.ts` (no persistence-layer changes; only consumed)
 - `src/domain/license-client.ts` (no client changes; only consumed)
@@ -401,10 +407,12 @@ GitHub Copilot — Amelia (bmad-agent-dev)
 ### File List
 
 **New:**
+
 - `src/screens/activate-license.ts` — Activate License screen module.
 - `src/screens/activate-license.test.ts` — Activate License screen tests covering AC #12 paths.
 
 **Modified:**
+
 - `src/router.ts` — imports and delegates to `showActivateLicenseScreen`; retains only License Info stub.
 - `src/router.test.ts` — mocks `showActivateLicenseScreen` and asserts router delegation.
 - `docs/implementation-artifacts/14-5-activate-license-screen.md` — task checklist, status, Dev Agent Record.

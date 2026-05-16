@@ -87,8 +87,8 @@ So that the menu only surfaces actions that are relevant to my current tier.
 
 ### Review Findings
 
-- [x] [Review][Patch] Fix `src/screens/home.test.ts` diagnostics: helper defaults use object literals, and two `HomeAction` casts are redundant [src/screens/home.test.ts:67] — fixed
-- [x] [Review][Patch] Add the missing AC #6 / AC #9 loop-rerender coverage for `licenseInfo` returning after deactivation: start active, select `licenseInfo`, re-read inactive/free-tier settings on the next iteration, and assert `Activate License` + `Coffee` are shown while `License Info` is omitted [src/screens/home.test.ts:395] — fixed
+- [x] Review/Patch: Fix `src/screens/home.test.ts` diagnostics: helper defaults use object literals, and two `HomeAction` casts are redundant [src/screens/home.test.ts:67] — fixed
+- [x] Review/Patch: Add the missing AC #6 / AC #9 loop-rerender coverage for `licenseInfo` returning after deactivation: start active, select `licenseInfo`, re-read inactive/free-tier settings on the next iteration, and assert `Activate License` + `Coffee` are shown while `License Info` is omitted [src/screens/home.test.ts:395] — fixed
 
 ## Dev Notes
 
@@ -236,7 +236,7 @@ export async function showLicenseInfo(): Promise<void> {
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---|---|---|
+| --- | --- | --- |
 | Pure menu builder taking entries + opts | `buildHomeChoices(entries: HomeEntry[])` today | `src/screens/home.ts` |
 | Discriminated `HomeAction` union | Existing 6 variants | `src/screens/home.ts` |
 | `readSettings()` + fallback to `defaultSettings()` | Used in `handleHomeAction` exit branch and many screens | `src/screens/home.ts`, `src/router.ts` |
@@ -268,6 +268,7 @@ export async function showLicenseInfo(): Promise<void> {
 ### Project Structure Notes
 
 **Modified files (this story only):**
+
 - `src/screens/home.ts` — extend `HomeAction`, extend `buildHomeChoices` signature, read settings in loop, dispatch new actions
 - `src/screens/home.test.ts` (or wherever `buildHomeChoices` is tested — verify location) — add 4–6 new tests; update existing test call sites to pass `{ hasActiveLicense: false }`
 - `src/router.ts` — add `showActivateLicense` and `showLicenseInfo` stub exports
@@ -276,6 +277,7 @@ export async function showLicenseInfo(): Promise<void> {
 **New files:** none. This story is a surgical menu adaptation; no new modules.
 
 **Files NOT touched in this story:**
+
 - `src/domain/schema.ts` (no schema changes)
 - `src/domain/store.ts` (no persistence changes)
 - `src/domain/license-client.ts` (no HTTP calls)
@@ -319,6 +321,7 @@ GitHub Copilot (Claude Opus 4.7) — Amelia (bmad-agent-dev)
 ### File List
 
 **Modified:**
+
 - `src/screens/home.ts` — widened `HomeAction`, extended `buildHomeChoices` signature, settings re-read in loop, dispatch of new actions in `handleHomeAction`
 - `src/router.ts` — added `showActivateLicense` + `showLicenseInfo` stubs; added `clearAndBanner` import
 - `src/screens/home.test.ts` — added `router.showActivateLicense`/`showLicenseInfo` to the router mock; updated `buildHomeChoices` test helpers + call sites to pass `{ hasActiveLicense }`; added `buildHomeChoices — license-aware branching` describe block (5 tests); added dispatch + iteration + inactive-as-free-tier tests in `showHomeScreen — routing` describe (5 tests); migrated one existing test to `mockResolvedValue`; fixed review diagnostics in helper defaults and choice-action extraction

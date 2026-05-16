@@ -116,10 +116,10 @@ So that screens can call clean typed helpers without dealing with HTTP, form-enc
 
 ### Review Findings
 
-- [x] [Review][Patch] Activation stores `activated: false` responses as active licenses [src/domain/license-client.ts:122]
-- [x] [Review][Patch] `activation_limit` API error text is not mapped to `limit_reached` [src/domain/license-client.ts:59]
-- [x] [Review][Patch] Error response bodies are read without Zod validation [src/domain/license-client.ts:67]
-- [x] [Review][Patch] `validateLicense` treats non-5xx non-OK valid-shaped responses as successful validation results [src/domain/license-client.ts:187]
+- [x] Review/Patch: Activation stores `activated: false` responses as active licenses [src/domain/license-client.ts:122]
+- [x] Review/Patch: `activation_limit` API error text is not mapped to `limit_reached` [src/domain/license-client.ts:59]
+- [x] Review/Patch: Error response bodies are read without Zod validation [src/domain/license-client.ts:67]
+- [x] Review/Patch: `validateLicense` treats non-5xx non-OK valid-shaped responses as successful validation results [src/domain/license-client.ts:187]
 
 ## Dev Notes
 
@@ -357,7 +357,7 @@ export async function deactivateLicense(
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---|---|---|
+| --- | --- | --- |
 | Module with named exports, no default export | `export async function activateLicense(...)` | All `domain/*.ts` |
 | `Result<T>` discriminated union | `if (result.ok) { /* use result.data */ } else { /* use result.error */ }` | All `domain/*.ts`, all `ai/*.ts` |
 | Zod schema co-located in same file as its consumer (when private) | `const DomainMetaSchema = z.object({...})` declared alongside its parse-site | `domain/store.ts`, `domain/schema.ts` |
@@ -395,13 +395,16 @@ export async function deactivateLicense(
 ### Project Structure Notes
 
 **Modified files (this story only):**
+
 - `src/domain/schema.ts` — extend `Result<T>` → `Result<T, E = string>` (Task 1, single-line change)
 
 **New files:**
+
 - `src/domain/license-client.ts` — the new HTTP client module
 - `src/domain/license-client.test.ts` — fetch-mocked test suite
 
 **Files NOT touched in this story:**
+
 - `src/domain/store.ts` (no persistence in this story)
 - `src/screens/activate-license.ts` (Story 14.5 — new)
 - `src/screens/license-info.ts` (Story 14.6 — new)

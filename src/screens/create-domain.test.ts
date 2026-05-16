@@ -3,10 +3,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ExitPromptError } from '@inquirer/core'
-import { validateDomainName, showCreateDomainScreen } from './create-domain.js'
-import { writeDomain, readDomain, listDomains, _setDataDir } from '../domain/store.js'
-import { defaultDomainFile } from '../domain/schema.js'
+import { validateDomainName, showCreateDomainScreen, isCapBlocked } from './create-domain.js'
+import { writeDomain, readDomain, listDomains, readSettings, writeSettings, _setDataDir } from '../domain/store.js'
+import { defaultDomainFile, defaultSettings, LicenseRecord, SettingsFile } from '../domain/schema.js'
 import { clearAndBanner } from '../utils/screen.js'
+import * as router from '../router.js'
 
 // ---------------------------------------------------------------------------
 // Mock @inquirer/prompts so interactive prompts can be controlled in tests
@@ -19,9 +20,37 @@ vi.mock('@inquirer/prompts', () => ({
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
 
+vi.mock('../router.js', () => ({ showActivateLicense: vi.fn() }))
+
+vi.mock('../domain/store.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../domain/store.js')>()
+  return { ...actual, readSettings: vi.fn(actual.readSettings) }
+})
+
 import { select, input } from '@inquirer/prompts'
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
+
+// ---------------------------------------------------------------------------
+// Helpers shared across cap-aware and legacy duplicate tests
+// ---------------------------------------------------------------------------
+function activeLicense(): LicenseRecord {
+  return {
+    key: 'KEY-XYZ',
+    instanceId: 'instance-1',
+    instanceName: 'machine',
+    activatedAt: '2026-01-01T00:00:00.000Z',
+    productId: 1,
+    productName: 'Brain Break Pro',
+    storeId: 1,
+    storeName: 'Lemon Squeezy',
+    status: 'active',
+  }
+}
+
+function settingsWith(license: LicenseRecord | undefined): SettingsFile {
+  return { ...defaultSettings(), ...(license ? { license } : {}) }
+}
 
 // ---------------------------------------------------------------------------
 // validateDomainName — pure unit tests
@@ -65,6 +94,7 @@ beforeEach(async () => {
   _setDataDir(testDir)
   mockInput.mockReset()
   mockSelect.mockReset()
+  vi.mocked(readSettings).mockClear()
 })
 
 afterEach(async () => {
@@ -104,6 +134,7 @@ describe('showCreateDomainScreen', () => {
   })
 
   it('does not overwrite existing domain and warns when slug already exists', async () => {
+    await writeSettings(settingsWith(activeLicense()))
     // Pre-create with a non-default score to detect overwrites
     const existing = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, score: 999 } }
     await writeDomain('my-topic', existing)
@@ -132,6 +163,7 @@ describe('showCreateDomainScreen', () => {
   })
 
   it('does not create a file when slug matches an archived domain', async () => {
+    await writeSettings(settingsWith(activeLicense()))
     const archived = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, archived: true } }
     await writeDomain('archived-topic', archived)
 
@@ -159,6 +191,7 @@ describe('showCreateDomainScreen', () => {
   })
 
   it('detects duplicate via slugified comparison', async () => {
+    await writeSettings(settingsWith(activeLicense()))
     // Pre-create with slug "python-3"
     await writeDomain('python-3', defaultDomainFile())
 
@@ -286,5 +319,149 @@ describe('showCreateDomainScreen', () => {
     mockInput.mockRejectedValueOnce(boom)
 
     await expect(showCreateDomainScreen()).rejects.toThrow('unexpected input failure')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Domain cap enforcement (Story 14.7)
+// ---------------------------------------------------------------------------
+
+describe('domain cap enforcement', () => {
+  beforeEach(() => {
+    vi.mocked(router.showActivateLicense).mockReset()
+    vi.mocked(router.showActivateLicense).mockResolvedValue(undefined)
+  })
+
+  describe('isCapBlocked predicate', () => {
+    it('returns false when license is active even with many domains', async () => {
+      await writeSettings(settingsWith(activeLicense()))
+      for (let i = 0; i < 5; i++) {
+        await writeDomain(`d-${i}`, defaultDomainFile())
+      }
+      expect(await isCapBlocked()).toBe(false)
+    })
+
+    it('returns false on free tier with 0 domains', async () => {
+      expect(await isCapBlocked()).toBe(false)
+    })
+
+    it('returns true on free tier with 1 active domain', async () => {
+      await writeDomain('only-one', defaultDomainFile())
+      expect(await isCapBlocked()).toBe(true)
+    })
+
+    it('returns true on free tier with 1 archived domain', async () => {
+      const archived = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, archived: true } }
+      await writeDomain('archived-one', archived)
+      expect(await isCapBlocked()).toBe(true)
+    })
+
+    it('returns true on free tier with 1 active + 1 archived', async () => {
+      await writeDomain('active-one', defaultDomainFile())
+      const archived = { ...defaultDomainFile(), meta: { ...defaultDomainFile().meta, archived: true } }
+      await writeDomain('archived-one', archived)
+      expect(await isCapBlocked()).toBe(true)
+    })
+
+    it('returns true on free tier with 1 corrupted domain', async () => {
+      await writeFile(join(testDir, 'broken.json'), '{not json', 'utf8')
+      const list = await listDomains()
+      expect(list.ok).toBe(true)
+      if (!list.ok) return
+      expect(list.data.some((e) => e.corrupted)).toBe(true)
+      expect(await isCapBlocked()).toBe(true)
+    })
+
+    it('returns true with inactive license and 1 domain', async () => {
+      await writeSettings(settingsWith({ ...activeLicense(), status: 'inactive' }))
+      await writeDomain('only-one', defaultDomainFile())
+      expect(await isCapBlocked()).toBe(true)
+    })
+
+    it('fails open when listDomains errors (returns false)', async () => {
+      const fakePath = join(testDir, 'not-a-dir-cap')
+      await writeFile(fakePath, 'data')
+      _setDataDir(fakePath)
+      try {
+        expect(await isCapBlocked()).toBe(false)
+      } finally {
+        _setDataDir(testDir)
+      }
+    })
+
+    it('treats settings read failure as free tier and blocks when a domain exists', async () => {
+      await writeDomain('existing', defaultDomainFile())
+      vi.mocked(readSettings).mockResolvedValueOnce({ ok: false, error: 'Failed to read settings' })
+
+      expect(await isCapBlocked()).toBe(true)
+    })
+  })
+
+  describe('showCreateDomainScreen with cap', () => {
+    it('runs standard flow when licensed even with many domains', async () => {
+      await writeSettings(settingsWith(activeLicense()))
+      for (let i = 0; i < 5; i++) {
+        await writeDomain(`d-${i}`, defaultDomainFile())
+      }
+      mockInput.mockResolvedValueOnce('new domain')
+      mockSelect.mockResolvedValueOnce(2)
+      mockSelect.mockResolvedValueOnce('save')
+
+      await showCreateDomainScreen()
+
+      expect(mockInput).toHaveBeenCalled()
+      expect(vi.mocked(router.showActivateLicense)).not.toHaveBeenCalled()
+      const result = await readDomain('new-domain')
+      expect(result.ok).toBe(true)
+    })
+
+    it('shows upsell when free-tier with one existing domain, dispatching Activate License', async () => {
+      await writeDomain('existing', defaultDomainFile())
+      mockSelect.mockResolvedValueOnce('activate')
+
+      await showCreateDomainScreen()
+
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(vi.mocked(router.showActivateLicense)).toHaveBeenCalledOnce()
+      // No new domain written
+      const list = await listDomains()
+      expect(list.ok).toBe(true)
+      if (!list.ok) return
+      expect(list.data.map((e) => e.slug)).toEqual(['existing'])
+    })
+
+    it('shows upsell and returns without writing on Back', async () => {
+      await writeDomain('existing', defaultDomainFile())
+      mockSelect.mockResolvedValueOnce('back')
+
+      await showCreateDomainScreen()
+
+      expect(vi.mocked(router.showActivateLicense)).not.toHaveBeenCalled()
+      expect(mockInput).not.toHaveBeenCalled()
+      const list = await listDomains()
+      expect(list.ok).toBe(true)
+      if (!list.ok) return
+      expect(list.data.map((e) => e.slug)).toEqual(['existing'])
+    })
+
+    it('shows upsell when settings read fails and one domain exists', async () => {
+      await writeDomain('existing', defaultDomainFile())
+      vi.mocked(readSettings).mockResolvedValueOnce({ ok: false, error: 'Failed to read settings' })
+      mockSelect.mockResolvedValueOnce('back')
+
+      await showCreateDomainScreen()
+
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).toHaveBeenCalledOnce()
+      expect(vi.mocked(router.showActivateLicense)).not.toHaveBeenCalled()
+    })
+
+    it('returns silently on Ctrl+C (ExitPromptError) at the upsell action prompt', async () => {
+      await writeDomain('existing', defaultDomainFile())
+      mockSelect.mockRejectedValueOnce(new ExitPromptError())
+
+      await expect(showCreateDomainScreen()).resolves.toBeUndefined()
+      expect(vi.mocked(router.showActivateLicense)).not.toHaveBeenCalled()
+    })
   })
 })

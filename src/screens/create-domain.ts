@@ -1,10 +1,11 @@
 import { select, input, Separator } from '@inquirer/prompts'
 import { ExitPromptError } from '@inquirer/core'
 import { slugify } from '../utils/slugify.js'
-import { listDomains, writeDomain } from '../domain/store.js'
-import { defaultDomainFile } from '../domain/schema.js'
+import { listDomains, readSettings, writeDomain } from '../domain/store.js'
+import { defaultDomainFile, defaultSettings } from '../domain/schema.js'
 import { warn, success, error as errorFmt, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
+import * as router from '../router.js'
 
 export function validateDomainName(name: string): string | true {
   if (name.trim().length === 0) return 'Domain name cannot be empty'
@@ -41,7 +42,49 @@ async function promptForUniqueDomainSlug(): Promise<string | null> {
   }
 }
 
+export async function isCapBlocked(): Promise<boolean> {
+  const settingsResult = await readSettings()
+  const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+  if (settings.license?.status === 'active') return false
+
+  const listResult = await listDomains()
+  if (!listResult.ok) return false
+
+  return listResult.data.length >= 1
+}
+
+async function showCapBlockedScreen(): Promise<void> {
+  clearAndBanner()
+  console.log('\n  ➕ Create new domain\n')
+  console.log('  ' + warn('Free version is limited to 1 domain. Activate a license to create more.') + '\n')
+
+  let action: 'activate' | 'back'
+  try {
+    action = await select<'activate' | 'back'>({
+      message: 'Choose an action',
+      choices: [
+        { name: '🔑 Activate License', value: 'activate' },
+        new Separator(),
+        { name: '↩️  Back', value: 'back' },
+      ],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (err instanceof ExitPromptError) return
+    throw err
+  }
+
+  if (action === 'activate') {
+    await router.showActivateLicense()
+  }
+}
+
 export async function showCreateDomainScreen(): Promise<void> {
+  if (await isCapBlocked()) {
+    await showCapBlockedScreen()
+    return
+  }
+
   clearAndBanner()
   try {
     const slug = await promptForUniqueDomainSlug()

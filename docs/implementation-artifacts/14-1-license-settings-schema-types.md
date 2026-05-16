@@ -90,6 +90,7 @@ export const SettingsFileSchema = z.object({
 ```
 
 **`defaultSettings()` — NO changes needed:**
+
 ```typescript
 export function defaultSettings(): SettingsFile {
   return {
@@ -132,7 +133,7 @@ function migrateSettings(parsed: unknown): unknown {
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---------|---------|------|
+| --------- | --------- | ------ |
 | Optional sub-object on a Zod schema | `lastCoachReport: z.string().max(MAX_COACH_REPORT_LENGTH).optional()` | `schema.ts` |
 | ISO datetime field | `createdAt: z.iso.datetime()` | `schema.ts` |
 | Enum schema + inferred type | `ToneOfVoiceSchema = z.enum([...])` + `export type ToneOfVoice = z.infer<typeof ToneOfVoiceSchema>` | `schema.ts` |
@@ -164,12 +165,14 @@ function migrateSettings(parsed: unknown): unknown {
 ### Project Structure Notes
 
 **Modified files (this story only):**
+
 - `src/domain/schema.ts` — add `EXPECTED_PRODUCT_ID` constant, `LicenseStatusSchema` + type, `LicenseRecordSchema` + type, `SettingsFileSchema.license` optional field
 - `src/domain/schema.test.ts` — add `describe('LicenseRecordSchema', ...)` block + `describe('SettingsFileSchema — license field', ...)` block + `EXPECTED_PRODUCT_ID` check
 - `src/domain/store.ts` — import `LicenseRecordSchema`; extend `migrateSettings()` with the malformed-license drop logic
 - `src/domain/store.test.ts` — add round-trip tests for `license` present/absent + graceful-drop test for malformed `license` (via temp `settings.json` write or store-level mock following existing patterns in the file)
 
 **Files NOT touched in this story (defer to later stories):**
+
 - `src/domain/license-client.ts` (Story 14.2 — new)
 - `src/utils/open-url.ts` (Story 14.2 — new)
 - `src/index.ts` (Story 14.3 — launch validation wiring)

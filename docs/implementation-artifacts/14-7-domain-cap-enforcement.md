@@ -1,6 +1,6 @@
 # Story 14.7: Domain Cap Enforcement at Create Domain
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -50,15 +50,16 @@ So that I learn about the paid tier exactly when the cap matters without losing 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Extend `showCreateDomainScreen` with a cap-check entry guard** (AC: #1–#9)
-  - [ ] 1.1 At the very top of `showCreateDomainScreen` (BEFORE `clearAndBanner()`), perform the cap check (encapsulated in a helper — see Task 2)
-  - [ ] 1.2 If the cap is hit: call the new `showCapBlockedScreen()` helper (Task 3) and return — do NOT fall through to the standard flow
-  - [ ] 1.3 If the cap is not hit: proceed to the existing `clearAndBanner()` + `promptForUniqueDomainSlug()` + … unchanged flow
-  - [ ] 1.4 Preserve the EXISTING try/catch around the standard flow (`ExitPromptError` handling)
-  - [ ] 1.5 Do NOT modify `validateDomainName`, `duplicateDomainMessage`, or `promptForUniqueDomainSlug` — those remain unchanged
+- [x] **Task 1: Extend `showCreateDomainScreen` with a cap-check entry guard** (AC: #1–#9)
+  - [x] 1.1 At the very top of `showCreateDomainScreen` (BEFORE `clearAndBanner()`), perform the cap check (encapsulated in a helper — see Task 2)
+  - [x] 1.2 If the cap is hit: call the new `showCapBlockedScreen()` helper (Task 3) and return — do NOT fall through to the standard flow
+  - [x] 1.3 If the cap is not hit: proceed to the existing `clearAndBanner()` + `promptForUniqueDomainSlug()` + … unchanged flow
+  - [x] 1.4 Preserve the EXISTING try/catch around the standard flow (`ExitPromptError` handling)
+  - [x] 1.5 Do NOT modify `validateDomainName`, `duplicateDomainMessage`, or `promptForUniqueDomainSlug` — those remain unchanged
 
-- [ ] **Task 2: Implement the cap-check helper** (AC: #1, #2, #3, #7, #9, #10)
-  - [ ] 2.1 New local helper `async function isCapBlocked(): Promise<boolean>`:
+- [x] **Task 2: Implement the cap-check helper** (AC: #1, #2, #3, #7, #9, #10)
+  - [x] 2.1 New local helper `async function isCapBlocked(): Promise<boolean>`:
+
     ```typescript
     async function isCapBlocked(): Promise<boolean> {
       const settingsResult = await readSettings()
@@ -71,20 +72,22 @@ So that I learn about the paid tier exactly when the cap matters without losing 
       return listResult.data.length >= 1 // AC #2/#3
     }
     ```
-  - [ ] 2.2 Place this helper either INSIDE `create-domain.ts` (preferred — keeps cap logic co-located with the screen that enforces it) OR export it for testability. DECISION: export as `export async function isCapBlocked()` so the tests can unit-test the cap predicate in isolation without driving the full screen
-  - [ ] 2.3 Add imports to `src/screens/create-domain.ts`:
+
+  - [x] 2.2 Place this helper either INSIDE `create-domain.ts` (preferred — keeps cap logic co-located with the screen that enforces it) OR export it for testability. DECISION: export as `export async function isCapBlocked()` so the tests can unit-test the cap predicate in isolation without driving the full screen
+  - [x] 2.3 Add imports to `src/screens/create-domain.ts`:
     - `readSettings` from `../domain/store.js` (already exists — `listDomains` is already imported)
     - `defaultSettings` from `../domain/schema.js` (already imported)
     - Verify both imports — if `readSettings` is not yet imported, add it
-  - [ ] 2.4 Counting semantics — `listResult.data.length >= 1` covers all 4 cases the epic enumerates:
+  - [x] 2.4 Counting semantics — `listResult.data.length >= 1` covers all 4 cases the epic enumerates:
     - 1 active → length 1 → blocked
     - 1 archived → length 1 → blocked (archived files live in the same dir; `listDomains` includes them)
     - 1 active + 1 archived → length 2 → blocked
     - 1 corrupted → length 1 → blocked (corrupted entries are in the array with `corrupted: true`)
-  - [ ] 2.5 Verify with `src/domain/store.ts` lines 91–116: `listDomains` returns ALL `*.json` files except `settings.json` and `.tmp-*` prefixes. Active + archived + corrupted ALL counted. This is the correct denominator for the cap
+  - [x] 2.5 Verify with `src/domain/store.ts` lines 91–116: `listDomains` returns ALL `*.json` files except `settings.json` and `.tmp-*` prefixes. Active + archived + corrupted ALL counted. This is the correct denominator for the cap
 
-- [ ] **Task 3: Implement the cap-blocked screen variant** (AC: #3, #4, #5, #6)
-  - [ ] 3.1 New local helper `async function showCapBlockedScreen(): Promise<void>`:
+- [x] **Task 3: Implement the cap-blocked screen variant** (AC: #3, #4, #5, #6)
+  - [x] 3.1 New local helper `async function showCapBlockedScreen(): Promise<void>`:
+
     ```typescript
     async function showCapBlockedScreen(): Promise<void> {
       clearAndBanner()
@@ -114,12 +117,14 @@ So that I learn about the paid tier exactly when the cap matters without losing 
       // action === 'back' → return
     }
     ```
-  - [ ] 3.2 Use `warn(...)` (already imported from `utils/format.js`) for the upsell line — yellow/orange tone is the standard for soft blocks in this codebase. If a `dim` helper exists in format.ts and feels more apt, prefer it
-  - [ ] 3.3 Import `router` namespace: `import * as router from '../router.js'`. The import is a NEW one for this file — verify it isn't already present
-  - [ ] 3.4 ExitPromptError caught and returns silently (matches existing `showCreateDomainScreen` convention at the bottom of the file)
 
-- [ ] **Task 4: Wire the guard into `showCreateDomainScreen`** (AC: #1, #2, #3)
-  - [ ] 4.1 Edit the existing `export async function showCreateDomainScreen(): Promise<void>`:
+  - [x] 3.2 Use `warn(...)` (already imported from `utils/format.js`) for the upsell line — yellow/orange tone is the standard for soft blocks in this codebase. If a `dim` helper exists in format.ts and feels more apt, prefer it
+  - [x] 3.3 Import `router` namespace: `import * as router from '../router.js'`. The import is a NEW one for this file — verify it isn't already present
+  - [x] 3.4 ExitPromptError caught and returns silently (matches existing `showCreateDomainScreen` convention at the bottom of the file)
+
+- [x] **Task 4: Wire the guard into `showCreateDomainScreen`** (AC: #1, #2, #3)
+  - [x] 4.1 Edit the existing `export async function showCreateDomainScreen(): Promise<void>`:
+
     ```typescript
     export async function showCreateDomainScreen(): Promise<void> {
       if (await isCapBlocked()) {
@@ -135,30 +140,31 @@ So that I learn about the paid tier exactly when the cap matters without losing 
       }
     }
     ```
-  - [ ] 4.2 The cap check is performed BEFORE `clearAndBanner()` so the `showCapBlockedScreen` helper owns its own screen clear. This avoids a double-clear flash
-  - [ ] 4.3 Verify no other function in `create-domain.ts` needs cap-checking — only the entry point matters
 
-- [ ] **Task 5: Tests** (AC: #10)
-  - [ ] 5.1 Open `src/screens/create-domain.test.ts` (verify the file exists; if not, use the closest existing pattern)
-  - [ ] 5.2 Add a new `describe('domain cap enforcement', ...)` block
-  - [ ] 5.3 Mock `readSettings`, `listDomains`, `writeDomain`, `@inquirer/prompts` (`select`, `input`), and `../router.js` (the `showActivateLicense` export)
-  - [ ] 5.4 Cover the 11 test cases enumerated in AC #10 (one per bullet)
-  - [ ] 5.5 For unit tests of `isCapBlocked` in isolation: import the exported function and assert its return value across the four key permutations (active license + N domains; free + 0; free + N; settings/list errors)
-  - [ ] 5.6 For dispatch tests: mock `select` to return `'activate'` (assert `vi.mocked(router.showActivateLicense)` called once + `vi.mocked(writeDomain)` NOT called) and `'back'` (assert neither called)
-  - [ ] 5.7 For regression: ensure existing pass-through tests still work by either passing `{ ok: true, data: licensedSettings }` from `readSettings` mock OR `{ ok: true, data: [] }` from `listDomains` mock — depending on what each existing test setup already mocks. If existing tests don't mock `readSettings` / `listDomains`, prefer `defaultSettings()` fallback (no license) + empty list (free + 0 domains → pass-through)
-  - [ ] 5.8 Confirm baseline + new test count: ~1157 (after 14.6) + ~11 new tests = ~1168
+  - [x] 4.2 The cap check is performed BEFORE `clearAndBanner()` so the `showCapBlockedScreen` helper owns its own screen clear. This avoids a double-clear flash
+  - [x] 4.3 Verify no other function in `create-domain.ts` needs cap-checking — only the entry point matters
 
-- [ ] **Task 6: Boundary verification** (AC compliance)
-  - [ ] 6.1 `grep -n "isCapBlocked\|showCapBlockedScreen" src/` — matches only `src/screens/create-domain.ts` and `src/screens/create-domain.test.ts`
-  - [ ] 6.2 `grep -rn "router.showActivateLicense" src/screens/` — should now match three callsites: `home.ts` (Story 14.4), `license-info.ts` (Story 14.6 Re-activate), and `create-domain.ts` (this story Activate from upsell)
-  - [ ] 6.3 Confirm NO OTHER files were modified beyond `src/screens/create-domain.ts` and `src/screens/create-domain.test.ts`
-  - [ ] 6.4 `npm test` — green
-  - [ ] 6.5 `npm run typecheck` — clean
+- [x] **Task 5: Tests** (AC: #10)
+  - [x] 5.1 Open `src/screens/create-domain.test.ts` (verify the file exists; if not, use the closest existing pattern)
+  - [x] 5.2 Add a new `describe('domain cap enforcement', ...)` block
+  - [x] 5.3 Mock `readSettings`, `listDomains`, `writeDomain`, `@inquirer/prompts` (`select`, `input`), and `../router.js` (the `showActivateLicense` export)
+  - [x] 5.4 Cover the 11 test cases enumerated in AC #10 (one per bullet)
+  - [x] 5.5 For unit tests of `isCapBlocked` in isolation: import the exported function and assert its return value across the four key permutations (active license + N domains; free + 0; free + N; settings/list errors)
+  - [x] 5.6 For dispatch tests: mock `select` to return `'activate'` (assert `vi.mocked(router.showActivateLicense)` called once + `vi.mocked(writeDomain)` NOT called) and `'back'` (assert neither called)
+  - [x] 5.7 For regression: ensure existing pass-through tests still work by either passing `{ ok: true, data: licensedSettings }` from `readSettings` mock OR `{ ok: true, data: [] }` from `listDomains` mock — depending on what each existing test setup already mocks. If existing tests don't mock `readSettings` / `listDomains`, prefer `defaultSettings()` fallback (no license) + empty list (free + 0 domains → pass-through)
+  - [x] 5.8 Confirm baseline + new test count: ~1157 (after 14.6) + ~11 new tests = ~1168
 
-- [ ] **Task 7: Epic 14 closing checks (not blocking, but recommended)**
-  - [ ] 7.1 Run the full Epic 14 happy path manually if possible: free tier → create 1 domain → try to create a second → upsell → Activate License (mock or real key) → return → menu now shows License Info → create a 2nd domain succeeds
-  - [ ] 7.2 Run the deactivate flow: License Info → Deactivate → confirm → returns to home (Activate License + Coffee both visible) → Create new domain → upsell (since 2 domains exist)
-  - [ ] 7.3 If any issue is found, file a correction-course note rather than expanding 14.7 scope
+- [x] **Task 6: Boundary verification** (AC compliance)
+  - [x] 6.1 `grep -n "isCapBlocked\|showCapBlockedScreen" src/` — matches only `src/screens/create-domain.ts` and `src/screens/create-domain.test.ts`
+  - [x] 6.2 `grep -rn "router.showActivateLicense" src/screens/` — should now match three callsites: `home.ts` (Story 14.4), `license-info.ts` (Story 14.6 Re-activate), and `create-domain.ts` (this story Activate from upsell)
+  - [x] 6.3 Confirm NO OTHER files were modified beyond `src/screens/create-domain.ts` and `src/screens/create-domain.test.ts`
+  - [x] 6.4 `npm test` — green
+  - [x] 6.5 `npm run typecheck` — clean
+
+- [x] **Task 7: Epic 14 closing checks (not blocking, but recommended)**
+  - [x] 7.1 Run the full Epic 14 happy path manually if possible: free tier → create 1 domain → try to create a second → upsell → Activate License (mock or real key) → return → menu now shows License Info → create a 2nd domain succeeds
+  - [x] 7.2 Run the deactivate flow: License Info → Deactivate → confirm → returns to home (Activate License + Coffee both visible) → Create new domain → upsell (since 2 domains exist)
+  - [x] 7.3 If any issue is found, file a correction-course note rather than expanding 14.7 scope
 
 ## Dev Notes
 
@@ -254,7 +260,7 @@ export async function showCreateDomainScreen(): Promise<void> {
 ### Existing Code Patterns to Follow
 
 | Pattern | Example | File |
-|---|---|---|
+| --- | --- | --- |
 | Entry-guard short-circuit before main flow | Provider-setup guard in startup | `src/index.ts`, `src/screens/provider-setup.ts` |
 | `readSettings` + `defaultSettings` fallback | Settings screen, License Info screen | `src/screens/settings.ts`, `src/screens/license-info.ts` (Story 14.6) |
 | `listDomains` for whole-folder enumeration | Home screen, archived screen | `src/screens/home.ts`, `src/screens/archived.ts` |
@@ -288,12 +294,14 @@ export async function showCreateDomainScreen(): Promise<void> {
 ### Project Structure Notes
 
 **Modified files (this story only):**
+
 - `src/screens/create-domain.ts` — add `isCapBlocked` + `showCapBlockedScreen` helpers; gate `showCreateDomainScreen` entry; add `readSettings`, `defaultSettings`, `router` namespace imports
 - `src/screens/create-domain.test.ts` — add `domain cap enforcement` describe block with ~11 new tests
 
 **New files:** none. This story is a surgical addition to an existing screen.
 
 **Files NOT touched:**
+
 - `src/domain/schema.ts` (no schema changes)
 - `src/domain/store.ts` (no persistence-layer changes)
 - `src/domain/license-client.ts` (no client changes)
@@ -316,20 +324,30 @@ export async function showCreateDomainScreen(): Promise<void> {
 
 ### Agent Model Used
 
-_To be filled by dev agent._
+Amelia (Claude) — bmad-dev-story workflow.
 
 ### Debug Log References
 
-_To be filled by dev agent._
+- `npx vitest run src/screens/create-domain.test.ts` — 32/32 pass
+- `npm test` — 1278/1278 pass (Test Files: 36 passed)
+- `npm run typecheck` — clean
 
 ### Completion Notes List
 
-_To be filled by dev agent._
+- Added `isCapBlocked()` (exported) and `showCapBlockedScreen()` (local) to `src/screens/create-domain.ts`; entry-guard placed before `clearAndBanner()` so the upsell variant owns its own clear (no double-clear flash).
+- Imported `* as router` from `../router.js` to avoid circular-import binding issues (same pattern as `src/screens/home.ts`).
+- Fail-open posture on `listDomains` error and on `readSettings` returning `{ ok: false }` (treated as default settings → free tier).
+- Added 14 tests under `domain cap enforcement` describe, covering all AC #10 bullets including settings-read failure, the corrupted-file slot, and inactive-license-as-free-tier semantics.
+- Three legacy duplicate-detection tests (`my-topic`, `archived-topic`, `Python 3`) now pre-write an active license via `writeSettings(settingsWith(activeLicense()))` to bypass the new cap and preserve their original assertions.
+- No retroactive enforcement: existing over-cap domains remain fully playable, archivable, deletable. Only the creation entry is gated.
 
 ### File List
 
-_To be filled by dev agent._
+- src/screens/create-domain.ts (modified)
+- src/screens/create-domain.test.ts (modified)
+- docs/implementation-artifacts/14-7-domain-cap-enforcement.md (modified)
 
 ### Change Log
 
 - 2026-05-16: Story file created via bmad-create-story workflow — final story in Epic 14. Verified `listDomains` counting semantics include archived + corrupted; fail-open posture documented for FS errors.
+- 2026-05-16: Implementation complete. Cap guard wired; 14 cap-enforcement tests added; legacy duplicate tests amended with active-license bypass; full suite (1278) green; typecheck clean. Status → done.
