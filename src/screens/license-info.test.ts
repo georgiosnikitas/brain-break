@@ -43,6 +43,7 @@ vi.mock('../utils/format.js', () => ({
   error: (text: string) => `[error]${text}`,
   dim: (text: string) => `[dim]${text}`,
   bold: (text: string) => `[bold]${text}`,
+  header: (text: string) => `[header]${text}`,
 }))
 vi.mock('../router.js', () => ({ showActivateLicense: vi.fn() }))
 
@@ -183,15 +184,15 @@ describe('showLicenseInfoScreen', () => {
     expect(actionChoiceNames(0)).toEqual(['🔑 Re-activate', '🔛 Manage your keys', '↩️  Back'])
   })
 
-  it('hard-confirm prompt places Cancel first (default focus) and Cancel returns to action menu without calling deactivateLicense', async () => {
+  it('hard-confirm prompt offers Back via separator and Back returns to action menu without calling deactivateLicense', async () => {
     mockSelect
       .mockResolvedValueOnce('deactivate') // action menu
-      .mockResolvedValueOnce('cancel')      // confirm prompt
+      .mockResolvedValueOnce('cancel')      // confirm prompt (Back)
       .mockResolvedValueOnce('back')        // back to action menu
 
     await showLicenseInfoScreen()
 
-    expect(actionChoiceValues(1)).toEqual(['cancel', 'confirm'])
+    expect(actionChoiceValues(1)).toEqual(['confirm', 'cancel'])
     expect(mockDeactivate).not.toHaveBeenCalled()
     expect(mockWriteSettings).not.toHaveBeenCalled()
   })

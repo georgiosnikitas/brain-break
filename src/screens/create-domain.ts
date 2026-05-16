@@ -3,7 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { slugify } from '../utils/slugify.js'
 import { listDomains, readSettings, writeDomain } from '../domain/store.js'
 import { defaultDomainFile, defaultSettings } from '../domain/schema.js'
-import { warn, success, error as errorFmt, menuTheme } from '../utils/format.js'
+import { warn, success, error as errorFmt, header, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 
@@ -55,8 +55,8 @@ export async function isCapBlocked(): Promise<boolean> {
 
 async function showCapBlockedScreen(): Promise<void> {
   clearAndBanner()
-  console.log('\n  ➕ Create new domain\n')
-  console.log('  ' + warn('Free version is limited to 1 domain. Activate a license to create more.') + '\n')
+  console.log(header('➕ Create new domain'))
+  console.log(warn('Free version is limited to 1 domain. Activate a license to create more.') + '\n')
 
   let action: 'activate' | 'back'
   try {

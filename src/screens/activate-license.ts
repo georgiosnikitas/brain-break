@@ -5,7 +5,7 @@ import qrcode from 'qrcode-terminal'
 import { activateLicense, type LicenseErrorKind } from '../domain/license-client.js'
 import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, type LicenseRecord } from '../domain/schema.js'
-import { menuTheme, success, error as errorFmt } from '../utils/format.js'
+import { header, menuTheme, success, error as errorFmt } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 
 const ORDERS_URL = 'https://app.lemonsqueezy.com/my-orders'
@@ -27,10 +27,10 @@ type PasteOutcome =
 
 function renderHeader(inlineError: string | null, inlineNotice: string | null): void {
   clearAndBanner()
-  console.log('\n  🔑 Activate License\n')
-  console.log('  Activate your license to unlock unlimited domains. Free tier is limited to 1 domain.\n')
-  if (inlineError) console.log(`  ${errorFmt(inlineError)}\n`)
-  if (inlineNotice) console.log(`  ${inlineNotice}\n`)
+  console.log(header('🔑 Activate License'))
+  console.log('Activate your license to unlock unlimited domains. Free tier is limited to 1 domain.\n')
+  if (inlineError) console.log(`${errorFmt(inlineError)}\n`)
+  if (inlineNotice) console.log(`${inlineNotice}\n`)
 }
 
 async function activateWithSpinner(key: string): Promise<Awaited<ReturnType<typeof activateLicense>>> {
@@ -100,7 +100,8 @@ async function handlePasteAction(): Promise<PasteOutcome> {
 
 async function renderUrlScreen(title: string, url: string): Promise<void> {
   clearAndBanner()
-  console.log(`\n  ${title}\n`)
+  console.log(header(title))
+  console.log('')
   await new Promise<void>((resolve) => {
     qrcode.generate(url, { small: true }, (code) => {
       const indented = code.split('\n').map((line) => `  ${line}`).join('\n')
@@ -124,7 +125,7 @@ async function confirmSuccess(): Promise<void> {
   try {
     await select({
       message: 'Navigation',
-      choices: [new Separator(), { name: '↩️  Back to home', value: 'home' as const }],
+      choices: [new Separator(), { name: '↩️  Back', value: 'home' as const }],
       theme: menuTheme,
     })
   } catch (err) {

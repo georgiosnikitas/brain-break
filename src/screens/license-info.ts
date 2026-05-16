@@ -6,7 +6,7 @@ import { deactivateLicense, type LicenseErrorKind } from '../domain/license-clie
 import { readSettings, writeSettings } from '../domain/store.js'
 import { defaultSettings, type LicenseRecord, type SettingsFile } from '../domain/schema.js'
 import { clearAndBanner } from '../utils/screen.js'
-import { bold, menuTheme, success, error as errorFmt, dim } from '../utils/format.js'
+import { bold, header, menuTheme, success, error as errorFmt, dim } from '../utils/format.js'
 import * as router from '../router.js'
 
 const ORDERS_URL = 'https://app.lemonsqueezy.com/my-orders'
@@ -35,7 +35,8 @@ export function formatActivatedAt(iso: string): string {
 
 async function renderUrlScreen(title: string, url: string): Promise<void> {
   clearAndBanner()
-  console.log(`\n  ${title}\n`)
+  console.log(header(title))
+  console.log('')
   await new Promise<void>((resolve) => {
     qrcode.generate(url, { small: true }, (code) => {
       const indented = code.split('\n').map((line) => `  ${line}`).join('\n')
@@ -103,8 +104,9 @@ async function promptConfirmDeactivate(): Promise<'cancel' | 'confirm' | null> {
     return await select<'cancel' | 'confirm'>({
       message: "Deactivate this license? You'll be limited to 1 domain again. Existing domains beyond the cap remain readable but you won't be able to create new ones until you re-activate.",
       choices: [
-        { name: 'Cancel', value: 'cancel' },
         { name: 'Yes, deactivate', value: 'confirm' },
+        new Separator(),
+        { name: '↩️  Back', value: 'cancel' },
       ],
       theme: menuTheme,
     })
@@ -149,7 +151,7 @@ async function runDeactivateFlow(license: LicenseRecord): Promise<DeactivateOutc
     return { type: 'error', message: 'Could not save settings after deactivation. Local state may be inconsistent.' }
   }
   console.log('\n  ' + success('License deactivated.') + '\n')
-  await awaitBackPrompt('↩️  Back to home')
+  await awaitBackPrompt('↩️  Back')
   return { type: 'done' }
 }
 
@@ -175,7 +177,8 @@ export async function showLicenseInfoScreen(): Promise<void> {
 
   while (true) {
     clearAndBanner()
-    console.log('\n  🔑 License Info\n')
+    console.log(header('🔑 License Info'))
+    console.log('')
 
     const cur = await readSettings()
     const settings = cur.ok ? cur.data : defaultSettings()

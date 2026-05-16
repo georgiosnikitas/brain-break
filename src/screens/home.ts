@@ -3,7 +3,7 @@ import { ExitPromptError } from '@inquirer/core'
 import { listDomains, readDomain, readSettings, type DomainListEntry } from '../domain/store.js'
 import { defaultSettings } from '../domain/schema.js'
 import type { LaunchNotice } from '../domain/license-launch.js'
-import { dim, bold, error, menuTheme } from '../utils/format.js'
+import { dim, bold, error, header, menuTheme } from '../utils/format.js'
 import { clearAndBanner } from '../utils/screen.js'
 import * as router from '../router.js'
 import type { Result } from '../domain/schema.js'
@@ -122,8 +122,8 @@ async function handleHomeAction(answer: HomeAction, homeEntries: HomeEntry[], li
 
 export async function showCoffeeScreen(): Promise<void> {
   clearAndBanner()
-  console.log('\n  🍵 Enjoying brain-break? Buy me a coffee!\n')
-  console.log('  Scan the QR code with your phone:\n')
+  console.log(header('🍵 Enjoying brain-break? Buy me a coffee!'))
+  console.log('Scan the QR code with your phone:\n')
   await new Promise<void>((resolve) => {
     qrcode.generate(COFFEE_URL, { small: true }, (code) => {
       const indented = code.split('\n').map((line) => `  ${line}`).join('\n')

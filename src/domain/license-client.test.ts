@@ -280,6 +280,91 @@ describe('activateLicense', () => {
     if (result.ok) return
     expect(result.error.kind).toBe('unknown_api_error')
   })
+
+  // -------------------------------------------------------------------------
+  // Real Lemon Squeezy response shape regressions
+  // -------------------------------------------------------------------------
+  it('accepts a real Lemon Squeezy success body that omits meta.store_name and synthesizes a Store #<id> label', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      okJson({
+        activated: true,
+        error: null,
+        license_key: {
+          id: 1,
+          status: 'active',
+          key: 'LK-REAL',
+          activation_limit: 1,
+          activation_usage: 1,
+          created_at: '2024-01-15T12:34:56.000000Z',
+          expires_at: null,
+        },
+        instance: {
+          id: 'inst-real',
+          name: 'brain-break@host',
+          created_at: '2024-01-15T12:34:56.000000Z',
+        },
+        meta: {
+          store_id: 42,
+          order_id: 99,
+          order_item_id: 100,
+          product_id: EXPECTED_PRODUCT_ID,
+          product_name: 'brain-break',
+          variant_id: 1,
+          variant_name: 'Default',
+          customer_id: 7,
+          customer_name: 'GN',
+          customer_email: 'gn@example.com',
+        },
+      }),
+    )
+
+    const result = await activateLicense('LK-REAL')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.storeId).toBe(42)
+    expect(result.data.storeName).toBe('Store #42')
+    expect(LicenseRecordSchema.safeParse(result.data).success).toBe(true)
+  })
+
+  it('classifies a 200 response with activated:false + error:"activation limit" as limit_reached', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      okJson({
+        activated: false,
+        error: 'This license key has reached the activation limit.',
+        license_key: { id: 1, status: 'active', key: 'k', activation_limit: 5, activation_usage: 5, created_at: 'x', expires_at: null },
+        meta: { store_id: 1, product_id: EXPECTED_PRODUCT_ID, product_name: 'brain-break' },
+      }),
+    )
+
+    const result = await activateLicense('LK-LIMIT')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.kind).toBe('limit_reached')
+    expect(result.error.message).toContain('activation limit')
+  })
+
+  it('classifies an "expired" error string as revoked', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      errJson(400, { activated: false, error: 'License key has expired.' }),
+    )
+    const result = await activateLicense('LK-EXP')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.kind).toBe('revoked')
+    expect(result.error.message).toContain('expired')
+  })
+
+  it('classifies a "revoked" error string as revoked', async () => {
+    fetchSpy.mockResolvedValueOnce(
+      errJson(400, { activated: false, error: 'License key has been revoked.' }),
+    )
+    const result = await activateLicense('LK-REV')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.kind).toBe('revoked')
+  })
 })
 
 // ---------------------------------------------------------------------------

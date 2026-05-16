@@ -32,11 +32,15 @@ const ActivateResponseSchema = z.object({
     name: z.string().min(1),
     created_at: z.string().min(1),
   }),
+  // The Lemon Squeezy License API does NOT return `store_name` in `meta` (only
+  // `store_id`, `order_id`, `product_id`, `product_name`, `variant_id`, `variant_name`,
+  // and `customer_*`). We keep `store_name` optional here and fall back to a placeholder
+  // when constructing the persisted LicenseRecord.
   meta: z.object({
     product_id: z.number().int(),
     product_name: z.string().min(1),
     store_id: z.number().int(),
-    store_name: z.string().min(1),
+    store_name: z.string().min(1).optional(),
   }),
 })
 
@@ -68,21 +72,31 @@ function unknownError(message: string): LicenseError {
 function classifyActivateError(detail: string): LicenseErrorKind {
   const d = detail.toLowerCase()
   if (d.includes('activation limit') || d.includes('activation_limit')) return 'limit_reached'
-  if (d.includes('disabled') || d.includes('inactive') || d.includes('refunded')) return 'revoked'
+  // Terminal states where the key can no longer be used. Lemon Squeezy license keys
+  // can be `disabled` (manual), `expired` (time-based), or refunded/revoked.
+  if (
+    d.includes('disabled') ||
+    d.includes('inactive') ||
+    d.includes('refunded') ||
+    d.includes('revoked') ||
+    d.includes('expired')
+  ) {
+    return 'revoked'
+  }
   if (d.includes('not valid') || d.includes('not found') || d.includes('invalid')) return 'invalid_key'
   return 'unknown_api_error'
 }
 
-function extractDetail(json: unknown, fallback: string): string {
+function extractDetail(json: unknown): string | null {
   const flat = FlatErrorSchema.safeParse(json)
   if (flat.success) {
     return flat.data.error
   }
   const jsonApi = JsonApiErrorSchema.safeParse(json)
   if (jsonApi.success) {
-    return jsonApi.data.errors[0]?.detail ?? fallback
+    return jsonApi.data.errors[0]?.detail ?? null
   }
-  return fallback
+  return null
 }
 
 export async function activateLicense(
@@ -116,13 +130,16 @@ export async function activateLicense(
     return { ok: false, error: unknownError('Malformed response body') }
   }
 
+  // Lemon Squeezy returns a top-level `error` string on failed activations even when the
+  // HTTP status is 200 (e.g. `{ activated: false, error: "..." }`). Prefer body-driven
+  // classification whenever an error string is present, falling back to HTTP-status logic.
+  const bodyError = extractDetail(json)
+  if (bodyError !== null) {
+    return { ok: false, error: { kind: classifyActivateError(bodyError), message: bodyError } }
+  }
+
   if (!response.ok) {
-    const detail = extractDetail(json, 'Unexpected error response shape')
-    if (detail === 'Unexpected error response shape') {
-      return { ok: false, error: unknownError(detail) }
-    }
-    const kind = classifyActivateError(detail)
-    return { ok: false, error: { kind, message: detail } }
+    return { ok: false, error: unknownError(`HTTP ${response.status} with no error detail`) }
   }
 
   const parseResult = ActivateResponseSchema.safeParse(json)
@@ -158,7 +175,11 @@ export async function activateLicense(
     productId: parsed.meta.product_id,
     productName: parsed.meta.product_name,
     storeId: parsed.meta.store_id,
-    storeName: parsed.meta.store_name,
+    // Lemon Squeezy's License API doesn't expose the store name; fall back to a derived
+    // label (using the store_id that is always returned) so the LicenseRecord schema
+    // (which requires a non-empty storeName) remains valid and the displayed value is
+    // not a misleading literal like "Lemon Squeezy".
+    storeName: parsed.meta.store_name ?? `Store #${parsed.meta.store_id}`,
     status: 'active',
   }
 
@@ -207,7 +228,7 @@ export async function validateLicense(
   }
 
   if (!response.ok) {
-    return { ok: false, error: unknownError(extractDetail(json, 'Unexpected validate error response shape')) }
+    return { ok: false, error: unknownError(extractDetail(json) ?? 'Unexpected validate error response shape') }
   }
 
   const parsed = ValidateResponseSchema.safeParse(json)
@@ -250,7 +271,7 @@ export async function deactivateLicense(
   }
 
   if (!response.ok) {
-    const detail = extractDetail(json, 'Deactivate failed')
+    const detail = extractDetail(json) ?? 'Deactivate failed'
     return { ok: false, error: unknownError(detail) }
   }
 
