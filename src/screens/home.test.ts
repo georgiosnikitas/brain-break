@@ -22,6 +22,8 @@ vi.mock('../router.js', () => ({
   showArchived: vi.fn(),
   showSettings: vi.fn(),
   showExit: vi.fn(),
+  showActivateLicense: vi.fn(),
+  showLicenseInfo: vi.fn(),
 }))
 
 vi.mock('../utils/screen.js', () => ({ clearScreen: vi.fn(), clearAndBanner: vi.fn() }))
@@ -53,6 +55,8 @@ beforeEach(() => {
   vi.mocked(router.showArchived).mockResolvedValue(undefined)
   vi.mocked(router.showSettings).mockResolvedValue(undefined)
   vi.mocked(router.showExit).mockResolvedValue(undefined)
+  vi.mocked(router.showActivateLicense).mockResolvedValue(undefined)
+  vi.mocked(router.showLicenseInfo).mockResolvedValue(undefined)
 })
 
 // Separator instances have no `value` property — use this guard throughout
@@ -60,12 +64,20 @@ function isActionChoice(c: unknown): c is { name: string; value: HomeAction } {
   return typeof c === 'object' && c !== null && 'value' in c
 }
 
-function actionChoices(entries: HomeEntry[]) {
-  return buildHomeChoices(entries).filter(isActionChoice)
+const freeTierHomeOpts = { hasActiveLicense: false } as const
+
+function actionChoices(entries: HomeEntry[], opts: { hasActiveLicense: boolean } = freeTierHomeOpts) {
+  return buildHomeChoices(entries, opts).filter(isActionChoice)
 }
 
-function domainChoices(entries: HomeEntry[]) {
-  return actionChoices(entries).filter((c) => c.value.action === 'select')
+function domainChoices(entries: HomeEntry[], opts: { hasActiveLicense: boolean } = freeTierHomeOpts) {
+  return actionChoices(entries, opts).filter((c) => c.value.action === 'select')
+}
+
+function actionsFromSelectCall(callIndex: number): HomeAction['action'][] {
+  return (mockSelect.mock.calls[callIndex]?.[0]?.choices ?? [])
+    .filter(isActionChoice)
+    .map((choice) => choice.value.action)
 }
 
 describe('buildHomeChoices', () => {
@@ -89,7 +101,7 @@ describe('buildHomeChoices', () => {
 
   it('puts single domain entry first before action items', () => {
     const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
-    const choices = buildHomeChoices(entries)
+    const choices = buildHomeChoices(entries, { hasActiveLicense: false })
     const action = actionChoices(entries)
 
     // First non-separator item is the domain entry
@@ -164,6 +176,45 @@ describe('buildHomeChoices', () => {
 })
 
 // ---------------------------------------------------------------------------
+// buildHomeChoices — license-aware branching
+// ---------------------------------------------------------------------------
+describe('buildHomeChoices — license-aware branching', () => {
+  it('free-tier menu order: create, archived, settings, activateLicense, coffee, exit', () => {
+    const actions = actionChoices([], { hasActiveLicense: false })
+    const types = actions.map((c) => c.value.action)
+    expect(types).toEqual(['create', 'archived', 'settings', 'activateLicense', 'coffee', 'exit'])
+  })
+
+  it('active-license menu order: create, archived, settings, licenseInfo, exit — and NO coffee', () => {
+    const actions = actionChoices([], { hasActiveLicense: true })
+    const types = actions.map((c) => c.value.action)
+    expect(types).toEqual(['create', 'archived', 'settings', 'licenseInfo', 'exit'])
+    expect(types).not.toContain('coffee')
+    expect(types).not.toContain('activateLicense')
+  })
+
+  it('renders domain entries first, then licensed menu without coffee', () => {
+    const entries: HomeEntry[] = [{ slug: 'typescript', score: 100, totalQuestions: 10 }]
+    const actions = actionChoices(entries, { hasActiveLicense: true })
+    expect(actions[0].value.action).toBe('select')
+    const tail = actions.slice(1).map((c) => c.value.action)
+    expect(tail).toEqual(['create', 'archived', 'settings', 'licenseInfo', 'exit'])
+  })
+
+  it('uses the 🔑 Activate License label on free tier', () => {
+    const actions = actionChoices([], { hasActiveLicense: false })
+    const activate = actions.find((c) => c.value.action === 'activateLicense')
+    expect(activate?.name).toContain('Activate License')
+  })
+
+  it('uses the 🔑 License Info label on active tier', () => {
+    const actions = actionChoices([], { hasActiveLicense: true })
+    const info = actions.find((c) => c.value.action === 'licenseInfo')
+    expect(info?.name).toContain('License Info')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // filterDomains
 // ---------------------------------------------------------------------------
 
@@ -233,7 +284,7 @@ describe('showHomeScreen — routing', () => {
   })
 
   it('exits immediately without router.showExit when showWelcome is false and exit is selected', async () => {
-    mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
+    mockReadSettings.mockResolvedValue({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit')
     })
@@ -302,6 +353,123 @@ describe('showHomeScreen — routing', () => {
 
     await expect(showHomeScreen()).rejects.toThrow('process.exit')
     expect(vi.mocked(clearAndBanner)).toHaveBeenCalled()
+    exitSpy.mockRestore()
+  })
+
+  it('dispatches activateLicense action to router.showActivateLicense', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'activateLicense' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showActivateLicense)).toHaveBeenCalledOnce()
+    expect(vi.mocked(router.showLicenseInfo)).not.toHaveBeenCalled()
+    exitSpy.mockRestore()
+  })
+
+  it('dispatches licenseInfo action to router.showLicenseInfo', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'licenseInfo' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+    expect(vi.mocked(router.showLicenseInfo)).toHaveBeenCalledOnce()
+    expect(vi.mocked(router.showActivateLicense)).not.toHaveBeenCalled()
+    exitSpy.mockRestore()
+  })
+
+  it('re-reads settings every iteration so menu reflects newly-active license', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    const licenseRecord = {
+      key: 'k', instanceId: 'i', instanceName: 'n',
+      activatedAt: '2026-05-16T00:00:00.000Z', productId: 1049453, productName: 'p',
+      storeId: 1, storeName: 's', status: 'active' as const,
+    }
+    // 1st iteration: free tier → user selects activateLicense
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: defaultSettings() })
+    // 2nd iteration: active license → user selects exit
+    mockReadSettings.mockResolvedValueOnce({
+      ok: true,
+      data: { ...defaultSettings(), license: licenseRecord },
+    })
+    // 3rd readSettings is called by the exit branch in handleHomeAction
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'activateLicense' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    const types = actionsFromSelectCall(1)
+    expect(types).toContain('licenseInfo')
+    expect(types).not.toContain('coffee')
+    expect(types).not.toContain('activateLicense')
+    exitSpy.mockRestore()
+  })
+
+  it('re-reads settings every iteration so menu reflects newly-inactive license', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    const activeLicense = {
+      key: 'k', instanceId: 'i', instanceName: 'n',
+      activatedAt: '2026-05-16T00:00:00.000Z', productId: 1049453, productName: 'p',
+      storeId: 1, storeName: 's', status: 'active' as const,
+    }
+    const inactiveLicense = { ...activeLicense, status: 'inactive' as const }
+    mockReadSettings.mockResolvedValueOnce({
+      ok: true,
+      data: { ...defaultSettings(), license: activeLicense },
+    })
+    mockReadSettings.mockResolvedValueOnce({
+      ok: true,
+      data: { ...defaultSettings(), license: inactiveLicense },
+    })
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
+    mockSelect
+      .mockResolvedValueOnce({ action: 'licenseInfo' })
+      .mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    expect(vi.mocked(router.showLicenseInfo)).toHaveBeenCalledOnce()
+    const types = actionsFromSelectCall(1)
+    expect(types).toContain('activateLicense')
+    expect(types).toContain('coffee')
+    expect(types).not.toContain('licenseInfo')
+    exitSpy.mockRestore()
+  })
+
+  it('treats license.status === "inactive" as free tier (AC #7)', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit')
+    })
+    const inactiveLicense = {
+      key: 'k', instanceId: 'i', instanceName: 'n',
+      activatedAt: '2026-05-16T00:00:00.000Z', productId: 1049453, productName: 'p',
+      storeId: 1, storeName: 's', status: 'inactive' as const,
+    }
+    mockReadSettings.mockResolvedValueOnce({
+      ok: true,
+      data: { ...defaultSettings(), license: inactiveLicense },
+    })
+    mockReadSettings.mockResolvedValueOnce({ ok: true, data: { ...defaultSettings(), showWelcome: false } })
+    mockSelect.mockResolvedValueOnce({ action: 'exit' })
+
+    await expect(showHomeScreen()).rejects.toThrow('process.exit')
+
+    const types = actionsFromSelectCall(0)
+    expect(types).toContain('activateLicense')
+    expect(types).toContain('coffee')
+    expect(types).not.toContain('licenseInfo')
     exitSpy.mockRestore()
   })
 })

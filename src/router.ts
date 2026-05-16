@@ -21,11 +21,42 @@ import { readDomain, writeDomain, deleteDomain as deleteDomainStore, readSetting
 import { defaultDomainFile, defaultSettings } from './domain/schema.js'
 import { preloadQuestions } from './ai/client.js'
 import { warn, error as errorFmt, colorIncorrect, menuTheme } from './utils/format.js'
+import { clearAndBanner } from './utils/screen.js'
 import type { SettingsFile, SessionData } from './domain/schema.js'
 import type { LaunchNotice } from './domain/license-launch.js'
 
 export async function showHome(launchNotice: LaunchNotice | null = null): Promise<void> {
   await showHomeScreen(launchNotice)
+}
+
+// STUB — replaced by screens/activate-license.ts in Story 14.5
+export async function showActivateLicense(): Promise<void> {
+  clearAndBanner()
+  console.log('\n  🔑 Activate License — coming in Story 14.5\n')
+  try {
+    await select({
+      message: 'Navigation',
+      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (!(err instanceof ExitPromptError)) throw err
+  }
+}
+
+// STUB — replaced by screens/license-info.ts in Story 14.6
+export async function showLicenseInfo(): Promise<void> {
+  clearAndBanner()
+  console.log('\n  🔑 License Info — coming in Story 14.6\n')
+  try {
+    await select({
+      message: 'Navigation',
+      choices: [new Separator(), { name: '↩️  Back', value: 'back' as const }],
+      theme: menuTheme,
+    })
+  } catch (err) {
+    if (!(err instanceof ExitPromptError)) throw err
+  }
 }
 
 export async function showQuiz(slug: string): Promise<SessionData | null> {

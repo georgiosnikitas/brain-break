@@ -160,7 +160,7 @@ development_status:
   14-1-license-settings-schema-types: ready-for-dev
   14-2-lemon-squeezy-license-api-client: done
   14-3-launch-time-license-validation: done
-  14-4-home-screen-menu-adaptation: ready-for-dev
+  14-4-home-screen-menu-adaptation: done
   14-5-activate-license-screen: ready-for-dev
   14-6-license-info-screen: ready-for-dev
   14-7-domain-cap-enforcement-at-create-domain: ready-for-dev

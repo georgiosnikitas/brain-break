@@ -1,6 +1,6 @@
 # Story 14.4: Home Screen Menu Adaptation
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,58 +32,63 @@ So that the menu only surfaces actions that are relevant to my current tier.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Extend `HomeAction` discriminated union** (AC: #3, #4, #8)
-  - [ ] 1.1 In `src/screens/home.ts`, add two new variants to `HomeAction`: `| { action: 'activateLicense' }` and `| { action: 'licenseInfo' }`
-  - [ ] 1.2 Keep existing variants (`select | create | archived | settings | coffee | exit`) unchanged
+- [x] **Task 1: Extend `HomeAction` discriminated union** (AC: #3, #4, #8)
+  - [x] 1.1 In `src/screens/home.ts`, add two new variants to `HomeAction`: `| { action: 'activateLicense' }` and `| { action: 'licenseInfo' }`
+  - [x] 1.2 Keep existing variants (`select | create | archived | settings | coffee | exit`) unchanged
 
-- [ ] **Task 2: Extend `buildHomeChoices` to take license state** (AC: #1, #2, #7)
-  - [ ] 2.1 Change signature from `buildHomeChoices(entries: HomeEntry[])` to `buildHomeChoices(entries: HomeEntry[], opts: { hasActiveLicense: boolean })`
-  - [ ] 2.2 Determine `hasActiveLicense` semantically (caller's responsibility): `settings.license?.status === 'active'` → `true`; `undefined` license OR `status === 'inactive'` → `false`
-  - [ ] 2.3 In the function body, after the existing `Settings` choice and the separator, branch on `opts.hasActiveLicense`:
+- [x] **Task 2: Extend `buildHomeChoices` to take license state** (AC: #1, #2, #7)
+  - [x] 2.1 Change signature from `buildHomeChoices(entries: HomeEntry[])` to `buildHomeChoices(entries: HomeEntry[], opts: { hasActiveLicense: boolean })`
+  - [x] 2.2 Determine `hasActiveLicense` semantically (caller's responsibility): `settings.license?.status === 'active'` → `true`; `undefined` license OR `status === 'inactive'` → `false`
+  - [x] 2.3 In the function body, after the existing `Settings` choice and the separator, branch on `opts.hasActiveLicense`:
     - **`false` (free tier / inactive):** push `{ name: '🔑 Activate License', value: { action: 'activateLicense' } }` and `{ name: '🍵 Buy me a coffee', value: { action: 'coffee' } }`
     - **`true` (active):** push `{ name: '🔑 License Info', value: { action: 'licenseInfo' } }` only — DO NOT push the Coffee choice
-  - [ ] 2.4 Push `{ name: '🚪 Exit', value: { action: 'exit' } }` at the end in both cases
-  - [ ] 2.5 Preserve existing menu prefix (domain entries, separator, Create / Archived / Settings, separator) — those are tier-independent
-  - [ ] 2.6 Note on iconography: epic prose shows `☕` for Coffee; the EXISTING code uses `🍵`. Preserve the existing `🍵` icon to avoid an unrelated visual diff. Treat the epic's `☕` as a typo
+  - [x] 2.4 Push `{ name: '🚪 Exit', value: { action: 'exit' } }` at the end in both cases
+  - [x] 2.5 Preserve existing menu prefix (domain entries, separator, Create / Archived / Settings, separator) — those are tier-independent
+  - [x] 2.6 Note on iconography: epic prose shows `☕` for Coffee; the EXISTING code uses `🍵`. Preserve the existing `🍵` icon to avoid an unrelated visual diff. Treat the epic's `☕` as a typo
 
-- [ ] **Task 3: Dispatch new actions in `handleHomeAction`** (AC: #3, #4)
-  - [ ] 3.1 In `src/screens/home.ts`, add two new branches inside `handleHomeAction`:
+- [x] **Task 3: Dispatch new actions in `handleHomeAction`** (AC: #3, #4)
+  - [x] 3.1 In `src/screens/home.ts`, add two new branches inside `handleHomeAction`:
     - `if (answer.action === 'activateLicense') await router.showActivateLicense()`
     - `if (answer.action === 'licenseInfo') await router.showLicenseInfo()`
-  - [ ] 3.2 No state mutation in the handler — settings re-read on next loop iteration (Task 4) handles state refresh after these screens return
+  - [x] 3.2 No state mutation in the handler — settings re-read on next loop iteration (Task 4) handles state refresh after these screens return
 
-- [ ] **Task 4: Read settings every iteration in `showHomeScreen`** (AC: #5, #6, #7)
-  - [ ] 4.0 Verify imports at the top of `src/screens/home.ts`: ensure `readSettings` is imported from `'../domain/store.js'` and `defaultSettings` is imported from `'../domain/schema.js'`. Add either import if missing (existing exit-branch settings handling may route through `router.ts`, not direct in home.ts)
-  - [ ] 4.1 Inside the `while (true)` loop, at the top (after `clearAndBanner()` and before / alongside `listDomains()`), add `const settingsResult = await readSettings()` and `const settings = settingsResult.ok ? settingsResult.data : defaultSettings()`
-  - [ ] 4.2 Derive `const hasActiveLicense = settings.license?.status === 'active'`
-  - [ ] 4.3 Pass `{ hasActiveLicense }` as the second argument to `buildHomeChoices(homeEntries, { hasActiveLicense })`
-  - [ ] 4.4 Verify: after the user selects Activate License (free tier) → returns from `router.showActivateLicense()` → loop iterates → `readSettings()` re-reads the freshly-written license → next render shows License Info. Same flow for deactivation
-  - [ ] 4.5 Performance note: `readSettings()` is a single small file read (~0.5 KB JSON); doing it once per home iteration is negligible. Do NOT cache settings across iterations — caching would break ACs #5 and #6
+- [x] **Task 4: Read settings every iteration in `showHomeScreen`** (AC: #5, #6, #7)
+  - [x] 4.0 Verify imports at the top of `src/screens/home.ts`: ensure `readSettings` is imported from `'../domain/store.js'` and `defaultSettings` is imported from `'../domain/schema.js'`. Add either import if missing (existing exit-branch settings handling may route through `router.ts`, not direct in home.ts)
+  - [x] 4.1 Inside the `while (true)` loop, at the top (after `clearAndBanner()` and before / alongside `listDomains()`), add `const settingsResult = await readSettings()` and `const settings = settingsResult.ok ? settingsResult.data : defaultSettings()`
+  - [x] 4.2 Derive `const hasActiveLicense = settings.license?.status === 'active'`
+  - [x] 4.3 Pass `{ hasActiveLicense }` as the second argument to `buildHomeChoices(homeEntries, { hasActiveLicense })`
+  - [x] 4.4 Verify: after the user selects Activate License (free tier) → returns from `router.showActivateLicense()` → loop iterates → `readSettings()` re-reads the freshly-written license → next render shows License Info. Same flow for deactivation
+  - [x] 4.5 Performance note: `readSettings()` is a single small file read (~0.5 KB JSON); doing it once per home iteration is negligible. Do NOT cache settings across iterations — caching would break ACs #5 and #6
 
-- [ ] **Task 5: Add `showActivateLicense` + `showLicenseInfo` STUB routes to `router.ts`** (AC: #8)
-  - [ ] 5.1 Add `export async function showActivateLicense(): Promise<void>` that calls `clearAndBanner()` (or `clearScreen()`), prints `console.log('🔑 Activate License — coming in Story 14.5')`, awaits an inquirer `select` with a single `Continue` choice (so the user has time to read the placeholder), then returns
-  - [ ] 5.2 Add `export async function showLicenseInfo(): Promise<void>` with the same shape but printing `'🔑 License Info — coming in Story 14.6'`
-  - [ ] 5.3 Both stubs MUST handle `ExitPromptError` the same way other screens do (catch and re-throw or exit) so Ctrl+C works cleanly
-  - [ ] 5.4 Document in code comments next to each stub: `// STUB — replaced by screens/activate-license.ts in Story 14.5` / `// STUB — replaced by screens/license-info.ts in Story 14.6` so the dev agents working on 14.5 / 14.6 find them immediately
-  - [ ] 5.5 Do NOT import from `screens/activate-license.ts` or `screens/license-info.ts` yet — those modules don't exist. The stubs are self-contained inside `router.ts`. Stories 14.5 / 14.6 will add the screen modules and replace the stub bodies with `await showActivateLicenseScreen()` / `await showLicenseInfoScreen()` calls
+- [x] **Task 5: Add `showActivateLicense` + `showLicenseInfo` STUB routes to `router.ts`** (AC: #8)
+  - [x] 5.1 Add `export async function showActivateLicense(): Promise<void>` that calls `clearAndBanner()` (or `clearScreen()`), prints `console.log('🔑 Activate License — coming in Story 14.5')`, awaits an inquirer `select` with a single `Continue` choice (so the user has time to read the placeholder), then returns
+  - [x] 5.2 Add `export async function showLicenseInfo(): Promise<void>` with the same shape but printing `'🔑 License Info — coming in Story 14.6'`
+  - [x] 5.3 Both stubs MUST handle `ExitPromptError` the same way other screens do (catch and re-throw or exit) so Ctrl+C works cleanly
+  - [x] 5.4 Document in code comments next to each stub: `// STUB — replaced by screens/activate-license.ts in Story 14.5` / `// STUB — replaced by screens/license-info.ts in Story 14.6` so the dev agents working on 14.5 / 14.6 find them immediately
+  - [x] 5.5 Do NOT import from `screens/activate-license.ts` or `screens/license-info.ts` yet — those modules don't exist. The stubs are self-contained inside `router.ts`. Stories 14.5 / 14.6 will add the screen modules and replace the stub bodies with `await showActivateLicenseScreen()` / `await showLicenseInfoScreen()` calls
 
-- [ ] **Task 6: Update home screen tests** (AC: #1, #2, #5, #6, #7, #9)
-  - [ ] 6.1 Find existing tests for `buildHomeChoices` in `src/screens/home.test.ts` (or equivalent location — check file existence and follow the established pattern). Update existing call sites to pass `{ hasActiveLicense: false }` so they continue testing the free-tier menu (which is the current behaviour)
-  - [ ] 6.2 Add test: `buildHomeChoices([], { hasActiveLicense: false })` returns choices whose values, in order, are `create`, `archived`, `settings`, `activateLicense`, `coffee`, `exit` (extracting `value.action` from non-Separator entries)
-  - [ ] 6.3 Add test: `buildHomeChoices([], { hasActiveLicense: true })` returns choices whose values, in order, are `create`, `archived`, `settings`, `licenseInfo`, `exit` — and assert that NO entry has `value.action === 'coffee'`
-  - [ ] 6.4 Add test: `buildHomeChoices([sampleEntry], { hasActiveLicense: true })` still shows domain entries first, then the standard menu without Coffee
-  - [ ] 6.5 Add `handleHomeAction` dispatch tests (mocking `router.showActivateLicense` / `router.showLicenseInfo`): asserting `'activateLicense'` action invokes `router.showActivateLicense` exactly once; same for `'licenseInfo'`
-  - [ ] 6.6 Add a loop-rerender test: stub `readSettings` to return free-tier settings on first call and active-license settings on second call; drive two iterations of `showHomeScreen` (mock the `select` prompt to return `activateLicense` first, then `exit`); verify the second iteration's `buildHomeChoices` was invoked with `{ hasActiveLicense: true }`. If this is too heavy to test against inquirer directly, settle for: extract a small helper that derives `hasActiveLicense` from settings and test that in isolation; the dispatch + read-every-iteration behaviour is already covered by Tasks 6.2–6.5
+- [x] **Task 6: Update home screen tests** (AC: #1, #2, #5, #6, #7, #9)
+  - [x] 6.1 Find existing tests for `buildHomeChoices` in `src/screens/home.test.ts` (or equivalent location — check file existence and follow the established pattern). Update existing call sites to pass `{ hasActiveLicense: false }` so they continue testing the free-tier menu (which is the current behaviour)
+  - [x] 6.2 Add test: `buildHomeChoices([], { hasActiveLicense: false })` returns choices whose values, in order, are `create`, `archived`, `settings`, `activateLicense`, `coffee`, `exit` (extracting `value.action` from non-Separator entries)
+  - [x] 6.3 Add test: `buildHomeChoices([], { hasActiveLicense: true })` returns choices whose values, in order, are `create`, `archived`, `settings`, `licenseInfo`, `exit` — and assert that NO entry has `value.action === 'coffee'`
+  - [x] 6.4 Add test: `buildHomeChoices([sampleEntry], { hasActiveLicense: true })` still shows domain entries first, then the standard menu without Coffee
+  - [x] 6.5 Add `handleHomeAction` dispatch tests (mocking `router.showActivateLicense` / `router.showLicenseInfo`): asserting `'activateLicense'` action invokes `router.showActivateLicense` exactly once; same for `'licenseInfo'`
+  - [x] 6.6 Add a loop-rerender test: stub `readSettings` to return free-tier settings on first call and active-license settings on second call; drive two iterations of `showHomeScreen` (mock the `select` prompt to return `activateLicense` first, then `exit`); verify the second iteration's `buildHomeChoices` was invoked with `{ hasActiveLicense: true }`. If this is too heavy to test against inquirer directly, settle for: extract a small helper that derives `hasActiveLicense` from settings and test that in isolation; the dispatch + read-every-iteration behaviour is already covered by Tasks 6.2–6.5
 
-- [ ] **Task 7: Update router tests** (AC: #8)
-  - [ ] 7.1 If `src/router.test.ts` exists, add tests that `router.showActivateLicense` and `router.showLicenseInfo` are exported functions returning `Promise<void>` (a minimal export-shape assertion is sufficient — the stub bodies are placeholders and 14.5/14.6 will add real tests)
-  - [ ] 7.2 Alternatively: skip dedicated router tests; the dispatch tests in Task 6.5 already cover the router invocation contract
+- [x] **Task 7: Update router tests** (AC: #8)
+  - [x] 7.1 If `src/router.test.ts` exists, add tests that `router.showActivateLicense` and `router.showLicenseInfo` are exported functions returning `Promise<void>` (a minimal export-shape assertion is sufficient — the stub bodies are placeholders and 14.5/14.6 will add real tests)
+  - [x] 7.2 Alternatively: skip dedicated router tests; the dispatch tests in Task 6.5 already cover the router invocation contract
 
-- [ ] **Task 8: Verify boundaries** (AC: #8 + architecture compliance)
-  - [ ] 8.1 `grep -n "showActivateLicense\|showLicenseInfo" src/` — should match exactly: `src/router.ts` (declarations) and `src/screens/home.ts` (dispatch sites), plus their `.test.ts` files
-  - [ ] 8.2 Confirm no new imports of `screens/activate-license.js` or `screens/license-info.js` are added in this story
-  - [ ] 8.3 Run `npm test` — baseline after 14.1+14.2+14.3 should be ~1131 tests; this story adds ~6–8 new tests
-  - [ ] 8.4 Run `npm run typecheck` — confirm no TS errors from the `HomeAction` union widening (every consumer must handle the new variants — `handleHomeAction` is the only consumer and is updated in Task 3)
+- [x] **Task 8: Verify boundaries** (AC: #8 + architecture compliance)
+  - [x] 8.1 `grep -n "showActivateLicense\|showLicenseInfo" src/` — should match exactly: `src/router.ts` (declarations) and `src/screens/home.ts` (dispatch sites), plus their `.test.ts` files
+  - [x] 8.2 Confirm no new imports of `screens/activate-license.js` or `screens/license-info.js` are added in this story
+  - [x] 8.3 Run `npm test` — baseline after 14.1+14.2+14.3 should be ~1131 tests; this story adds ~6–8 new tests
+  - [x] 8.4 Run `npm run typecheck` — confirm no TS errors from the `HomeAction` union widening (every consumer must handle the new variants — `handleHomeAction` is the only consumer and is updated in Task 3)
+
+### Review Findings
+
+- [x] [Review][Patch] Fix `src/screens/home.test.ts` diagnostics: helper defaults use object literals, and two `HomeAction` casts are redundant [src/screens/home.test.ts:67] — fixed
+- [x] [Review][Patch] Add the missing AC #6 / AC #9 loop-rerender coverage for `licenseInfo` returning after deactivation: start active, select `licenseInfo`, re-read inactive/free-tier settings on the next iteration, and assert `Activate License` + `Coffee` are shown while `License Info` is omitted [src/screens/home.test.ts:395] — fixed
 
 ## Dev Notes
 
@@ -292,20 +297,39 @@ export async function showLicenseInfo(): Promise<void> {
 
 ### Agent Model Used
 
-_To be filled by dev agent._
+GitHub Copilot (Claude Opus 4.7) — Amelia (bmad-agent-dev)
 
 ### Debug Log References
 
-_To be filled by dev agent._
+- `npx vitest run src/screens/home.test.ts src/router.test.ts src/index.test.ts` → 73/73 passed after review patches (one additional loop-rerender test for `licenseInfo` returning after deactivation).
+- `npm test` → 34 files, **1223 tests passed** (baseline was 1211 from 14.3; this story adds 12 new tests).
+- `npm run typecheck` → clean.
+- `git diff --check` → clean.
+- Boundary grep `grep -rn "showActivateLicense\|showLicenseInfo" src/` → matches confined to `src/router.ts` (declarations), `src/screens/home.ts` (dispatch sites), and their `.test.ts` files. No leakage into `screens/activate-license.ts` or `screens/license-info.ts` (those files don't exist yet — by design).
 
 ### Completion Notes List
 
-_To be filled by dev agent._
+- `HomeAction` union widened with `activateLicense` and `licenseInfo` variants. `handleHomeAction` dispatches both to the new router stubs.
+- `buildHomeChoices` now takes a second required `opts: { hasActiveLicense: boolean }` argument. Free-tier branch pushes `Activate License` + `Coffee`; active-tier branch pushes only `License Info` (Coffee omitted entirely per architecture mandate). `Exit` is appended in both branches.
+- `showHomeScreen` reads settings at the top of every loop iteration (after `clearAndBanner`, after the launch-notice block) and derives `hasActiveLicense` from `settings.license?.status === 'active'`. AC #7's "inactive == free tier" semantics fall out naturally from this single equality check. Review patch added explicit active → `licenseInfo` → inactive/free-tier rerender coverage for AC #6 / AC #9.
+- Two new router stub exports (`showActivateLicense`, `showLicenseInfo`) added with `// STUB — replaced by ...` breadcrumb comments. Both call `clearAndBanner()`, print a placeholder line, and await a single `↩️ Back` choice. `clearAndBanner` import added to `router.ts`.
+- Existing test `exits immediately without router.showExit when showWelcome is false` had to be migrated from `mockResolvedValueOnce` to `mockResolvedValue` because the loop now reads settings before the exit branch reads settings (two reads per iteration). All other existing tests untouched.
+- Coffee icon preserved as `🍵` (existing in code) rather than the epic's `☕` — per spec Task 2.6.
 
 ### File List
 
-_To be filled by dev agent._
+**Modified:**
+- `src/screens/home.ts` — widened `HomeAction`, extended `buildHomeChoices` signature, settings re-read in loop, dispatch of new actions in `handleHomeAction`
+- `src/router.ts` — added `showActivateLicense` + `showLicenseInfo` stubs; added `clearAndBanner` import
+- `src/screens/home.test.ts` — added `router.showActivateLicense`/`showLicenseInfo` to the router mock; updated `buildHomeChoices` test helpers + call sites to pass `{ hasActiveLicense }`; added `buildHomeChoices — license-aware branching` describe block (5 tests); added dispatch + iteration + inactive-as-free-tier tests in `showHomeScreen — routing` describe (5 tests); migrated one existing test to `mockResolvedValue`; fixed review diagnostics in helper defaults and choice-action extraction
+- `src/router.test.ts` — imported the two new stubs; added `showActivateLicense / showLicenseInfo (stubs)` describe block with 2 export-shape assertions
+- `docs/implementation-artifacts/14-4-home-screen-menu-adaptation.md` — task checklist, status, Dev Agent Record
+- `docs/implementation-artifacts/sprint-status.yaml` — status flipped to `done`
+
+**New:** none.
 
 ### Change Log
 
 - 2026-05-16: Story file created via bmad-create-story workflow — comprehensive context engine analysis completed.
+- 2026-05-16: Implementation complete — 8 tasks done, 11 new tests added, full suite 1222 passing, typecheck clean, boundary discipline verified. Status: review.
+- 2026-05-16: Code review patches applied — diagnostics fixed, AC #6 / AC #9 deactivation rerender test added, full suite 1223 passing, typecheck clean. Status: done.

@@ -20,6 +20,8 @@ import {
   showProviderSetup,
   showWelcome,
   showExit,
+  showActivateLicense,
+  showLicenseInfo,
 } from './router.js'
 import { writeDomain, readDomain, _setDataDir } from './domain/store.js'
 import { defaultDomainFile } from './domain/schema.js'
@@ -140,6 +142,18 @@ describe('showHome', () => {
   it('passes a launch notice to showHomeScreen', async () => {
     await showHome('offline')
     expect(showHomeScreen).toHaveBeenCalledWith('offline')
+  })
+})
+
+describe('showActivateLicense / showLicenseInfo (stubs)', () => {
+  it('exports showActivateLicense as an async function', () => {
+    expect(typeof showActivateLicense).toBe('function')
+    expect(showActivateLicense.constructor.name).toBe('AsyncFunction')
+  })
+
+  it('exports showLicenseInfo as an async function', () => {
+    expect(typeof showLicenseInfo).toBe('function')
+    expect(showLicenseInfo.constructor.name).toBe('AsyncFunction')
   })
 })
 

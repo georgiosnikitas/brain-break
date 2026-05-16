@@ -54,10 +54,13 @@ export type HomeAction =
   | { action: 'archived' }
   | { action: 'settings' }
   | { action: 'coffee' }
+  | { action: 'activateLicense' }
+  | { action: 'licenseInfo' }
   | { action: 'exit' }
 
 export function buildHomeChoices(
   entries: HomeEntry[],
+  opts: { hasActiveLicense: boolean },
 ): Array<{ name: string; value: HomeAction } | Separator> {
   const choices: Array<{ name: string; value: HomeAction } | Separator> = []
 
@@ -80,9 +83,18 @@ export function buildHomeChoices(
     { name: '🗄  Archived domains', value: { action: 'archived' } },
     { name: '⚙️  Settings', value: { action: 'settings' } },
     new Separator(),
-    { name: '🍵 Buy me a coffee', value: { action: 'coffee' } },
-    { name: '🚪 Exit', value: { action: 'exit' } },
   )
+
+  if (opts.hasActiveLicense) {
+    choices.push({ name: '🔑 License Info', value: { action: 'licenseInfo' } })
+  } else {
+    choices.push(
+      { name: '🔑 Activate License', value: { action: 'activateLicense' } },
+      { name: '🍵 Buy me a coffee', value: { action: 'coffee' } },
+    )
+  }
+
+  choices.push({ name: '🚪 Exit', value: { action: 'exit' } })
 
   return choices
 }
@@ -104,6 +116,8 @@ async function handleHomeAction(answer: HomeAction, homeEntries: HomeEntry[], li
   if (answer.action === 'archived') await router.showArchived()
   if (answer.action === 'settings') await router.showSettings()
   if (answer.action === 'coffee') await showCoffeeScreen()
+  if (answer.action === 'activateLicense') await router.showActivateLicense()
+  if (answer.action === 'licenseInfo') await router.showLicenseInfo()
 }
 
 export async function showCoffeeScreen(): Promise<void> {
@@ -149,6 +163,10 @@ export async function showHomeScreen(launchNotice: LaunchNotice | null = null): 
       noticeShown = true
     }
 
+    const settingsResult = await readSettings()
+    const settings = settingsResult.ok ? settingsResult.data : defaultSettings()
+    const hasActiveLicense = settings.license?.status === 'active'
+
     const listResult = await listDomains()
     const homeEntries = await loadDomainEntries(listResult, { archived: false })
 
@@ -156,7 +174,7 @@ export async function showHomeScreen(launchNotice: LaunchNotice | null = null): 
     try {
       answer = await select<HomeAction>({
         message: '👨‍💻 Choose a domain:',
-        choices: buildHomeChoices(homeEntries),
+        choices: buildHomeChoices(homeEntries, { hasActiveLicense }),
         pageSize: 20,
         theme: menuTheme,
       })
